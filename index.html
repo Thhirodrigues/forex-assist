@@ -68,14 +68,16 @@ label{font-size:12.5px;color:#cbd5e1;font-weight:600;display:block;margin-top:10
     </div>
     <div style="display:flex;gap:9px;align-items:center">
       <span id="badge" class="badge desativado">DESATIVADO</span>
-      <button id="btnSettings" class="icon-btn" aria-label="Configurações"><span style="font-size:22px">⚙️</span></button>
+      <button id="btnSettings" class="icon-btn" aria-label="Configurações" onclick="openSettings()">
+        <span style="font-size:22px">⚙️</span>
+      </button>
     </div>
   </header>
 
   <button id="btnNotify" class="btn btn-blue">ATIVAR NOTIFICAÇÕES</button>
   <button id="btnScanner" class="btn btn-green">INICIAR SCANNER</button>
 
-  <div id="infoLine" class="info"></div>
+  <div id="infoLine" class="info">Horários: 07:30-18:00 • Lote 0.04 • TP/SL $5/$5</div>
 
   <div class="cards">
     <div class="card"><div id="statSinais" class="card-value">0</div><div class="card-label">Sinais</div></div>
@@ -101,15 +103,22 @@ label{font-size:12.5px;color:#cbd5e1;font-weight:600;display:block;margin-top:10
       <h3>Configurações</h3>
       <button id="closeSettings" class="close-btn">×</button>
     </div>
+    
     <details>
       <summary style="cursor:pointer;font-weight:700;color:#e2e8f0;padding:6px 0;margin-bottom:6px">APIs (toque para expandir)</summary>
       <label>API Key TwelveData (principal)</label>
-      <input id="twKey" class="input" placeholder="0921a1b1e8d4469cbe7c8697a4e62a85">
+      <input id="twKey" autocomplete="off" spellcheck="false" class="input" placeholder="0921a1b1e8d4469cbe7c8697a4e62a85">
+      
       <label>API Key TwelveData backup 1</label>
-      <input id="twKey2" class="input" placeholder="31629773166e45c09ddcda8bb23dbdae">
+      <input id="twKey2" autocomplete="off" spellcheck="false" class="input" placeholder="31629773166e45c09ddcda8bb23dbdae">
+      
       <label>API Key TwelveData backup 2</label>
-      <input id="twKey3" class="input" placeholder="011b938585f545b1819cab1a8306decb">
+      <input id="twKey3" autocomplete="off" spellcheck="false" class="input" placeholder="011b938585f545b1819cab1a8306decb">
+      
+      <label>API Key Alpha Vantage (backup)</label>
+      <input id="avKey" class="input" placeholder="Opcional">
     </details>
+    
     <label>Pares ativos</label>
     <div class="pairs-grid" id="pairsGrid">
       <label><input type="checkbox" data-pair="EUR/USD"><span>EUR/USD</span></label>
@@ -127,84 +136,305 @@ label{font-size:12.5px;color:#cbd5e1;font-weight:600;display:block;margin-top:10
       <label><input type="checkbox" data-pair="GBP/AUD"><span>GBP/AUD</span></label>
       <label><input type="checkbox" data-pair="AUD/CAD"><span>AUD/CAD</span></label>
     </div>
+
     <div class="grid-2">
-      <div><label>Modo</label><select id="mode" class="input"><option value="normal">Normal (>75)</option><option value="conservador">Conservador (>85)</option></select></div>
-      <div><label>Delay (s)</label><input id="delay" type="number" class="input" value="25"></div>
+      <div>
+        <label>Modo</label>
+        <select id="mode" class="input">
+          <option value="normal">Normal (>75)</option>
+          <option value="conservador">Conservador (>85)</option>
+        </select>
+      </div>
+      <div>
+        <label>Delay (segundos)</label>
+        <input id="delay" type="number" class="input" min="10" max="120" value="25">
+      </div>
     </div>
+
     <div class="grid-3">
       <div><label>Lote</label><input id="lote" type="number" step="0.01" class="input" value="0.04"></div>
       <div><label>TP ($)</label><input id="tp" type="number" class="input" value="5"></div>
       <div><label>SL ($)</label><input id="sl" type="number" class="input" value="5"></div>
     </div>
+    <div class="small">Horário operacional: 07:30-18:00 (America/Sao_Paulo)</div>
+
     <button id="saveSettings" class="btn btn-blue" style="margin-top:16px">Salvar</button>
+    <button id="clearSignals" class="btn" style="margin-top:8px;background:#334155;border:1px solid #475569">Limpar sinais pendentes</button>
   </div>
 </div>
 
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(console.error);
+    navigator.serviceWorker.register('./sw.js').then(r=>{ window.swReg=r; }).catch(console.error);
   });
 }
 
 const $=s=>document.querySelector(s);
-let settings, trades, logEntries=[], scannerActive=false, scannerInterval=null;
+const timeSP=()=>new Date().toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour12:false});
+
+let settings, trades, logEntries=[], scannerActive=false, scannerInterval=null, wakeLock=null, backoffUntil=0, scanning=false, tdKeyIndex=0, cycleCount=0, openSignals=[];
 const todayKey='fa_trades_'+new Date().toLocaleDateString('sv-SE');
 
-const defaults = {
-  twKey: "0921a1b1e8d4469cbe7c8697a4e62a85",
-  twKey2: "31629773166e45c09ddcda8bb23dbdae",
-  twKey3: "011b938585f545b1819cab1a8306decb",
-  pairsActive: ['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD','NZD/USD','USD/CHF'],
-  mode: 'normal',
-  delay: 25,
-  lote: 0.04,
-  tp: 5,
-  sl: 5
-};
-
 function loadSettings(){
-  const saved = JSON.parse(localStorage.getItem('fa_settings_v44p') || '{}');
-  return {...defaults, ...saved};
+  const d={twKey:"0921a1b1e8d4469cbe7c8697a4e62a85",twKey2:"31629773166e45c09ddcda8bb23dbdae",twKey3:"011b938585f545b1819cab1a8306decb",avKey:"",pairsActive:['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD','NZD/USD','USD/CHF'],mode:'normal',delay:60,lote:0.04,tp:5,sl:5};
+  try{return {...d,...JSON.parse(localStorage.getItem('fa_settings_v44p')||'{}')}}catch{return d}
+}
+function saveSettingsLS(){localStorage.setItem('fa_settings_v44p',JSON.stringify(settings))}
+
+function updateInfoLine(){
+  $('#infoLine').textContent=`Horários: 07:30-18:00 • Lote ${settings.lote} • TP/SL $${settings.tp}/$${settings.sl}`;
+}
+function updatePairsUI(){
+  $('#pairCount').textContent=`${settings.pairsActive.length}/14`;
+  $('#pairsList').textContent=settings.pairsActive.join(' • ');
+}
+function updateResumo(){
+  $('#statSinais').textContent=trades.sinais;
+  $('#statTP').textContent=trades.tp;
+  $('#statSL').textContent=trades.sl;
+  const tot=trades.tp+trades.sl;
+  $('#statAcerto').textContent= tot>0? Math.round(trades.tp/tot*100)+'%':'0%';
+}
+function addLog(text,type=''){
+  const e={t:Date.now(),text,type};
+  logEntries.push(e);
+  if(logEntries.length>200)logEntries.shift();
+  localStorage.setItem('fa_log_v44p',JSON.stringify(logEntries));
+  renderLogEntry(e);
+}
+function renderLogEntry(e){
+  const d=document.createElement('div');
+  d.className='log-entry'+(e.type==='signal'?' log-signal':e.type==='error'?' log-error':e.type==='warn'?' log-warn':'');
+  d.innerHTML=e.text;
+  const l=$('#log');
+  l.appendChild(d);
+  l.scrollTop=l.scrollHeight;
+}
+function renderLog(){ $('#log').innerHTML=''; logEntries.forEach(renderLogEntry) }
+function setActive(a){ const b=$('#badge'); b.textContent=a?'ATIVO':'DESATIVADO'; b.className='badge '+(a?'ativo':'desativado') }
+function inWindow(){ return true }
+
+/* INDICADORES MATEMÁTICOS */
+function ema(arr,p){const o=new Array(arr.length).fill(null);if(arr.length<p)return o;let s=0;for(let i=0;i<p;i++)s+=arr[i];o[p-1]=s/p;const k=2/(p+1);for(let i=p;i<arr.length;i++)o[i]=arr[i]*k+o[i-1]*(1-k);return o}
+function emaNull(arr,p){const o=new Array(arr.length).fill(null);const v=[];for(let i=0;i<arr.length;i++)if(arr[i]!=null)v.push({i,v:arr[i]});if(v.length<p)return o;let s=0;for(let i=0;i<p;i++)s+=v[i].v;o[v[p-1].i]=s/p;const k=2/(p+1);for(let i=p;i<v.length;i++){o[v[i].i]=v[i].v*k+o[v[i-1].i]*(1-k)}return o}
+function rsi(cs,p=14){const o=new Array(cs.length).fill(null);if(cs.length<=p)return o;let g=0,l=0;for(let i=1;i<=p;i++){const d=cs[i]-cs[i-1];if(d>0)g+=d;else l-=d}let ag=g/p,al=l/p;o[p]=100-(100/(1+ag/(al||1e-10)));for(let i=p+1;i<cs.length;i++){const d=cs[i]-cs[i-1],ga=d>0?d:0,lo=d<0?-d:0;ag=(ag*(p-1)+ga)/p;al=(al*(p-1)+lo)/p;o[i]=100-(100/(1+ag/(al||1e-10)))}return o}
+function adx(h,l,c,p=14){const o=new Array(c.length).fill(null);if(c.length<p*2)return o;const tr=[],pu=[],mi=[];for(let i=1;i<c.length;i++){const hi=h[i],lo=l[i],pc=c[i-1],ph=h[i-1],pl=l[i-1];tr.push(Math.max(hi-lo,Math.abs(hi-pc),Math.abs(lo-pc)));const up=hi-ph,dn=pl-lo;pu.push(up>dn&&up>0?up:0);mi.push(dn>up&&dn>0?dn:0)}function wild(a,p){const r=new Array(a.length).fill(null);let s=0;for(let i=0;i<p;i++)s+=a[i];r[p-1]=s;for(let i=p;i<a.length;i++)r[i]=r[i-1]-r[i-1]/p+a[i];return r}const str=wild(tr,p),spu=wild(pu,p),smi=wild(mi,p);const dx=[];for(let i=0;i<str.length;i++){if(i<p-1||!str[i]){dx.push(null);continue}const pd=100*spu[i]/str[i],md=100*smi[i]/str[i];dx.push(100*Math.abs(pd-md)/((pd+md)||1))}const ad=wild(dx.filter(v=>v!=null),p);let idx=p*2-2;for(let i=0;i<ad.length;i++){if(ad[i]!=null&&idx+i<c.length)o[idx+i]=ad[i]}return o}
+
+/* LÓGICA DO SCANNER E BUSCA DE DADOS */
+async function getData(pair){
+  if(Date.now()<backoffUntil) return null;
+  const keys=[settings.twKey3,settings.twKey2,settings.twKey].filter(Boolean);
+  for(let i=0;i<keys.length;i++){
+    try{
+      const k=keys[(tdKeyIndex+i)%keys.length];
+      const url=`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(pair)}&interval=1min&outputsize=60&apikey=${k}`;
+      const r=await fetch(url);
+      if(r.status===429){ continue; }
+      const d=await r.json();
+      if(d && Array.isArray(d.values) && d.values.length>20){
+        tdKeyIndex=(tdKeyIndex+i)%keys.length;
+        const vals=d.values.reverse().map(v=>({datetime:v.datetime,open:+v.open,high:+v.high,low:+v.low,close:+v.close}));
+        return{src:'TW',values:vals};
+      }
+      if(d && d.code===429){ continue; }
+    }catch(e){ }
+    await new Promise(r=>setTimeout(r,200)); 
+  }
+  backoffUntil=Date.now()+30000;
+  addLog(`[${timeSP()}] Erro ${pair} (limite de API ou sem dados)`,'error');
+  return null;
+}
+
+function processPair(pair,data){
+  const v=data.values;
+  const closes=v.map(x=>+x.close), highs=v.map(x=>+x.high||+x.close), lows=v.map(x=>+x.low||+x.close);
+  if(closes.length<50)return;
+  const e9=ema(closes,9), e21=ema(closes,21), e50=ema(closes,50);
+  const rsiV=rsi(closes,14), adxV=adx(highs,lows,closes,14);
+  const e12=ema(closes,12), e26=ema(closes,26);
+  const macd=closes.map((_,i)=>e12[i]!=null&&e26[i]!=null?e12[i]-e26[i]:null);
+  const signal=emaNull(macd,9);
+  const last=closes.length-1;
+  const rv=rsiV[last], av=adxV[last]||0;
+  
+  // Log silencioso das métricas para acompanhamento
+  addLog(`[${timeSP()}] ${pair} ${data.src} | RSI ${rv?.toFixed(1)} ADX ${Math.round(av)}`);
+
+  const e9l=e9[last],e21l=e21[last],e50l=e50[last],macdL=macd[last],sigL=signal[last];
+  let buy=0,sell=0;
+  
+  if(e9l&&e21l&&e50l){if(e9l>e21l&&e21l>e50l)buy+=20;if(e9l<e21l&&e21l<e50l)sell+=20}
+  if(rv){if(rv>=55&&rv<=65)buy+=20;if(rv>=35&&rv<=45)sell+=20}
+  const adxThr=settings.mode==='conservador'?25:20; if(av>=adxThr){buy+=20;sell+=20}
+  if(macdL!=null&&sigL!=null){if(macdL>sigL)buy+=20;if(macdL<sigL)sell+=20}
+  if(last>=2){if(closes[last]>closes[last-1]&&closes[last-1]>closes[last-2])buy+=20;if(closes[last]<closes[last-1]&&closes[last-1]<closes[last-2])sell+=20}
+  
+  const thr=settings.mode==='conservador'?85:75;
+  let dir=null,score=0;
+  
+  if(buy>=thr&&buy>sell){dir='BUY';score=buy}
+  else if(sell>=thr&&sell>buy){dir='SELL';score=sell}
+  
+  if(dir){
+    addLog(`[${timeSP()}] <span onclick="navigator.clipboard.writeText('${pair}');window.location.href='market://launch?id=com.xm.webapp'" style="cursor:pointer;text-decoration:underline">SINAL ${dir} ${pair} score ${score} → Abrir XM</span>`,'signal');
+    trades.sinais++; localStorage.setItem(todayKey,JSON.stringify(trades)); updateResumo();
+    
+    // --- LÓGICA DE NOTIFICAÇÃO E VIBRAÇÃO OTIMIZADA ---
+    if(navigator.vibrate) navigator.vibrate([1000, 500, 1000, 500, 2000]); // Vibração muito mais forte
+    
+    if(window.Notification && Notification.permission === 'granted'){
+      try{
+        const n = new Notification(`🚨 SINAL FOREX: ${pair} ${dir}`, {
+          body: `Score: ${score} | Lote: ${settings.lote}\nTP: $${settings.tp} / SL: $${settings.sl}`,
+          icon: './icon-512.png',
+          badge: './icon-512.png',
+          vibrate: [1000, 500, 1000, 500, 2000],
+          requireInteraction: true, // Mantém na barra de tarefas até ser clicada
+          tag: 'forex-signal-' + pair // Substitui notificações do mesmo par
+        });
+        n.onclick = () => { window.open('intent://#Intent;package=com.xm.webapp;scheme=xm;end','_blank'); n.close(); };
+      }catch(err){ console.error("Erro ao enviar notificação", err); }
+    }
+
+    const entry = closes[last];
+    const pip = pair.includes('JPY') ? 0.01 : 0.0001;
+    const pipValue = settings.lote * 10 * (pair.includes('JPY') ? (100/entry) : 1);
+    const pipsTP = settings.tp / pipValue;
+    const pipsSL = settings.sl / pipValue;
+    const tpPrice = dir==='BUY' ? entry + pipsTP*pip : entry - pipsTP*pip;
+    const slPrice = dir==='BUY' ? entry - pipsSL*pip : entry + pipsSL*pip;
+    const sig = {id: Date.now()+'_'+pair, pair, dir, entry, tpPrice, slPrice, time: Date.now(), timeStr: timeSP(), status:'open'};
+    openSignals.push(sig); localStorage.setItem('fa_signals_open', JSON.stringify(openSignals));
+  }
+}
+
+async function scanCycle(){
+  if(scanning||!scannerActive)return;
+  scanning=true;
+  try{
+    if(!inWindow()){return}
+    if(Date.now()<backoffUntil)return;
+    cycleCount++;
+    const tier1=['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD'];
+    for(const pair of settings.pairsActive){
+      if(!scannerActive)break;
+      const isTier1=tier1.includes(pair);
+      const shouldScan=isTier1 || (cycleCount%3===0);
+      if(!shouldScan)continue;
+      const data=await getData(pair);
+      if(data)processPair(pair,data);
+      await new Promise(r=>setTimeout(r,700));
+    }
+  }finally{scanning=false}
+}
+
+async function startScanner(){
+  if(scannerActive)return;
+  scannerActive=true;setActive(true);
+  $('#btnScanner').textContent='PARAR SCANNER';$('#btnScanner').className='btn btn-red';
+  addLog(`[${timeSP()}] Scanner iniciado`);
+  try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');addLog(`[${timeSP()}] Tela mantida ativa`);}}catch{}
+  scanCycle();
+  clearInterval(scannerInterval);
+  scannerInterval=setInterval(()=>{scanCycle(); if(cycleCount%2===0) processOpenSignals();},Math.max(10,settings.delay)*1000);
+}
+
+function stopScanner(){
+  scannerActive=false;setActive(false);
+  $('#btnScanner').textContent='INICIAR SCANNER';$('#btnScanner').className='btn btn-green';
+  clearInterval(scannerInterval);
+  if(wakeLock){wakeLock.release().catch(()=>{});wakeLock=null}
+  addLog(`[${timeSP()}] Scanner parado`);
+}
+
+function openSettings(){
+  $('#twKey').value=settings.twKey;$('#twKey2').value=settings.twKey2;$('#twKey3').value=settings.twKey3;$('#avKey').value=settings.avKey;$('#mode').value=settings.mode;$('#delay').value=settings.delay;$('#lote').value=settings.lote;$('#tp').value=settings.tp;$('#sl').value=settings.sl;
+  document.querySelectorAll('#pairsGrid input').forEach(cb=>cb.checked=settings.pairsActive.includes(cb.dataset.pair));
+  $('#settingsModal').classList.add('show');
+}
+
+function saveSettings(){
+  settings.twKey=$('#twKey').value.trim()||settings.twKey;
+  settings.twKey2=$('#twKey2').value.trim()||settings.twKey2;
+  settings.twKey3=$('#twKey3').value.trim()||settings.twKey3;
+  settings.avKey=$('#avKey').value.trim();
+  settings.mode=$('#mode').value;
+  settings.delay=Math.max(10,parseInt($('#delay').value)||25);
+  settings.lote=parseFloat($('#lote').value)||0.04;
+  settings.tp=parseInt($('#tp').value)||5;
+  settings.sl=parseInt($('#sl').value)||5;
+  settings.pairsActive=[...document.querySelectorAll('#pairsGrid input:checked')].map(i=>i.dataset.pair);
+  if(settings.pairsActive.length===0)settings.pairsActive=['EUR/USD'];
+  saveSettingsLS();updateInfoLine();updatePairsUI();$('#settingsModal').classList.remove('show');
+  addLog(`[${timeSP()}] Configurações salvas`);
+  if(scannerActive){clearInterval(scannerInterval);scannerInterval=setInterval(scanCycle,settings.delay*1000)}
+}
+
+async function requestNotif(){
+  if(!('Notification' in window)) return alert('Notificações não suportadas pelo seu navegador.');
+  const p = await Notification.requestPermission();
+  if(p === 'granted'){
+    addLog(`[${timeSP()}] Notificações ativadas`,'success');
+    $('#btnNotify').textContent='NOTIFICAÇÕES ATIVAS';
+    $('#btnNotify').disabled=true;
+  } else {
+    alert('Permissão de notificação negada. Verifique as configurações do navegador/celular.');
+  }
+}
+
+async function processOpenSignals(){
+  if(!openSignals.length) return;
+  const s = openSignals[0];
+  const key = settings.twKey || settings.twKey2 || settings.twKey3;
+  if(!key || !s.tpPrice) { openSignals.shift(); localStorage.setItem('fa_signals_open', JSON.stringify(openSignals)); return; }
+  try{
+    const start = new Date(s.time).toISOString().replace('T',' ').substring(0,19);
+    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(s.pair)}&interval=1min&start_date=${start}&outputsize=500&apikey=${key}`;
+    const r = await fetch(url); const j = await r.json();
+    if(!j.values) return;
+    const candles = j.values.reverse();
+    for(const c of candles){
+      const h=parseFloat(c.high), l=parseFloat(c.low);
+      const hora = c.datetime.split(' ')[1].substring(0,5);
+      if(s.dir==='BUY'){
+        if(h>=s.tpPrice){ addLog(`[${hora}] RESULTADO ${s.dir} ${s.pair} WIN +$${settings.tp} (sinal ${s.timeStr})`,'success'); trades.tp++; openSignals.shift(); break; }
+        if(l<=s.slPrice){ addLog(`[${hora}] RESULTADO ${s.dir} ${s.pair} LOSS -$${settings.sl} (sinal ${s.timeStr})`,'error'); trades.sl++; openSignals.shift(); break; }
+      }else{
+        if(l<=s.tpPrice){ addLog(`[${hora}] RESULTADO ${s.dir} ${s.pair} WIN +$${settings.tp} (sinal ${s.timeStr})`,'success'); trades.tp++; openSignals.shift(); break; }
+        if(h>=s.slPrice){ addLog(`[${hora}] RESULTADO ${s.dir} ${s.pair} LOSS -$${settings.sl} (sinal ${s.timeStr})`,'error'); trades.sl++; openSignals.shift(); break; }
+      }
+    }
+    localStorage.setItem(todayKey, JSON.stringify(trades)); updateResumo();
+  }catch(e){}
+  localStorage.setItem('fa_signals_open', JSON.stringify(openSignals));
 }
 
 function init(){
-  settings = loadSettings();
-  trades = JSON.parse(localStorage.getItem(todayKey) || '{"sinais":0,"tp":0,"sl":0}');
+  const clearBtn=document.getElementById('clearSignals');
+  if(clearBtn) clearBtn.onclick=()=>{localStorage.removeItem('fa_signals_open');openSignals=[];addLog(`[${timeSP()}] Sinais pendentes limpos`,'info');alert('Sinais pendentes apagados');};
+
+  settings=loadSettings();
+  trades=JSON.parse(localStorage.getItem(todayKey)||'{"sinais":0,"tp":0,"sl":0}');
+  openSignals=JSON.parse(localStorage.getItem('fa_signals_open')||'[]');
+  logEntries=JSON.parse(localStorage.getItem('fa_log_v44p')||'[]');
+  updateInfoLine();updatePairsUI();updateResumo();renderLog();
+  setTimeout(processOpenSignals,3000);
   
-  // Popula UI de Configurações
-  $('#twKey').value = settings.twKey;
-  $('#twKey2').value = settings.twKey2;
-  $('#twKey3').value = settings.twKey3;
-  $('#mode').value = settings.mode;
-  $('#delay').value = settings.delay;
-  $('#lote').value = settings.lote;
-  $('#tp').value = settings.tp;
-  $('#sl').value = settings.sl;
-  document.querySelectorAll('#pairsGrid input').forEach(cb => {
-    cb.checked = settings.pairsActive.includes(cb.dataset.pair);
-  });
-
-  $('#btnSettings').onclick = () => $('#settingsModal').classList.add('show');
-  $('#closeSettings').onclick = () => $('#settingsModal').classList.remove('show');
-  $('#saveSettings').onclick = () => {
-    settings.twKey = $('#twKey').value || defaults.twKey;
-    settings.twKey2 = $('#twKey2').value || defaults.twKey2;
-    settings.twKey3 = $('#twKey3').value || defaults.twKey3;
-    settings.mode = $('#mode').value;
-    settings.delay = parseInt($('#delay').value);
-    settings.lote = parseFloat($('#lote').value);
-    settings.tp = parseInt($('#tp').value);
-    settings.sl = parseInt($('#sl').value);
-    settings.pairsActive = Array.from(document.querySelectorAll('#pairsGrid input:checked')).map(i => i.dataset.pair);
-    localStorage.setItem('fa_settings_v44p', JSON.stringify(settings));
-    $('#settingsModal').classList.remove('show');
-    location.reload();
-  };
-
-  // ... [Manter restante da sua lógica original de Scanner e Processamento aqui] ...
+  $('#btnSettings').onclick=openSettings;
+  $('#closeSettings').onclick=()=>$('#settingsModal').classList.remove('show');
+  $('#saveSettings').onclick=saveSettings;
+  $('#btnNotify').onclick=requestNotif;
+  $('#btnScanner').onclick=()=>scannerActive?stopScanner():startScanner();
+  $('#clearLog').onclick=()=>{logEntries=[];localStorage.removeItem('fa_log_v44p');$('#log').innerHTML=''};
+  
+  if('Notification' in window && Notification.permission==='granted'){$('#btnNotify').textContent='NOTIFICAÇÕES ATIVAS';$('#btnNotify').disabled=true;}
+  $('#settingsModal').addEventListener('click',e=>{if(e.target.id==='settingsModal')e.currentTarget.classList.remove('show')});
+  document.addEventListener('visibilitychange',async()=>{if(scannerActive&&document.visibilityState==='visible'&&'wakeLock' in navigator&&!wakeLock){try{wakeLock=await navigator.wakeLock.request('screen')}catch{}}});
+  
+  addLog(`[${timeSP()}] Forex Assist - Real Money pronto para iniciar.`);
 }
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
