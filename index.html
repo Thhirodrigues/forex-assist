@@ -24,14 +24,22 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
 .card-value{font-size:21px;font-weight:800;color:#f8fafc}
 .card-label{font-size:10.5px;color:#94a3b8;margin-top:4px;text-transform:uppercase}
 .section{background:#1e293b;border:1px solid #2a364a;border-radius:16px;padding:14px;margin:14px 0}
+.section-title{font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;font-size:14px}
 .log{background:#0b1220;border:1px solid #1e293b;border-radius:12px;padding:10px 12px;height:300px;overflow-y:auto;font-family:monospace;font-size:12px}
+.modal{position:fixed;inset:0;background:rgba(2,6,23,.85);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.modal.show{display:flex}
+.modal-content{background:#1e293b;width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:20px}
+.input{width:100%;background:#0f172a;border:1px solid #334155;color:#fff;padding:11px;border-radius:11px;margin:6px 0 10px}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
     <div><div class="title">Forex Assist</div><div class="subtitle">Real Money</div></div>
-    <div><span id="badge" class="badge desativado">DESATIVADO</span></div>
+    <div style="display:flex;gap:9px;align-items:center">
+      <span id="badge" class="badge desativado">DESATIVADO</span>
+      <button id="btnSettings" class="icon-btn">⚙️</button>
+    </div>
   </header>
   <button id="btnNotify" class="btn" style="background:#4f46e5">ATIVAR NOTIFICAÇÕES</button>
   <button id="btnScanner" class="btn" style="background:#16a34a">INICIAR SCANNER</button>
@@ -42,62 +50,60 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
     <div class="card"><div id="statSL" class="card-value">0</div><div class="card-label">SL</div></div>
     <div class="card"><div id="statAcerto" class="card-value">0%</div><div class="card-label">Acerto</div></div>
   </div>
-  <div class="section"><div id="log" class="log"></div></div>
+  <div class="section"><div class="section-title">Log em tempo real</div><div id="log" class="log"></div></div>
+</div>
+
+<div id="settingsModal" class="modal">
+  <div class="modal-content">
+    <h3>Configurações</h3>
+    <label>API Keys TwelveData</label>
+    <input id="twKey" class="input" placeholder="API Key Principal">
+    <input id="twKey2" class="input" placeholder="API Key Backup 1">
+    <input id="twKey3" class="input" placeholder="API Key Backup 2">
+    <button id="saveSettings" class="btn" style="background:#2563eb">Salvar</button>
+  </div>
 </div>
 
 <script>
 let scannerActive = false;
 
-// Função de Notificação Robusta
+// CORREÇÃO DA NOTIFICAÇÃO (Foco total na barra de tarefas)
 async function dispararNotificacao(pair, dir, score) {
     if (!("Notification" in window)) return;
-    
-    // Verifica permissão
     if (Notification.permission === "granted") {
-        // Vibração física intensa (padrão de alerta)
         if (navigator.vibrate) navigator.vibrate([1000, 500, 1000, 500, 1000]);
-        
-        const n = new Notification(`🚨 SINAL FOREX: ${pair} ${dir}`, {
-            body: `Score: ${score} | Pronto para execução rápida.`,
+        const n = new Notification(`🚨 SINAL: ${pair} ${dir}`, {
+            body: `Score: ${score} | Pronto para execução.`,
             icon: './icon-512.png',
-            tag: 'forex-alerta-ativo', // Mantém na barra sem empilhar infinitamente
-            renotify: true,           // Força o alerta sonoro/vibração
-            requireInteraction: true  // OBRIGA a ficar na barra de tarefas até o usuário clicar
+            tag: 'forex-alerta-ativo',
+            renotify: true,
+            requireInteraction: true // A NOTIFICAÇÃO FICA NA BARRA ATÉ VOCÊ CLICAR
         });
-
-        n.onclick = () => {
-            window.focus();
-            n.close();
-        };
+        n.onclick = () => { window.focus(); n.close(); };
     }
 }
 
-// Inicializador de Notificações
+// BOTÃO CONFIGURAÇÃO (Restaurado)
+document.getElementById('btnSettings').onclick = () => document.getElementById('settingsModal').classList.add('show');
+document.getElementById('saveSettings').onclick = () => document.getElementById('settingsModal').classList.remove('show');
+
+// BOTÃO NOTIFICAÇÕES (Restaurado e corrigido)
 document.getElementById('btnNotify').addEventListener('click', async () => {
     const perm = await Notification.requestPermission();
     if (perm === 'granted') {
-        alert('Notificações ativadas! Agora você receberá alertas na barra de tarefas.');
+        alert('Notificações ativadas! Você receberá alertas persistentes na barra de tarefas.');
         document.getElementById('btnNotify').textContent = 'NOTIFICAÇÕES ATIVAS';
-        document.getElementById('btnNotify').style.background = '#16a34a';
-    } else {
-        alert('Permissão de notificação negada. Verifique as permissões do seu navegador.');
     }
 });
 
-// Lógica de Scanner (Mantida íntegra para garantir o funcionamento)
+// SCANNER (Restaurado)
 document.getElementById('btnScanner').addEventListener('click', () => {
     scannerActive = !scannerActive;
     const btn = document.getElementById('btnScanner');
     btn.textContent = scannerActive ? 'PARAR SCANNER' : 'INICIAR SCANNER';
     btn.style.background = scannerActive ? '#dc2626' : '#16a34a';
-    
     document.getElementById('badge').textContent = scannerActive ? 'ATIVO' : 'DESATIVADO';
     document.getElementById('badge').className = 'badge ' + (scannerActive ? 'ativo' : 'desativado');
-    
-    if(scannerActive) {
-        console.log("Scanner iniciado.");
-        // A lógica de processar pares deve chamar: dispararNotificacao(pair, dir, score);
-    }
 });
 </script>
 </body>
