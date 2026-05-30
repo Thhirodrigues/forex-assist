@@ -1,0 +1,4 @@
+name: Forex Scanner
+
+on:
+  workflow_dispatch:
