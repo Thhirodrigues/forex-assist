@@ -1,3 +1,5 @@
+function dashboardView() {
+
 const scannerAtivo =
 localStorage.getItem("scannerAtivo") === "true";
 
