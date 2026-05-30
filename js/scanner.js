@@ -1,20 +1,39 @@
-
 function scannerView() {
-  return `
+
+    return `
+
     <div class="card">
-      <h2>Scanner Expert</h2>
 
-      <button id="startScanner">
-        Iniciar Scanner
-      </button>
+        <div class="card-title">
+            Scanner Expert
+        </div>
 
-      <button id="stopScanner">
-        Parar Scanner
-      </button>
+        <div class="signal wait">
+            Scanner aguardando início
+        </div>
 
-      <p>
-        Scanner ainda não iniciado.
-      </p>
+        <button class="button start-btn">
+            Iniciar Scanner
+        </button>
+
+        <button class="button stop-btn">
+            Parar Scanner
+        </button>
+
     </div>
-  `;
+
+    <div class="card">
+
+        <div class="card-title">
+            Última Análise
+        </div>
+
+        <div class="list-item">
+            Nenhuma análise executada
+        </div>
+
+    </div>
+
+    `;
+
 }
