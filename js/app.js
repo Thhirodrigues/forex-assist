@@ -1,55 +1,97 @@
 const app = {
-  currentTab: "dashboard",
 
-  init() {
-    this.render();
-    this.bindEvents();
-  },
+    currentTab: "dashboard",
 
-  bindEvents() {
-    document.addEventListener("click", (e) => {
-
-      const tab = e.target.dataset.tab;
-
-      if (tab) {
-        this.currentTab = tab;
+    init() {
         this.render();
-      }
+        this.bindEvents();
+    },
 
-    });
-  },
+    bindEvents() {
 
-  render() {
+        document.addEventListener("click", (e) => {
 
-    const content = document.getElementById("content");
+            const tab = e.target.dataset.tab;
 
-    switch (this.currentTab) {
+            if(tab){
+                this.currentTab = tab;
+                this.render();
+            }
 
-      case "dashboard":
-        content.innerHTML = dashboardView();
-        break;
+        });
 
-      case "scanner":
-        content.innerHTML = scannerView();
-        break;
+    },
 
-      case "historico":
-        content.innerHTML = historicoView();
-        break;
+    render(){
 
-      case "manual":
-        content.innerHTML = manualView();
-        break;
+        const app = document.getElementById("app");
 
-      case "config":
-        content.innerHTML = configView();
-        break;
+        let content = "";
+
+        switch(this.currentTab){
+
+            case "dashboard":
+                content = dashboardView();
+                break;
+
+            case "scanner":
+                content = scannerView();
+                break;
+
+            case "historico":
+                content = historicoView();
+                break;
+
+            case "manual":
+                content = manualView();
+                break;
+
+            case "config":
+                content = configView();
+                break;
+
+        }
+
+        app.innerHTML = `
+        
+        <div class="header">
+            <div class="logo">Forex Assist</div>
+            <div class="subtitle">V5 Expert Alpha</div>
+        </div>
+
+        <div class="container">
+            ${content}
+        </div>
+
+        <div class="bottom-nav">
+
+            <button class="nav-btn ${this.currentTab==="dashboard"?"nav-active":""}" data-tab="dashboard">
+                Dashboard
+            </button>
+
+            <button class="nav-btn ${this.currentTab==="scanner"?"nav-active":""}" data-tab="scanner">
+                Scanner
+            </button>
+
+            <button class="nav-btn ${this.currentTab==="historico"?"nav-active":""}" data-tab="historico">
+                Histórico
+            </button>
+
+            <button class="nav-btn ${this.currentTab==="manual"?"nav-active":""}" data-tab="manual">
+                Manual
+            </button>
+
+            <button class="nav-btn ${this.currentTab==="config"?"nav-active":""}" data-tab="config">
+                Config
+            </button>
+
+        </div>
+        `;
 
     }
 
-  }
 };
 
 window.addEventListener("load", () => {
-  app.init();
+    app.init();
 });
