@@ -1,15 +1,27 @@
-function dashboardView() {
-    return `
+const scannerAtivo =
+localStorage.getItem("scannerAtivo") === "true";
 
-    <div class="card">
-        <div class="card-title">
-            Scanner Status
-        </div>
+return `
 
-        <div class="status-offline">
-            🔴 Parado
-        </div>
+<div class="card">
+    <div class="card-title">
+        Scanner Status
     </div>
+
+    <div class="${
+        scannerAtivo
+        ? "status-online"
+        : "status-offline"
+    }">
+
+        ${
+            scannerAtivo
+            ? "🟢 Online"
+            : "🔴 Parado"
+        }
+
+    </div>
+</div>
 
     <div class="card">
         <div class="card-title">
