@@ -1,62 +1,55 @@
-document.addEventListener('DOMContentLoaded', () => {
+const app = {
+  currentTab: "dashboard",
 
-  document.getElementById('app').innerHTML = `
-  
-  <header class="topbar">
-    <h1>Forex Assist</h1>
-    <span class="version">V5 Expert Alpha</span>
-  </header>
+  init() {
+    this.render();
+    this.bindEvents();
+  },
 
-  <main class="container">
+  bindEvents() {
+    document.addEventListener("click", (e) => {
 
-    <section class="card">
-      <h2>Scanner Status</h2>
-      <div class="status online">
-        🟢 Parado
-      </div>
-    </section>
+      const tab = e.target.dataset.tab;
 
-    <section class="card">
-      <h2>Modo Atual</h2>
-      <div class="mode">
-        EXPERT
-      </div>
-    </section>
+      if (tab) {
+        this.currentTab = tab;
+        this.render();
+      }
 
-    <section class="card">
-      <h2>Sinais Hoje</h2>
-      <div class="big-number">
-        0
-      </div>
-    </section>
+    });
+  },
 
-    <section class="card">
-      <h2>Qualidade do Mercado</h2>
-      <div class="market-status">
-        Aguardando análise...
-      </div>
-    </section>
+  render() {
 
-    <section class="card">
-      <h2>Último Sinal</h2>
-      <p>Nenhum sinal disponível.</p>
-    </section>
+    const content = document.getElementById("content");
 
-  </main>
+    switch (this.currentTab) {
 
-  <nav class="bottom-nav">
+      case "dashboard":
+        content.innerHTML = dashboardView();
+        break;
 
-    <button>Dashboard</button>
+      case "scanner":
+        content.innerHTML = scannerView();
+        break;
 
-    <button>Scanner</button>
+      case "historico":
+        content.innerHTML = historicoView();
+        break;
 
-    <button>Histórico</button>
+      case "manual":
+        content.innerHTML = manualView();
+        break;
 
-    <button>Manual</button>
+      case "config":
+        content.innerHTML = configView();
+        break;
 
-    <button>Config</button>
+    }
 
-  </nav>
+  }
+};
 
-  `;
+window.addEventListener("load", () => {
+  app.init();
 });
