@@ -98,7 +98,46 @@ document.addEventListener("click", async (e) => {
     }
 
     app.render();
+setTimeout(async () => {
 
+  try {
+
+    const sinal = {
+      par: "EURUSD",
+      direcao: "CALL",
+      qualidade: "88%",
+      horario: new Date().toLocaleTimeString(
+        "pt-BR",
+        {
+          hour: "2-digit",
+          minute: "2-digit"
+        }
+      )
+    };
+
+    await db
+      .collection("historico")
+      .add(sinal);
+
+    await db
+      .collection("scanner")
+      .doc("status")
+      .update({
+        sinaisHoje: 1,
+        ultimoSinal: `${sinal.par} ${sinal.direcao} ${sinal.qualidade}`,
+        ultimaAnalise: "Sinal encontrado"
+      });
+
+  } catch (erro) {
+
+    console.log(
+      "Erro criando sinal:",
+      erro
+    );
+
+  }
+
+}, 15000);
   }
 
   if (e.target.id === "stopScanner") {
