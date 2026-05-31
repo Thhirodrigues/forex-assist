@@ -1,8 +1,6 @@
 function historicoView() {
-
   return `
     <div class="card">
-
       <div class="card-title">
         Histórico de Sinais
       </div>
@@ -10,15 +8,13 @@ function historicoView() {
       <div id="historicoLista">
         Carregando histórico...
       </div>
-
     </div>
   `;
 }
 
 setInterval(async () => {
 
-  const lista =
-    document.getElementById("historicoLista");
+  const lista = document.getElementById("historicoLista");
 
   if (!lista) return;
 
@@ -26,7 +22,6 @@ setInterval(async () => {
 
     const snapshot = await db
       .collection("historico")
-      .orderBy("timestamp", "desc")
       .limit(20)
       .get();
 
@@ -43,11 +38,7 @@ setInterval(async () => {
 
           <br>
 
-          ${sinal.direcao || "-"}
-
-          |
-
-          ${sinal.qualidade || "-"}
+          ${sinal.direcao || "-"} | ${sinal.qualidade || "-"}
 
           <br>
 
@@ -64,17 +55,13 @@ setInterval(async () => {
           Nenhum sinal registrado.
         </div>
       `;
-
     }
 
     lista.innerHTML = html;
 
   } catch (erro) {
 
-    console.log(
-      "Erro histórico:",
-      erro
-    );
+    console.log("Erro histórico:", erro);
 
   }
 
