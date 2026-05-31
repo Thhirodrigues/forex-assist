@@ -4,23 +4,16 @@ function scannerView() {
         localStorage.getItem("scannerAtivo") === "true";
 
     return `
-
     <div class="card">
 
         <div class="card-title">
             Scanner Expert
         </div>
 
-        <div class="signal ${
-            scannerAtivo ? "buy" : "wait"
-        }">
-
-            ${
-                scannerAtivo
+        <div class="signal ${scannerAtivo ? "buy" : "wait"}">
+            ${scannerAtivo
                 ? "Scanner Online"
-                : "Scanner aguardando início"
-            }
-
+                : "Scanner aguardando início"}
         </div>
 
         <button
@@ -48,21 +41,16 @@ function scannerView() {
         </div>
 
         <div class="list-item">
-
-            ${
-                scannerAtivo
+            ${scannerAtivo
                 ? "Scanner ativo e monitorando mercado."
-                : "Nenhuma análise executada."
-            }
-
+                : "Nenhuma análise executada."}
         </div>
 
     </div>
-
     `;
 }
 
-document.addEventListener("click", (e) => {
+document.addEventListener("click", async (e) => {
 
     if (e.target.id === "startScanner") {
 
@@ -70,6 +58,20 @@ document.addEventListener("click", (e) => {
             "scannerAtivo",
             "true"
         );
+
+        try {
+
+            await db.collection("scanner")
+                .doc("status")
+                .update({
+                    ativo: true
+                });
+
+        } catch (erro) {
+
+            console.log("Erro Firebase:", erro);
+
+        }
 
         app.render();
     }
@@ -80,6 +82,20 @@ document.addEventListener("click", (e) => {
             "scannerAtivo",
             "false"
         );
+
+        try {
+
+            await db.collection("scanner")
+                .doc("status")
+                .update({
+                    ativo: false
+                });
+
+        } catch (erro) {
+
+            console.log("Erro Firebase:", erro);
+
+        }
 
         app.render();
     }
