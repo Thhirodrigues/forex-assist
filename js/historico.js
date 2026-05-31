@@ -42,20 +42,15 @@ setInterval(async () => {
 
           <br>
 
-          ${sinal.horario || "-"}
+          Horário: ${sinal.horario}
+
+          <br>
+
+          Teste: ${sinal.teste}
 
         </div>
       `;
     });
-
-    if (html === "") {
-
-      html = `
-        <div class="list-item">
-          Nenhum sinal registrado.
-        </div>
-      `;
-    }
 
     lista.innerHTML = html;
 
