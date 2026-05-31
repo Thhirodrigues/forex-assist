@@ -1,103 +1,125 @@
 function scannerView() {
-
-    const scannerAtivo =
-        localStorage.getItem("scannerAtivo") === "true";
-
-    return `
+  return `
     <div class="card">
 
-        <div class="card-title">
-            Scanner Expert
-        </div>
+      <div class="card-title">
+        Scanner Expert
+      </div>
 
-        <div class="signal ${scannerAtivo ? "buy" : "wait"}">
-            ${scannerAtivo
-                ? "Scanner Online"
-                : "Scanner aguardando início"}
-        </div>
+      <div id="scannerViewStatus" class="signal wait">
+        Carregando...
+      </div>
 
-        <button
-            class="button start-btn"
-            id="startScanner">
+      <button
+        class="button start-btn"
+        id="startScanner">
 
-            Iniciar Scanner
+        Iniciar Scanner
 
-        </button>
+      </button>
 
-        <button
-            class="button stop-btn"
-            id="stopScanner">
+      <button
+        class="button stop-btn"
+        id="stopScanner">
 
-            Parar Scanner
+        Parar Scanner
 
-        </button>
+      </button>
 
     </div>
 
     <div class="card">
 
-        <div class="card-title">
-            Última Análise
-        </div>
+      <div class="card-title">
+        Última Análise
+      </div>
 
-        <div class="list-item">
-            ${scannerAtivo
-                ? "Scanner ativo e monitorando mercado."
-                : "Nenhuma análise executada."}
-        </div>
+      <div id="scannerUltimaAnalise" class="list-item">
+        Carregando...
+      </div>
 
     </div>
-    `;
+  `;
 }
+
+setInterval(async () => {
+
+  const statusEl =
+    document.getElementById("scannerViewStatus");
+
+  const analiseEl =
+    document.getElementById("scannerUltimaAnalise");
+
+  if (!statusEl) return;
+
+  try {
+
+    const doc = await db
+      .collection("scanner")
+      .doc("status")
+      .get();
+
+    const dados = doc.data();
+
+    statusEl.innerHTML =
+      dados.ativo
+        ? "🟢 Scanner Online"
+        : "🔴 Scanner aguardando início";
+
+    analiseEl.innerHTML =
+      dados.ultimaAnalise ||
+      "Nenhuma análise executada.";
+
+  } catch (erro) {
+
+    console.log("Erro Firebase:", erro);
+
+  }
+
+}, 2000);
 
 document.addEventListener("click", async (e) => {
 
-    if (e.target.id === "startScanner") {
+  if (e.target.id === "startScanner") {
 
-        localStorage.setItem(
-            "scannerAtivo",
-            "true"
-        );
+    try {
 
-        try {
+      await db
+        .collection("scanner")
+        .doc("status")
+        .update({
+          ativo: true
+        });
 
-            await db.collection("scanner")
-                .doc("status")
-                .update({
-                    ativo: true
-                });
+    } catch (erro) {
 
-        } catch (erro) {
+      console.log("Erro Firebase:", erro);
 
-            console.log("Erro Firebase:", erro);
-
-        }
-
-        app.render();
     }
 
-    if (e.target.id === "stopScanner") {
+    app.render();
 
-        localStorage.setItem(
-            "scannerAtivo",
-            "false"
-        );
+  }
 
-        try {
+  if (e.target.id === "stopScanner") {
 
-            await db.collection("scanner")
-                .doc("status")
-                .update({
-                    ativo: false
-                });
+    try {
 
-        } catch (erro) {
+      await db
+        .collection("scanner")
+        .doc("status")
+        .update({
+          ativo: false
+        });
 
-            console.log("Erro Firebase:", erro);
+    } catch (erro) {
 
-        }
+      console.log("Erro Firebase:", erro);
 
-        app.render();
     }
+
+    app.render();
+
+  }
 
 });
