@@ -8,9 +8,7 @@ function historicoView() {
       </div>
 
       <div id="historicoLista">
-
         Carregando histórico...
-
       </div>
 
     </div>
@@ -26,8 +24,8 @@ setInterval(async () => {
 
   try {
 
-    const snapshot =
-      await db.collection("historico")
+    const snapshot = await db
+      .collection("historico")
       .orderBy("timestamp", "desc")
       .limit(20)
       .get();
@@ -41,19 +39,19 @@ setInterval(async () => {
       html += `
         <div class="list-item">
 
-          <strong>${sinal.par}</strong>
+          <strong>${sinal.par || "-"}</strong>
 
           <br>
 
-          ${sinal.direcao}
+          ${sinal.direcao || "-"}
 
           |
 
-          ${sinal.qualidade}
+          ${sinal.qualidade || "-"}
 
           <br>
 
-          ${sinal.horario}
+          ${sinal.horario || "-"}
 
         </div>
       `;
