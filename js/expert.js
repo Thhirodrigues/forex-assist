@@ -2,52 +2,40 @@ function dashboardView() {
 
     return `
     <div class="card">
-        <div class="card-title">
-            Scanner Status
-        </div>
-
+        <div class="card-title">Scanner Status</div>
         <div id="scannerStatus" class="signal wait">
             Carregando...
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">
-            Modo Atual
-        </div>
-
-        <div class="big-number">
-            Expert
-        </div>
+        <div class="card-title">Modo Atual</div>
+        <div class="big-number">Expert</div>
     </div>
 
     <div class="card">
-        <div class="card-title">
-            Sinais Hoje
-        </div>
-
-        <div id="sinaisHoje" class="big-number">
-            0
-        </div>
+        <div class="card-title">Sinais Hoje</div>
+        <div id="sinaisHoje" class="big-number">0</div>
     </div>
 
     <div class="card">
-        <div class="card-title">
-            Qualidade do Mercado
-        </div>
-
+        <div class="card-title">Qualidade do Mercado</div>
         <div id="ultimaAnalise" class="signal wait">
             Aguardando análise...
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">
-            Último Sinal
-        </div>
-
+        <div class="card-title">Último Sinal</div>
         <div id="ultimoSinal" class="signal wait">
             Nenhum sinal
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Debug Firebase</div>
+        <div id="debugFirebase">
+            Iniciando...
         </div>
     </div>
     `;
@@ -61,37 +49,37 @@ setInterval(async () => {
 
     try {
 
-        const doc = await db
+        document.getElementById("debugFirebase").innerHTML =
+            "db encontrado";
+
+        const doc = await window.db
             .collection("scanner")
             .doc("status")
             .get();
 
         const dados = doc.data();
 
+        document.getElementById("debugFirebase").innerHTML =
+            "Firestore conectado";
+
         status.innerHTML =
             dados.ativo
                 ? "🟢 Online"
                 : "🔴 Parado";
 
-        document.getElementById(
-            "sinaisHoje"
-        ).innerHTML = dados.sinaisHoje || 0;
+        document.getElementById("sinaisHoje").innerHTML =
+            dados.sinaisHoje || 0;
 
-        document.getElementById(
-            "ultimaAnalise"
-        ).innerHTML =
-            dados.ultimaAnalise ||
-            "Aguardando análise";
+        document.getElementById("ultimaAnalise").innerHTML =
+            dados.ultimaAnalise || "Aguardando análise";
 
-        document.getElementById(
-            "ultimoSinal"
-        ).innerHTML =
-            dados.ultimoSinal ||
-            "Nenhum sinal";
+        document.getElementById("ultimoSinal").innerHTML =
+            dados.ultimoSinal || "Nenhum sinal";
 
     } catch (erro) {
 
-        console.log(erro);
+        document.getElementById("debugFirebase").innerHTML =
+            erro.message;
 
     }
 
