@@ -146,21 +146,6 @@ const sinal = {
     firebase.firestore.FieldValue.serverTimestamp()
 };
 
-  direcao: direcoes[
-    Math.floor(Math.random() * direcoes.length)
-  ],
-
-  qualidade: qualidade + "%",
-
-  horario: new Date().toLocaleTimeString(
-    "pt-BR",
-    {
-      hour: "2-digit",
-      minute: "2-digit"
-    }
-  )
-};
-
     await db
       .collection("historico")
       .add(sinal);
