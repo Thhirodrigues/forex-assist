@@ -1,1 +1,22 @@
+name: Forex Scanner Real
 
+on:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Test Key 1
+        run: |
+          curl "https://api.twelvedata.com/time_series?symbol=EUR/USD&interval=1min&apikey=${{ secrets.TWELVEDATA_KEY }}"
+
+      - name: Test Key 2
+        run: |
+          curl "https://api.twelvedata.com/time_series?symbol=EUR/USD&interval=1min&apikey=${{ secrets.TWELVEDATA_KEY_2 }}"
+
+      - name: Test Key 3
+        run: |
+          curl "https://api.twelvedata.com/time_series?symbol=EUR/USD&interval=1min&apikey=${{ secrets.TWELVEDATA_KEY_3 }}"
