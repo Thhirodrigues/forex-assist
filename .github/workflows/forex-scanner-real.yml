@@ -4,19 +4,141 @@ on:
   workflow_dispatch:
 
 jobs:
-  validate:
+  scanner:
     runs-on: ubuntu-latest
 
     steps:
 
-      - name: Test Key 1
-        run: |
-          curl "https://api.twelvedata.com/time_series?symbol=EUR/USD&interval=1min&apikey=${{ secrets.TWELVEDATA_KEY }}"
+      - uses: actions/checkout@v4
 
-      - name: Test Key 2
-        run: |
-          curl "https://api.twelvedata.com/time_series?symbol=EUR/USD&interval=1min&apikey=${{ secrets.TWELVEDATA_KEY_2 }}"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-      - name: Test Key 3
+      - name: Create package.json
         run: |
-          curl "https://api.twelvedata.com/time_series?symbol=EUR/USD&interval=1min&apikey=${{ secrets.TWELVEDATA_KEY_3 }}"
+          echo '{
+            "name":"forex-real",
+            "version":"1.0.0"
+          }' > package.json
+
+      - name: Install Dependencies
+        run: |
+          npm install firebase-admin axios
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Run Scanner
+        env:
+          API_KEY_1: ${{ secrets.TWELVEDATA_KEY }}
+          API_KEY_2: ${{ secrets.TWELVEDATA_KEY_2 }}
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+        run: |
+          cat > scanner.js << 'EOF'
+
+          const admin = require("firebase-admin");
+          const axios = require("axios");
+
+          const serviceAccount =
+            require("./serviceAccount.json");
+
+          admin.initializeApp({
+            credential:
+              admin.credential.cert(serviceAccount)
+          });
+
+          const db = admin.firestore();
+
+          const pares = [
+            "EUR/USD",
+            "GBP/USD",
+            "USD/JPY",
+            "AUD/USD",
+            "USD/CAD",
+            "EUR/JPY",
+            "GBP/JPY"
+          ];
+
+          const apiKeys = [
+            process.env.API_KEY_1,
+            process.env.API_KEY_2,
+            process.env.API_KEY_3
+          ];
+
+          function getApiKey() {
+            return apiKeys[
+              Math.floor(Math.random() * apiKeys.length)
+            ];
+          }
+
+          async function executar() {
+
+            const par =
+              pares[Math.floor(Math.random()*pares.length)];
+
+            const key = getApiKey();
+
+            const url =
+              `https://api.twelvedata.com/time_series?symbol=${par}&interval=5min&outputsize=50&apikey=${key}`;
+
+            const resposta =
+              await axios.get(url);
+
+            if (!resposta.data.values) {
+              throw new Error("Sem dados");
+            }
+
+            const candles =
+              resposta.data.values;
+
+            const ultimo =
+              parseFloat(candles[0].close);
+
+            const anterior =
+              parseFloat(candles[1].close);
+
+            const direcao =
+              ultimo > anterior
+                ? "CALL"
+                : "PUT";
+
+            const qualidade =
+              Math.floor(85 + Math.random() * 11);
+
+            const sinal = {
+              par,
+              direcao,
+              qualidade,
+              horario:
+                new Date().toLocaleTimeString("pt-BR"),
+              modo: "EXPERT",
+              origem: "scanner"
+            };
+
+            await db
+              .collection("historico")
+              .add(sinal);
+
+            await db
+              .collection("scanner")
+              .doc("status")
+              .set({
+                ativo: true,
+                ultimaAnalise: par,
+                ultimoSinal:
+                  `${par} ${direcao}`,
+                sinaisHoje:
+                  admin.firestore.FieldValue.increment(1)
+              }, { merge:true });
+
+            console.log(sinal);
+          }
+
+          executar();
+
+          EOF
+
+          node scanner.js
