@@ -102,31 +102,69 @@ setTimeout(async () => {
 
   try {
 
-    const sinal = {
-      par: "EURUSD",
-      direcao: "CALL",
-      qualidade: "88%",
-      horario: new Date().toLocaleTimeString(
-        "pt-BR",
-        {
-          hour: "2-digit",
-          minute: "2-digit"
-        }
-      )
-    };
+const pares = [
+  "EURUSD",
+  "GBPUSD",
+  "USDJPY",
+  "AUDUSD",
+  "USDCAD",
+  "EURJPY"
+];
+
+const direcoes = [
+  "CALL",
+  "PUT"
+];
+
+const qualidade =
+  Math.floor(Math.random() * 11) + 85;
+
+const sinal = {
+  par: pares[
+    Math.floor(Math.random() * pares.length)
+  ],
+
+  direcao: direcoes[
+    Math.floor(Math.random() * direcoes.length)
+  ],
+
+  qualidade: qualidade + "%",
+
+  horario: new Date().toLocaleTimeString(
+    "pt-BR",
+    {
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  )
+};
 
     await db
       .collection("historico")
       .add(sinal);
 
-    await db
-      .collection("scanner")
-      .doc("status")
-      .update({
-        sinaisHoje: 1,
-        ultimoSinal: `${sinal.par} ${sinal.direcao} ${sinal.qualidade}`,
-        ultimaAnalise: "Sinal encontrado"
-      });
+    const statusDoc = await db
+  .collection("scanner")
+  .doc("status")
+  .get();
+
+const statusAtual = statusDoc.data();
+
+await db
+.collection("scanner")
+.doc("status")
+.update({
+
+  sinaisHoje:
+    (statusAtual.sinaisHoje || 0) + 1,
+
+  ultimoSinal:
+    `${sinal.par} ${sinal.direcao} ${sinal.qualidade}`,
+
+  ultimaAnalise:
+    `Sinal encontrado em ${sinal.par}`
+
+});
 
   } catch (erro) {
 
