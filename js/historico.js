@@ -1,6 +1,7 @@
 function historicoView() {
   return `
     <div class="card">
+
       <div class="card-title">
         Histórico de Sinais
       </div>
@@ -8,13 +9,15 @@ function historicoView() {
       <div id="historicoLista">
         Carregando histórico...
       </div>
+
     </div>
   `;
 }
 
 setInterval(async () => {
 
-  const lista = document.getElementById("historicoLista");
+  const lista =
+    document.getElementById("historicoLista");
 
   if (!lista) return;
 
@@ -22,6 +25,7 @@ setInterval(async () => {
 
     const snapshot = await db
       .collection("historico")
+      .orderBy("timestamp", "desc")
       .limit(20)
       .get();
 
@@ -34,29 +38,54 @@ setInterval(async () => {
       html += `
         <div class="list-item">
 
-          <strong>${sinal.par || "-"}</strong>
+          <strong>
+            ${sinal.par || "-"}
+          </strong>
 
           <br>
 
-          ${sinal.direcao || "-"} | ${sinal.qualidade || "-"}
+          ${sinal.direcao || "-"} |
+          ${sinal.qualidade || "-"}%
 
           <br>
 
-          Horário: ${sinal.horario}
+          Modo:
+          ${sinal.modo || "EXPERT"}
 
           <br>
 
-          Teste: ${sinal.teste}
+          Horário:
+          ${sinal.horario || "--:--"}
 
         </div>
       `;
+
     });
+
+    if (!html) {
+
+      html = `
+        <div class="list-item">
+          Nenhum sinal encontrado.
+        </div>
+      `;
+
+    }
 
     lista.innerHTML = html;
 
   } catch (erro) {
 
-    console.log("Erro histórico:", erro);
+    console.log(
+      "Erro histórico:",
+      erro
+    );
+
+    lista.innerHTML = `
+      <div class="list-item">
+        Erro ao carregar histórico.
+      </div>
+    `;
 
   }
 
