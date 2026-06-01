@@ -74,67 +74,283 @@ jobs:
             ];
           }
 
+          function calcularEMA(valores, periodo) {
+
+            const k = 2 / (periodo + 1);
+
+            let ema = valores[0];
+
+            for (let i = 1; i < valores.length; i++) {
+
+              ema =
+                valores[i] * k +
+                ema * (1 - k);
+
+            }
+
+            return ema;
+          }
+
+          function calcularRSI(
+            fechamentos,
+            periodo = 14
+          ) {
+
+            let ganhos = 0;
+            let perdas = 0;
+
+            for (
+              let i = 1;
+              i <= periodo;
+              i++
+            ) {
+
+              const diff =
+                fechamentos[i - 1] -
+                fechamentos[i];
+
+              if (diff > 0) {
+
+                ganhos += diff;
+
+              } else {
+
+                perdas += Math.abs(diff);
+
+              }
+
+            }
+
+            if (perdas === 0) {
+              return 100;
+            }
+
+            const rs =
+              ganhos / perdas;
+
+            return (
+              100 -
+              (100 / (1 + rs))
+            );
+          }
+
           async function executar() {
 
             const par =
-              pares[Math.floor(Math.random()*pares.length)];
+              pares[
+                Math.floor(
+                  Math.random() *
+                  pares.length
+                )
+              ];
 
-            const key = getApiKey();
+            const key =
+              getApiKey();
 
             const url =
-              `https://api.twelvedata.com/time_series?symbol=${par}&interval=5min&outputsize=50&apikey=${key}`;
+              `https://api.twelvedata.com/time_series?symbol=${par}&interval=5min&outputsize=100&apikey=${key}`;
 
             const resposta =
               await axios.get(url);
 
-            if (!resposta.data.values) {
-              throw new Error("Sem dados");
+            if (
+              !resposta.data.values
+            ) {
+
+              throw new Error(
+                "Sem dados"
+              );
+
             }
 
-            const candles =
-              resposta.data.values;
+            const fechamentos =
+              resposta.data.values.map(
+                c =>
+                  parseFloat(
+                    c.close
+                  )
+              );
 
-            const ultimo =
-              parseFloat(candles[0].close);
+            const ema9 =
+              calcularEMA(
+                fechamentos
+                  .slice(0, 9)
+                  .reverse(),
+                9
+              );
 
-            const anterior =
-              parseFloat(candles[1].close);
+            const ema21 =
+              calcularEMA(
+                fechamentos
+                  .slice(0, 21)
+                  .reverse(),
+                21
+              );
 
-            const direcao =
-              ultimo > anterior
-                ? "CALL"
-                : "PUT";
+            const rsi =
+              calcularRSI(
+                fechamentos
+              );
 
-            const qualidade =
-              Math.floor(85 + Math.random() * 11);
+            let direcao =
+              null;
+
+            let qualidade =
+              0;
+
+            if (
+              ema9 > ema21 &&
+              rsi > 55
+            ) {
+
+              direcao =
+                "CALL";
+
+              qualidade =
+                Math.min(
+                  99,
+                  Math.round(
+                    85 +
+                    (rsi - 55) +
+                    (
+                      (ema9 - ema21)
+                      * 10000
+                    )
+                  )
+                );
+
+            } else if (
+              ema9 < ema21 &&
+              rsi < 45
+            ) {
+
+              direcao =
+                "PUT";
+
+              qualidade =
+                Math.min(
+                  99,
+                  Math.round(
+                    85 +
+                    (45 - rsi) +
+                    (
+                      (ema21 - ema9)
+                      * 10000
+                    )
+                  )
+                );
+
+            }
+
+            await db
+              .collection(
+                "scanner"
+              )
+              .doc("status")
+              .set({
+
+                ativo: true,
+
+                ultimaAnalise:
+                  par,
+
+                ema9:
+                  Number(
+                    ema9.toFixed(5)
+                  ),
+
+                ema21:
+                  Number(
+                    ema21.toFixed(5)
+                  ),
+
+                rsi:
+                  Number(
+                    rsi.toFixed(2)
+                  )
+
+              }, {
+                merge: true
+              });
+
+            if (!direcao) {
+
+              console.log(
+                "Sem sinal"
+              );
+
+              return;
+
+            }
 
             const sinal = {
+
               par,
+
               direcao,
+
               qualidade,
+
               horario:
-                new Date().toLocaleTimeString("pt-BR"),
-              modo: "EXPERT",
-              origem: "scanner"
+                new Date()
+                .toLocaleTimeString(
+                  "pt-BR"
+                ),
+
+              modo:
+                "EXPERT",
+
+              origem:
+                "scanner",
+
+              ema9:
+                Number(
+                  ema9.toFixed(5)
+                ),
+
+              ema21:
+                Number(
+                  ema21.toFixed(5)
+                ),
+
+              rsi:
+                Number(
+                  rsi.toFixed(2)
+                )
+
             };
 
             await db
-              .collection("historico")
+              .collection(
+                "historico"
+              )
               .add(sinal);
 
             await db
-              .collection("scanner")
+              .collection(
+                "scanner"
+              )
               .doc("status")
               .set({
+
                 ativo: true,
-                ultimaAnalise: par,
+
                 ultimoSinal:
                   `${par} ${direcao}`,
-                sinaisHoje:
-                  admin.firestore.FieldValue.increment(1)
-              }, { merge:true });
 
-            console.log(sinal);
+                sinaisHoje:
+                  admin.firestore.FieldValue.increment(
+                    1
+                  )
+
+              }, {
+                merge: true
+              });
+
+            console.log(
+              sinal
+            );
+
           }
 
           executar();
