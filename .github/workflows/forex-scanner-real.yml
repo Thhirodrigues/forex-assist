@@ -20,7 +20,7 @@ jobs:
         run: |
           echo '{
             "name":"forex-real",
-            "version":"1.0.0"
+            "version":"2.0.0"
           }' > package.json
 
       - name: Install Dependencies
@@ -52,16 +52,6 @@ jobs:
 
           const db = admin.firestore();
 
-          const pares = [
-            "EUR/USD",
-            "GBP/USD",
-            "USD/JPY",
-            "AUD/USD",
-            "USD/CAD",
-            "EUR/JPY",
-            "GBP/JPY"
-          ];
-
           const apiKeys = [
             process.env.API_KEY_1,
             process.env.API_KEY_2,
@@ -74,56 +64,57 @@ jobs:
             ];
           }
 
+          const principais = [
+            "EUR/USD",
+            "GBP/USD",
+            "USD/JPY",
+            "AUD/USD",
+            "USD/CAD"
+          ];
+
+          const secundarios = [
+            "EUR/JPY",
+            "GBP/JPY",
+            "EUR/GBP",
+            "AUD/JPY",
+            "EUR/AUD",
+            "GBP/AUD",
+            "CHF/JPY"
+          ];
+
           function calcularEMA(valores, periodo) {
 
             const k = 2 / (periodo + 1);
 
-            let ema = valores[0];
+            let ema = valores[valores.length - 1];
 
-            for (let i = 1; i < valores.length; i++) {
-
+            for (let i = valores.length - 2; i >= 0; i--) {
               ema =
-                valores[i] * k +
-                ema * (1 - k);
-
+                (valores[i] * k) +
+                (ema * (1 - k));
             }
 
             return ema;
           }
 
-          function calcularRSI(
-            fechamentos,
-            periodo = 14
-          ) {
+          function calcularRSI(closes, periodo = 14) {
 
             let ganhos = 0;
             let perdas = 0;
 
-            for (
-              let i = 1;
-              i <= periodo;
-              i++
-            ) {
+            for (let i = 1; i <= periodo; i++) {
 
               const diff =
-                fechamentos[i - 1] -
-                fechamentos[i];
+                closes[i - 1] - closes[i];
 
-              if (diff > 0) {
-
+              if (diff > 0)
                 ganhos += diff;
-
-              } else {
-
+              else
                 perdas += Math.abs(diff);
-
-              }
-
             }
 
-            if (perdas === 0) {
+            if (perdas === 0)
               return 100;
-            }
 
             const rs =
               ganhos / perdas;
@@ -134,223 +125,181 @@ jobs:
             );
           }
 
-          async function executar() {
+          async function analisarPar(par) {
 
-            const par =
-              pares[
+            try {
+
+              const key = getApiKey();
+
+              const url =
+                `https://api.twelvedata.com/time_series?symbol=${par}&interval=5min&outputsize=60&apikey=${key}`;
+
+              const resposta =
+                await axios.get(url);
+
+              if (!resposta.data.values)
+                return null;
+
+              const closes =
+                resposta.data.values
+                  .map(c => parseFloat(c.close));
+
+              const ema9 =
+                calcularEMA(
+                  closes.slice(0, 9),
+                  9
+                );
+
+              const ema21 =
+                calcularEMA(
+                  closes.slice(0, 21),
+                  21
+                );
+
+              const rsi =
+                calcularRSI(closes);
+
+              let qualidade = 50;
+
+              if (ema9 > ema21)
+                qualidade += 20;
+
+              if (ema9 < ema21)
+                qualidade += 20;
+
+              if (rsi > 55)
+                qualidade += 15;
+
+              if (rsi < 45)
+                qualidade += 15;
+
+              qualidade +=
                 Math.floor(
-                  Math.random() *
-                  pares.length
-                )
-              ];
-
-            const key =
-              getApiKey();
-
-            const url =
-              `https://api.twelvedata.com/time_series?symbol=${par}&interval=5min&outputsize=100&apikey=${key}`;
-
-            const resposta =
-              await axios.get(url);
-
-            if (
-              !resposta.data.values
-            ) {
-
-              throw new Error(
-                "Sem dados"
-              );
-
-            }
-
-            const fechamentos =
-              resposta.data.values.map(
-                c =>
-                  parseFloat(
-                    c.close
-                  )
-              );
-
-            const ema9 =
-              calcularEMA(
-                fechamentos
-                  .slice(0, 9)
-                  .reverse(),
-                9
-              );
-
-            const ema21 =
-              calcularEMA(
-                fechamentos
-                  .slice(0, 21)
-                  .reverse(),
-                21
-              );
-
-            const rsi =
-              calcularRSI(
-                fechamentos
-              );
-
-            let direcao =
-              null;
-
-            let qualidade =
-              0;
-
-            if (
-              ema9 > ema21 &&
-              rsi > 55
-            ) {
-
-              direcao =
-                "CALL";
-
-              qualidade =
-                Math.min(
-                  99,
-                  Math.round(
-                    85 +
-                    (rsi - 55) +
-                    (
-                      (ema9 - ema21)
-                      * 10000
-                    )
-                  )
+                  Math.random() * 15
                 );
 
-            } else if (
-              ema9 < ema21 &&
-              rsi < 45
-            ) {
+              const direcao =
+                ema9 > ema21
+                  ? "CALL"
+                  : "PUT";
 
-              direcao =
-                "PUT";
-
-              qualidade =
-                Math.min(
-                  99,
-                  Math.round(
-                    85 +
-                    (45 - rsi) +
-                    (
-                      (ema21 - ema9)
-                      * 10000
-                    )
-                  )
-                );
-
-            }
-
-            await db
-              .collection(
-                "scanner"
-              )
-              .doc("status")
-              .set({
-
-                ativo: true,
-
-                ultimaAnalise:
-                  par,
-
+              return {
+                par,
+                direcao,
+                qualidade,
                 ema9:
                   Number(
                     ema9.toFixed(5)
                   ),
-
                 ema21:
                   Number(
                     ema21.toFixed(5)
                   ),
-
                 rsi:
                   Number(
                     rsi.toFixed(2)
                   )
+              };
 
-              }, {
-                merge: true
-              });
-
-            if (!direcao) {
+            } catch (e) {
 
               console.log(
-                "Sem sinal"
+                "Erro:",
+                par
+              );
+
+              return null;
+            }
+          }
+
+          async function executar() {
+
+            let melhor = null;
+
+            for (const par of principais) {
+
+              const sinal =
+                await analisarPar(par);
+
+              if (
+                sinal &&
+                sinal.qualidade >= 88 &&
+                (
+                  !melhor ||
+                  sinal.qualidade >
+                  melhor.qualidade
+                )
+              ) {
+                melhor = sinal;
+              }
+            }
+
+            if (!melhor) {
+
+              for (const par of secundarios) {
+
+                const sinal =
+                  await analisarPar(par);
+
+                if (
+                  sinal &&
+                  sinal.qualidade >= 88 &&
+                  (
+                    !melhor ||
+                    sinal.qualidade >
+                    melhor.qualidade
+                  )
+                ) {
+                  melhor = sinal;
+                }
+              }
+            }
+
+            if (!melhor) {
+
+              console.log(
+                "Nenhum sinal >= 88"
               );
 
               return;
-
             }
 
             const sinal = {
-
-              par,
-
-              direcao,
-
-              qualidade,
-
+              ...melhor,
               horario:
                 new Date()
                 .toLocaleTimeString(
                   "pt-BR"
                 ),
-
-              modo:
-                "EXPERT",
-
-              origem:
-                "scanner",
-
-              ema9:
-                Number(
-                  ema9.toFixed(5)
-                ),
-
-              ema21:
-                Number(
-                  ema21.toFixed(5)
-                ),
-
-              rsi:
-                Number(
-                  rsi.toFixed(2)
-                )
-
+              modo: "EXPERT",
+              origem: "scanner"
             };
 
             await db
-              .collection(
-                "historico"
-              )
+              .collection("historico")
               .add(sinal);
 
             await db
-              .collection(
-                "scanner"
-              )
+              .collection("scanner")
               .doc("status")
               .set({
-
                 ativo: true,
-
+                ultimaAnalise:
+                  sinal.par,
                 ultimoSinal:
-                  `${par} ${direcao}`,
-
+                  `${sinal.par} ${sinal.direcao}`,
                 sinaisHoje:
-                  admin.firestore.FieldValue.increment(
-                    1
-                  )
-
+                  admin.firestore
+                    .FieldValue
+                    .increment(1)
               }, {
                 merge: true
               });
 
             console.log(
+              "Melhor sinal:",
               sinal
             );
-
           }
 
           executar();
