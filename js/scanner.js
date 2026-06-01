@@ -128,6 +128,28 @@ const sinal = {
     Math.floor(Math.random() * direcoes.length)
   ],
 
+  qualidade: qualidade,
+
+  modo: "EXPERT",
+
+  origem: "scanner",
+
+  horario: new Date().toLocaleTimeString(
+    "pt-BR",
+    {
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  ),
+
+  timestamp:
+    firebase.firestore.FieldValue.serverTimestamp()
+};
+
+  direcao: direcoes[
+    Math.floor(Math.random() * direcoes.length)
+  ],
+
   qualidade: qualidade + "%",
 
   horario: new Date().toLocaleTimeString(
@@ -159,7 +181,7 @@ await db
     (statusAtual.sinaisHoje || 0) + 1,
 
   ultimoSinal:
-    `${sinal.par} ${sinal.direcao} ${sinal.qualidade}`,
+  `${sinal.par} ${sinal.direcao} ${sinal.qualidade}%`,
 
   ultimaAnalise:
     `Sinal encontrado em ${sinal.par}`
