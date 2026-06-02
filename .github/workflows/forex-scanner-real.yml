@@ -52,6 +52,8 @@ jobs:
 
           const db = admin.firestore();
 
+          const COOLDOWN_MINUTOS = 30;
+
           const apiKeys = [
             process.env.API_KEY_1,
             process.env.API_KEY_2,
@@ -156,61 +158,67 @@ jobs:
                   21
                 );
 
+              const ema21Anterior =
+                calcularEMA(
+                  closes.slice(1, 22),
+                  21
+                );
+
               const rsi =
                 calcularRSI(closes);
 
+              let direcao = null;
+
+              if (
+                ema9 > ema21 &&
+                ema21 > ema21Anterior &&
+                rsi > 55
+              ) {
+                direcao = "CALL";
+              }
+
+              if (
+                ema9 < ema21 &&
+                ema21 < ema21Anterior &&
+                rsi < 45
+              ) {
+                direcao = "PUT";
+              }
+
+              if (!direcao)
+                return null;
+
               let qualidade = 50;
 
-              if (ema9 > ema21)
-                qualidade += 20;
-
-              if (ema9 < ema21)
-                qualidade += 20;
-
-              if (rsi > 55)
-                qualidade += 15;
-
-              if (rsi < 45)
-                qualidade += 15;
+              qualidade += 20;
+              qualidade += 15;
 
               const tendencia =
-                Math.abs(ema9 - ema21) * 10000;
+                Math.abs(
+                  ema21 - ema21Anterior
+                ) * 10000;
 
               qualidade +=
                 Math.min(
-                  15,
+                  20,
                   Math.round(tendencia)
                 );
-
-              const direcao =
-                ema9 > ema21
-                  ? "CALL"
-                  : "PUT";
 
               return {
                 par,
                 direcao,
                 qualidade,
                 ema9:
-                  Number(
-                    ema9.toFixed(5)
-                  ),
+                  Number(ema9.toFixed(5)),
                 ema21:
-                  Number(
-                    ema21.toFixed(5)
-                  ),
+                  Number(ema21.toFixed(5)),
                 rsi:
-                  Number(
-                    rsi.toFixed(2)
-                  )
+                  Number(rsi.toFixed(2))
               };
 
             } catch (e) {
 
-              console.log(
-                "Erro:",
-                par
-              );
+              console.log("Erro:", par);
 
               return null;
             }
@@ -268,13 +276,54 @@ jobs:
               return;
             }
 
-            const sinal = {
+            
+            const historico = await db
+              .collection("historico")
+              .where("par", "==", melhor.par)
+              .where("direcao", "==", melhor.direcao)
+              .limit(20)
+              .get();
+
+            let bloqueado = false;
+
+            const agora = Date.now();
+
+            historico.forEach(doc => {
+
+              const dados = doc.data();
+
+              if (!dados.timestamp)
+                return;
+
+              const ultimo =
+                dados.timestamp.toDate().getTime();
+
+              const minutos =
+                (agora - ultimo) / 60000;
+
+              if (minutos < COOLDOWN_MINUTOS)
+                bloqueado = true;
+
+            });
+
+            if (bloqueado) {
+
+              console.log(
+                `Cooldown ativo: ${melhor.par} ${melhor.direcao}`
+              );
+
+              return;
+            }
+
+const sinal = {
               ...melhor,
               horario:
                 new Date()
                 .toLocaleTimeString(
                   "pt-BR"
                 ),
+              timestamp:
+                admin.firestore.Timestamp.now(),
               modo: "EXPERT",
               origem: "scanner"
             };
