@@ -54,8 +54,6 @@ jobs:
 
           const COOLDOWN_MINUTOS = 30;
 
-          const COOLDOWN_MINUTOS = 30;
-
           const apiKeys = [
             process.env.API_KEY_1,
             process.env.API_KEY_2,
@@ -306,29 +304,30 @@ jobs:
 
             if (bloqueado) {
 
-              console.log(
-                `Cooldown ativo: ${melhor.par} ${melhor.direcao}`
-              );
+  console.log(
+    `Cooldown ativo: ${melhor.par} ${melhor.direcao}`
+  );
 
-              return;
-            }
+  return;
+
+}
 
 const sinal = {
-              ...melhor,
-              horario:
-                new Date()
-                .toLocaleTimeString(
-                  "pt-BR"
-                ),
-              timestamp:
-                admin.firestore.Timestamp.now(),
-              modo: "EXPERT",
-              origem: "scanner"
-            };
+  ...melhor,
+  horario:
+    new Date()
+    .toLocaleTimeString(
+      "pt-BR"
+    ),
+  timestamp:
+    admin.firestore.Timestamp.now(),
+  modo: "EXPERT",
+  origem: "scanner"
+};
 
-            await db
-              .collection("historico")
-              .add(sinal);
+await db
+  .collection("historico")
+  .add(sinal);
 
             await db
               .collection("scanner")
