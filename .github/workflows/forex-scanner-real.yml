@@ -289,7 +289,6 @@ jobs:
 
               if (
                 dados.par !== melhor.par ||
-                dados.direcao !== melhor.direcao ||
                 !dados.timestamp
               ) return;
 
