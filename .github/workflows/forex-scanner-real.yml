@@ -272,12 +272,11 @@ jobs:
               return;
             }
 
-            
+
             const historico = await db
               .collection("historico")
-              .where("par", "==", melhor.par)
-              .where("direcao", "==", melhor.direcao)
-              .limit(20)
+              .orderBy("timestamp", "desc")
+              .limit(50)
               .get();
 
             let bloqueado = false;
@@ -288,8 +287,11 @@ jobs:
 
               const dados = doc.data();
 
-              if (!dados.timestamp)
-                return;
+              if (
+                dados.par !== melhor.par ||
+                dados.direcao !== melhor.direcao ||
+                !dados.timestamp
+              ) return;
 
               const ultimo =
                 dados.timestamp.toDate().getTime();
