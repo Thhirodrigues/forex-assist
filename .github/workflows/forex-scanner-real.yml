@@ -66,6 +66,24 @@ jobs:
             ];
           }
 
+          function normalizarPar(par) {
+
+            if (!par) return "";
+
+            if (par.includes("/"))
+              return par;
+
+            if (par.length === 6) {
+              return (
+                par.substring(0, 3) +
+                "/" +
+                par.substring(3, 6)
+              );
+            }
+
+            return par;
+          }
+
           const principais = [
             "EUR/USD",
             "GBP/USD",
@@ -193,12 +211,14 @@ jobs:
               qualidade += Math.min(
                 15,
                 Math.round(
-                  Math.abs(ema21 - ema21Anterior) * 10000
+                  Math.abs(
+                    ema21 - ema21Anterior
+                  ) * 10000
                 )
               );
 
               return {
-                par,
+                par: normalizarPar(par),
                 direcao,
                 qualidade,
                 ema9:
@@ -213,7 +233,8 @@ jobs:
 
               console.log(
                 "Erro:",
-                par
+                par,
+                e.message
               );
 
               return null;
@@ -272,11 +293,10 @@ jobs:
               return;
             }
 
-
             const historico = await db
               .collection("historico")
               .orderBy("timestamp", "desc")
-              .limit(50)
+              .limit(100)
               .get();
 
             let bloqueado = false;
@@ -287,29 +307,45 @@ jobs:
 
               const dados = doc.data();
 
+              const parHistorico =
+                normalizarPar(
+                  dados.par
+                );
+
               if (
-                dados.par !== melhor.par ||
+                parHistorico !== melhor.par ||
                 !dados.timestamp
               ) return;
 
               const ultimo =
-                dados.timestamp.toDate().getTime();
+                dados.timestamp
+                  .toDate()
+                  .getTime();
 
               const minutos =
                 (agora - ultimo) / 60000;
 
-              if (minutos < COOLDOWN_MINUTOS)
+              console.log(
+                "Cooldown check:",
+                parHistorico,
+                minutos.toFixed(1),
+                "min"
+              );
+
+              if (
+                minutos <
+                COOLDOWN_MINUTOS
+              ) {
                 bloqueado = true;
+              }
 
             });
 
             if (bloqueado) {
 
               console.log(
-                "Cooldown ativo: " +
-                melhor.par +
-                " " +
-                melhor.direcao
+                "Cooldown ativo:",
+                melhor.par
               );
 
               return;
@@ -321,7 +357,11 @@ jobs:
               horario:
                 new Date()
                 .toLocaleTimeString(
-                  "pt-BR"
+                  "pt-BR",
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  }
                 ),
               timestamp:
                 admin.firestore.Timestamp.now(),
@@ -361,4 +401,3 @@ jobs:
           EOF
 
           node scanner.js
-          
