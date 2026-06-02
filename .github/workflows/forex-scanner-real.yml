@@ -304,19 +304,19 @@ jobs:
 
             if (bloqueado) {
 
-  console.log(
-  "Cooldown ativo: " +
-  melhor.par +
-  " " +
-  melhor.direcao
-);
+              console.log(
+                "Cooldown ativo: " +
+                melhor.par +
+                " " +
+                melhor.direcao
+              );
 
-  return;
+              return;
 
-}
+            }
 
-const sinal = {
-  ...melhor,
+            const sinal = {
+              ...melhor,
   horario:
     new Date()
     .toLocaleTimeString(
