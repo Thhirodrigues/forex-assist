@@ -305,8 +305,11 @@ jobs:
             if (bloqueado) {
 
   console.log(
-    `Cooldown ativo: ${melhor.par} ${melhor.direcao}`
-  );
+  "Cooldown ativo: " +
+  melhor.par +
+  " " +
+  melhor.direcao
+);
 
   return;
 
