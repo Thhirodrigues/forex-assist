@@ -54,6 +54,8 @@ jobs:
 
           const COOLDOWN_MINUTOS = 30;
 
+          const COOLDOWN_MINUTOS = 30;
+
           const apiKeys = [
             process.env.API_KEY_1,
             process.env.API_KEY_2,
@@ -188,21 +190,14 @@ jobs:
               if (!direcao)
                 return null;
 
-              let qualidade = 50;
+              let qualidade = 85;
 
-              qualidade += 20;
-              qualidade += 15;
-
-              const tendencia =
-                Math.abs(
-                  ema21 - ema21Anterior
-                ) * 10000;
-
-              qualidade +=
-                Math.min(
-                  20,
-                  Math.round(tendencia)
-                );
+              qualidade += Math.min(
+                15,
+                Math.round(
+                  Math.abs(ema21 - ema21Anterior) * 10000
+                )
+              );
 
               return {
                 par,
@@ -218,7 +213,10 @@ jobs:
 
             } catch (e) {
 
-              console.log("Erro:", par);
+              console.log(
+                "Erro:",
+                par
+              );
 
               return null;
             }
