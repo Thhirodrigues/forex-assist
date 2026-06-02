@@ -173,9 +173,13 @@ jobs:
               if (rsi < 45)
                 qualidade += 15;
 
+              const tendencia =
+                Math.abs(ema9 - ema21) * 10000;
+
               qualidade +=
-                Math.floor(
-                  Math.random() * 15
+                Math.min(
+                  15,
+                  Math.round(tendencia)
                 );
 
               const direcao =
