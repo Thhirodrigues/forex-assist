@@ -62,12 +62,12 @@ setInterval(async () => {
     const dados = doc.data();
 
     statusEl.innerHTML =
-      dados.ativo
+      dados?.ativo
         ? "🟢 Scanner Online"
         : "🔴 Scanner aguardando início";
 
     analiseEl.innerHTML =
-      dados.ultimaAnalise ||
+      dados?.ultimaAnalise ||
       "Nenhuma análise executada.";
 
   } catch (erro) {
@@ -81,74 +81,138 @@ setInterval(async () => {
 
 }, 2000);
 
-document.addEventListener("click", async (e) => {
+async function scannerLoop() {
 
-  if (e.target.id === "startScanner") {
+  try {
 
-    try {
+    const statusDoc = await db
+      .collection("scanner")
+      .doc("status")
+      .get();
 
-      await db
-        .collection("scanner")
-        .doc("status")
-        .set({
-          ativo: true
-        }, {
-          merge: true
-        });
+    const status =
+      statusDoc.data();
 
-    } catch (erro) {
-
-      console.log(
-        "Erro Firebase:",
-        erro
-      );
-
+    if (!status?.ativo) {
+      return;
     }
 
-    app.render();
+    const pares = [
+      "EUR/USD",
+      "GBP/USD",
+      "USD/JPY",
+      "AUD/USD",
+      "USD/CAD",
+      "EUR/JPY"
+    ];
 
-    setTimeout(async () => {
+    const direcoes = [
+      "CALL",
+      "PUT"
+    ];
 
-      try {
+    const sinal = {
 
-        const pares = [
-          "EUR/USD",
-          "GBP/USD",
-          "USD/JPY",
-          "AUD/USD",
-          "USD/CAD",
-          "EUR/JPY"
-        ];
+      par: pares[
+        Math.floor(
+          Math.random() *
+          pares.length
+        )
+      ],
 
-        const direcoes = [
-          "CALL",
-          "PUT"
-        ];
+      direcao: direcoes[
+        Math.floor(
+          Math.random() *
+          direcoes.length
+        )
+      ],
 
-        const sinal = {
+      qualidade:
+        Math.floor(
+          Math.random() * 11
+        ) + 85,
 
-          par: pares[
-            Math.floor(
-              Math.random() *
-              pares.length
-            )
-          ],
+      modo: "EXPERT",
 
-          direcao: direcoes[
-            Math.floor(
-              Math.random() *
-              direcoes.length
-            )
-          ],
+      origem: "scanner",
 
-          qualidade:
-            Math.floor(
-              Math.random() * 11
-            ) + 85,
+      horario:
+        new Date()
+        .toLocaleTimeString(
+          "pt-BR",
+          {
+            hour: "2-digit",
+            minute: "2-digit"
+          }
+        ),
+
+      timestamp:
+        firebase.firestore
+          .FieldValue
+          .serverTimestamp()
+
+    };
+
+    const historico = await db
+      .collection("historico")
+      .where(
+        "par",
+        "==",
+        sinal.par
+      )
+      .where(
+        "direcao",
+        "==",
+        sinal.direcao
+      )
+      .get();
+
+    let bloqueado = false;
+
+    const agora =
+      Date.now();
+
+    historico.forEach(doc => {
+
+      const dados =
+        doc.data();
+
+      if (!dados.timestamp) return;
+
+      const ultimo =
+        dados.timestamp
+          .toDate()
+          .getTime();
+
+      const minutos =
+        (
+          agora -
+          ultimo
+        ) / 60000;
+
+      if (minutos < 30) {
+        bloqueado = true;
+      }
+
+    });
+
+    if (bloqueado) {
+
+      await db
+        .collection("historico")
+        .add({
+
+          par: sinal.par,
+
+          direcao: sinal.direcao,
+
+          qualidade: 0,
 
           modo: "EXPERT",
 
-          origem: "scanner",
+          origem: "cooldown",
+
+          status: "COOLDOWN",
 
           horario:
             new Date()
@@ -165,114 +229,100 @@ document.addEventListener("click", async (e) => {
               .FieldValue
               .serverTimestamp()
 
-        };
+        });
 
-        const historico = await db
-          .collection("historico")
-          .where(
-            "par",
-            "==",
-            sinal.par
-          )
-          .where(
-            "direcao",
-            "==",
-            sinal.direcao
-          )
-          .get();
+      await db
+        .collection("scanner")
+        .doc("status")
+        .update({
 
-        let bloqueado = false;
-
-        const agora =
-          Date.now();
-
-        historico.forEach(doc => {
-
-          const dados =
-            doc.data();
-
-          if (
-            !dados.timestamp
-          ) return;
-
-          const ultimo =
-            dados.timestamp
-              .toDate()
-              .getTime();
-
-          const minutos =
-            (
-              agora -
-              ultimo
-            ) / 60000;
-
-          if (
-            minutos < 30
-          ) {
-            bloqueado = true;
-          }
+          ultimaAnalise:
+            `🚫 Cooldown ${sinal.par} ${sinal.direcao}`
 
         });
 
-        if (
-          bloqueado
-        ) {
+      setTimeout(
+        scannerLoop,
+        15000
+      );
 
-          await db
-            .collection("scanner")
-            .doc("status")
-            .update({
+      return;
 
-              ultimaAnalise:
-                `Cooldown ativo: ${sinal.par} ${sinal.direcao}`
+    }
 
-            });
+    await db
+      .collection("historico")
+      .add(sinal);
 
-          return;
-
-        }
-
-        await db
-          .collection("historico")
-          .add(sinal);
-
-        const statusDoc =
-          await db
-            .collection("scanner")
-            .doc("status")
-            .get();
-
-        const statusAtual =
-          statusDoc.data();
-
+    const statusAtual =
+      (
         await db
           .collection("scanner")
           .doc("status")
-          .update({
+          .get()
+      ).data();
 
-            sinaisHoje:
-              (
-                statusAtual.sinaisHoje || 0
-              ) + 1,
+    await db
+      .collection("scanner")
+      .doc("status")
+      .update({
 
-            ultimoSinal:
-              `${sinal.par} ${sinal.direcao} ${sinal.qualidade}%`,
+        sinaisHoje:
+          (
+            statusAtual.sinaisHoje || 0
+          ) + 1,
 
-            ultimaAnalise:
-              `Sinal encontrado em ${sinal.par}`
+        ultimoSinal:
+          `${sinal.par} ${sinal.direcao} ${sinal.qualidade}%`,
 
-          });
+        ultimaAnalise:
+          `Sinal encontrado em ${sinal.par}`
 
-      } catch (erro) {
+      });
 
-        console.log(
-          "Erro criando sinal:",
-          erro
-        );
+  } catch (erro) {
 
-      }
+    console.log(
+      "Erro criando sinal:",
+      erro
+    );
 
-    }, 15000);
+  }
+
+  setTimeout(
+    scannerLoop,
+    15000
+  );
+
+}
+
+document.addEventListener("click", async (e) => {
+
+  if (e.target.id === "startScanner") {
+
+    try {
+
+      await db
+        .collection("scanner")
+        .doc("status")
+        .set({
+          ativo: true
+        }, {
+          merge: true
+        });
+
+      scannerLoop();
+
+    } catch (erro) {
+
+      console.log(
+        "Erro Firebase:",
+        erro
+      );
+
+    }
+
+    app.render();
 
   }
 
