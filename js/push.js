@@ -22,23 +22,23 @@ async function iniciarPush() {
     console.log(
       "SW registrado"
     );
+
     await db
-  .collection("scanner")
-  .doc("status")
-  .set({
+      .collection("scanner")
+      .doc("status")
+      .set({
 
-    debugMessaging:
-      typeof firebase.messaging
-     debugMessaging:
-  typeof firebase.messaging,
+        debugMessaging:
+          typeof firebase.messaging,
 
-firebaseKeys:
-  Object.keys(firebase)
-    .join(", ")
-  }, {
-    merge: true
-  });
-    
+        firebaseKeys:
+          Object.keys(firebase)
+            .join(", ")
+
+      }, {
+        merge: true
+      });
+
     const messaging =
       firebase.messaging();
 
