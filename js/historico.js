@@ -35,30 +35,63 @@ setInterval(async () => {
 
       const sinal = doc.data();
 
-      html += `
-        <div class="list-item">
+      const isCooldown =
+        sinal.status === "COOLDOWN" ||
+        sinal.origem === "cooldown";
 
-          <strong>
+      if (isCooldown) {
+
+        html += `
+          <div class="list-item">
+
+            <strong>
+              🚫 COOLDOWN
+            </strong>
+
+            <br>
+
             ${sinal.par || "-"}
-          </strong>
 
-          <br>
+            <br>
 
-          ${sinal.direcao || "-"} |
-          ${sinal.qualidade || "-"}%
+            ${sinal.direcao || "-"}
 
-          <br>
+            <br>
 
-          Modo:
-          ${sinal.modo || "EXPERT"}
+            Horário:
+            ${sinal.horario || "--:--"}
 
-          <br>
+          </div>
+        `;
 
-          Horário:
-          ${sinal.horario || "--:--"}
+      } else {
 
-        </div>
-      `;
+        html += `
+          <div class="list-item">
+
+            <strong>
+              ${sinal.par || "-"}
+            </strong>
+
+            <br>
+
+            ${sinal.direcao || "-"} |
+            ${sinal.qualidade ?? "-"}%
+
+            <br>
+
+            Modo:
+            ${sinal.modo || "EXPERT"}
+
+            <br>
+
+            Horário:
+            ${sinal.horario || "--:--"}
+
+          </div>
+        `;
+
+      }
 
     });
 
