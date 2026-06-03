@@ -19,6 +19,11 @@ function dashboardView() {
     </div>
 
     <div class="card">
+        <div class="card-title">Cooldowns Hoje</div>
+        <div id="cooldownsHoje" class="big-number">0</div>
+    </div>
+
+    <div class="card">
         <div class="card-title">Qualidade do Mercado</div>
         <div id="ultimaAnalise" class="signal wait">
             Aguardando análise...
@@ -43,23 +48,32 @@ function dashboardView() {
 
 setInterval(async () => {
 
-    const status = document.getElementById("scannerStatus");
+    const status =
+        document.getElementById(
+            "scannerStatus"
+        );
 
     if (!status) return;
 
     try {
 
-        document.getElementById("debugFirebase").innerHTML =
+        document.getElementById(
+            "debugFirebase"
+        ).innerHTML =
             "db encontrado";
 
-        const doc = await window.db
-            .collection("scanner")
-            .doc("status")
-            .get();
+        const doc =
+            await window.db
+                .collection("scanner")
+                .doc("status")
+                .get();
 
-        const dados = doc.data();
+        const dados =
+            doc.data() || {};
 
-        document.getElementById("debugFirebase").innerHTML =
+        document.getElementById(
+            "debugFirebase"
+        ).innerHTML =
             "Firestore conectado";
 
         status.innerHTML =
@@ -67,18 +81,33 @@ setInterval(async () => {
                 ? "🟢 Online"
                 : "🔴 Parado";
 
-        document.getElementById("sinaisHoje").innerHTML =
+        document.getElementById(
+            "sinaisHoje"
+        ).innerHTML =
             dados.sinaisHoje || 0;
 
-        document.getElementById("ultimaAnalise").innerHTML =
-            dados.ultimaAnalise || "Aguardando análise";
+        document.getElementById(
+            "cooldownsHoje"
+        ).innerHTML =
+            dados.cooldownsHoje || 0;
 
-        document.getElementById("ultimoSinal").innerHTML =
-            dados.ultimoSinal || "Nenhum sinal";
+        document.getElementById(
+            "ultimaAnalise"
+        ).innerHTML =
+            dados.ultimaAnalise ||
+            "Aguardando análise";
+
+        document.getElementById(
+            "ultimoSinal"
+        ).innerHTML =
+            dados.ultimoSinal ||
+            "Nenhum sinal";
 
     } catch (erro) {
 
-        document.getElementById("debugFirebase").innerHTML =
+        document.getElementById(
+            "debugFirebase"
+        ).innerHTML =
             erro.message;
 
     }
