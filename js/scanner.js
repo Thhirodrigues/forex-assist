@@ -237,10 +237,23 @@ async function scannerLoop() {
 
         });
 
+      const statusAtual =
+        (
+          await db
+            .collection("scanner")
+            .doc("status")
+            .get()
+        ).data();
+
       await db
         .collection("scanner")
         .doc("status")
         .update({
+
+          cooldownsHoje:
+            (
+              statusAtual.cooldownsHoje || 0
+            ) + 1,
 
           ultimaAnalise:
             `🚫 Cooldown ${sinal.par} ${sinal.direcao}`
@@ -277,6 +290,11 @@ async function scannerLoop() {
           (
             statusAtual.sinaisHoje || 0
           ) + 1,
+
+        cooldownsHoje:
+          (
+            statusAtual.cooldownsHoje || 0
+          ),
 
         ultimoSinal:
           `${sinal.par} ${sinal.direcao} ${sinal.qualidade}%`,
