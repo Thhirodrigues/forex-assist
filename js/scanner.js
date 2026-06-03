@@ -83,9 +83,45 @@ setInterval(async () => {
 
 let scannerRodando = false;
 
+async function verificarResetDiario() {
+
+  const hoje =
+    new Date()
+      .toLocaleDateString("pt-BR");
+
+  const statusRef =
+    db.collection("scanner")
+      .doc("status");
+
+  const statusDoc =
+    await statusRef.get();
+
+  const status =
+    statusDoc.data() || {};
+
+  if (status.ultimaData !== hoje) {
+
+    await statusRef.set({
+
+      sinaisHoje: 0,
+
+      cooldownsHoje: 0,
+
+      ultimaData: hoje
+
+    }, {
+      merge: true
+    });
+
+  }
+
+}
+
 async function scannerLoop() {
 
   try {
+
+    await verificarResetDiario();
 
     const statusDoc = await db
       .collection("scanner")
@@ -197,7 +233,9 @@ async function scannerLoop() {
         ) / 60000;
 
       if (minutos < 30) {
+
         bloqueado = true;
+
       }
 
     });
@@ -300,7 +338,11 @@ async function scannerLoop() {
           `${sinal.par} ${sinal.direcao} ${sinal.qualidade}%`,
 
         ultimaAnalise:
-          `Sinal encontrado em ${sinal.par}`
+          `Sinal encontrado em ${sinal.par}`,
+
+        ultimaData:
+          new Date()
+            .toLocaleDateString("pt-BR")
 
       });
 
@@ -326,13 +368,19 @@ document.addEventListener("click", async (e) => {
 
     try {
 
+      await verificarResetDiario();
+
       await db
         .collection("scanner")
         .doc("status")
         .set({
+
           ativo: true
+
         }, {
+
           merge: true
+
         });
 
       if (!scannerRodando) {
@@ -366,9 +414,13 @@ document.addEventListener("click", async (e) => {
         .collection("scanner")
         .doc("status")
         .set({
+
           ativo: false
+
         }, {
+
           merge: true
+
         });
 
     } catch (erro) {
