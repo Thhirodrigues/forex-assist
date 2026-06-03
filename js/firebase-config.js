@@ -12,3 +12,11 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 window.db = db;
+
+window.firebaseDebug = {
+    sdkVersion: firebase.SDK_VERSION,
+    keys: Object.keys(firebase),
+    messagingType: typeof firebase.messaging,
+    firestoreType: typeof firebase.firestore,
+    appType: typeof firebase.app
+};
