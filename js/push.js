@@ -23,12 +23,70 @@ async function iniciarPush() {
       "SW registrado"
     );
 
+    const messaging =
+      firebase.messaging();
+
+    const token =
+      await messaging.getToken({
+
+        vapidKey:
+          VAPID_KEY,
+
+        serviceWorkerRegistration:
+          registration
+
+      });
+
+    if (!token) {
+
+      console.log(
+        "Token não gerado"
+      );
+
+      return;
+
+    }
+
+    console.log(
+      "Token FCM:",
+      token
+    );
+
+    await db
+      .collection("tokens")
+      .doc(token)
+      .set({
+
+        token,
+
+        ativo: true,
+
+        dispositivo:
+          navigator.userAgent,
+
+        criadoEm:
+          firebase.firestore
+            .FieldValue
+            .serverTimestamp()
+
+      }, {
+        merge: true
+      });
+
     await db
       .collection("scanner")
       .doc("status")
       .set({
+
         pushAtivo: true,
-        vapidConfigurado: true
+
+        vapidConfigurado: true,
+
+        tokenRegistrado: true,
+
+        ultimoToken:
+          token.substring(0, 20)
+
       }, {
         merge: true
       });
@@ -39,6 +97,18 @@ async function iniciarPush() {
       "Erro Push:",
       erro
     );
+
+    await db
+      .collection("scanner")
+      .doc("status")
+      .set({
+
+        erroPush:
+          erro.message
+
+      }, {
+        merge: true
+      });
 
   }
 
