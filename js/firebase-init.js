@@ -1,5 +1,8 @@
-firebase.initializeApp(window.firebaseConfig);
+firebase.initializeApp(
+  window.firebaseConfig
+);
 
-const db = firebase.firestore();
+const db =
+  firebase.firestore();
 
 window.db = db;
