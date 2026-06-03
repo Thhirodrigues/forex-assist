@@ -81,6 +81,8 @@ setInterval(async () => {
 
 }, 2000);
 
+let scannerRodando = false;
+
 async function scannerLoop() {
 
   try {
@@ -94,7 +96,11 @@ async function scannerLoop() {
       statusDoc.data();
 
     if (!status?.ativo) {
+
+      scannerRodando = false;
+
       return;
+
     }
 
     const pares = [
@@ -311,7 +317,13 @@ document.addEventListener("click", async (e) => {
           merge: true
         });
 
-      scannerLoop();
+      if (!scannerRodando) {
+
+        scannerRodando = true;
+
+        scannerLoop();
+
+      }
 
     } catch (erro) {
 
@@ -329,6 +341,8 @@ document.addEventListener("click", async (e) => {
   if (e.target.id === "stopScanner") {
 
     try {
+
+      scannerRodando = false;
 
       await db
         .collection("scanner")
