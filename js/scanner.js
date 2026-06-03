@@ -107,92 +107,172 @@ document.addEventListener("click", async (e) => {
 
     app.render();
 
-setTimeout(async () => {
+    setTimeout(async () => {
 
-  try {
+      try {
 
-const pares = [
-  "EUR/USD",
-  "GBP/USD",
-  "USD/JPY",
-  "AUD/USD",
-  "USD/CAD",
-  "EUR/JPY"
-];
+        const pares = [
+          "EUR/USD",
+          "GBP/USD",
+          "USD/JPY",
+          "AUD/USD",
+          "USD/CAD",
+          "EUR/JPY"
+        ];
 
-const direcoes = [
-  "CALL",
-  "PUT"
-];
+        const direcoes = [
+          "CALL",
+          "PUT"
+        ];
 
-const qualidade =
-  Math.floor(Math.random() * 11) + 85;
+        const sinal = {
 
-const sinal = {
-  par: pares[
-    Math.floor(Math.random() * pares.length)
-  ],
+          par: pares[
+            Math.floor(
+              Math.random() *
+              pares.length
+            )
+          ],
 
-  direcao: direcoes[
-    Math.floor(Math.random() * direcoes.length)
-  ],
+          direcao: direcoes[
+            Math.floor(
+              Math.random() *
+              direcoes.length
+            )
+          ],
 
-  qualidade: qualidade,
+          qualidade:
+            Math.floor(
+              Math.random() * 11
+            ) + 85,
 
-  modo: "EXPERT",
+          modo: "EXPERT",
 
-  origem: "scanner",
+          origem: "scanner",
 
-  horario: new Date().toLocaleTimeString(
-    "pt-BR",
-    {
-      hour: "2-digit",
-      minute: "2-digit"
-    }
-  ),
+          horario:
+            new Date()
+            .toLocaleTimeString(
+              "pt-BR",
+              {
+                hour: "2-digit",
+                minute: "2-digit"
+              }
+            ),
 
-  timestamp:
-    firebase.firestore.FieldValue.serverTimestamp()
-};
+          timestamp:
+            firebase.firestore
+              .FieldValue
+              .serverTimestamp()
 
-    await db
-      .collection("historico")
-      .add(sinal);
+        };
 
-    const statusDoc = await db
-      .collection("scanner")
-      .doc("status")
-      .get();
+        const historico = await db
+          .collection("historico")
+          .where(
+            "par",
+            "==",
+            sinal.par
+          )
+          .where(
+            "direcao",
+            "==",
+            sinal.direcao
+          )
+          .get();
 
-    const statusAtual =
-      statusDoc.data();
+        let bloqueado = false;
 
-    await db
-      .collection("scanner")
-      .doc("status")
-      .update({
+        const agora =
+          Date.now();
 
-        sinaisHoje:
-          (statusAtual.sinaisHoje || 0) + 1,
+        historico.forEach(doc => {
 
-        ultimoSinal:
-          `${sinal.par} ${sinal.direcao} ${sinal.qualidade}%`,
+          const dados =
+            doc.data();
 
-        ultimaAnalise:
-          `Sinal encontrado em ${sinal.par}`
+          if (
+            !dados.timestamp
+          ) return;
 
-      });
+          const ultimo =
+            dados.timestamp
+              .toDate()
+              .getTime();
 
-  } catch (erro) {
+          const minutos =
+            (
+              agora -
+              ultimo
+            ) / 60000;
 
-    console.log(
-      "Erro criando sinal:",
-      erro
-    );
+          if (
+            minutos < 30
+          ) {
+            bloqueado = true;
+          }
 
-  }
+        });
 
-}, 15000);
+        if (
+          bloqueado
+        ) {
+
+          await db
+            .collection("scanner")
+            .doc("status")
+            .update({
+
+              ultimaAnalise:
+                `Cooldown ativo: ${sinal.par} ${sinal.direcao}`
+
+            });
+
+          return;
+
+        }
+
+        await db
+          .collection("historico")
+          .add(sinal);
+
+        const statusDoc =
+          await db
+            .collection("scanner")
+            .doc("status")
+            .get();
+
+        const statusAtual =
+          statusDoc.data();
+
+        await db
+          .collection("scanner")
+          .doc("status")
+          .update({
+
+            sinaisHoje:
+              (
+                statusAtual.sinaisHoje || 0
+              ) + 1,
+
+            ultimoSinal:
+              `${sinal.par} ${sinal.direcao} ${sinal.qualidade}%`,
+
+            ultimaAnalise:
+              `Sinal encontrado em ${sinal.par}`
+
+          });
+
+      } catch (erro) {
+
+        console.log(
+          "Erro criando sinal:",
+          erro
+        );
+
+      }
+
+    }, 15000);
 
   }
 
