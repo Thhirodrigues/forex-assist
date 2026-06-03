@@ -29,7 +29,12 @@ async function iniciarPush() {
 
     debugMessaging:
       typeof firebase.messaging
+     debugMessaging:
+  typeof firebase.messaging,
 
+firebaseKeys:
+  Object.keys(firebase)
+    .join(", ")
   }, {
     merge: true
   });
