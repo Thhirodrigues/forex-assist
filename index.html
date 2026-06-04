@@ -23,19 +23,18 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
-console.log(
-  "ANTES MESSAGING",
-  Object.keys(firebase)
-);
+window.firebaseDebugAntes =
+  Object.keys(firebase);
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 
 <script>
-console.log(
-  "DEPOIS MESSAGING",
-  Object.keys(firebase)
-);
+window.firebaseDebugDepois =
+  Object.keys(firebase);
+
+window.firebaseMessagingTipo =
+  typeof firebase.messaging;
 </script>
 
 <script src="js/firebase-config.js"></script>
