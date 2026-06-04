@@ -1,5 +1,5 @@
 const firebaseConfig = {
-    apiKey: "AIzaSyA6u3X0ClWLL4s6M8lxOdA_82p-AOWRBfE",
+    apiKey: "AIzaSyA6u3X0ClWLL4s6M8lx0dA_82p-AOWRBfE",
     authDomain: "forex-assist.firebaseapp.com",
     projectId: "forex-assist",
     storageBucket: "forex-assist.firebasestorage.app",
