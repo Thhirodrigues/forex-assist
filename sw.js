@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  "forex-assist-v3";
+  "forex-assist-v4";
 
 const ASSETS = [
   "./",
@@ -87,23 +87,36 @@ self.addEventListener(
   "push",
   event => {
 
-    let payload = {};
+    let title =
+      "Forex Assist";
 
-    try {
+    let body =
+      "Novo sinal disponível";
 
-      payload =
-        event.data
-          ? event.data.json()
-          : {};
+    if (event.data) {
 
-    } catch {
+      try {
 
-      payload = {
-        texto:
-          event.data
-            ? event.data.text()
-            : "sem dados"
-      };
+        const payload =
+          event.data.json();
+
+        title =
+          payload.notification?.title ||
+          payload.title ||
+          title;
+
+        body =
+          payload.notification?.body ||
+          payload.body ||
+          body;
+
+      } catch {
+
+        body =
+          event.data.text() ||
+          body;
+
+      }
 
     }
 
@@ -112,17 +125,10 @@ self.addEventListener(
       self.registration
         .showNotification(
 
-          "DEBUG PUSH",
+          title,
 
           {
-
-            body:
-              JSON.stringify(
-                payload
-              ).substring(
-                0,
-                250
-              ),
+            body,
 
             icon:
               "./icon-512.png",
@@ -133,7 +139,6 @@ self.addEventListener(
             data: {
               url: "./"
             }
-
           }
 
         )
