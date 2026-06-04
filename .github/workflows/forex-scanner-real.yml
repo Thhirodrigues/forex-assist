@@ -25,7 +25,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm install firebase-admin axios
+          npm install firebase-admin@latest axios
 
       - name: Create Firebase Key
         run: |
@@ -64,24 +64,6 @@ jobs:
             return apiKeys[
               Math.floor(Math.random() * apiKeys.length)
             ];
-          }
-
-          function normalizarPar(par) {
-
-            if (!par) return "";
-
-            if (par.includes("/"))
-              return par;
-
-            if (par.length === 6) {
-              return (
-                par.substring(0, 3) +
-                "/" +
-                par.substring(3, 6)
-              );
-            }
-
-            return par;
           }
 
           const principais = [
@@ -211,14 +193,12 @@ jobs:
               qualidade += Math.min(
                 15,
                 Math.round(
-                  Math.abs(
-                    ema21 - ema21Anterior
-                  ) * 10000
+                  Math.abs(ema21 - ema21Anterior) * 10000
                 )
               );
 
               return {
-                par: normalizarPar(par),
+                par,
                 direcao,
                 qualidade,
                 ema9:
@@ -233,8 +213,7 @@ jobs:
 
               console.log(
                 "Erro:",
-                par,
-                e.message
+                par
               );
 
               return null;
@@ -293,10 +272,11 @@ jobs:
               return;
             }
 
+
             const historico = await db
               .collection("historico")
               .orderBy("timestamp", "desc")
-              .limit(100)
+              .limit(50)
               .get();
 
             let bloqueado = false;
@@ -307,45 +287,30 @@ jobs:
 
               const dados = doc.data();
 
-              const parHistorico =
-                normalizarPar(
-                  dados.par
-                );
-
               if (
-                parHistorico !== melhor.par ||
+                dados.par !== melhor.par ||
+                dados.direcao !== melhor.direcao ||
                 !dados.timestamp
               ) return;
 
               const ultimo =
-                dados.timestamp
-                  .toDate()
-                  .getTime();
+                dados.timestamp.toDate().getTime();
 
               const minutos =
                 (agora - ultimo) / 60000;
 
-              console.log(
-                "Cooldown check:",
-                parHistorico,
-                minutos.toFixed(1),
-                "min"
-              );
-
-              if (
-                minutos <
-                COOLDOWN_MINUTOS
-              ) {
+              if (minutos < COOLDOWN_MINUTOS)
                 bloqueado = true;
-              }
 
             });
 
             if (bloqueado) {
 
               console.log(
-                "Cooldown ativo:",
-                melhor.par
+                "Cooldown ativo: " +
+                melhor.par +
+                " " +
+                melhor.direcao
               );
 
               return;
@@ -357,11 +322,7 @@ jobs:
               horario:
                 new Date()
                 .toLocaleTimeString(
-                  "pt-BR",
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit"
-                  }
+                  "pt-BR"
                 ),
               timestamp:
                 admin.firestore.Timestamp.now(),
@@ -372,6 +333,61 @@ jobs:
             await db
               .collection("historico")
               .add(sinal);
+
+            const tokensSnapshot = await db
+              .collection("tokens")
+              .where("ativo", "==", true)
+              .get();
+
+            const tokens = [];
+
+            tokensSnapshot.forEach(doc => {
+
+              const dados = doc.data();
+
+              if (dados.token) {
+                tokens.push(dados.token);
+              }
+
+            });
+
+            if (tokens.length > 0) {
+
+              try {
+
+                const resultado =
+                  await admin.messaging()
+                    .sendEachForMulticast({
+
+                      tokens,
+
+                      notification: {
+                        title: "Forex Assist",
+                        body: `${sinal.par} ${sinal.direcao} ${sinal.qualidade}%`
+                      },
+
+                      data: {
+                        par: sinal.par,
+                        direcao: sinal.direcao,
+                        qualidade: String(sinal.qualidade)
+                      }
+
+                    });
+
+                console.log(
+                  `Push enviado: ${resultado.successCount}/${tokens.length}`
+                );
+
+              } catch (erro) {
+
+                console.log(
+                  "Erro FCM:",
+                  erro.message
+                );
+
+              }
+
+            }
 
             await db
               .collection("scanner")
@@ -401,3 +417,4 @@ jobs:
           EOF
 
           node scanner.js
+          
