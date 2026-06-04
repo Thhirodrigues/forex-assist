@@ -3,164 +3,218 @@ const VAPID_KEY =
 
 async function iniciarPush() {
 
-try {
+  try {
 
-if (!("serviceWorker" in navigator))
-  return;
+    const pushDebug = {
 
-const permission =
-  await Notification.requestPermission();
+      data:
+        new Date().toISOString(),
 
-if (permission !== "granted")
-  return;
+      sdkVersion:
+        firebase.SDK_VERSION,
 
-const registration =
-  await navigator.serviceWorker.register(
-    "./sw.js"
-  );
+      messagingType:
+        typeof firebase.messaging,
 
-await db
-  .collection("scanner")
-  .doc("status")
-  .set({
+      firestoreType:
+        typeof firebase.firestore,
 
-    debugMessaging:
-      typeof firebase.messaging,
+      appType:
+        typeof firebase.app,
 
-    firebaseKeys:
-      Object.keys(firebase)
-        .join(", "),
+      keysAntes:
+        window.firebaseDebugAntes || [],
 
-    firebaseVersion:
-      firebase.SDK_VERSION || "desconhecida",
+      keysDepois:
+        window.firebaseDebugDepois || [],
 
-    firebaseDefault:
-      typeof firebase.default,
+      messagingTipoJanela:
+        window.firebaseMessagingTipo || "indefinido",
 
-    firestoreExiste:
-      typeof firebase.firestore,
+      userAgent:
+        navigator.userAgent,
 
-    appExiste:
-      typeof firebase.app
+      url:
+        location.href
 
-  }, {
-    merge: true
-  });
+    };
 
-if (
-  typeof firebase.messaging !==
-  "function"
-) {
+    await db
+      .collection("scanner")
+      .doc("status")
+      .set({
 
-  await db
-    .collection("scanner")
-    .doc("status")
-    .set({
+        pushDebug
 
-      erroPush:
-        "firebase.messaging inexistente"
+      }, {
+        merge: true
+      });
 
-    }, {
-      merge: true
-    });
+    if (!("serviceWorker" in navigator)) {
 
-  return;
+      await db
+        .collection("scanner")
+        .doc("status")
+        .set({
 
-}
+          erroPush:
+            "serviceWorker inexistente"
 
-const messaging =
-  firebase.messaging();
+        }, {
+          merge: true
+        });
 
-const token =
-  await messaging.getToken({
+      return;
 
-    vapidKey:
-      VAPID_KEY,
+    }
 
-    serviceWorkerRegistration:
-      registration
+    const permission =
+      await Notification.requestPermission();
 
-  });
+    await db
+      .collection("scanner")
+      .doc("status")
+      .set({
 
-if (!token) {
+        permissaoPush:
+          permission
 
-  await db
-    .collection("scanner")
-    .doc("status")
-    .set({
+      }, {
+        merge: true
+      });
 
-      erroPush:
-        "token nao gerado"
+    if (permission !== "granted")
+      return;
 
-    }, {
-      merge: true
-    });
+    const registration =
+      await navigator.serviceWorker.register(
+        "./sw.js"
+      );
 
-  return;
+    await db
+      .collection("scanner")
+      .doc("status")
+      .set({
 
-}
+        serviceWorkerRegistrado:
+          true
 
-await db
-  .collection("tokens")
-  .doc(token)
-  .set({
+      }, {
+        merge: true
+      });
 
-    token,
+    if (
+      typeof firebase.messaging !==
+      "function"
+    ) {
 
-    ativo: true,
+      await db
+        .collection("scanner")
+        .doc("status")
+        .set({
 
-    dispositivo:
-      navigator.userAgent,
+          erroPush:
+            "firebase.messaging inexistente"
 
-    criadoEm:
-      firebase.firestore
-        .FieldValue
-        .serverTimestamp()
+        }, {
+          merge: true
+        });
 
-  }, {
-    merge: true
-  });
+      return;
 
-await db
-  .collection("scanner")
-  .doc("status")
-  .set({
+    }
 
-    pushAtivo: true,
+    const messaging =
+      firebase.messaging();
 
-    vapidConfigurado: true,
+    const token =
+      await messaging.getToken({
 
-    tokenRegistrado: true,
+        vapidKey:
+          VAPID_KEY,
 
-    ultimoToken:
-      token.substring(0, 20)
+        serviceWorkerRegistration:
+          registration
 
-  }, {
-    merge: true
-  });
+      });
 
-} catch (erro) {
+    if (!token) {
 
-await db
-  .collection("scanner")
-  .doc("status")
-  .set({
+      await db
+        .collection("scanner")
+        .doc("status")
+        .set({
 
-    erroPush:
-      erro.message,
+          erroPush:
+            "token nao gerado"
 
-    erroCompleto:
-      String(erro)
+        }, {
+          merge: true
+        });
 
-  }, {
-    merge: true
-  });
+      return;
 
-}
+    }
+
+    await db
+      .collection("tokens")
+      .doc(token)
+      .set({
+
+        token,
+
+        ativo: true,
+
+        dispositivo:
+          navigator.userAgent,
+
+        criadoEm:
+          firebase.firestore
+            .FieldValue
+            .serverTimestamp()
+
+      }, {
+        merge: true
+      });
+
+    await db
+      .collection("scanner")
+      .doc("status")
+      .set({
+
+        pushAtivo: true,
+
+        tokenRegistrado: true,
+
+        ultimoToken:
+          token.substring(0, 20)
+
+      }, {
+        merge: true
+      });
+
+  } catch (erro) {
+
+    await db
+      .collection("scanner")
+      .doc("status")
+      .set({
+
+        erroPush:
+          erro.message,
+
+        erroCompleto:
+          String(erro)
+
+      }, {
+        merge: true
+      });
+
+  }
 
 }
 
 window.addEventListener(
-"load",
-iniciarPush
+  "load",
+  iniciarPush
 );
