@@ -219,10 +219,26 @@ jobs:
               return null;
             }
           }
+async function executar() {
 
-          async function executar() {
+  const statusDoc = await db
+    .collection("scanner")
+    .doc("status")
+    .get();
 
-            let melhor = null;
+  const status = statusDoc.data() || {};
+
+  if (status.ativo === false) {
+
+    console.log(
+      "Scanner desativado pelo aplicativo"
+    );
+
+    return;
+
+  }
+
+  let melhor = null;
 
             for (const par of principais) {
 
@@ -390,12 +406,11 @@ jobs:
             }
 
             await db
-              .collection("scanner")
-              .doc("status")
-              .set({
-                ativo: true,
-                ultimaAnalise:
-                  sinal.par,
+  .collection("scanner")
+  .doc("status")
+  .set({
+    ultimaAnalise:
+      sinal.par,
                 ultimoSinal:
                   `${sinal.par} ${sinal.direcao}`,
                 sinaisHoje:
