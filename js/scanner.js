@@ -59,16 +59,21 @@ setInterval(async () => {
       .doc("status")
       .get();
 
-    const dados = doc.data();
+    const dados =
+      doc.data() || {};
 
     statusEl.innerHTML =
-      dados?.ativo
+      dados.ativo
         ? "🟢 Scanner Online"
-        : "🔴 Scanner aguardando início";
+        : "🔴 Scanner Parado";
 
-    analiseEl.innerHTML =
-      dados?.ultimaAnalise ||
-      "Nenhuma análise executada.";
+    if (analiseEl) {
+
+      analiseEl.innerHTML =
+        dados.ultimaAnalise ||
+        "Nenhuma análise executada.";
+
+    }
 
   } catch (erro) {
 
@@ -80,8 +85,6 @@ setInterval(async () => {
   }
 
 }, 2000);
-
-let scannerRodando = false;
 
 async function verificarResetDiario() {
 
@@ -117,251 +120,6 @@ async function verificarResetDiario() {
 
 }
 
-async function scannerLoop() {
-
-  try {
-
-    await verificarResetDiario();
-
-    const statusDoc = await db
-      .collection("scanner")
-      .doc("status")
-      .get();
-
-    const status =
-      statusDoc.data();
-
-    if (!status?.ativo) {
-
-      scannerRodando = false;
-
-      return;
-
-    }
-
-    const pares = [
-      "EUR/USD",
-      "GBP/USD",
-      "USD/JPY",
-      "AUD/USD",
-      "USD/CAD",
-      "EUR/JPY"
-    ];
-
-    const direcoes = [
-      "CALL",
-      "PUT"
-    ];
-
-    const sinal = {
-
-      par: pares[
-        Math.floor(
-          Math.random() *
-          pares.length
-        )
-      ],
-
-      direcao: direcoes[
-        Math.floor(
-          Math.random() *
-          direcoes.length
-        )
-      ],
-
-      qualidade:
-        Math.floor(
-          Math.random() * 11
-        ) + 85,
-
-      modo: "EXPERT",
-
-      origem: "scanner",
-
-      horario:
-        new Date()
-        .toLocaleTimeString(
-          "pt-BR",
-          {
-            hour: "2-digit",
-            minute: "2-digit"
-          }
-        ),
-
-      timestamp:
-        firebase.firestore
-          .FieldValue
-          .serverTimestamp()
-
-    };
-
-    const historico = await db
-      .collection("historico")
-      .where(
-        "par",
-        "==",
-        sinal.par
-      )
-      .where(
-        "direcao",
-        "==",
-        sinal.direcao
-      )
-      .get();
-
-    let bloqueado = false;
-
-    const agora =
-      Date.now();
-
-    historico.forEach(doc => {
-
-      const dados =
-        doc.data();
-
-      if (!dados.timestamp) return;
-
-      const ultimo =
-        dados.timestamp
-          .toDate()
-          .getTime();
-
-      const minutos =
-        (
-          agora -
-          ultimo
-        ) / 60000;
-
-      if (minutos < 30) {
-
-        bloqueado = true;
-
-      }
-
-    });
-
-    if (bloqueado) {
-
-      await db
-        .collection("historico")
-        .add({
-
-          par: sinal.par,
-
-          direcao: sinal.direcao,
-
-          qualidade: 0,
-
-          modo: "EXPERT",
-
-          origem: "cooldown",
-
-          status: "COOLDOWN",
-
-          horario:
-            new Date()
-            .toLocaleTimeString(
-              "pt-BR",
-              {
-                hour: "2-digit",
-                minute: "2-digit"
-              }
-            ),
-
-          timestamp:
-            firebase.firestore
-              .FieldValue
-              .serverTimestamp()
-
-        });
-
-      const statusAtual =
-        (
-          await db
-            .collection("scanner")
-            .doc("status")
-            .get()
-        ).data();
-
-      await db
-        .collection("scanner")
-        .doc("status")
-        .update({
-
-          cooldownsHoje:
-            (
-              statusAtual.cooldownsHoje || 0
-            ) + 1,
-
-          ultimaAnalise:
-            `🚫 Cooldown ${sinal.par} ${sinal.direcao}`
-
-        });
-
-      setTimeout(
-        scannerLoop,
-        15000
-      );
-
-      return;
-
-    }
-
-    await db
-      .collection("historico")
-      .add(sinal);
-
-    const statusAtual =
-      (
-        await db
-          .collection("scanner")
-          .doc("status")
-          .get()
-      ).data();
-
-    await db
-      .collection("scanner")
-      .doc("status")
-      .update({
-
-        sinaisHoje:
-          (
-            statusAtual.sinaisHoje || 0
-          ) + 1,
-
-        cooldownsHoje:
-          (
-            statusAtual.cooldownsHoje || 0
-          ),
-
-        ultimoSinal:
-          `${sinal.par} ${sinal.direcao} ${sinal.qualidade}%`,
-
-        ultimaAnalise:
-          `Sinal encontrado em ${sinal.par}`,
-
-        ultimaData:
-          new Date()
-            .toLocaleDateString("pt-BR")
-
-      });
-
-  } catch (erro) {
-
-    console.log(
-      "Erro criando sinal:",
-      erro
-    );
-
-  }
-
-  setTimeout(
-    scannerLoop,
-    15000
-  );
-
-}
-
 document.addEventListener("click", async (e) => {
 
   if (e.target.id === "startScanner") {
@@ -383,14 +141,6 @@ document.addEventListener("click", async (e) => {
 
         });
 
-      if (!scannerRodando) {
-
-        scannerRodando = true;
-
-        scannerLoop();
-
-      }
-
     } catch (erro) {
 
       console.log(
@@ -407,8 +157,6 @@ document.addEventListener("click", async (e) => {
   if (e.target.id === "stopScanner") {
 
     try {
-
-      scannerRodando = false;
 
       await db
         .collection("scanner")
