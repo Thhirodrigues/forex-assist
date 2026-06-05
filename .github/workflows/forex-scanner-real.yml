@@ -219,26 +219,26 @@ jobs:
               return null;
             }
           }
-async function executar() {
+               async function executar() {
 
-  const statusDoc = await db
-    .collection("scanner")
-    .doc("status")
-    .get();
+               const statusDoc = await db
+                                     .collection("scanner")
+                                     .doc("status")
+                                    .get();
 
-  const status = statusDoc.data() || {};
+               const status = statusDoc.data() || {};
 
-  if (status.ativo === false) {
+               if (status.ativo === false) {
 
-    console.log(
-      "Scanner desativado pelo aplicativo"
-    );
+              console.log(
+             "Scanner desativado pelo aplicativo"
+              );
 
-    return;
+             return;
 
-  }
+              }
 
-  let melhor = null;
+              let melhor = null;
 
             for (const par of principais) {
 
@@ -406,11 +406,11 @@ async function executar() {
             }
 
             await db
-  .collection("scanner")
-  .doc("status")
-  .set({
-    ultimaAnalise:
-      sinal.par,
+                              .collection("scanner")
+                              .doc("status")
+                              .set({
+           ultimaAnalise:
+          sinal.par,
                 ultimoSinal:
                   `${sinal.par} ${sinal.direcao}`,
                 sinaisHoje:
