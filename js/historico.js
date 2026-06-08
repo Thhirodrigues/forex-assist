@@ -54,7 +54,9 @@ setInterval(async () => {
 
             <br>
 
-            ${sinal.direcao || "-"}
+            ${(sinal.direcao || "-")
+  .replace("CALL", "🟢 COMPRA")
+  .replace("PUT", "🔴 VENDA")}
 
             <br>
 
@@ -75,8 +77,10 @@ setInterval(async () => {
 
             <br>
 
-            ${sinal.direcao || "-"} |
-            ${sinal.qualidade ?? "-"}%
+            ${(sinal.direcao || "-")
+  .replace("CALL", "🟢 COMPRA")
+  .replace("PUT", "🔴 VENDA")} |
+${sinal.qualidade ?? "-"}%
 
             <br>
 
