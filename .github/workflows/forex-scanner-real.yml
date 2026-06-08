@@ -3,6 +3,9 @@ name: Forex Scanner Real
 on:
   workflow_dispatch:
 
+  schedule:
+    - cron: '*/5 * * * *'
+
 jobs:
   scanner:
     runs-on: ubuntu-latest
