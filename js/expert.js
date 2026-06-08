@@ -91,17 +91,33 @@ setInterval(async () => {
         ).innerHTML =
             dados.cooldownsHoje || 0;
 
-        document.getElementById(
-            "ultimaAnalise"
-        ).innerHTML =
-            dados.ultimaAnalise ||
-            "Aguardando análise";
+        let ultimaAnalise =
+    dados.ultimaAnalise ||
+    "Aguardando análise";
 
-        document.getElementById(
-            "ultimoSinal"
-        ).innerHTML =
-            dados.ultimoSinal ||
-            "Nenhum sinal";
+ultimaAnalise =
+    ultimaAnalise
+      .replaceAll("CALL", "🟢 COMPRA")
+      .replaceAll("PUT", "🔴 VENDA");
+
+document.getElementById(
+    "ultimaAnalise"
+).innerHTML =
+    ultimaAnalise;
+
+let ultimoSinal =
+    dados.ultimoSinal ||
+    "Nenhum sinal";
+
+ultimoSinal =
+    ultimoSinal
+      .replaceAll("CALL", "🟢 COMPRA")
+      .replaceAll("PUT", "🔴 VENDA");
+
+document.getElementById(
+    "ultimoSinal"
+).innerHTML =
+    ultimoSinal;
 
     } catch (erro) {
 
