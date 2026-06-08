@@ -10,6 +10,14 @@ function scannerView() {
         Carregando...
       </div>
 
+      <div
+        id="scannerProximaAnalise"
+        class="list-item">
+
+        Aguardando...
+
+      </div>
+
       <button
         class="button start-btn"
         id="startScanner">
@@ -45,10 +53,29 @@ function scannerView() {
 setInterval(async () => {
 
   const statusEl =
-    document.getElementById("scannerViewStatus");
+    document.getElementById(
+      "scannerViewStatus"
+    );
 
   const analiseEl =
-    document.getElementById("scannerUltimaAnalise");
+    document.getElementById(
+      "scannerUltimaAnalise"
+    );
+
+  const proximaEl =
+    document.getElementById(
+      "scannerProximaAnalise"
+    );
+
+  const startBtn =
+    document.getElementById(
+      "startScanner"
+    );
+
+  const stopBtn =
+    document.getElementById(
+      "stopScanner"
+    );
 
   if (!statusEl) return;
 
@@ -62,16 +89,64 @@ setInterval(async () => {
     const dados =
       doc.data() || {};
 
-    statusEl.innerHTML =
-      dados.ativo
-        ? "🟢 Scanner Online"
-        : "🔴 Scanner Parado";
+    if (dados.ativo) {
+
+      statusEl.innerHTML =
+        "🟢 Scanner Online<br>⏳ Analisando mercado";
+
+      if (startBtn)
+        startBtn.disabled = true;
+
+      if (stopBtn)
+        stopBtn.disabled = false;
+
+    } else {
+
+      statusEl.innerHTML =
+        "🔴 Scanner Parado";
+
+      if (startBtn)
+        startBtn.disabled = false;
+
+      if (stopBtn)
+        stopBtn.disabled = true;
+
+    }
 
     if (analiseEl) {
 
-      analiseEl.innerHTML =
+      let texto =
         dados.ultimaAnalise ||
         "Nenhuma análise executada.";
+
+      texto = texto
+        .replaceAll(
+          "CALL",
+          "COMPRA"
+        )
+        .replaceAll(
+          "PUT",
+          "VENDA"
+        );
+
+      analiseEl.innerHTML =
+        texto;
+
+    }
+
+    if (proximaEl) {
+
+      if (dados.ativo) {
+
+        proximaEl.innerHTML =
+          "⏱ Próxima análise em até 5 minutos";
+
+      } else {
+
+        proximaEl.innerHTML =
+          "Scanner aguardando ativação";
+
+      }
 
     }
 
