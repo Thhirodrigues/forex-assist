@@ -197,8 +197,11 @@ stats.innerHTML = `
 
 if (!html) {
 
-html = "<div class="list-item"> Nenhum sinal encontrado. </div>";
-
+html = `
+<div class="list-item">
+  Nenhum sinal encontrado.
+</div>
+`;
 }
 
 lista.innerHTML = html;
