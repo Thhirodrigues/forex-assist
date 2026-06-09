@@ -102,7 +102,6 @@ ${sinal.qualidade ?? "-"}%
             <br>
 
             Horário:
-            Horário:
 ${
   sinal.timestamp
     ? sinal.timestamp
