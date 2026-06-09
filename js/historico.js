@@ -1,133 +1,117 @@
 function historicoView() {
-  return `
-    <div class="card">
+return `
+<div class="card">
 
-      <div class="card-title">
-        Histórico de Sinais
-      </div>
+  <div class="card-title">
+    Histórico de Sinais
+  </div>
 
-      <div id="historicoLista">
-        Carregando histórico...
-      </div>
+  <div id="historicoLista">
+    Carregando histórico...
+  </div>
 
-    </div>
-  `;
+</div>
+
+`;
 }
 
 setInterval(async () => {
 
-  const lista =
-    document.getElementById("historicoLista");
+const lista =
+document.getElementById("historicoLista");
 
-  if (!lista) return;
+if (!lista) return;
 
-  try {
+try {
 
-    const snapshot = await db
-      .collection("historico")
-      .orderBy("timestamp", "desc")
-      .limit(20)
-      .get();
+const snapshot = await db
+  .collection("historico")
+  .orderBy("timestamp", "desc")
+  .limit(20)
+  .get();
 
-    let html = "";
+let html = "";
 
-    snapshot.forEach((doc) => {
+snapshot.forEach((doc) => {
 
-      const sinal = doc.data();
+  const sinal = doc.data();
 
-      const isCooldown =
-        sinal.status === "COOLDOWN" ||
-        sinal.origem === "cooldown";
+  const isCooldown =
+    sinal.status === "COOLDOWN" ||
+    sinal.origem === "cooldown";
 
-      if (isCooldown) {
+  if (isCooldown) {
 
-        html += `
-          <div class="list-item">
+    html += `
+      <div class="list-item">
 
-            <strong>
-              🚫 COOLDOWN
-            </strong>
+        <strong>
+          🚫 COOLDOWN
+        </strong>
 
-            <br>
+        <br>
 
-            ${sinal.par || "-"}
+        ${sinal.par || "-"}
 
-            <br>
+        <br>
 
-            ${(sinal.direcao || "-")
+        ${(sinal.direcao || "-")
+          .replace("CALL", "🟢 COMPRA")
+          .replace("PUT", "🔴 VENDA")}
+
+        <br>
+
+        Horário:
+        ${
+          sinal.timestamp
+            ? sinal.timestamp
+                .toDate()
+                .toLocaleTimeString(
+                  "pt-BR",
+                  {
+                    timeZone:
+                      "America/Sao_Paulo"
+                  }
+                )
+            : "--:--"
+        }
+
+      </div>
+    `;
+
+  } else {
+
+    html += `
+
+<div class="history-item">  <div class="history-header"><strong>
+  ${sinal.par || "-"}
+</strong>
+
+<span class="${
+  sinal.resultado === "WIN"
+    ? "history-result-win"
+    : sinal.resultado === "LOSS"
+    ? "history-result-loss"
+    : "history-result-open"
+}">
+
+  ${
+    sinal.resultado === "WIN"
+      ? "✅ WIN"
+      : sinal.resultado === "LOSS"
+      ? "❌ LOSS"
+      : "⏳"
+  }
+
+</span>
+
+  </div>  <div class="history-direction">${(sinal.direcao || "-")
   .replace("CALL", "🟢 COMPRA")
   .replace("PUT", "🔴 VENDA")}
 
-            <br>
-
-            Horário:
-${
-  sinal.timestamp
-    ? sinal.timestamp
-        .toDate()
-        .toLocaleTimeString(
-          "pt-BR",
-          {
-            timeZone:
-              "America/Sao_Paulo"
-          }
-        )
-    : "--:--"
-}
-
-          </div>
-        `;
-
-      } else {
-
-        html += `
-          <div class="list-item">
-
-            <strong>
-              ${sinal.par || "-"}
-            </strong>
-
-            <br>
-
-            ${(sinal.direcao || "-")
-  .replace("CALL", "🟢 COMPRA")
-  .replace("PUT", "🔴 VENDA")} |
 ${sinal.qualidade ?? "-"}%
 
-            <br>
-
-            Modo:
-${sinal.modo || "EXPERT"}
-
-${
-  sinal.resultado
-    ? `
-
-      <br><br>
-
-      ${
-        sinal.resultado === "WIN"
-          ? "✅ WIN"
-          : "❌ LOSS"
-      }
-
-      <br>
-
-      Entrada:
-      ${sinal.precoEntrada ?? "-"}
-
-      <br>
-
-      Fechamento:
-      ${sinal.precoFechamento ?? "-"}
-
-    `
-    : ""
-}
-
-<br>
-
-📅 ${
+  </div>  <div class="history-date">📅 ${
   sinal.timestamp
     ? sinal.timestamp
         .toDate()
@@ -141,7 +125,7 @@ ${
     : "--/--/----"
 }
 
-<br>
+•
 
 🕒 ${
   sinal.timestamp
@@ -157,38 +141,37 @@ ${
     : "--:--"
 }
 
-          </div>
-        `;
-
-      }
-
-    });
-
-    if (!html) {
-
-      html = `
-        <div class="list-item">
-          Nenhum sinal encontrado.
-        </div>
-      `;
-
-    }
-
-    lista.innerHTML = html;
-
-  } catch (erro) {
-
-    console.log(
-      "Erro histórico:",
-      erro
-    );
-
-    lista.innerHTML = `
-      <div class="list-item">
-        Erro ao carregar histórico.
-      </div>
-    `;
+  </div></div>`;
 
   }
+
+});
+
+if (!html) {
+
+  html = `
+    <div class="list-item">
+      Nenhum sinal encontrado.
+    </div>
+  `;
+
+}
+
+lista.innerHTML = html;
+
+} catch (erro) {
+
+console.log(
+  "Erro histórico:",
+  erro
+);
+
+lista.innerHTML = `
+  <div class="list-item">
+    Erro ao carregar histórico.
+  </div>
+`;
+
+}
 
 }, 3000);
