@@ -1,1 +1,48 @@
+name: Result Check
 
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: '*/5 * * * *'
+
+jobs:
+  checker:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Create package.json
+        run: |
+          echo '{
+            "name":"forex-result-check",
+            "version":"1.0.0"
+          }' > package.json
+
+      - name: Install Dependencies
+        run: |
+          npm install firebase-admin@11.11.1 axios
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Result Checker
+        run: |
+          node -e "
+          const admin=require('firebase-admin');
+          const serviceAccount=require('./serviceAccount.json');
+
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+          });
+
+          console.log('Firebase conectado');
+          "
