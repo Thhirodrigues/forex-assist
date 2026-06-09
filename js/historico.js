@@ -97,12 +97,53 @@ ${sinal.qualidade ?? "-"}%
             <br>
 
             Modo:
-            ${sinal.modo || "EXPERT"}
+${sinal.modo || "EXPERT"}
 
-            <br>
-
-            Horário:
 ${
+  sinal.resultado
+    ? `
+
+      <br><br>
+
+      ${
+        sinal.resultado === "WIN"
+          ? "✅ WIN"
+          : "❌ LOSS"
+      }
+
+      <br>
+
+      Entrada:
+      ${sinal.precoEntrada ?? "-"}
+
+      <br>
+
+      Fechamento:
+      ${sinal.precoFechamento ?? "-"}
+
+    `
+    : ""
+}
+
+<br>
+
+📅 ${
+  sinal.timestamp
+    ? sinal.timestamp
+        .toDate()
+        .toLocaleDateString(
+          "pt-BR",
+          {
+            timeZone:
+              "America/Sao_Paulo"
+          }
+        )
+    : "--/--/----"
+}
+
+<br>
+
+🕒 ${
   sinal.timestamp
     ? sinal.timestamp
         .toDate()
