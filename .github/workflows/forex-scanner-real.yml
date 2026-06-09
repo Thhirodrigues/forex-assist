@@ -33,7 +33,8 @@ jobs:
       - name: Create Firebase Key
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
-
+          cat serviceAccount.json | head -c 100
+          
       - name: Run Scanner
         env:
           API_KEY_1: ${{ secrets.TWELVEDATA_KEY }}
