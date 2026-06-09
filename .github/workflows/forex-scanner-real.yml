@@ -341,9 +341,10 @@ jobs:
             }
 
             const sinal = {
-              ...melhor,
-              horario:
+              ...melhor ,
               resultado: null,
+
+              horario:
                 new Date()
                 .toLocaleTimeString(
                   "pt-BR"
