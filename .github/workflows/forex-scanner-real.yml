@@ -205,6 +205,9 @@ jobs:
                 par,
                 direcao,
                 qualidade,
+
+                precoEntrada:
+                  Number(closes[0].toFixed(5)),
                 ema9:
                   Number(ema9.toFixed(5)),
                 ema21:
@@ -340,6 +343,7 @@ jobs:
             const sinal = {
               ...melhor,
               horario:
+              resultado: null,
                 new Date()
                 .toLocaleTimeString(
                   "pt-BR"
