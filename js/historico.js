@@ -61,7 +61,19 @@ setInterval(async () => {
             <br>
 
             Horário:
-            ${sinal.horario || "--:--"}
+${
+  sinal.timestamp
+    ? sinal.timestamp
+        .toDate()
+        .toLocaleTimeString(
+          "pt-BR",
+          {
+            timeZone:
+              "America/Sao_Paulo"
+          }
+        )
+    : "--:--"
+}
 
           </div>
         `;
@@ -90,7 +102,20 @@ ${sinal.qualidade ?? "-"}%
             <br>
 
             Horário:
-            ${sinal.horario || "--:--"}
+            Horário:
+${
+  sinal.timestamp
+    ? sinal.timestamp
+        .toDate()
+        .toLocaleTimeString(
+          "pt-BR",
+          {
+            timeZone:
+              "America/Sao_Paulo"
+          }
+        )
+    : "--:--"
+}
 
           </div>
         `;
