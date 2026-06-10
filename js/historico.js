@@ -61,7 +61,7 @@ let html = "";
 
 let sinaisHoje = "";
 let sinaisOntem = "";
-let sinaisAntigos = "";
+const gruposAntigos = {};
   
 let wins = 0;
 let losses = 0;
@@ -159,7 +159,11 @@ sinaisOntem += card;
 
 } else {
 
-sinaisAntigos += card;
+if (!gruposAntigos[dataSinal]) {
+  gruposAntigos[dataSinal] = "";
+}
+
+gruposAntigos[dataSinal] += card;
 
 }
   
@@ -252,8 +256,11 @@ sinaisOntem += card;
 
 } else {
 
-sinaisAntigos += card;
+if (!gruposAntigos[dataSinal]) {
+  gruposAntigos[dataSinal] = "";
+}
 
+gruposAntigos[dataSinal] += card;
 }
 
 }
@@ -293,8 +300,10 @@ stats.innerHTML = `
 
 }
 
-if (!sinaisHoje && !sinaisAntigos) {
-
+if (!sinaisHoje &&
+    !sinaisOntem &&
+    Object.keys(gruposAntigos).length === 0) {
+  
 html = `
 <div class="list-item">
   Nenhum sinal encontrado.
@@ -306,6 +315,37 @@ return;
 
 }
 
+let htmlAntigos = "";
+
+Object.keys(gruposAntigos)
+.sort((a,b) => {
+
+const [da,ma,aa] = a.split("/");
+const [db,mb,ab] = b.split("/");
+
+return new Date(ab, mb-1, db)
+     - new Date(aa, ma-1, da);
+
+})
+.forEach((data) => {
+
+htmlAntigos += `
+
+<div style="
+margin-top:20px;
+margin-bottom:15px;
+font-size:12px;
+color:#8c95b3;
+font-weight:bold;
+">
+${data}
+</div>
+
+${gruposAntigos[data]}
+`;
+
+});
+  
 html = `
 <div style="
 margin-bottom:15px;
@@ -335,17 +375,7 @@ id="historicoAntigo"
 style="display:none;"
 >
 
-<div style="
-margin-top:20px;
-margin-bottom:15px;
-font-size:12px;
-color:#8c95b3;
-font-weight:bold;
-">
-ANTERIORES
-</div>
-
-${sinaisAntigos}
+${htmlAntigos}
 
 </div>
 `;
