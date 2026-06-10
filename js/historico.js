@@ -364,17 +364,38 @@ HOJE
 
 ${sinaisHoje}
 
-<div style="
+<div
+onclick="
+const el =
+document.getElementById('grupoOntem');
+
+el.style.display =
+el.style.display === 'none'
+? 'block'
+: 'none';
+"
+style="
 margin-top:20px;
 margin-bottom:15px;
 font-size:12px;
 color:#8c95b3;
 font-weight:bold;
-">
-ONTEM
+cursor:pointer;
+"
+>
+
+▶ ONTEM
+
 </div>
 
+<div
+id="grupoOntem"
+style="display:none;"
+>
+
 ${sinaisOntem}
+
+</div>
 
 <div id="historicoAntigo">
 
