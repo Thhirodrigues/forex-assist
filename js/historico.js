@@ -306,8 +306,9 @@ ${data}
 
 ${grupos[data]}
 
-});
 `;
+  
+});
 lista.innerHTML = html;
 
 } catch (erro) {
