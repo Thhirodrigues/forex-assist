@@ -1,6 +1,8 @@
 const app = {
 
-    currentTab: "dashboard",
+    currentTab:
+localStorage.getItem("ultimaAba")
+|| "dashboard",
 
     init() {
         this.render();
@@ -14,8 +16,16 @@ const app = {
             const tab = e.target.dataset.tab;
 
             if(tab){
-                this.currentTab = tab;
-                this.render();
+
+    this.currentTab = tab;
+
+    localStorage.setItem(
+        "ultimaAba",
+        tab
+    );
+
+    this.render();
+
             }
 
         });
