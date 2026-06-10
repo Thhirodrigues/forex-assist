@@ -58,9 +58,7 @@ const snapshot = await db
 .get();
 
 let html = "";
-
 let grupos = {};
-  
 let wins = 0;
 let losses = 0;
 
@@ -148,10 +146,14 @@ const card = `
   </div>
 `;
 if (!grupos[dataSinal]) {
-grupos[dataSinal] = "";
+  grupos[dataSinal] = "";
 }
 
 grupos[dataSinal] += card;
+
+}
+  
+} else {
 
 const card = `
 
@@ -230,13 +232,12 @@ ${sinal.qualidade ?? "-"}%
 
   </div></div>`;
 
-if (!grupos[dataSinal]) {
-grupos[dataSinal] = "";
-}
 
-grupos[dataSinal] += card;
 
 }
+
+}
+
 });
 
 const total =
@@ -261,7 +262,13 @@ stats.innerHTML = `
   ✅ ${wins}
   &nbsp;&nbsp;&nbsp;
 
-  ❌ ${losses}
+if (!grupos[dataSinal]) {
+  grupos[dataSinal] = "";
+}
+
+grupos[dataSinal] += card;
+
+❌ ${losses}
   &nbsp;&nbsp;&nbsp;
 
   🎯 ${taxa}%
@@ -272,7 +279,7 @@ stats.innerHTML = `
 
 }
 
-if (!sinaisHoje && !sinaisAntigos) {
+if (Object.keys(grupos).length === 0) {
 
 html = `
 <div class="list-item">
@@ -285,17 +292,11 @@ return;
 
 }
 
-html = `
-<div style="
-margin-bottom:15px;
-font-size:12px;
-color:#8c95b3;
-font-weight:bold;
-">
-HOJE
-</div>
+html = "";
 
-${sinaisHoje}
+Object.keys(grupos).forEach((data) => {
+
+html += `
 
 <div style="
 margin-top:20px;
@@ -304,76 +305,14 @@ font-size:12px;
 color:#8c95b3;
 font-weight:bold;
 ">
-ONTEM
+${data}
 </div>
 
-${sinaisOntem}
+${grupos[data]}
 
-<div
-id="historicoAntigo"
-style="display:none;"
->
-
-<div style="
-margin-top:20px;
-margin-bottom:15px;
-font-size:12px;
-color:#8c95b3;
-font-weight:bold;
-">
-ANTERIORES
-</div>
-
-${sinaisAntigos}
-
-</div>
+});
 `;
-const antigoAberto =
-document.getElementById("historicoAntigo")
-?.style.display === "block";
-  
 lista.innerHTML = html;
-
-if (antigoAberto) {
-  const antigo =
-  document.getElementById("historicoAntigo");
-
-  if (antigo) {
-    antigo.style.display = "block";
-  }
-}
-  
-const btn =
-document.getElementById(
-"btnCarregarHistorico"
-);
-
-if (btn) {
-
-btn.onclick = () => {
-
-const antigo =
-document.getElementById(
-"historicoAntigo"
-);
-
-if (!antigo) return;
-
-antigo.style.display =
-antigo.style.display ===
-"none"
-? "block"
-: "none";
-
-btn.innerText =
-antigo.style.display ===
-"none"
-? "Carregar Histórico"
-: "Ocultar Histórico";
-
-};
-
-}
 
 } catch (erro) {
 
