@@ -286,21 +286,21 @@ ${grupos[data]}
 
 });
 lista.innerHTML = html;
-
+  
 } catch (erro) {
 
+alert(
+  JSON.stringify(erro)
+);
+
 console.log(
-"Erro histórico:",
-erro
+  "Erro histórico:",
+  erro
 );
 
 lista.innerHTML = `
-
-  <div class="list-item">
-    Erro ao carregar histórico.
-  </div>
-`;}
-
+<div class="list-item">
+Erro ao carregar histórico.
+</div>
+`;
 }
-
-carregarHistorico();
