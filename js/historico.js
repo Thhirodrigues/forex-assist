@@ -261,26 +261,75 @@ if (stats) {
 
 stats.innerHTML = `
 
-  <div class="card"><div style="
-  text-align:center;
-  font-size:17px;
-  font-weight:bold;
+<div class="card">
+
+<div style="
+text-align:center;
+font-size:17px;
+font-weight:bold;
 ">
 
-  ✅ ${wins}
-  &nbsp;&nbsp;&nbsp;
+✅ ${wins}
+&nbsp;&nbsp;&nbsp;
 
-  ❌ ${losses}
-  &nbsp;&nbsp;&nbsp;
+❌ ${losses}
+&nbsp;&nbsp;&nbsp;
 
-  🎯 ${taxa}%
+🎯 ${taxa}%
 
 </div>
 
-  </div>`;
+<button
+id="btnMinimizarTudo"
+style="
+margin-top:10px;
+width:100%;
+padding:8px;
+border:none;
+border-radius:8px;
+background:#132852;
+color:white;
+font-size:13px;
+"
+>
+Minimizar Tudo
+</button>
+
+</div>
+
+`;
 
 }
+const btnMinimizarTudo =
+document.getElementById(
+"btnMinimizarTudo"
+);
 
+if (btnMinimizarTudo) {
+
+btnMinimizarTudo.onclick = () => {
+
+const ontem =
+document.getElementById(
+"grupoOntem"
+);
+
+if (ontem) {
+ontem.style.display = "none";
+}
+
+document
+.querySelectorAll(
+'[id^="data"]'
+)
+.forEach((el) => {
+el.style.display = "none";
+});
+
+};
+
+}
+  
 if (!sinaisHoje &&
     !sinaisOntem &&
     Object.keys(gruposAntigos).length === 0) {
