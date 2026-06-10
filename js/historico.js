@@ -79,9 +79,32 @@ const isCooldown =
 sinal.status === "COOLDOWN" ||
 sinal.origem === "cooldown";
 
+const dataSinal =
+sinal.timestamp
+? sinal.timestamp
+.toDate()
+.toLocaleDateString(
+"pt-BR",
+{
+timeZone:
+"America/Sao_Paulo"
+}
+)
+: "";
+
+const hoje =
+new Date()
+.toLocaleDateString(
+"pt-BR",
+{
+timeZone:
+"America/Sao_Paulo"
+}
+);
+  
 if (isCooldown) {
 
-html += `
+const card = `
   <div class="list-item">
 
     🚫 ${sinal.par || "-"}
@@ -110,10 +133,15 @@ html += `
 
   </div>
 `;
-
+if (dataSinal === hoje) {
+sinaisHoje += card;
+} else {
+sinaisAntigos += card;
+}
+  
 } else {
 
-html += `
+const card = `
 
 <div class="list-item">  <div style="
     display:flex;
@@ -190,6 +218,12 @@ ${sinal.qualidade ?? "-"}%
 
   </div></div>`;
 
+if (dataSinal === hoje) {
+sinaisHoje += card;
+} else {
+sinaisAntigos += card;
+}
+
 }
 
 });
@@ -227,16 +261,84 @@ stats.innerHTML = `
 
 }
 
-if (!html) {
+if (!sinaisHoje && !sinaisAntigos) {
 
 html = `
 <div class="list-item">
   Nenhum sinal encontrado.
 </div>
 `;
-}
 
 lista.innerHTML = html;
+return;
+
+}
+
+html = `
+<div style="
+margin-bottom:15px;
+font-size:12px;
+color:#8c95b3;
+font-weight:bold;
+">
+HOJE
+</div>
+
+${sinaisHoje}
+
+<div
+id="historicoAntigo"
+style="display:none;"
+>
+
+<div style="
+margin-top:20px;
+margin-bottom:15px;
+font-size:12px;
+color:#8c95b3;
+font-weight:bold;
+">
+ANTERIORES
+</div>
+
+${sinaisAntigos}
+
+</div>
+`;
+
+lista.innerHTML = html;
+
+const btn =
+document.getElementById(
+"btnCarregarHistorico"
+);
+
+if (btn) {
+
+btn.onclick = () => {
+
+const antigo =
+document.getElementById(
+"historicoAntigo"
+);
+
+if (!antigo) return;
+
+antigo.style.display =
+antigo.style.display ===
+"none"
+? "block"
+: "none";
+
+btn.innerText =
+antigo.style.display ===
+"none"
+? "Carregar Histórico"
+: "Ocultar Histórico";
+
+};
+
+}
 
 } catch (erro) {
 
