@@ -243,19 +243,21 @@ stats.innerHTML = `
 
   <div class="card"><div style="
   text-align:center;
-  font-size:14px;
+  font-size:17px;
+  font-weight:bold;
 ">
 
   ✅ ${wins}
-  &nbsp;&nbsp;
+  &nbsp;&nbsp;&nbsp;
 
   ❌ ${losses}
-
-  <br><br>
+  &nbsp;&nbsp;&nbsp;
 
   🎯 ${taxa}%
 
 </div>
+
+  </div>`;
 
   </div>`;
 
