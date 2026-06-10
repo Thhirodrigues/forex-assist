@@ -304,3 +304,6 @@ Erro ao carregar histórico.
 </div>
 `;
 }
+
+carregarHistorico();
+  
