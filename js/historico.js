@@ -19,7 +19,7 @@ return `
 `;
 }
 
-setInterval(async () => {
+async function carregarHistorico() {
 
 const lista =
 document.getElementById("historicoLista");
@@ -301,4 +301,6 @@ lista.innerHTML = `
   </div>
 `;}
 
-}, 3000);
+}
+
+carregarHistorico();
