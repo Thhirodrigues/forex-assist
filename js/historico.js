@@ -60,8 +60,9 @@ const snapshot = await db
 let html = "";
 
 let sinaisHoje = "";
+let sinaisOntem = "";
 let sinaisAntigos = "";
-
+  
 let wins = 0;
 let losses = 0;
 
@@ -101,6 +102,21 @@ timeZone:
 "America/Sao_Paulo"
 }
 );
+
+const ontemDate = new Date();
+
+ontemDate.setDate(
+ontemDate.getDate() - 1
+);
+
+const ontem =
+ontemDate.toLocaleDateString(
+"pt-BR",
+{
+timeZone:
+"America/Sao_Paulo"
+}
+);
   
 if (isCooldown) {
 
@@ -134,9 +150,17 @@ const card = `
   </div>
 `;
 if (dataSinal === hoje) {
+
 sinaisHoje += card;
+
+} else if (dataSinal === ontem) {
+
+sinaisOntem += card;
+
 } else {
+
 sinaisAntigos += card;
+
 }
   
 } else {
@@ -219,9 +243,17 @@ ${sinal.qualidade ?? "-"}%
   </div></div>`;
 
 if (dataSinal === hoje) {
+
 sinaisHoje += card;
+
+} else if (dataSinal === ontem) {
+
+sinaisOntem += card;
+
 } else {
+
 sinaisAntigos += card;
+
 }
 
 }
@@ -285,6 +317,18 @@ HOJE
 </div>
 
 ${sinaisHoje}
+
+<div style="
+margin-top:20px;
+margin-bottom:15px;
+font-size:12px;
+color:#8c95b3;
+font-weight:bold;
+">
+ONTEM
+</div>
+
+${sinaisOntem}
 
 <div
 id="historicoAntigo"
