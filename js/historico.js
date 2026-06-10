@@ -88,31 +88,6 @@ timeZone:
 }
 )
 : "";
-
-const hoje =
-new Date()
-.toLocaleDateString(
-"pt-BR",
-{
-timeZone:
-"America/Sao_Paulo"
-}
-);
-
-const ontemDate = new Date();
-
-ontemDate.setDate(
-ontemDate.getDate() - 1
-);
-
-const ontem =
-ontemDate.toLocaleDateString(
-"pt-BR",
-{
-timeZone:
-"America/Sao_Paulo"
-}
-);
   
 if (isCooldown) {
 
