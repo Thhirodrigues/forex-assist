@@ -97,7 +97,17 @@ localStorage.getItem("ultimaAba")
 
         </div>
         `;
+        if (this.currentTab === "historico") {
 
+    setTimeout(() => {
+
+        if (typeof carregarHistorico === "function") {
+            carregarHistorico();
+        }
+
+    }, 100);
+
+        }
     }
 
 };
