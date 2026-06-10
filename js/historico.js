@@ -15,25 +15,6 @@ return `
     Carregando histórico...
   </div>
 
-  <div style="margin-top:15px;text-align:center;">
-
-    <button
-      id="btnCarregarHistorico"
-      style="
-        width:100%;
-        padding:12px;
-        border:none;
-        border-radius:10px;
-        background:#132852;
-        color:white;
-        font-size:14px;
-      "
-    >
-      Carregar Histórico
-    </button>
-
-  </div>
-
 </div>
 
 `;
@@ -329,19 +310,44 @@ return new Date(ab, mb-1, db)
 })
 .forEach((data) => {
 
+const idData =
+data.replaceAll("/", "");
+
 htmlAntigos += `
 
-<div style="
+<div
+onclick="
+const el =
+document.getElementById('data${idData}');
+
+el.style.display =
+el.style.display === 'none'
+? 'block'
+: 'none';
+"
+style="
 margin-top:20px;
 margin-bottom:15px;
 font-size:12px;
 color:#8c95b3;
 font-weight:bold;
-">
-${data}
+cursor:pointer;
+"
+>
+
+▶ ${data}
+
 </div>
 
+<div
+id="data${idData}"
+style="display:none;"
+>
+
 ${gruposAntigos[data]}
+
+</div>
+
 `;
 
 });
@@ -370,61 +376,13 @@ ONTEM
 
 ${sinaisOntem}
 
-<div
-id="historicoAntigo"
-style="display:none;"
->
+<div id="historicoAntigo">
 
 ${htmlAntigos}
 
 </div>
 `;
-const antigoAberto =
-document.getElementById("historicoAntigo")
-?.style.display === "block";
-  
 lista.innerHTML = html;
-
-if (antigoAberto) {
-  const antigo =
-  document.getElementById("historicoAntigo");
-
-  if (antigo) {
-    antigo.style.display = "block";
-  }
-}
-  
-const btn =
-document.getElementById(
-"btnCarregarHistorico"
-);
-
-if (btn) {
-
-btn.onclick = () => {
-
-const antigo =
-document.getElementById(
-"historicoAntigo"
-);
-
-if (!antigo) return;
-
-antigo.style.display =
-antigo.style.display ===
-"none"
-? "block"
-: "none";
-
-btn.innerText =
-antigo.style.display ===
-"none"
-? "Carregar Histórico"
-: "Ocultar Histórico";
-
-};
-
-}
 
 } catch (erro) {
 
