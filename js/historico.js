@@ -14,12 +14,32 @@ return `
   <div id="historicoLista">
     Carregando histórico...
   </div>
+
+  <div style="margin-top:15px;text-align:center;">
+
+    <button
+      id="btnCarregarHistorico"
+      style="
+        width:100%;
+        padding:12px;
+        border:none;
+        border-radius:10px;
+        background:#132852;
+        color:white;
+        font-size:14px;
+      "
+    >
+      Carregar Histórico
+    </button>
+
+  </div>
+
 </div>
 
 `;
 }
 
-async function carregarHistorico() {
+setInterval(async () => {
 
 const lista =
 document.getElementById("historicoLista");
@@ -38,7 +58,11 @@ const snapshot = await db
 .get();
 
 let html = "";
-let grupos = {};
+
+let sinaisHoje = "";
+let sinaisOntem = "";
+let sinaisAntigos = "";
+  
 let wins = 0;
 let losses = 0;
 
@@ -68,6 +92,31 @@ timeZone:
 }
 )
 : "";
+
+const hoje =
+new Date()
+.toLocaleDateString(
+"pt-BR",
+{
+timeZone:
+"America/Sao_Paulo"
+}
+);
+
+const ontemDate = new Date();
+
+ontemDate.setDate(
+ontemDate.getDate() - 1
+);
+
+const ontem =
+ontemDate.toLocaleDateString(
+"pt-BR",
+{
+timeZone:
+"America/Sao_Paulo"
+}
+);
   
 if (isCooldown) {
 
@@ -100,11 +149,19 @@ const card = `
 
   </div>
 `;
-if (!grupos[dataSinal]) {
-  grupos[dataSinal] = "";
-}
+if (dataSinal === hoje) {
 
-grupos[dataSinal] += card;
+sinaisHoje += card;
+
+} else if (dataSinal === ontem) {
+
+sinaisOntem += card;
+
+} else {
+
+sinaisAntigos += card;
+
+}
   
 } else {
 
@@ -185,12 +242,20 @@ ${sinal.qualidade ?? "-"}%
 
   </div></div>`;
 
-if (!grupos[dataSinal]) {
-  grupos[dataSinal] = "";
+if (dataSinal === hoje) {
+
+sinaisHoje += card;
+
+} else if (dataSinal === ontem) {
+
+sinaisOntem += card;
+
+} else {
+
+sinaisAntigos += card;
+
 }
 
-grupos[dataSinal] += card;
-  
 }
 
 });
@@ -217,7 +282,7 @@ stats.innerHTML = `
   ✅ ${wins}
   &nbsp;&nbsp;&nbsp;
 
-❌ ${losses}
+  ❌ ${losses}
   &nbsp;&nbsp;&nbsp;
 
   🎯 ${taxa}%
@@ -228,7 +293,7 @@ stats.innerHTML = `
 
 }
 
-if (Object.keys(grupos).length === 0) {
+if (!sinaisHoje && !sinaisAntigos) {
 
 html = `
 <div class="list-item">
@@ -241,69 +306,108 @@ return;
 
 }
 
-html = "";
+html = `
+<div style="
+margin-bottom:15px;
+font-size:12px;
+color:#8c95b3;
+font-weight:bold;
+">
+HOJE
+</div>
 
-const datas = Object.keys(grupos);
+${sinaisHoje}
 
-datas.forEach((data, index) => {
-
-const aberto = index === 0;
-
-html += `
-
-<div
-onclick="
-const el =
-document.getElementById('grupo-${index}');
-
-el.style.display =
-el.style.display === 'none'
-? 'block'
-: 'none';
-"
-style="
+<div style="
 margin-top:20px;
 margin-bottom:15px;
 font-size:12px;
 color:#8c95b3;
 font-weight:bold;
-cursor:pointer;
-"
->
-📅 ${data}
+">
+ONTEM
 </div>
+
+${sinaisOntem}
 
 <div
-id="grupo-${index}"
-style="
-display:${aberto ? 'block' : 'none'};
-"
+id="historicoAntigo"
+style="display:none;"
 >
-${grupos[data]}
+
+<div style="
+margin-top:20px;
+margin-bottom:15px;
+font-size:12px;
+color:#8c95b3;
+font-weight:bold;
+">
+ANTERIORES
 </div>
 
+${sinaisAntigos}
+
+</div>
 `;
-
-});
-lista.innerHTML = html;
+const antigoAberto =
+document.getElementById("historicoAntigo")
+?.style.display === "block";
   
-} catch (erro) {
+lista.innerHTML = html;
 
-alert(
-  JSON.stringify(erro)
+if (antigoAberto) {
+  const antigo =
+  document.getElementById("historicoAntigo");
+
+  if (antigo) {
+    antigo.style.display = "block";
+  }
+}
+  
+const btn =
+document.getElementById(
+"btnCarregarHistorico"
 );
 
+if (btn) {
+
+btn.onclick = () => {
+
+const antigo =
+document.getElementById(
+"historicoAntigo"
+);
+
+if (!antigo) return;
+
+antigo.style.display =
+antigo.style.display ===
+"none"
+? "block"
+: "none";
+
+btn.innerText =
+antigo.style.display ===
+"none"
+? "Carregar Histórico"
+: "Ocultar Histórico";
+
+};
+
+}
+
+} catch (erro) {
+
 console.log(
-  "Erro histórico:",
-  erro
+"Erro histórico:",
+erro
 );
 
 lista.innerHTML = `
-<div class="list-item">
-Erro ao carregar histórico.
-</div>
-`;
-}
 
-carregarHistorico();
-  
+  <div class="list-item">
+    Erro ao carregar histórico.
+  </div>
+`;}
+
+}, 3000);
