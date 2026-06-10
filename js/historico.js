@@ -59,6 +59,9 @@ const snapshot = await db
 
 let html = "";
 
+let sinaisHoje = "";
+let sinaisAntigos = "";
+
 let wins = 0;
 let losses = 0;
 
