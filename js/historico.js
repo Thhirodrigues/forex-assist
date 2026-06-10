@@ -150,8 +150,6 @@ if (!grupos[dataSinal]) {
 }
 
 grupos[dataSinal] += card;
-
-}
   
 } else {
 
@@ -232,8 +230,12 @@ ${sinal.qualidade ?? "-"}%
 
   </div></div>`;
 
+if (!grupos[dataSinal]) {
+  grupos[dataSinal] = "";
+}
 
-
+grupos[dataSinal] += card;
+  
 }
 
 }
@@ -261,12 +263,6 @@ stats.innerHTML = `
 
   ✅ ${wins}
   &nbsp;&nbsp;&nbsp;
-
-if (!grupos[dataSinal]) {
-  grupos[dataSinal] = "";
-}
-
-grupos[dataSinal] += card;
 
 ❌ ${losses}
   &nbsp;&nbsp;&nbsp;
