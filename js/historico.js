@@ -1,13 +1,42 @@
 function historicoView() {
 return `
 
-<div class="card">  <div class="card-title">
+<div class="card">
+
+  <div class="card-title">
     Histórico de Sinais
-  </div>  <div id="historicoStats" style="margin-bottom:15px;">
+  </div>
+
+  <div id="historicoStats" style="margin-bottom:15px;">
     Carregando estatísticas...
-  </div>  <div id="historicoLista">
+  </div>
+
+  <div id="historicoLista">
     Carregando histórico...
-  </div></div>`;
+  </div>
+
+  <div style="margin-top:15px;text-align:center;">
+
+    <button
+      id="btnCarregarHistorico"
+      style="
+        width:100%;
+        padding:12px;
+        border:none;
+        border-radius:10px;
+        background:#132852;
+        color:white;
+        font-size:14px;
+      "
+    >
+      Carregar Histórico
+    </button>
+
+  </div>
+
+</div>
+
+`;
 }
 
 setInterval(async () => {
