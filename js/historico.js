@@ -288,7 +288,7 @@ ${sinaisHoje}
 
 <div
 id="historicoAntigo"
-style="display:none;"
+style="display:block;"
 >
 
 <div style="
