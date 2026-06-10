@@ -59,9 +59,7 @@ const snapshot = await db
 
 let html = "";
 
-let sinaisHoje = "";
-let sinaisOntem = "";
-let sinaisAntigos = "";
+let grupos = {};
   
 let wins = 0;
 let losses = 0;
@@ -149,21 +147,11 @@ const card = `
 
   </div>
 `;
-if (dataSinal === hoje) {
-
-sinaisHoje += card;
-
-} else if (dataSinal === ontem) {
-
-sinaisOntem += card;
-
-} else {
-
-sinaisAntigos += card;
-
+if (!grupos[dataSinal]) {
+grupos[dataSinal] = "";
 }
-  
-} else {
+
+grupos[dataSinal] += card;
 
 const card = `
 
@@ -242,22 +230,13 @@ ${sinal.qualidade ?? "-"}%
 
   </div></div>`;
 
-if (dataSinal === hoje) {
-
-sinaisHoje += card;
-
-} else if (dataSinal === ontem) {
-
-sinaisOntem += card;
-
-} else {
-
-sinaisAntigos += card;
-
+if (!grupos[dataSinal]) {
+grupos[dataSinal] = "";
 }
 
-}
+grupos[dataSinal] += card;
 
+}
 });
 
 const total =
