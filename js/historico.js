@@ -288,7 +288,7 @@ ${sinaisHoje}
 
 <div
 id="historicoAntigo"
-style="display:block;"
+style="display:none;"
 >
 
 <div style="
@@ -305,9 +305,21 @@ ${sinaisAntigos}
 
 </div>
 `;
-
+const antigoAberto =
+document.getElementById("historicoAntigo")
+?.style.display === "block";
+  
 lista.innerHTML = html;
 
+if (antigoAberto) {
+  const antigo =
+  document.getElementById("historicoAntigo");
+
+  if (antigo) {
+    antigo.style.display = "block";
+  }
+}
+  
 const btn =
 document.getElementById(
 "btnCarregarHistorico"
