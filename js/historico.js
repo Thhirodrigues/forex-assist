@@ -213,8 +213,6 @@ grupos[dataSinal] += card;
   
 }
 
-}
-
 });
 
 const total =
