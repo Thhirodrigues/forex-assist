@@ -20,8 +20,8 @@ return `
 `;
 }
 
-async function carregarHistorico() {
-  
+setInterval(async () => {
+
 const lista =
 document.getElementById("historicoLista");
 
@@ -406,13 +406,12 @@ ${htmlAntigos}
 lista.innerHTML = html;
 
 } catch (erro) {
-alert(
-"Erro histórico: " +
-erro.message
+
+console.log(
+"Erro histórico:",
+erro
 );
 
-console.log(erro);
-  
 lista.innerHTML = `
 
   <div class="list-item">
@@ -420,7 +419,4 @@ lista.innerHTML = `
   </div>
 `;}
 
-}
-
-carregarHistorico();
-
+}, 3000);
