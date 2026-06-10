@@ -263,24 +263,47 @@ return;
 
 html = "";
 
-Object.keys(grupos).forEach((data) => {
+const datas = Object.keys(grupos);
+
+datas.forEach((data, index) => {
+
+const aberto = index === 0;
 
 html += `
 
-<div style="
+<div
+onclick="
+const el =
+document.getElementById('grupo-${index}');
+
+el.style.display =
+el.style.display === 'none'
+? 'block'
+: 'none';
+"
+style="
 margin-top:20px;
 margin-bottom:15px;
 font-size:12px;
 color:#8c95b3;
 font-weight:bold;
-">
-${data}
+cursor:pointer;
+"
+>
+📅 ${data}
 </div>
 
+<div
+id="grupo-${index}"
+style="
+display:${aberto ? 'block' : 'none'};
+"
+>
 ${grupos[data]}
+</div>
 
 `;
-  
+
 });
 lista.innerHTML = html;
 
