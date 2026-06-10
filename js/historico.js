@@ -406,12 +406,13 @@ ${htmlAntigos}
 lista.innerHTML = html;
 
 } catch (erro) {
-
-console.log(
-"Erro histórico:",
-erro
+alert(
+"Erro histórico: " +
+erro.message
 );
 
+console.log(erro);
+  
 lista.innerHTML = `
 
   <div class="list-item">
