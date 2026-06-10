@@ -259,8 +259,6 @@ stats.innerHTML = `
 
   </div>`;
 
-  </div>`;
-
 }
 
 if (!sinaisHoje && !sinaisAntigos) {
