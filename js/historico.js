@@ -14,26 +14,6 @@ return `
   <div id="historicoLista">
     Carregando histórico...
   </div>
-
-  <div style="margin-top:15px;text-align:center;">
-
-    <button
-      id="btnCarregarHistorico"
-      style="
-        width:100%;
-        padding:12px;
-        border:none;
-        border-radius:10px;
-        background:#132852;
-        color:white;
-        font-size:14px;
-      "
-    >
-      Carregar Histórico
-    </button>
-
-  </div>
-
 </div>
 
 `;
