@@ -380,6 +380,8 @@ data.replaceAll("/", "");
 
 htmlAntigos += `
 
+htmlAntigos += `
+
 <div
 onclick="
 const el = document.getElementById('data${idData}');
@@ -398,15 +400,14 @@ font-weight:bold;
 cursor:pointer;
 "
 >
-
 ▶ ${data}
+</div>
 
 <div
 id="data${idData}"
 style="display:none;"
 >
 ${gruposAntigos[data]}
-
 </div>
 
 `;
@@ -427,19 +428,12 @@ ${sinaisHoje}
 
 <div
 onclick="
-const el =
-document.getElementById("grupoOntem");
-
-const aberto =
-getComputedStyle(el).display === "none";
+const el = document.getElementById('grupoOntem');
 
 el.style.display =
-aberto ? "block" : "none";
-
-localStorage.setItem(
-"grupo_ontem",
-aberto ? "aberto" : "fechado"
-);
+el.style.display === 'none'
+? 'block'
+: 'none';
 "
 style="
 margin-top:20px;
