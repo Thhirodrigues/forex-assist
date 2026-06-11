@@ -3,11 +3,35 @@ return `
 
 <div class="card">
 
-  <div class="card-title">
-    Histórico de Sinais
+  <div
+    id="historicoHeader"
+    style="
+      position:sticky;
+      top:0;
+      z-index:999;
+      background:#081733;
+      padding-bottom:10px;
+    "
+  >
+
+    <div class="card-title">
+      Histórico de Sinais
+    </div>
+
+    <div id="historicoStats" style="margin-bottom:15px;">
+      Carregando estatísticas...
+    </div>
+
   </div>
 
-  <div id="historicoStats" style="margin-bottom:15px;">
+  <div id="historicoLista">
+    Carregando histórico...
+  </div>
+
+</div>
+
+`;
+}
     Carregando estatísticas...
   </div>
 
