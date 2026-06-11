@@ -380,8 +380,6 @@ data.replaceAll("/", "");
 
 htmlAntigos += `
 
-htmlAntigos += `
-
 <div
 onclick="
 const el = document.getElementById('data${idData}');
