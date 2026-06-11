@@ -428,12 +428,18 @@ ${sinaisHoje}
 <div
 onclick="
 const el =
-document.getElementById('grupoOntem');
+document.getElementById("grupoOntem");
+
+const aberto =
+el.style.display === "none";
 
 el.style.display =
-el.style.display === 'none'
-? 'block'
-: 'none';
+aberto ? "block" : "none";
+
+localStorage.setItem(
+"grupo_ontem",
+aberto ? "aberto" : "fechado"
+);
 "
 style="
 margin-top:20px;
@@ -451,7 +457,11 @@ cursor:pointer;
 
 <div
 id="grupoOntem"
-style="display:none;"
+style="display:${
+localStorage.getItem('grupo_ontem') === 'aberto'
+? 'block'
+: 'none'
+};"
 >
 
 ${sinaisOntem}
