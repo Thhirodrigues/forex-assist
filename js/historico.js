@@ -457,11 +457,7 @@ cursor:pointer;
 
 <div
 id="grupoOntem"
-style="display:${
-localStorage.getItem('grupo_ontem') === 'aberto'
-? 'block'
-: 'none'
-};"
+style="display:none;"
 >
 
 ${sinaisOntem}
