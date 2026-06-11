@@ -382,19 +382,12 @@ htmlAntigos += `
 
 <div
 onclick="
-const el =
-document.getElementById(`data${idData}`);
-
-const aberto =
-el.style.display === 'none';
+const el = document.getElementById('data${idData}');
 
 el.style.display =
-aberto ? 'block' : 'none';
-
-localStorage.setItem(
-`grupo_${idData}`,
-aberto ? 'aberto' : 'fechado'
-);
+el.style.display === 'none'
+? 'block'
+: 'none';
 "
 style="
 margin-top:20px;
@@ -408,19 +401,10 @@ cursor:pointer;
 
 ▶ ${data}
 
-</div>
-
 <div
 id="data${idData}"
-style="
-display:${
-localStorage.getItem(`grupo_${idData}`) === 'aberto'
-? 'block'
-: 'none'
-};
-"
+style="display:none;"
 >
-
 ${gruposAntigos[data]}
 
 </div>
