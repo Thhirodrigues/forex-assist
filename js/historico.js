@@ -431,7 +431,7 @@ const el =
 document.getElementById("grupoOntem");
 
 const aberto =
-el.style.display === "none";
+getComputedStyle(el).display === "none";
 
 el.style.display =
 aberto ? "block" : "none";
