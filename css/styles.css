@@ -219,3 +219,12 @@ font-size:12px;
 color:#8c95b3;
 
 }
+#btnMinimizarTudo{
+cursor:pointer;
+transition:all .15s ease;
+}
+
+#btnMinimizarTudo:active{
+transform:scale(0.98);
+opacity:0.8;
+}
