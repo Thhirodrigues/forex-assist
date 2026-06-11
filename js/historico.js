@@ -31,19 +31,7 @@ return `
 </div>
 
 `;
-}
-    Carregando estatísticas...
-  </div>
-
-  <div id="historicoLista">
-    Carregando histórico...
-  </div>
-
-</div>
-
-`;
-}
-
+ }
 async function carregarHistorico() {
 
 const lista =
