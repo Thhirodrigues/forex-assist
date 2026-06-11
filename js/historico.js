@@ -290,12 +290,12 @@ border-radius:8px;
 background:#132852;
 color:white;
 font-size:13px;
+cursor:pointer;
+transition:all .15s ease;
 "
 >
 Minimizar Tudo
 </button>
-
-</div>
 
 `;
 
