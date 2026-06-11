@@ -47,7 +47,7 @@ try {
 const snapshot = await db
 .collection("historico")
 .orderBy("timestamp", "desc")
-.limit(20)
+.limit(100)
 .get();
 
 let html = "";
