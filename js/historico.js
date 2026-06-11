@@ -331,11 +331,15 @@ ontem.style.display = "none";
 }
 
 document
-.querySelectorAll(
-'[id^="data"]'
-)
+.querySelectorAll('[id^="data"]')
 .forEach((el) => {
+
 el.style.display = "none";
+
+localStorage.setItem(
+`grupo_${el.id.replace('data','')}`,
+'fechado'
+);
 });
 
 };
@@ -379,12 +383,18 @@ htmlAntigos += `
 <div
 onclick="
 const el =
-document.getElementById('data${idData}');
+document.getElementById(`data${idData}`);
+
+const aberto =
+el.style.display === 'none';
 
 el.style.display =
-el.style.display === 'none'
-? 'block'
-: 'none';
+aberto ? 'block' : 'none';
+
+localStorage.setItem(
+`grupo_${idData}`,
+aberto ? 'aberto' : 'fechado'
+);
 "
 style="
 margin-top:20px;
@@ -402,7 +412,13 @@ cursor:pointer;
 
 <div
 id="data${idData}"
-style="display:none;"
+style="
+display:${
+localStorage.getItem(`grupo_${idData}`) === 'aberto'
+? 'block'
+: 'none'
+};
+"
 >
 
 ${gruposAntigos[data]}
