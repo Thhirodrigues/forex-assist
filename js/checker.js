@@ -1,190 +1,170 @@
-// =====================================================
-// Forex Assist
-// scripts/checker.js
-// V5.1.0 - Base Profissional
-// =====================================================
-
 const admin = require("firebase-admin");
 const axios = require("axios");
 
 const serviceAccount = require("../serviceAccount.json");
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert(serviceAccount)
 });
 
 const db = admin.firestore();
 
+const API_KEY = process.env.API_KEY;
+
 // =====================================================
-// Calcula quantidade de pips
+// CONFIGURAÇÕES
 // =====================================================
 
-function calcularPips(par, direcao, entrada, fechamento) {
+const TEMPO_RESULTADO_MINUTOS = 15;
 
-  const pip =
-    par.endsWith("JPY")
-      ? 0.01
-      : 0.0001;
+// =====================================================
+// UTILITÁRIOS
+// =====================================================
 
-  let valor;
+function calcularPips(par, entrada, fechamento) {
 
-  if (direcao === "CALL") {
+    const fator = par.includes("JPY") ? 100 : 10000;
 
-    valor =
-      (fechamento - entrada) / pip;
-
-  } else {
-
-    valor =
-      (entrada - fechamento) / pip;
-
-  }
-
-  return Number(valor.toFixed(1));
+    return Number(
+        ((fechamento - entrada) * fator).toFixed(1)
+    );
 
 }
 
-// =====================================================
-// Busca preço atual
-// =====================================================
+function calcularVariacaoPercentual(entrada, fechamento) {
 
-async function buscarPreco(par) {
-
-  const url =
-    `https://api.twelvedata.com/price?symbol=${par}&apikey=${process.env.API_KEY}`;
-
-  const resposta =
-    await axios.get(url);
-
-  return Number(resposta.data.price);
-
-}
-
-// =====================================================
-// Processa um único sinal
-// =====================================================
-
-async function processarSinal(doc) {
-
-  const sinal = doc.data();
-
-  if (
-    !sinal.timestamp ||
-    !sinal.precoEntrada ||
-    !sinal.par
-  ) {
-    return;
-  }
-
-  const entrada =
-    sinal.timestamp.toDate().getTime();
-
-  const minutos =
-    (Date.now() - entrada) / 60000;
-
-  if (minutos < 15) {
-    return;
-  }
-
-  try {
-
-    const precoAtual =
-      await buscarPreco(sinal.par);
-
-    let resultado = "LOSS";
-
-    if (
-      sinal.direcao === "CALL" &&
-      precoAtual > sinal.precoEntrada
-    ) {
-      resultado = "WIN";
-    }
-
-    if (
-      sinal.direcao === "PUT" &&
-      precoAtual < sinal.precoEntrada
-    ) {
-      resultado = "WIN";
-    }
-
-    const movimentoPips =
-      calcularPips(
-        sinal.par,
-        sinal.direcao,
-        sinal.precoEntrada,
-        precoAtual
-      );
-
-    const variacaoPercentual =
-      Number(
+    return Number(
         (
-          (
-            (precoAtual - sinal.precoEntrada) /
-            sinal.precoEntrada
-          ) * 100
+            ((fechamento - entrada) / entrada) * 100
         ).toFixed(4)
-      );
-
-    await doc.ref.update({
-
-      resultado,
-
-      precoFechamento:
-        precoAtual,
-
-      horarioResultado:
-        new Date()
-          .toLocaleTimeString("pt-BR"),
-
-      movimentoPips,
-
-      variacaoPercentual,
-
-      tempoDecorrido:
-        Math.floor(minutos)
-
-    });
-
-    console.log(
-      `${sinal.par} | ${resultado} | ${movimentoPips} pips`
     );
 
-  } catch (erro) {
+}
 
-    console.log(
-      "Erro:",
-      sinal.par,
-      erro.message
-    );
+async function buscarPrecoAtual(par) {
 
-  }
+    const url =
+        `https://api.twelvedata.com/price?symbol=${par}&apikey=${API_KEY}`;
+
+    const resposta = await axios.get(url);
+
+    if (!resposta.data.price) {
+        throw new Error("Preço não encontrado.");
+    }
+
+    return Number(resposta.data.price);
 
 }
 
 // =====================================================
-// Execução principal
+// PROCESSAMENTO
 // =====================================================
 
-async function executar() {
+async function verificarSinais() {
 
-  const snapshot =
-    await db
-      .collection("historico")
-      .where("resultado", "==", null)
-      .get();
+    console.log("====================================");
+    console.log("Forex Assist Result Checker");
+    console.log("====================================");
 
-  console.log(
-    `Sinais pendentes: ${snapshot.size}`
-  );
+    const snapshot = await db
+        .collection("historico")
+        .where("resultado", "==", null)
+        .get();
 
-  for (const doc of snapshot.docs) {
+    console.log(`Pendentes: ${snapshot.size}`);
 
-    await processarSinal(doc);
+    const agora = Date.now();
 
-  }
+    for (const documento of snapshot.docs) {
 
-  console.log("Result Checker finalizado.");
+        const sinal = documento.data();
+
+        if (
+            !sinal.timestamp ||
+            !sinal.precoEntrada ||
+            !sinal.par
+        ) {
+            continue;
+        }
+
+        const entrada =
+            sinal.timestamp.toDate().getTime();
+
+        const minutos =
+            (agora - entrada) / 60000;
+
+        if (minutos < TEMPO_RESULTADO_MINUTOS) {
+            continue;
+        }
+
+        try {
+
+            const precoAtual =
+                await buscarPrecoAtual(sinal.par);
+
+            let resultado = "LOSS";
+
+            if (
+                sinal.direcao === "CALL" &&
+                precoAtual > sinal.precoEntrada
+            ) {
+                resultado = "WIN";
+            }
+
+            if (
+                sinal.direcao === "PUT" &&
+                precoAtual < sinal.precoEntrada
+            ) {
+                resultado = "WIN";
+            }
+
+            const movimentoPips =
+                calcularPips(
+                    sinal.par,
+                    sinal.precoEntrada,
+                    precoAtual
+                );
+
+            const variacaoPercentual =
+                calcularVariacaoPercentual(
+                    sinal.precoEntrada,
+                    precoAtual
+                );
+
+            await documento.ref.update({
+
+                resultado,
+
+                precoFechamento: precoAtual,
+
+                horarioResultado:
+                    new Date().toLocaleTimeString("pt-BR"),
+
+                movimentoPips,
+
+                variacaoPercentual,
+
+                tempoDecorrido:
+                    Math.floor(minutos)
+
+            });
+
+            console.log(
+                `${sinal.par} | ${resultado} | ${movimentoPips} pips`
+            );
+
+        } catch (erro) {
+
+            console.log(
+                `Erro em ${sinal.par}: ${erro.message}`
+            );
+
+        }
+
+    }
+
+    console.log("Finalizado.");
 
 }
 
-executar();
+verificarSinais();
