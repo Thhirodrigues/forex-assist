@@ -1,10 +1,37 @@
-.github/
-   workflows/
-      result-checker.yml
+name: Result Check
 
-js/
-   checker.js
-   scanner.js
-   expert.js
-   historico.js
-   ...
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "*/5 * * * *"
+
+jobs:
+
+  checker:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install firebase-admin@11.11.1 axios
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Run Result Checker
+        env:
+          API_KEY: ${{ secrets.TWELVEDATA_KEY }}
+        run: |
+          node js/checker.js
