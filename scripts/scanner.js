@@ -19,6 +19,10 @@ const {
 const {
   calcularQualidade
 } = require("./marketAnalyzer");
+const {
+  existeCooldown: verificarCooldown
+} = require("./riskManager");
+
 const apiIndex = {
   value: 0
 };
@@ -74,8 +78,10 @@ async function existeCooldown(par) {
   const ultimo =
     snap.docs[0].data();
 
-  return ultimo.timestamp > limite;
-}
+  return verificarCooldown(
+  ultimo.timestamp,
+  COOLDOWN_MINUTOS
+);
 
 async function salvarOperacao(dados) {
 
