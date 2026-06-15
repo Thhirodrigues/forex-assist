@@ -158,9 +158,7 @@ async function salvarOperacao(dados) {
     .add({
       ...dados,
       horario:
-        new Date().toLocaleString(
-          "pt-BR"
-        ),
+        new Date().toLocaleString("pt-BR"),
       timestamp:
         Date.now()
     });
@@ -177,198 +175,115 @@ async function analisarPar(par) {
       await getCandles(par);
 
     const closes =
-      candles.map(c =>
-        Number(c.close)
-      );
+      candles.map(c => Number(c.close));
 
     const ema9 =
-      ema(
-        9,
-        closes.slice(-30)
-      );
+      ema(9, closes.slice(-30));
 
     const ema21 =
-      ema(
-        21,
-        closes.slice(-50)
-      );
+      ema(21, closes.slice(-50));
 
     const rsiAtual =
-      rsi(
-        14,
-        closes.slice(-15)
-      );
+      rsi(14, closes.slice(-15));
 
     let direcao = null;
 
-    if (
-      ema9 > ema21 &&
-      rsiAtual > 55
-    ) {
+    if (ema9 > ema21 && rsiAtual > 55)
       direcao = "CALL";
-    }
 
-    if (
-      ema9 < ema21 &&
-      rsiAtual < 45
-    ) {
+    if (ema9 < ema21 && rsiAtual < 45)
       direcao = "PUT";
-    }
 
     if (!direcao)
       return;
-    }
+    const qualidade =
+      calcularQualidade(
+        ema9,
+        ema21,
+        rsiAtual
+      );
 
-              const qualidade =
-                calcularQualidade(
-                  ema9,
-                  ema21,
-                  rsiAtual
-                );
+    await salvarOperacao({
 
-              await salvarOperacao({
+      par,
 
-                par,
+      direcao,
 
-                direcao,
+      ema9,
 
-                ema9,
+      ema21,
 
-                ema21,
+      rsi: rsiAtual,
 
-                rsi: rsiAtual,
+      qualidade,
 
-                qualidade,
+      modo: "REAL",
 
-                modo: "REAL",
+      origem: "scanner",
 
-                origem: "scanner",
+      precoEntrada:
+        closes[
+          closes.length - 1
+        ],
 
-                precoEntrada:
-                  closes[
-                    closes.length - 1
-                  ],
+      resultado: "PENDENTE"
 
-                resultado: "PENDENTE"
+    });
 
-              });
+    console.log(
+      `${par} ${direcao} OK`
+    );
 
-              console.log(
-                `${par} ${direcao} OK`
-              );
+  } catch (e) {
 
-            } catch (e) {
+    console.log(
+      `${par} erro`,
+      e.message
+    );
 
-              console.log(
-                `${par} erro`,
-                e.message
-              );
+  }
 
-            }
+}
 
-          }
+async function main() {
 
-          async function main() {
+  console.log(
+    "Scanner iniciado..."
+  );
 
-            console.log(
-              "Scanner iniciado..."
-            );
+  for (const par of pares) {
 
-            for (const par of pares) {
+    await analisarPar(par);
 
-              await analisarPar(par);
+  }
 
-            }
+  console.log(
+    "Scanner finalizado."
+  );
 
-            console.log(
-              "Scanner finalizado."
-            );
+}
 
-          }
+main()
+  .then(() =>
+    process.exit(0)
+  )
+  .catch(err => {
 
-          main()
-            .then(() =>
-              process.exit(0)
-            )
-            .catch(err => {
+    console.error(err);
 
-              console.error(err);
+    process.exit(1);
 
-              process.exit(1);
+  });
+// Fim do scanner modular.
+// Nesta etapa da migração não há mais código após o main().
 
-            });
-            .get();
-
-            const tokens = [];
-
-            tokensSnapshot.forEach(doc => {
-
-              const dados = doc.data();
-
-              if (dados.token) {
-                tokens.push(dados.token);
-              }
-
-            });
-
-            if (tokens.length > 0) {
-
-              try {
-
-                const resultado =
-                  await admin.messaging()
-                    .sendEachForMulticast({
-
-                      tokens,
-
-                      notification: {
-                        title: "Forex Assist",
-                        body: `${sinal.par} ${sinal.direcao} ${sinal.qualidade}%`
-                      },
-
-                      data: {
-                        par: sinal.par,
-                        direcao: sinal.direcao,
-                        qualidade: String(sinal.qualidade)
-                      }
-
-                    });
-
-                console.log(
-                  `Push enviado: ${resultado.successCount}/${tokens.length}`
-                );
-
-              } catch (erro) {
-
-                console.log(
-                  "Erro FCM:",
-                  erro.message
-                );
-
-              }
-
-            }
-
-            await db
-                              .collection("scanner")
-                              .doc("status")
-                              .set({
-           ultimaAnalise:
-          sinal.par,
-                ultimoSinal:
-                  `${sinal.par} ${sinal.direcao}`,
-                sinaisHoje:
-                  admin.firestore
-                    .FieldValue
-                    .increment(1)
-              }, {
-                merge: true
-              });
-
-            console.log(
-              "Melhor sinal:",
-              sinal
-            );
-          }
-
-          executar();
+module.exports = {
+  getCandles,
+  ema,
+  rsi,
+  calcularQualidade,
+  existeCooldown,
+  salvarOperacao,
+  analisarPar,
+  main
+};
