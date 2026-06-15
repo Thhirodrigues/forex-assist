@@ -41,7 +41,7 @@ async function getCandles(symbol) {
     `?symbol=${encodeURIComponent(symbol)}` +
     `&interval=5min` +
     `&outputsize=120` +
-    &apikey=${getApiKey(API_KEYS, apiIndex)}
+    '&apikey=${getApiKey(API_KEYS, apiIndex)}'
 
   const res = await axios.get(url);
 
