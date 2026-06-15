@@ -82,7 +82,7 @@ async function existeCooldown(par) {
   ultimo.timestamp,
   COOLDOWN_MINUTOS
 );
-
+}
 async function salvarOperacao(dados) {
 
   await db
@@ -100,9 +100,9 @@ async function analisarPar(par) {
 
   try {
 
-    if (await existeCooldown(par))
-      return;
-
+    if (await verificarCooldown(par))
+    return;
+    
     const candles =
       await getCandles(par);
 
