@@ -2,7 +2,7 @@ const admin = require("firebase-admin");
 const axios = require("axios");
 
 const serviceAccount =
-  require("./serviceAccount.json");
+  require("../serviceAccount.json");
 
 admin.initializeApp({
   credential:
@@ -14,9 +14,9 @@ const db = admin.firestore();
 const COOLDOWN_MINUTOS = 30;
 
 const API_KEYS = [
-  process.env.TWELVEDATA_KEY_1,
-  process.env.TWELVEDATA_KEY_2,
-  process.env.TWELVEDATA_KEY_3
+  process.env.API_KEY_1,
+  process.env.API_KEY_2,
+  process.env.API_KEY_3
 ].filter(Boolean);
 
 let apiIndex = 0;
