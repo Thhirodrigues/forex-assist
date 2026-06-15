@@ -11,13 +11,15 @@ const API_KEYS = [
   process.env.API_KEY_3
 ].filter(Boolean);
 
-let apiIndex = 0;
+const {
+  getApiKey,
+  ema,
+  rsi
+} = require("./utils");
 
-function getApiKey() {
-  const key = API_KEYS[apiIndex];
-  apiIndex = (apiIndex + 1) % API_KEYS.length;
-  return key;
-}
+const apiIndex = {
+  value: 0
+};
 
 const pares = [
   "EUR/USD",
@@ -39,7 +41,7 @@ async function getCandles(symbol) {
     `?symbol=${encodeURIComponent(symbol)}` +
     `&interval=5min` +
     `&outputsize=120` +
-    `&apikey=${getApiKey()}`;
+    &apikey=${getApiKey(API_KEYS, apiIndex)}
 
   const res = await axios.get(url);
 
@@ -47,48 +49,6 @@ async function getCandles(symbol) {
     throw new Error("Sem candles");
 
   return res.data.values.reverse();
-}
-
-function ema(periodo, valores) {
-
-  const k = 2 / (periodo + 1);
-
-  let emaAtual = valores[0];
-
-  for (let i = 1; i < valores.length; i++) {
-    emaAtual =
-      valores[i] * k +
-      emaAtual * (1 - k);
-  }
-
-  return emaAtual;
-}
-
-function rsi(periodo, valores) {
-
-  let ganhos = 0;
-  let perdas = 0;
-
-  for (let i = 1; i <= periodo; i++) {
-
-    const dif =
-      valores[i] - valores[i - 1];
-
-    if (dif >= 0)
-      ganhos += dif;
-    else
-      perdas -= dif;
-  }
-
-  let avgGain = ganhos / periodo;
-  let avgLoss = perdas / periodo;
-
-  if (avgLoss === 0)
-    return 100;
-
-  const rs = avgGain / avgLoss;
-
-  return 100 - (100 / (1 + rs));
 }
 function calcularQualidade(ema9, ema21, rsiAtual) {
 
