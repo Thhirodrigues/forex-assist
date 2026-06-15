@@ -1,12 +1,8 @@
-const admin = require("firebase-admin");
-const axios = require("axios");
+const { admin, db } =
+  require("./firebase");
 
-const serviceAccount =
-  require("../serviceAccount.json");
-
-admin.initializeApp({
-  credential:
-    admin.credential.cert(serviceAccount)
+const axios =
+  require("axios");
 });
 
 const db = admin.firestore();
