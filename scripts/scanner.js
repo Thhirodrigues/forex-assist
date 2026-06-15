@@ -3,10 +3,6 @@ const { admin, db } =
 
 const axios =
   require("axios");
-});
-
-const db = admin.firestore();
-
 const COOLDOWN_MINUTOS = 30;
 
 const API_KEYS = [
