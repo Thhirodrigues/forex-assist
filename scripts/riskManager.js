@@ -13,6 +13,21 @@ function existeCooldown(ultimoTimestamp, cooldownMinutos) {
 
 }
 
+async function salvarOperacao(db, dados) {
+
+  await db
+    .collection("historico")
+    .add({
+      ...dados,
+      horario:
+        new Date().toLocaleString("pt-BR"),
+      timestamp:
+        Date.now()
+    });
+
+}
+
 module.exports = {
-  existeCooldown
+  existeCooldown,
+  salvarOperacao
 };
