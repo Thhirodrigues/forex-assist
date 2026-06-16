@@ -2,7 +2,7 @@ const axios = require("axios");
 const {
   getApiKey,
 } = require("./utils");
-};
+
 const API_KEYS = [
   process.env.API_KEY_1,
   process.env.API_KEY_2,
@@ -11,7 +11,7 @@ const API_KEYS = [
 
 const apiIndex = {
   value: 0
-}
+};
 
 async function getCandles(symbol) {
 const url =
