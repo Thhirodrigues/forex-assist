@@ -13,6 +13,10 @@ const {
   calcularQualidade
 } = require("./marketAnalyzer");
 const {
+    ema,
+    rsi
+} = require("./utils");
+const {
   existeCooldown: verificarCooldown,
   salvarOperacao
 } = require("./riskManager");
