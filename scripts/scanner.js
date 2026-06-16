@@ -44,8 +44,6 @@ const pares = [
   "EUR/GBP"
 ];
 
-async function getCandles(symbol) {
-
   
 async function existeCooldown(par) {
 
