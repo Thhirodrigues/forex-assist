@@ -15,6 +15,7 @@ const apiIndex = {
   value: 0
 };
 
+async function getCandles(symbol) {
 const url =
     `https://api.twelvedata.com/time_series` +
     `?symbol=${encodeURIComponent(symbol)}` +
