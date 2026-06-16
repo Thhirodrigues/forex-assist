@@ -1,5 +1,14 @@
-async function analisarPar() {
-  // implementação será movida na próxima etapa
+async function analisarPar({
+  db,
+  par,
+  getCandles,
+  ema,
+  rsi,
+  calcularQualidade,
+  verificarCooldown,
+  salvarOperacao
+}) {
+
 }
 
 module.exports = {
