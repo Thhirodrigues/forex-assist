@@ -1,8 +1,6 @@
 const axios = require("axios");
 const {
   getApiKey,
-  ema,
-  rsi
 } = require("./utils");
 };
 const API_KEYS = [
@@ -13,7 +11,7 @@ const API_KEYS = [
 
 const apiIndex = {
   value: 0
-};
+}
 
 async function getCandles(symbol) {
 const url =
@@ -30,3 +28,6 @@ const url =
 
   return res.data.values.reverse();
 }
+module.exports = {
+    getCandles
+};
