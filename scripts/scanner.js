@@ -1,25 +1,14 @@
 const { admin, db } =
   require("./firebase");
 
-const axios =
-  require("axios");
 const COOLDOWN_MINUTOS = 30;
 
 const {
     analisarPar: analisarParNovo
 } = require("./pairAnalyzer");
-
-const API_KEYS = [
-  process.env.API_KEY_1,
-  process.env.API_KEY_2,
-  process.env.API_KEY_3
-].filter(Boolean);
-
 const {
-  getApiKey,
-  ema,
-  rsi
-} = require("./utils");
+    getCandles
+} = require("./marketData");
 const {
   calcularQualidade
 } = require("./marketAnalyzer");
@@ -27,9 +16,6 @@ const {
   existeCooldown: verificarCooldown,
   salvarOperacao
 } = require("./riskManager");
-const apiIndex = {
-  value: 0
-};
 
 const pares = [
   "EUR/USD",
