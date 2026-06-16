@@ -5,6 +5,10 @@ const axios =
   require("axios");
 const COOLDOWN_MINUTOS = 30;
 
+const {
+  analisarPar
+} = require("./pairAnalyzer");
+
 const API_KEYS = [
   process.env.API_KEY_1,
   process.env.API_KEY_2,
