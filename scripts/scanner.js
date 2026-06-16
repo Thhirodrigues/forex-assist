@@ -20,9 +20,9 @@ const {
   calcularQualidade
 } = require("./marketAnalyzer");
 const {
-  existeCooldown: verificarCooldown
+  existeCooldown: verificarCooldown,
+  salvarOperacao
 } = require("./riskManager");
-
 const apiIndex = {
   value: 0
 };
@@ -135,8 +135,7 @@ async function analisarPar(par) {
         rsiAtual
       );
 
-    await salvarOperacao({
-
+    await salvarOperacao(db, {
       par,
 
       direcao,
