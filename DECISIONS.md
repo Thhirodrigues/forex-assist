@@ -1,6 +1,6 @@
 # DECISIONS
 
-## 2026-006-16
+## 2026-06-16
 
 ### Arquitetura Modular
 
