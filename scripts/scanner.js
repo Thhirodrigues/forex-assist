@@ -83,19 +83,6 @@ async function existeCooldown(par) {
   COOLDOWN_MINUTOS
 );
 }
-async function salvarOperacao(dados) {
-
-  await db
-    .collection("historico")
-    .add({
-      ...dados,
-      horario:
-        new Date().toLocaleString("pt-BR"),
-      timestamp:
-        Date.now()
-    });
-}
-
 async function analisarPar(par) {
 
   try {
