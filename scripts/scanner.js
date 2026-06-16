@@ -6,7 +6,7 @@ const axios =
 const COOLDOWN_MINUTOS = 30;
 
 const {
-  analisarPar
+    analisarPar: analisarParNovo
 } = require("./pairAnalyzer");
 
 const API_KEYS = [
