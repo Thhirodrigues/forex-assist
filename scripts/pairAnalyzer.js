@@ -39,6 +39,42 @@ if (ema9 < ema21 && rsiAtual < 45)
 
 if (!direcao)
     return;
+        const qualidade =
+    calcularQualidade(
+        ema9,
+        ema21,
+        rsiAtual
+    );
+
+await salvarOperacao(db, {
+    par,
+
+    direcao,
+
+    ema9,
+
+    ema21,
+
+    rsi: rsiAtual,
+
+    qualidade,
+
+    modo: "REAL",
+
+    origem: "scanner",
+
+    precoEntrada:
+        closes[
+            closes.length - 1
+        ],
+
+    resultado: "PENDENTE"
+
+});
+
+console.log(
+    `${par} ${direcao} OK`
+);
 
     } catch (e) {
         console.log(`${par} erro`, e.message);
