@@ -29,6 +29,17 @@ async function analisarPar({
         const rsiAtual =
             rsi(14, closes.slice(-15));
 
+        let direcao = null;
+
+if (ema9 > ema21 && rsiAtual > 55)
+    direcao = "CALL";
+
+if (ema9 < ema21 && rsiAtual < 45)
+    direcao = "PUT";
+
+if (!direcao)
+    return;
+
     } catch (e) {
         console.log(`${par} erro`, e.message);
     }
