@@ -208,12 +208,5 @@ main()
 // Nesta etapa da migração não há mais código após o main().
 
 module.exports = {
-  getCandles,
-  ema,
-  rsi,
-  calcularQualidade,
-  existeCooldown,
-  salvarOperacao,
-  analisarPar,
-  main
+    main
 };
