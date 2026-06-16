@@ -1,5 +1,19 @@
 const axios = require("axios");
+const {
+  getApiKey,
+  ema,
+  rsi
+} = require("./utils");
+};
+const API_KEYS = [
+  process.env.API_KEY_1,
+  process.env.API_KEY_2,
+  process.env.API_KEY_3
+].filter(Boolean);
 
+const apiIndex = {
+  value: 0
+};
 
 const url =
     `https://api.twelvedata.com/time_series` +
