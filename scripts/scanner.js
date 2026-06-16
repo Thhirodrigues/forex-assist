@@ -175,8 +175,16 @@ async function main() {
 
   for (const par of pares) {
 
-    await analisarPar(par);
-
+    await analisarParNovo({
+    db,
+    par,
+    getCandles,
+    ema,
+    rsi,
+    calcularQualidade,
+    verificarCooldown: existeCooldown,
+    salvarOperacao
+});
   }
 
   console.log(
