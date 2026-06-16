@@ -32,10 +32,10 @@ async function analisarPar({
         let direcao = null;
 
 if (ema9 > ema21 && rsiAtual > 55)
-    direcao = "CALL";
+    direcao = "BUY";
 
 if (ema9 < ema21 && rsiAtual < 45)
-    direcao = "PUT";
+    direcao = "SELL";
 
 if (!direcao)
     return;
