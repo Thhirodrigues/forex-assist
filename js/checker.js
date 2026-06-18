@@ -44,15 +44,19 @@ function calcularVariacaoPercentual(entrada, fechamento) {
 async function buscarPrecoFechamento(par) {
 
     const url =
-        `https://api.twelvedata.com/price?symbol=${par}&apikey=${API_KEY}`;
+        `https://api.twelvedata.com/time_series?symbol=${par}&interval=15min&outputsize=2&apikey=${API_KEY}`;
 
     const resposta = await axios.get(url);
 
-    if (!resposta.data.price) {
-        throw new Error("Preço não encontrado.");
+    if (
+        !resposta.data.values ||
+        resposta.data.values.length < 2
+    ) {
+        throw new Error("Candle de fechamento não encontrado.");
     }
 
-    return Number(resposta.data.price);
+    // values[1] = último candle fechado
+    return Number(resposta.data.values[1].close);
 
 }
 
