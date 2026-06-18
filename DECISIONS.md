@@ -39,3 +39,7 @@ Motivos:
 Status:
 
 Concluído.
+
+...
+
+Refatoração concluída da função buscarPrecoFechamento, preparando a migração do Result Checker de preço instantâneo para fechamento oficial de candle.
