@@ -39,7 +39,31 @@ Motivos:
 Status:
 
 Concluído.
+---
 
-...
+## 2026-06-16
 
-Refatoração concluída da função buscarPrecoFechamento, preparando a migração do Result Checker de preço instantâneo para fechamento oficial de candle.
+### DEC-003
+
+# Padronização da função buscarPrecoFechamento
+
+Status:
+Concluído.
+
+Descrição
+
+Foi decidido padronizar toda a lógica do Result Checker utilizando a função `buscarPrecoFechamento()`.
+
+Essa função passa a representar oficialmente a obtenção do preço utilizado na validação dos sinais, eliminando nomenclaturas antigas e preparando a evolução da implementação.
+
+Motivação
+
+- padronização da arquitetura;
+- melhoria da legibilidade do código;
+- preparação para utilização do fechamento oficial do candle;
+- redução de ambiguidades na regra de negócio.
+
+Impacto
+
+Todo o projeto passa a utilizar uma única nomenclatura para obtenção do preço de fechamento, facilitando futuras evoluções sem necessidade de alterar o restante da lógica.
+
