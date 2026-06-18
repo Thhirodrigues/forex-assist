@@ -16,13 +16,12 @@ function existeCooldown(ultimoTimestamp, cooldownMinutos) {
 async function salvarOperacao(db, dados) {
 
   await db
-    .collection("historico")
-    .add({
-      ...dados,
-      horario:
-        new Date().toLocaleString("pt-BR"),
-      timestamp: admin.firestore.FieldValue.serverTimestamp()
-
+  .collection("historico")
+  .add({
+    ...dados,
+    horario: new Date().toLocaleString("pt-BR"),
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
+  });
 }
 
 module.exports = {
