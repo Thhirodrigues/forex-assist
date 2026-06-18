@@ -74,14 +74,11 @@ sinal.status === "COOLDOWN" ||
 sinal.origem === "cooldown";
 
 const dataSinal =
-sinal.timestamp
-? sinal.timestamp
-.toDate()
-.toLocaleDateString(
+dataTimestamp
+? dataTimestamp.toLocaleDateString(
 "pt-BR",
 {
-timeZone:
-"America/Sao_Paulo"
+timeZone:"America/Sao_Paulo"
 }
 )
 : "";
