@@ -105,14 +105,14 @@ async function verificarSinais() {
             let resultado = "LOSS";
 
             if (
-                sinal.direcao === "CALL" &&
+                sinal.direcao === "BUY" &&
                 precoAtual > sinal.precoEntrada
             ) {
                 resultado = "WIN";
             }
 
             if (
-                sinal.direcao === "PUT" &&
+                sinal.direcao === "SELL" &&
                 precoAtual < sinal.precoEntrada
             ) {
                 resultado = "WIN";
