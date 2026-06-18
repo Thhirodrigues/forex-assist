@@ -70,6 +70,9 @@ async function main() {
 
   for (const par of pares) {
 
+    console.log("\n========================");
+    console.log(`Analisando ${par}`);
+
     await analisarParNovo({
     db,
     par,
@@ -80,6 +83,8 @@ async function main() {
     verificarCooldown: existeCooldown,
     salvarOperacao
 });
+
+console.log(`${par} finalizado.`);
   }
 
   console.log(
