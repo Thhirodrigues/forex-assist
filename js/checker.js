@@ -72,7 +72,7 @@ async function verificarSinais() {
 
     const snapshot = await db
         .collection("historico")
-        .where("resultado", "==", null)
+        .where("resultado", "==", "PENDENTE")
         .get();
 
     console.log(`Pendentes: ${snapshot.size}`);
