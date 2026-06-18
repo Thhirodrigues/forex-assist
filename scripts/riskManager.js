@@ -21,9 +21,7 @@ async function salvarOperacao(db, dados) {
       ...dados,
       horario:
         new Date().toLocaleString("pt-BR"),
-      timestamp:
-        Date.now()
-    });
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
 
 }
 
