@@ -125,8 +125,7 @@ const card = `
 
     ${
       sinal.timestamp
-        ? sinal.timestamp
-            .toDate()
+        ? dataTimestamp
             .toLocaleTimeString(
               "pt-BR",
               {
@@ -201,8 +200,7 @@ const card = `
     color:#8c95b3;
   ">${
   sinal.timestamp
-    ? sinal.timestamp
-        .toDate()
+    ? dataTimestamp
         .toLocaleDateString(
           "pt-BR",
           {
@@ -217,8 +215,7 @@ const card = `
 
 ${
   sinal.timestamp
-    ? sinal.timestamp
-        .toDate()
+    ? dataTimestamp
         .toLocaleTimeString(
           "pt-BR",
           {
