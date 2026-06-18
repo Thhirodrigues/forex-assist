@@ -41,7 +41,7 @@ function calcularVariacaoPercentual(entrada, fechamento) {
 
 }
 
-async function buscarPrecoAtual(par) {
+async function buscarPrecoFechamento(par) {
 
     const url =
         `https://api.twelvedata.com/price?symbol=${par}&apikey=${API_KEY}`;
@@ -100,7 +100,7 @@ async function verificarSinais() {
         try {
 
             const precoAtual =
-                await buscarPrecoAtual(sinal.par);
+                await buscarPrecoFechamento(sinal.par);
 
             let resultado = "LOSS";
 
