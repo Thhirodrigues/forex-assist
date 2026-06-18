@@ -41,7 +41,7 @@ Status:
 Concluído.
 ---
 
-## 2026-06-16
+## 2026-06-18
 
 ### DEC-003
 
@@ -67,3 +67,24 @@ Impacto
 
 Todo o projeto passa a utilizar uma única nomenclatura para obtenção do preço de fechamento, facilitando futuras evoluções sem necessidade de alterar o restante da lógica.
 
+2026-06-18
+
+Validação por Fechamento de Candle
+
+Foi decidido que o Result Checker deixará de utilizar o preço instantâneo ("/price") para validar operações.
+
+A partir desta decisão, toda verificação de resultado será baseada no fechamento do candle correspondente ao timeframe da operação.
+
+A implementação passa a utilizar o endpoint "time_series" da TwelveData, consultando os dois últimos candles de 15 minutos e considerando o fechamento do último candle encerrado ("values[1].close").
+
+Motivos:
+
+- maior fidelidade ao comportamento real do mercado;
+- eliminação de diferenças causadas por oscilações instantâneas de preço;
+- maior consistência estatística;
+- padronização da validação dos resultados;
+- preparação da plataforma para análises históricas e aprendizado futuro.
+
+Status:
+
+Concluído.
