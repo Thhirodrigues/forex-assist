@@ -1,5 +1,4 @@
 const admin = require("firebase-admin");
-const axios = require("axios");
 const { getCandles } = require("../scripts/marketData");
 
 const serviceAccount = require("../serviceAccount.json");
@@ -9,8 +8,6 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
-
-const API_KEY = process.env.API_KEY;
 
 // =====================================================
 // CONFIGURAÇÕES
