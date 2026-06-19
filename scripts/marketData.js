@@ -3,11 +3,9 @@ const {
   getApiKey,
 } = require("./utils");
 
-const API_KEYS = [
-    process.env.TWELVEDATA_KEY,
-    process.env.TWELVEDATA_KEY_2,
-    process.env.TWELVEDATA_KEY_3
-].filter(Boolean);
+process.env.API_KEY_1
+process.env.API_KEY_2
+process.env.API_KEY_3
 
 const apiIndex = {
   value: 0
