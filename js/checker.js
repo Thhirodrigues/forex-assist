@@ -92,7 +92,9 @@ async function verificarSinais() {
         }
 
         const entrada =
-            sinal.timestamp.toDate().getTime();
+    typeof sinal.timestamp === "number"
+        ? sinal.timestamp
+        : sinal.timestamp.toDate().getTime();
 
         const minutos =
             (agora - entrada) / 60000;
