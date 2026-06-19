@@ -4,9 +4,9 @@ const {
 } = require("./utils");
 
 const API_KEYS = [
-  process.env.API_KEY_1,
-  process.env.API_KEY_2,
-  process.env.API_KEY_3
+    process.env.TWELVEDATA_KEY,
+    process.env.TWELVEDATA_KEY_2,
+    process.env.TWELVEDATA_KEY_3
 ].filter(Boolean);
 
 const apiIndex = {
