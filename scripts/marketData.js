@@ -2,9 +2,11 @@ const axios = require("axios");
 const {
   getApiKey,
 } = require("./utils");
-process.env.API_KEY_1
-process.env.API_KEY_2
-process.env.API_KEY_3
+const API_KEYS = [
+  process.env.API_KEY_1,
+  process.env.API_KEY_2,
+  process.env.API_KEY_3
+];
 const apiIndex = {
   value: 0
 };
