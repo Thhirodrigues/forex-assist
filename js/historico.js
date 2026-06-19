@@ -66,11 +66,11 @@ const sinal = doc.data();
 let dataTimestamp = null;
 
 if (
-    sinal.timestamp &&
+    dataTimestamp &&
     !isNaN(
         new Date(
-            typeof sinal.timestamp === "number" &&
-            sinal.timestamp < 1000000000000
+            typeof dataTimestamp === "number" &&
+            dataTimestamp < 1000000000000
                 ? sinal.timestamp * 1000
                 : sinal.timestamp
         ).getTime()
