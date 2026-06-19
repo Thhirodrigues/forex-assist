@@ -66,11 +66,11 @@ const sinal = doc.data();
 let dataTimestamp = null;
 
 if (
-    dataTimestamp &&
+    sinal.timestamp &&
     !isNaN(
         new Date(
-            typeof dataTimestamp === "number" &&
-            dataTimestamp < 1000000000000
+            typeof sinal.timestamp === "number" &&
+            sinal.timestamp < 1000000000000
                 ? sinal.timestamp * 1000
                 : sinal.timestamp
         ).getTime()
@@ -167,7 +167,7 @@ const card = `
     <br>
 
     ${
-      sinal.timestamp
+      dataTimestamp
         ? dataTimestamp
             .toLocaleTimeString(
               "pt-BR",
@@ -242,7 +242,7 @@ const card = `
     font-size:12px;
     color:#8c95b3;
   ">${
-  sinal.timestamp
+  dataTimestamp
     ? dataTimestamp
         .toLocaleDateString(
           "pt-BR",
@@ -257,7 +257,7 @@ const card = `
 &nbsp;
 
 ${
-  sinal.timestamp
+  dataTimestamp
     ? dataTimestamp
         .toLocaleTimeString(
           "pt-BR",
