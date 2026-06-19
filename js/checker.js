@@ -1,5 +1,6 @@
 const admin = require("firebase-admin");
 const axios = require("axios");
+const { getCandles } = require("../scripts/marketData");
 
 const serviceAccount = require("../serviceAccount.json");
 
@@ -40,23 +41,11 @@ function calcularVariacaoPercentual(entrada, fechamento) {
     );
 
 }
-
 async function buscarPrecoFechamento(par) {
 
-    const url =
-        `https://api.twelvedata.com/time_series?symbol=${par}&interval=15min&outputsize=2&apikey=${API_KEY}`;
+    const candles = await getCandles(par);
 
-    const resposta = await axios.get(url);
-
-    if (
-        !resposta.data.values ||
-        resposta.data.values.length < 2
-    ) {
-        throw new Error("Candle de fechamento não encontrado.");
-    }
-
-    // values[1] = último candle fechado
-    return Number(resposta.data.values[1].close);
+    return Number(candles[candles.length - 1].close);
 
 }
 
