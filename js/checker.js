@@ -1,6 +1,14 @@
 const admin = require("firebase-admin");
 const { getCandles } = require("../scripts/marketData");
 
+console.log("KEY 1:", !!process.env.TWELVEDATA_KEY);
+console.log("KEY 2:", !!process.env.TWELVEDATA_KEY_2);
+console.log("KEY 3:", !!process.env.TWELVEDATA_KEY_3);
+
+const key = getApiKey(API_KEYS, apiIndex);
+console.log("Key existe?", !!key);
+console.log("Primeiros 5 caracteres:", key ? key.substring(0,5) : "undefined");
+
 const serviceAccount = require("../serviceAccount.json");
 
 admin.initializeApp({
