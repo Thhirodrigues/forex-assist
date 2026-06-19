@@ -63,11 +63,16 @@ snapshot.forEach((doc) => {
 
 const sinal = doc.data();
 
+const dataTimestamp =
+    sinal.timestamp
+        ? new Date(sinal.timestamp)
+        : null;
+
 if (sinal.resultado === "WIN")
-wins++;
+    wins++;
 
 if (sinal.resultado === "LOSS")
-losses++;
+    losses++;
 
 const isCooldown =
 sinal.status === "COOLDOWN" ||
