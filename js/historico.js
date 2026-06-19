@@ -63,10 +63,39 @@ snapshot.forEach((doc) => {
 
 const sinal = doc.data();
 
-const dataTimestamp =
-    sinal.timestamp
-        ? new Date(sinal.timestamp)
-        : null;
+let dataTimestamp = null;
+
+if (sinal.timestamp) {
+
+    if (
+        typeof sinal.timestamp === "number" &&
+        sinal.timestamp < 1000000000000
+    ) {
+        dataTimestamp = new Date(sinal.timestamp * 1000);
+    } else {
+        dataTimestamp = new Date(sinal.timestamp);
+    }
+
+} else if (sinal.horario) {
+
+    const partes = sinal.horario.match(
+        /(\d{2})\/(\d{2})\/(\d{4}),\s*(\d{2}):(\d{2}):(\d{2})/
+    );
+
+    if (partes) {
+
+        dataTimestamp = new Date(
+            partes[3],
+            partes[2] - 1,
+            partes[1],
+            partes[4],
+            partes[5],
+            partes[6]
+        );
+
+    }
+
+}
 
 if (sinal.resultado === "WIN")
     wins++;
