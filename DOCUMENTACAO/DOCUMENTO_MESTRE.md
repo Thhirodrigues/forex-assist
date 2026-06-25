@@ -1,3 +1,13 @@
+"Como usar esta documentação com o ChatGPT"
+Com instruções simples, por exemplo:
+Leia primeiro o Documento Mestre.
+Depois leia o Worklog.
+Considere o Documento Mestre como o estado atual do projeto.
+Considere o Worklog como o histórico completo das decisões.
+Não altere arquitetura sem autorização.
+Siga as regras do Modo Engenharia.
+Ao atuvar modo 3ngenheroa, seja obejtivo, sem explicações, apenas fava e delegue, otimizar tempo.
+
 Concluímos:
 ✅ Parte 1 — Visão, Filosofia e Arquitetura
 ✅ Parte 2 — Funcionalidades e Interface
