@@ -2846,3 +2846,46 @@ A partir deste ponto, a evolução do projeto deverá ocorrer de forma increment
 Este documento não substitui o histórico das conversas, mas estabelece a base sobre a qual o projeto poderá evoluir de maneira organizada, consistente e independente da janela de contexto do ChatGPT.
 
 Fim da Parte 10 — Documento Mestre Oficial (Versão 0).
+---
+
+
+DECISÃO OFICIAL DE ENGENHARIA — FLUXO DE DESENVOLVIMENTO
+
+Data: 26/06/2026
+
+Objetivo
+
+Eliminar retrabalho, reduzir riscos de regressão e garantir entregas contínuas até a conclusão do Forex Assist.
+
+Método Oficial
+
+1. Trabalhar sempre em um arquivo por vez.
+2. A IA recebe o arquivo completo atual.
+3. A IA realiza toda a alteração necessária no arquivo.
+4. A IA devolve o arquivo completo.
+5. Se o arquivo ultrapassar o limite de uma resposta, ele será dividido em partes sequenciais e contínuas, sem instruções de edição manual.
+6. O usuário apenas substitui o arquivo pelo novo conteúdo.
+7. Somente após concluir e validar esse arquivo inicia-se o próximo.
+
+Regras Obrigatórias
+
+- Não realizar alterações parciais quando elas dependerem de código ainda não entregue.
+- Não enviar funções incompletas.
+- Não solicitar substituições manuais complexas.
+- Cada entrega deve preservar 100% do comportamento existente, salvo quando houver alteração previamente aprovada.
+- Cada etapa deve terminar com um arquivo utilizável.
+
+Ordem de Trabalho
+
+1. Receber arquivo.
+2. Refatorar.
+3. Entregar arquivo completo (ou em partes contínuas).
+4. Validar funcionamento.
+5. Registrar no Worklog.
+6. Prosseguir para o próximo arquivo.
+
+Objetivo Final
+
+Concluir o Forex Assist dentro do prazo estabelecido, reduzindo retrabalho e mantendo uma linha contínua de desenvolvimento.
+
+---
