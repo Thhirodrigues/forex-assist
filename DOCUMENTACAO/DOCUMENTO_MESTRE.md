@@ -2896,3 +2896,38 @@ Concluir o Forex Assist dentro do prazo estabelecido, reduzindo retrabalho e man
 "A documentação oficial do Forex Assist não existe apenas para registrar o projeto. Ela existe para preservar sua engenharia."
 
 ----
+
+27/06/26
+
+Base de Conhecimento Forex
+
+O módulo "manual.js" passa a ser oficialmente definido como a Base de Conhecimento do Forex Assist.
+
+Seu objetivo é formar o operador e servir como referência técnica integrada à plataforma.
+
+O conteúdo deverá evoluir continuamente e contemplar, entre outros temas:
+
+- Estrutura do mercado Forex.
+- Funcionamento dos pares de moedas.
+- Nomenclatura oficial do mercado.
+- Candlesticks e padrões gráficos.
+- Price Action.
+- Suportes e Resistências.
+- Tendências.
+- Pullbacks.
+- Indicadores técnicos (EMA, RSI, ADX, ATR, MACD, Bandas de Bollinger etc.).
+- Gestão de risco.
+- Gestão de banca.
+- Psicologia do Trader.
+- Calendário econômico.
+- Impacto das notícias.
+- Volatilidade.
+- Sessões de mercado.
+- Estratégias utilizadas pelo Forex Assist.
+- Interpretação dos sinais emitidos pela plataforma.
+- Glossário técnico.
+
+Esta Base de Conhecimento deverá crescer junto com a plataforma, tornando-se uma referência para usuários iniciantes e avançados.
+------
+
+
