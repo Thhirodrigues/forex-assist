@@ -2889,3 +2889,10 @@ Objetivo Final
 Concluir o Forex Assist dentro do prazo estabelecido, reduzindo retrabalho e mantendo uma linha contínua de desenvolvimento.
 
 ---
+"Nenhum trabalho relevante deverá permanecer sem um checkpoint persistido."
+
+---
+
+"A documentação oficial do Forex Assist não existe apenas para registrar o projeto. Ela existe para preservar sua engenharia."
+
+----
