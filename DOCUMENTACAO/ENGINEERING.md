@@ -973,3 +973,430 @@ Significa que a arquitetura está à frente da implementação, e não o contrá
 Na minha opinião, isso é exatamente o que esperamos encontrar em um projeto que ainda está evoluindo: uma base sólida, preparada para receber funcionalidades futuras sem precisar ser reestruturada.
 ------
 
+LAUDO TÉCNICO OFICIAL Nº 006
+
+Arquivo
+
+scripts/firebase.js
+
+Data da Auditoria
+
+26/06/2026
+
+Status
+
+Concluído.
+
+---
+
+Classificação Arquitetural
+
+Convergente.
+
+---
+
+Objetivo
+
+Auditar o módulo responsável pela inicialização da infraestrutura Firebase utilizada pela Engine.
+
+---
+
+Responsabilidade Implementada
+
+O módulo possui responsabilidade única:
+
+Inicializar o Firebase Admin SDK e disponibilizar os objetos oficiais utilizados pelos demais módulos da Engine.
+
+Não executa consultas.
+
+Não grava dados.
+
+Não implementa regras de negócio.
+
+Não realiza tratamento operacional.
+
+---
+
+Fluxo Interno
+
+Carregar credenciais
+
+↓
+
+Inicializar Firebase Admin
+
+↓
+
+Obter Firestore
+
+↓
+
+Exportar admin
+
+↓
+
+Exportar db
+
+---
+
+Dependências
+
+firebase-admin
+
+serviceAccount.json
+
+Firestore
+
+---
+
+Regras de Negócio Identificadas
+
+Nenhuma.
+
+O módulo possui exclusivamente responsabilidade de infraestrutura.
+
+---
+
+Pontos Fortes
+
+Responsabilidade única preservada.
+
+Código extremamente simples.
+
+Excelente legibilidade.
+
+Baixíssimo acoplamento.
+
+Centralização da infraestrutura.
+
+Facilidade de reutilização.
+
+Todos os demais módulos utilizam uma única origem oficial para acesso ao Firestore.
+
+---
+
+Pontos de Atenção
+
+O módulo depende diretamente do arquivo serviceAccount.json.
+
+Caso futuramente a aplicação seja executada em múltiplos ambientes (desenvolvimento, homologação e produção), recomenda-se evoluir para uma estratégia de configuração baseada em variáveis de ambiente ou credenciais gerenciadas.
+
+No estado atual isso não representa problema estrutural.
+
+---
+
+Dívidas Técnicas
+
+DT-016
+
+Título
+
+Preparar estratégia de inicialização para múltiplos ambientes.
+
+Prioridade
+
+P3
+
+Justificativa
+
+Facilitar futuras implantações em ambientes distintos sem alterar o código.
+
+---
+
+Nota Técnica
+
+Responsabilidade: 10/10
+
+Coesão: 10/10
+
+Legibilidade: 10/10
+
+Acoplamento: 10/10
+
+Infraestrutura: 10/10
+
+Escalabilidade: 9,5/10
+
+Nota Final
+
+9,9 / 10
+
+---
+
+Conclusão
+
+O módulo implementa corretamente a camada de infraestrutura prevista na arquitetura.
+
+A centralização da inicialização do Firebase reduz duplicações, facilita manutenção e garante que toda a Engine utilize uma única instância oficial do Firestore.
+
+Não foram identificadas necessidades de refatoração estrutural.
+
+A única evolução recomendada é a futura adaptação para múltiplos ambientes de execução.
+
+WORKLOG (RESUMO)
+Auditoria de Implementação
+
+Foi concluída a auditoria do arquivo "scripts/firebase.js".
+
+Resultado:
+
+- Responsabilidade única confirmada.
+- Inicialização centralizada do Firebase.
+- Arquitetura aderente ao Documento Mestre.
+- Nenhuma refatoração estrutural necessária.
+- Registrada a DT-016 para futura adaptação a múltiplos ambientes de execução.
+
+Próxima auditoria definida:
+
+- "scripts/utils.js".
+
+Observação do Arquiteto
+Este módulo confirma uma característica muito positiva da Engine: a infraestrutura está isolada da lógica de negócio. Nenhum cálculo de mercado, regra operacional ou persistência é implementado aqui; o arquivo apenas inicializa e fornece a conexão oficial com o Firestore. �
+firebase.js
+Minha principal descoberta
+Depois de seis laudos técnicos, começo a enxergar um padrão muito claro.
+A Engine foi construída seguindo uma filosofia consistente:
+Infraestrutura (firebase.js) prepara o ambiente.
+Aquisição de dados (marketData.js) obtém informações externas.
+Análise (marketAnalyzer.js) interpreta indicadores.
+Execução da estratégia (pairAnalyzer.js) decide sobre um ativo.
+Coordenação (scanner.js) orquestra o processo.
+Suporte operacional (riskManager.js) aplica controles e registra operações.
+Esse padrão não surgiu por acaso. Ele demonstra que a arquitetura foi evoluindo de forma organizada e reforça a impressão de que o Forex Assist está sendo consolidado como uma plataforma modular, e não apenas como um conjunto de scripts independentes.
+-------
+
+LAUDO TÉCNICO OFICIAL Nº 007
+
+Arquivo
+
+scripts/utils.js
+
+Data da Auditoria
+
+26/06/2026
+
+Status
+
+Concluído.
+
+---
+
+Classificação Arquitetural
+
+Convergente.
+
+---
+
+Objetivo
+
+Auditar o módulo responsável pelas funções utilitárias compartilhadas da Engine.
+
+---
+
+Responsabilidade Implementada
+
+O módulo centraliza funções reutilizáveis utilizadas por diferentes componentes do sistema.
+
+Atualmente implementa:
+
+- rotação de chaves de API;
+- cálculo de EMA;
+- cálculo de RSI.
+
+Não possui qualquer regra de negócio.
+
+Não acessa banco de dados.
+
+Não consulta APIs.
+
+Não conhece Scanner, Expert ou Histórico.
+
+---
+
+Fluxo Interno
+
+getApiKey()
+
+Receber lista de chaves
+
+↓
+
+Retornar chave atual
+
+↓
+
+Atualizar índice
+
+↓
+
+Preparar próxima chamada
+
+---
+
+ema()
+
+Receber período
+
+↓
+
+Receber série de preços
+
+↓
+
+Calcular EMA
+
+↓
+
+Retornar resultado
+
+---
+
+rsi()
+
+Receber período
+
+↓
+
+Calcular ganhos
+
+↓
+
+Calcular perdas
+
+↓
+
+Calcular força relativa
+
+↓
+
+Retornar RSI
+
+---
+
+Dependências
+
+Nenhuma.
+
+Trata-se de um módulo completamente independente.
+
+---
+
+Regras de Negócio Identificadas
+
+Nenhuma.
+
+Todas as funções possuem natureza matemática ou utilitária.
+
+---
+
+Pontos Fortes
+
+Responsabilidade única preservada.
+
+Funções puras.
+
+Excelente reutilização.
+
+Nenhum acoplamento com módulos da Engine.
+
+Excelente potencial para testes unitários.
+
+Alta legibilidade.
+
+Baixa complexidade.
+
+---
+
+Pontos de Atenção
+
+O módulo reúne utilidades de naturezas diferentes:
+
+- infraestrutura (rotação de chaves);
+- indicadores técnicos (EMA e RSI).
+
+Embora isso não represente problema atualmente, caso novas funções sejam adicionadas recomenda-se separar utilidades matemáticas das utilidades de infraestrutura para manter alta coesão.
+
+---
+
+Dívidas Técnicas
+
+DT-017
+
+Título
+
+Avaliar futura divisão entre utilidades matemáticas e utilidades de infraestrutura.
+
+Prioridade
+
+P3
+
+Justificativa
+
+Preservar a responsabilidade única caso o módulo cresça significativamente.
+
+---
+
+Nota Técnica
+
+Responsabilidade: 10/10
+
+Coesão: 9,5/10
+
+Legibilidade: 10/10
+
+Acoplamento: 10/10
+
+Reutilização: 10/10
+
+Testabilidade: 10/10
+
+Nota Final
+
+9,9 / 10
+
+---
+
+Conclusão
+
+O módulo apresenta excelente qualidade arquitetural.
+
+Sua implementação é simples, reutilizável e desacoplada.
+
+A coexistência de funções matemáticas e de infraestrutura não representa problema no estado atual, mas deverá ser reavaliada caso novas responsabilidades sejam incorporadas.
+
+Nenhuma refatoração estrutural é recomendada neste momento.
+
+WORKLOG (resumo)
+Auditoria de Implementação
+
+Foi concluída a auditoria do arquivo "scripts/utils.js".
+
+Resultado:
+
+- Responsabilidade compartilhada bem delimitada.
+- Funções puras e reutilizáveis.
+- Excelente potencial para testes unitários.
+- Nenhuma refatoração estrutural necessária.
+- Registrada a DT-017 para futura avaliação da separação entre utilidades matemáticas e de infraestrutura.
+
+Próxima auditoria definida:
+
+- Início da auditoria da camada Frontend ("js/"), começando por "app.js".
+
+Observação do Arquiteto
+Este módulo confirma outro padrão importante da Engine: as funções reutilizáveis foram isoladas da lógica de negócio. Isso permite que cálculos como EMA e RSI sejam usados por qualquer componente sem criar dependências com o Scanner, o Expert ou o Histórico. Além disso, a rotação de chaves de API foi centralizada, evitando duplicação de código. �
+utils.js
+Balanço parcial da auditoria
+Chegamos a um ponto importante.
+Engine auditada até o momento
+✅ scanner.js
+✅ pairAnalyzer.js
+✅ marketAnalyzer.js
+✅ marketData.js
+✅ riskManager.js
+✅ firebase.js
+✅ utils.js
+Minha avaliação é que o núcleo da Engine está mais maduro do que imaginávamos antes da auditoria. Encontramos poucas dívidas técnicas e nenhuma refatoração estrutural obrigatória.
+A partir do próximo arquivo, começaremos a auditar a camada Frontend (js/), onde minha expectativa é encontrar mais oportunidades de melhoria, já que ela costuma concentrar maior complexidade de interface e evolução histórica do projeto.
+-----
+
