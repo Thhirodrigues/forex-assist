@@ -2930,4 +2930,22 @@ O conteúdo deverá evoluir continuamente e contemplar, entre outros temas:
 Esta Base de Conhecimento deverá crescer junto com a plataforma, tornando-se uma referência para usuários iniciantes e avançados.
 ------
 
+Central de Configurações
+
+O módulo "config.js" passa a representar oficialmente a futura Central de Configurações do Forex Assist.
+
+Seu objetivo será concentrar todas as opções de personalização da plataforma, incluindo, entre outras:
+
+- Configurações de banca.
+- Gestão de risco.
+- Preferências de notificações.
+- Configuração de idioma.
+- Preferências de interface.
+- Parâmetros operacionais.
+- Configuração de provedores e integrações.
+- Recursos avançados destinados a usuários experientes.
+
+Toda nova configuração permanente da aplicação deverá ser implementada neste módulo, preservando a organização e a previsibilidade da Interface.
+-----
+
 
