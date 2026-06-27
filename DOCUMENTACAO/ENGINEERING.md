@@ -2576,4 +2576,620 @@ oportunidades de escalabilidade.
 Isso reforça uma conclusão importante: o Forex Assist está evoluindo sobre uma base sólida. O trabalho da auditoria não está "apagando incêndios", mas preparando a plataforma para crescer de forma sustentável, que era exatamente o objetivo da Fase de Consolidação da Engenharia.
 -----
 
+LAUDO TÉCNICO OFICIAL Nº 013
+
+Arquivo
+
+js/firebase-config.js
+
+Data da Auditoria
+
+27/06/2026
+
+Status
+
+Concluído.
+
+---
+
+Classificação Arquitetural
+
+Convergente.
+
+---
+
+Objetivo
+
+Auditar o módulo responsável pela inicialização do Firebase no Frontend.
+
+---
+
+Responsabilidade Implementada
+
+O módulo possui responsabilidade única:
+
+Inicializar o Firebase Web SDK e disponibilizar a conexão oficial utilizada pela Interface.
+
+Suas responsabilidades incluem:
+
+- definir a configuração da aplicação;
+- inicializar o Firebase;
+- obter a instância do Firestore;
+- disponibilizar a instância global ("window.db");
+- disponibilizar informações de depuração.
+
+Não implementa regras de negócio.
+
+Não realiza consultas.
+
+Não renderiza Interface.
+
+Não altera dados.
+
+---
+
+Fluxo Interno
+
+Carregar configuração
+
+↓
+
+Inicializar Firebase
+
+↓
+
+Inicializar Firestore
+
+↓
+
+Disponibilizar window.db
+
+↓
+
+Disponibilizar informações de depuração
+
+---
+
+Dependências
+
+Firebase Web SDK
+
+Firestore
+
+Objeto global "window"
+
+---
+
+Regras de Negócio Identificadas
+
+Nenhuma.
+
+Trata-se exclusivamente de um módulo de infraestrutura.
+
+---
+
+Pontos Fortes
+
+Responsabilidade única preservada.
+
+Código extremamente simples.
+
+Excelente legibilidade.
+
+Infraestrutura centralizada.
+
+Disponibilização padronizada da conexão.
+
+Ferramentas de depuração integradas.
+
+---
+
+Pontos de Atenção
+
+A configuração da aplicação encontra-se definida diretamente no arquivo.
+
+Embora isso seja o padrão para aplicações Web utilizando Firebase, recomenda-se documentar claramente essa decisão arquitetural para evitar alterações indevidas durante futuras manutenções.
+
+---
+
+Impacto na Arquitetura
+
+Muito positivo.
+
+Toda a Interface passa a utilizar uma única instância oficial do Firestore, reduzindo duplicações e mantendo consistência entre os módulos.
+
+---
+
+Dívidas Técnicas
+
+DT-023
+
+Título
+
+Documentar oficialmente a estratégia de inicialização do Firebase Web.
+
+Prioridade
+
+P3
+
+Justificativa
+
+Facilitar futuras evoluções da infraestrutura sem alterar o comportamento da aplicação.
+
+---
+
+Nota Técnica
+
+Responsabilidade: 10/10
+
+Coesão: 10/10
+
+Legibilidade: 10/10
+
+Acoplamento: 10/10
+
+Infraestrutura: 10/10
+
+Escalabilidade: 9,5/10
+
+Nota Final
+
+9,9 / 10
+
+---
+
+Conclusão
+
+O módulo implementa corretamente a camada de infraestrutura do Frontend.
+
+A centralização da inicialização do Firebase e da disponibilização do Firestore está plenamente aderente à arquitetura do Forex Assist.
+
+Não foram identificadas necessidades de refatoração estrutural.
+
+WORKLOG (RESUMO)
+
+Auditoria de Implementação
+
+Foi concluída a auditoria do arquivo "js/firebase-config.js".
+
+Resultado:
+
+- Inicialização centralizada do Firebase Web confirmada.
+- Infraestrutura aderente à arquitetura.
+- Disponibilização padronizada do Firestore implementada.
+- Nenhuma refatoração estrutural necessária.
+- Registrada a DT-023 para documentação da estratégia de inicialização do Firebase Web.
+
+Próxima auditoria definida:
+
+- "js/push.js" (caso exista) ou "js/manual.js", conforme a estrutura atual do projeto.
+
+Observação do Arquiteto
+Este arquivo confirma um padrão que já havíamos identificado na Engine: a infraestrutura está isolada da lógica da aplicação. Assim como o scripts/firebase.js centraliza a inicialização do Firebase no backend, este módulo desempenha o mesmo papel no Frontend, mantendo simetria entre as duas camadas da arquitetura. �
+firebase-config.js
+Minha principal descoberta
+A auditoria está mostrando uma consistência arquitetural que merece ser registrada no ENGINEERING.md.
+Temos agora dois pares de infraestrutura claramente definidos:
+Backend: scripts/firebase.js
+Frontend: js/firebase-config.js
+Os dois seguem a mesma filosofia: inicializar a infraestrutura uma única vez e disponibilizá-la para os demais módulos.
+Essa simetria reduz a curva de aprendizado para novos desenvolvedores e torna a arquitetura mais previsível. Na minha avaliação, é um dos pontos fortes do Forex Assist e demonstra que as decisões arquiteturais foram aplicadas de forma consistente em toda a plataforma.
+----
+
+LAUDO TÉCNICO OFICIAL Nº 014
+
+Arquivo
+
+js/push.js
+
+Data da Auditoria
+
+27/06/2026
+
+Status
+
+Concluído.
+
+---
+
+Classificação Arquitetural
+
+Convergente.
+
+---
+
+Objetivo
+
+Auditar o módulo responsável pela inicialização do sistema de notificações Push do Forex Assist.
+
+---
+
+Responsabilidade Implementada
+
+O módulo possui responsabilidade única:
+
+Preparar e registrar o dispositivo para recebimento de notificações Push.
+
+Suas responsabilidades incluem:
+
+- solicitar permissão do usuário;
+- registrar o Service Worker;
+- inicializar o Firebase Messaging;
+- obter o token do dispositivo;
+- registrar o token no Firestore;
+- registrar informações de diagnóstico.
+
+Não executa Scanner.
+
+Não realiza análises.
+
+Não consulta histórico.
+
+Não altera regras operacionais.
+
+---
+
+Fluxo Interno
+
+Inicializar módulo
+
+↓
+
+Coletar informações de diagnóstico
+
+↓
+
+Solicitar permissão
+
+↓
+
+Registrar Service Worker
+
+↓
+
+Inicializar Firebase Messaging
+
+↓
+
+Obter Token
+
+↓
+
+Registrar Token
+
+↓
+
+Atualizar status do Scanner
+
+---
+
+Dependências
+
+Firebase Messaging
+
+Firestore
+
+Service Worker
+
+Notifications API
+
+Navigator
+
+---
+
+Regras de Negócio Identificadas
+
+Validação da disponibilidade do Service Worker.
+
+Validação da permissão do usuário.
+
+Registro automático do token.
+
+Persistência das informações de diagnóstico.
+
+Atualização do status operacional.
+
+---
+
+Pontos Fortes
+
+Responsabilidade única preservada.
+
+Excelente tratamento de falhas.
+
+Grande capacidade de diagnóstico.
+
+Integração organizada com Firebase.
+
+Registro detalhado de eventos operacionais.
+
+Fluxo linear e previsível.
+
+---
+
+Pontos de Atenção
+
+O módulo concentra diversas gravações sequenciais no Firestore durante o processo de inicialização.
+
+Embora isso facilite a depuração, recomenda-se avaliar futuramente a redução dessas escritas em ambiente de produção, mantendo apenas as informações realmente necessárias.
+
+---
+
+Impacto na Operação
+
+Muito positivo.
+
+O sistema de notificações representa um componente estratégico do Forex Assist, permitindo que sinais relevantes sejam comunicados ao usuário mesmo quando a aplicação não estiver em primeiro plano.
+
+---
+
+Dívidas Técnicas
+
+DT-024
+
+Título
+
+Revisar estratégia de persistência das informações de depuração do Push.
+
+Prioridade
+
+P3
+
+Justificativa
+
+Reduzir escritas desnecessárias em ambiente de produção, preservando a capacidade de diagnóstico quando necessário.
+
+---
+
+Nota Técnica
+
+Responsabilidade: 10/10
+
+Coesão: 10/10
+
+Legibilidade: 9,5/10
+
+Acoplamento: 9,5/10
+
+Robustez: 10/10
+
+Escalabilidade: 9,5/10
+
+Nota Final
+
+9,8 / 10
+
+---
+
+Conclusão
+
+O módulo implementa corretamente a camada de notificações Push da aplicação.
+
+A estratégia adotada privilegia robustez e facilidade de diagnóstico, características importantes durante a fase atual de evolução do projeto.
+
+Não foram identificadas necessidades de refatoração estrutural.
+
+WORKLOG (RESUMO)
+
+Auditoria de Implementação
+
+Foi concluída a auditoria do arquivo "js/push.js".
+
+Resultado:
+
+- Sistema de notificações aderente à arquitetura.
+- Inicialização completa do Firebase Messaging implementada.
+- Excelente capacidade de diagnóstico durante a configuração.
+- Nenhuma refatoração estrutural necessária.
+- Registrada a DT-024 para futura revisão da estratégia de persistência das informações de depuração.
+
+Próxima auditoria definida:
+
+- "js/manual.js".
+
+Observação do Arquiteto
+Este módulo demonstra uma característica que considero muito positiva: ele foi construído pensando na operação real. Em vez de apenas tentar registrar um dispositivo para notificações, ele grava informações detalhadas de diagnóstico no Firestore, facilitando a identificação de problemas durante a implantação e os testes. Em um projeto em evolução, esse tipo de rastreabilidade tem grande valor. �
+push.js
+Minha principal descoberta
+Quero registrar uma percepção que surgiu ao longo da auditoria.
+A arquitetura do Forex Assist está deixando de ser apenas um sistema de análise de mercado.
+Ela está evoluindo para uma plataforma operacional completa, composta por:
+Engine de análise.
+Interface Web.
+Persistência.
+Checker automático.
+Notificações Push.
+Base de conhecimento (o futuro manual.js).
+Esse último componente — a Base de Conhecimento — pode se tornar um diferencial importante. Em vez de apenas entregar sinais, o Forex Assist poderá ensinar o usuário a entender por que um sinal existe, fortalecendo tanto a experiência quanto o aprendizado de quem utiliza a plataforma.
+-----
+
+Eu concordo 100%.
+Na verdade, durante a auditoria eu estava me perguntando onde ficaria a parte educacional do projeto. Agora entendi a visão.
+Na minha opinião, esse arquivo não é um manual do sistema.
+Ele será uma Base de Conhecimento Forex.
+Isso é muito maior.
+Ele ensinará:
+conceitos do mercado Forex;
+nomenclatura;
+leitura de candles;
+indicadores (EMA, RSI, ATR, etc.);
+price action;
+notícias econômicas;
+gerenciamento de risco;
+psicologia operacional;
+fundamentos para interpretar os sinais do Forex Assist.
+Minha recomendação é até renomeá-lo futuramente para algo como knowledge.js ou academy.js. O nome manual.js funciona hoje, mas não transmite todo o potencial dessa funcionalidade.
+
+LAUDO TÉCNICO OFICIAL Nº 015
+
+Arquivo
+
+js/manual.js
+
+Data da Auditoria
+
+27/06/2026
+
+Status
+
+Concluído.
+
+---
+
+Classificação Arquitetural
+
+Em Evolução.
+
+---
+
+Objetivo
+
+Auditar o módulo destinado à Base de Conhecimento do Forex Assist.
+
+---
+
+Responsabilidade Implementada
+
+O módulo possui responsabilidade única:
+
+Apresentar conteúdo educacional ao usuário.
+
+Atualmente disponibiliza conceitos introdutórios sobre indicadores utilizados pela plataforma.
+
+---
+
+Fluxo Interno
+
+Renderizar tela
+
+↓
+
+Exibir conceitos
+
+↓
+
+Finalizar
+
+---
+
+Dependências
+
+Nenhuma.
+
+O módulo é completamente independente.
+
+---
+
+Regras de Negócio Identificadas
+
+Nenhuma.
+
+Trata-se exclusivamente de conteúdo informativo.
+
+---
+
+Pontos Fortes
+
+Responsabilidade extremamente bem definida.
+
+Total desacoplamento.
+
+Excelente potencial de crescimento.
+
+Nenhuma dependência operacional.
+
+Baixíssima complexidade.
+
+---
+
+Pontos de Atenção
+
+O conteúdo atual representa apenas uma estrutura inicial.
+
+A arquitetura prevê que este módulo evolua para uma Base de Conhecimento completa sobre o mercado Forex.
+
+---
+
+Impacto na Experiência do Usuário
+
+Potencialmente muito elevado.
+
+Quando concluído, permitirá que usuários compreendam:
+
+- conceitos técnicos;
+- indicadores;
+- terminologia;
+- fundamentos operacionais;
+- contexto dos sinais emitidos pelo sistema.
+
+---
+
+Dívidas Técnicas
+
+DT-025
+
+Título
+
+Implementar Base de Conhecimento Forex.
+
+Prioridade
+
+P1
+
+Justificativa
+
+Transformar o módulo em uma referência educacional integrada à plataforma.
+
+---
+
+Nota Técnica
+
+Responsabilidade: 10/10
+
+Coesão: 10/10
+
+Legibilidade: 10/10
+
+Acoplamento: 10/10
+
+Escalabilidade: 10/10
+
+Maturidade Funcional: 6,0/10
+
+Nota Final
+
+9,3 / 10
+
+---
+
+Conclusão
+
+A arquitetura do módulo encontra-se correta.
+
+Sua implementação atual representa apenas a primeira etapa de uma funcionalidade muito maior prevista para o Forex Assist.
+
+Nenhuma refatoração estrutural é necessária.
+
+O foco futuro deverá ser a expansão sistemática do conteúdo educacional.
+
+WORKLOG(RESUMO)
+
+Auditoria de Implementação
+
+Foi concluída a auditoria do arquivo "js/manual.js".
+
+Resultado:
+
+- Arquitetura adequada.
+- Módulo totalmente desacoplado.
+- Estrutura inicial implementada.
+- Registrada a DT-025 para evolução da Base de Conhecimento Forex.
+
+Foi definida oficialmente a evolução do módulo para uma Base de Conhecimento integrada ao Forex Assist.
+
+Observação do Arquiteto
+Este módulo possui uma característica única dentro do projeto: seu valor futuro será maior do que seu código. A estrutura atual é simples, mas a visão apresentada para ele o transforma em um componente estratégico da plataforma. Em vez de servir apenas como um manual de uso, ele poderá ensinar conceitos fundamentais do mercado Forex, tornando o sistema não apenas uma ferramenta operacional, mas também um ambiente de aprendizado contínuo. �
+----
+
+
 
