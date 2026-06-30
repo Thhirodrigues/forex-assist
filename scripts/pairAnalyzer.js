@@ -76,6 +76,8 @@ await salvarOperacao(db, {
 
     origem: "scanner",
 
+    engine: "RMI_V1"
+
     precoEntrada:
         closes[
             closes.length - 1
