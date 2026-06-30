@@ -140,6 +140,36 @@ function analisarTendencia(emas, rsiInfo) {
 
 }
 
+// ===================================================
+// ANÁLISE DO ADX
+// ===================================================
+
+function analisarADX(adx) {
+
+  let score = 0;
+  let forca = "FRACA";
+
+  if (adx >= 40) {
+    score = 30;
+    forca = "MUITO_FORTE";
+  }
+
+  else if (adx >= 25) {
+    score = 20;
+    forca = "FORTE";
+  }
+
+  else if (adx >= 20) {
+    score = 10;
+    forca = "MODERADA";
+  }
+
+  return {
+    score,
+    forca
+  };
+
+}
 
 // ===================================================
 // SMART SCORING ENGINE
@@ -151,7 +181,8 @@ function calcularQualidade(
   ema50,
   ema100,
   ema200,
-  rsiAtual
+  rsiAtual,
+  adx
 ) {
 
   let score = 0;
@@ -172,25 +203,31 @@ function calcularQualidade(
     emas,
     rsi
   );
+  const adxInfo = analisarADX(
+  adx
+);
 
   score += emas.score;
   score += rsi.score;
   score += tendencia.score;
+  score += adxInfo.score;
 
   if (score > 100)
     score = 100;
 
   return {
 
-    score,
+  score,
 
-    tendencia: emas.tendencia,
+  tendencia: emas.tendencia,
 
-    rsi: rsi.situacao,
+  rsi: rsi.situacao,
 
-    qualidade: tendencia.qualidade
+  adx: adxInfo.forca,
 
-  };
+  qualidade: tendencia.qualidade
+
+};
 
 }
 
@@ -206,6 +243,8 @@ module.exports = {
   analisarRSI,
 
   analisarTendencia,
+
+  analisarADX,
 
   calcularQualidade
 
