@@ -225,4 +225,363 @@ Definida a arquitetura da Real Money Intelligence (RMI).
 O Expert passa oficialmente a evoluir para um Analista-Chefe de Mercado, responsável por validar tecnicamente, estatisticamente e financeiramente cada operação antes de recomendar a utilização de dinheiro real.
 ------
 
+FASE 05 — REAL MONEY INTELLIGENCE (RMI)
+
+ETAPA 02 — DECISION ENGINE (MOTOR DE DECISÃO)
+
+Status
+
+EM DEFINIÇÃO.
+
+---
+
+MISSÃO
+
+O Decision Engine será o cérebro do Forex Assist.
+
+Sua função é transformar centenas de informações em uma única decisão:
+
+EXECUTAR
+
+ou
+
+NÃO EXECUTAR
+
+Nenhum indicador isolado poderá aprovar uma operação.
+
+Toda decisão será baseada no conjunto da análise.
+
+---
+
+FILOSOFIA
+
+O mercado não premia quem acerta mais.
+
+O mercado premia quem perde pouco e preserva capital.
+
+O Decision Engine deverá pensar exatamente dessa forma.
+
+---
+
+PROCESSO DE DECISÃO
+
+Cada operação passará obrigatoriamente por sete filtros consecutivos.
+
+Se qualquer filtro crítico reprovar a operação, a análise será encerrada.
+
+---
+
+FILTRO 01
+
+Validação do Scanner
+
+Objetivo
+
+Verificar se o Scanner encontrou uma oportunidade válida.
+
+Itens analisados
+
+• BUY ou SELL
+
+• Score
+
+• Ativo
+
+• Horário
+
+Resultado
+
+APROVADO
+
+ou
+
+REPROVADO
+
+---
+
+FILTRO 02
+
+Mercado
+
+Objetivo
+
+Entender o contexto atual.
+
+Itens
+
+• EMA 20
+
+• EMA 50
+
+• EMA 100
+
+• EMA 200
+
+• Tendência
+
+• Força
+
+• RSI
+
+• ADX
+
+• ATR
+
+• MACD
+
+• Bollinger
+
+• Price Action
+
+Resultado
+
+Favorável
+
+Neutro
+
+Desfavorável
+
+---
+
+FILTRO 03
+
+Contexto Econômico
+
+Itens
+
+• Notícias
+
+• Calendário Econômico
+
+• Eventos de Alto Impacto
+
+• Horário
+
+• Sessão
+
+Resultado
+
+Seguro
+
+Atenção
+
+Perigoso
+
+Caso seja classificado como "Perigoso", a operação será encerrada imediatamente.
+
+---
+
+FILTRO 04
+
+Histórico
+
+Consultar Firestore.
+
+Responder
+
+Este ativo costuma funcionar?
+
+Neste horário?
+
+Neste dia?
+
+Com este nível de qualidade?
+
+Após notícias?
+
+Após consolidação?
+
+Após rompimento?
+
+Resultado
+
+Positivo
+
+Neutro
+
+Negativo
+
+---
+
+FILTRO 05
+
+Gestão Financeira
+
+Pergunta
+
+Vale colocar US$ 5 nesta operação?
+
+Itens
+
+• TP = US$ 5
+
+• SL = US$ 5
+
+• Lote = 0.04
+
+• Exposição
+
+• Sequência de perdas
+
+• Sequência de ganhos
+
+Resultado
+
+Aceitável
+
+Não Aceitável
+
+---
+
+FILTRO 06
+
+Convergência
+
+O Decision Engine deverá verificar quantos fatores apontam para a mesma direção.
+
+Exemplo
+
+Scanner
+
+BUY
+
+EMA
+
+BUY
+
+RSI
+
+BUY
+
+MACD
+
+BUY
+
+Histórico
+
+BUY
+
+Notícias
+
+Neutro
+
+Resultado
+
+Alta Convergência
+
+Quanto maior a convergência, maior será a confiança.
+
+---
+
+FILTRO 07
+
+Capital Próprio
+
+Pergunta final
+
+"Se este dinheiro fosse meu, eu faria esta operação?"
+
+Essa pergunta possui prioridade máxima.
+
+Caso qualquer dúvida permaneça, a resposta será:
+
+NÃO EXECUTAR.
+
+---
+
+ÍNDICE DE CONFIANÇA FINAL (ICF)
+
+Ao final da análise será calculado um único índice.
+
+Faixas iniciais
+
+95–100
+
+Excelente
+
+Operação altamente recomendada.
+
+90–94
+
+Muito Forte
+
+Pode operar.
+
+85–89
+
+Boa
+
+Operação aceitável.
+
+80–84
+
+Moderada
+
+Operar com cautela.
+
+Abaixo de 80
+
+Rejeitada.
+
+Esses limites poderão ser recalibrados conforme o histórico crescer.
+
+---
+
+SAÍDA FINAL
+
+O RMI deverá apresentar:
+
+Ativo
+
+Direção
+
+Índice de Confiança Final
+
+Justificativa Técnica
+
+Justificativa Estatística
+
+Justificativa Econômica
+
+Justificativa Financeira
+
+Decisão
+
+EXECUTAR
+
+ou
+
+NÃO EXECUTAR
+
+---
+
+PRINCÍPIO DA CONSERVAÇÃO DO CAPITAL
+
+Em caso de conflito entre lucro potencial e preservação da banca, sempre prevalecerá a preservação da banca.
+
+Nenhum ganho potencial justifica assumir um risco considerado desnecessário pelo Decision Engine.
+
+---
+
+CHECKPOINT
+
+Etapa 02 concluída.
+
+Definida a arquitetura do Decision Engine.
+
+O Forex Assist passa a adotar oficialmente um modelo de decisão baseado em múltiplas camadas de validação, convergência de fatores e preservação do capital como prioridade absoluta.
+
+---
+
+PRÓXIMA ETAPA
+
+ETAPA 03
+
+Sistema de Pontuação Inteligente (Smart Scoring Engine)
+
+Objetivo
+
+Definir o peso de cada indicador técnico, evento econômico, informação histórica e condição de mercado na formação do Índice de Confiança Final (ICF), criando um modelo de decisão transparente, calibrável e evolutivo.
+--------
+
 
