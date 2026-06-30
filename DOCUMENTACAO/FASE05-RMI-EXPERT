@@ -669,5 +669,527 @@ NÃO OPERAR.
 Nenhuma configuração apresenta risco aceitável.
 ---------
 
+FASE 05 — REAL MONEY INTELLIGENCE (RMI)
+
+ETAPA 03 — SMART SCORING ENGINE (SSE)
+
+Status
+
+EM DEFINIÇÃO.
+
+---
+
+MISSÃO
+
+O Smart Scoring Engine (SSE) será responsável por transformar todas as análises do RMI em um único Índice de Confiança Final (ICF).
+
+Seu objetivo não é contar indicadores favoráveis.
+
+Seu objetivo é medir a qualidade real da oportunidade.
+
+O princípio adotado será:
+
+Qualidade da decisão > Quantidade de confirmações.
+
+---
+
+FILOSOFIA
+
+Nem todos os indicadores possuem a mesma importância.
+
+Um cruzamento de EMA, por exemplo, possui muito mais valor quando ocorre:
+
+• com tendência forte;
+
+• longe de notícias de alto impacto;
+
+• respeitando um suporte;
+
+• acompanhado por aumento de volatilidade saudável.
+
+O SSE deverá avaliar contexto e convergência, e não apenas quantidade de sinais.
+
+---
+
+PESO DOS FATORES
+
+Os pesos iniciais poderão ser recalibrados futuramente conforme o histórico do Firestore crescer.
+
+CAMADA 1 — ESTRUTURA DO MERCADO
+
+Peso: 30%
+
+Itens avaliados
+
+• Tendência principal (EMA 200)
+• Alinhamento EMA 20 / 50 / 100
+• ADX
+• Estrutura de topos e fundos
+• Suportes
+• Resistências
+• Rompimentos
+• Pullbacks
+
+Esta é a camada de maior importância.
+
+Uma operação contra a estrutura principal dificilmente será aprovada.
+
+---
+
+CAMADA 2 — MOMENTO TÉCNICO
+
+Peso: 20%
+
+Itens
+
+• RSI
+
+• MACD
+
+• ATR
+
+• Bandas de Bollinger
+
+• Momentum
+
+Objetivo
+
+Avaliar se este é realmente o momento correto da entrada.
+
+---
+
+CAMADA 3 — PRICE ACTION
+
+Peso: 20%
+
+Itens
+
+• Candlestick de confirmação
+
+• Engolfo
+
+• Pin Bar
+
+• Martelo
+
+• Estrela
+
+• Rejeições
+
+• Falsos rompimentos
+
+• Confirmação do movimento
+
+O Price Action poderá aumentar ou reduzir significativamente a confiança da operação.
+
+---
+
+CAMADA 4 — CONTEXTO ECONÔMICO
+
+Peso: 15%
+
+Itens
+
+• Notícias
+
+• Calendário Econômico
+
+• Sessão
+
+• Liquidez
+
+• Spread
+
+Regra
+
+Eventos de alto impacto poderão anular qualquer pontuação obtida nas demais camadas.
+
+---
+
+CAMADA 5 — HISTÓRICO
+
+Peso: 10%
+
+Itens
+
+• Ativo
+
+• Horário
+
+• Dia
+
+• Performance histórica
+
+• Resultado recente
+
+• Confiabilidade estatística
+
+Quanto maior o histórico, maior será sua influência.
+
+---
+
+CAMADA 6 — GESTÃO FINANCEIRA
+
+Peso: 5%
+
+Itens
+
+• Configuração TP
+
+• Configuração SL
+
+• Lote
+
+• Relação risco x retorno
+
+• Distância provável do movimento
+
+• Exposição financeira
+
+Esta camada poderá alterar automaticamente a configuração operacional da sugestão.
+
+---
+
+CONVERGÊNCIA
+
+O SSE também calculará o Grau de Convergência (GC).
+
+Exemplo
+
+EMA
+
+BUY
+
+ADX
+
+BUY
+
+RSI
+
+BUY
+
+MACD
+
+BUY
+
+Price Action
+
+BUY
+
+Histórico
+
+BUY
+
+Notícias
+
+Neutro
+
+GC = 92%
+
+Quanto maior a convergência, maior será a confiança do RMI.
+
+---
+
+FATORES ELIMINATÓRIOS
+
+Independentemente da pontuação, o RMI encerrará imediatamente a análise quando identificar:
+
+• notícia de alto impacto iminente;
+
+• spread excessivo;
+
+• liquidez insuficiente;
+
+• mercado extremamente lateral;
+
+• conflito grave entre tendência e entrada;
+
+• risco financeiro incompatível.
+
+Esses fatores possuem prioridade absoluta.
+
+---
+
+ÍNDICE DE CONFIANÇA FINAL (ICF)
+
+95–100
+
+Excelente
+
+Operação Premium.
+
+90–94
+
+Muito Forte
+
+Operação recomendada.
+
+85–89
+
+Boa
+
+Operação favorável.
+
+80–84
+
+Aceitável
+
+Operar apenas se a gestão financeira estiver adequada.
+
+Abaixo de 80
+
+Rejeitada.
+
+---
+
+DECISÃO INTELIGENTE
+
+O RMI poderá emitir respostas como:
+
+EXECUTAR
+
+Configuração sugerida:
+
+TP = US$ 5
+
+SL = US$ 5
+
+Lote = 0.04
+
+ou
+
+EXECUTAR
+
+Configuração otimizada:
+
+TP = US$ 3
+
+SL = US$ 3
+
+Lote = 0.06
+
+Justificativa:
+
+Movimento esperado curto, porém com elevada probabilidade estatística.
+
+ou
+
+NÃO EXECUTAR
+
+Justificativa:
+
+Apesar da boa configuração técnica, a relação entre risco, volatilidade e contexto econômico não justifica expor capital nesta operação.
+
+---
+
+PRINCÍPIO DA INTELIGÊNCIA
+
+O Smart Scoring Engine jamais buscará aprovar uma operação.
+
+Seu objetivo será procurar motivos para rejeitá-la.
+
+Somente quando a operação superar todos os filtros ela será considerada digna de receber dinheiro real.
+
+Esse comportamento aproxima o RMI da forma de atuação de analistas institucionais e gestores profissionais, cuja prioridade é evitar operações de baixa qualidade antes de buscar oportunidades de lucro.
+
+---
+
+CHECKPOINT
+
+Etapa 03 concluída.
+
+Foi definida a arquitetura do Smart Scoring Engine (SSE), estabelecendo uma hierarquia de fatores baseada em estrutura de mercado, momento técnico, price action, contexto econômico, histórico e gestão financeira. O sistema passa a privilegiar a preservação do capital e a convergência de evidências, em vez da simples soma de indicadores.
+
+Observação de Engenharia
+Eu faria apenas um ajuste futuro, mas considero que ele será um dos maiores diferenciais do Forex Assist.
+Hoje definimos pesos fixos (30%, 20%, 20%...).
+No futuro, eu faria esses pesos serem dinâmicos.
+Exemplo:
+Em dia de Payroll, o peso do contexto econômico pode subir de 15% para 40%.
+Em um mercado lateral, o peso do Price Action pode superar o das EMAs.
+Em ativos com histórico muito robusto, o peso da camada histórica pode aumentar automaticamente.
+Assim, o RMI deixará de seguir uma tabela fixa e passará a adaptar a importância de cada fator conforme o cenário real do mercado. Na minha avaliação, essa evolução aproximaria ainda mais o comportamento do sistema ao de um analista profissional experiente, sem perder a transparência da lógica de decisão.
+-------
+
+DECISÃO OFICIAL DE ENGENHARIA
+
+Data
+
+30/06/2026
+
+Fase
+
+Fase 05 — Real Money Intelligence (RMI)
+
+Assunto
+
+Arquitetura do novo Expert.
+
+---
+
+Contexto
+
+Durante o planejamento da Fase 05 foi estudada a possibilidade de criar diversos novos módulos especializados para compor o Real Money Intelligence (RMI), tais como:
+
+- decisionEngine.js
+- smartScoring.js
+- marketContext.js
+- economicAnalyzer.js
+- historicalAnalyzer.js
+- tradeManager.js
+- confidenceEngine.js
+- recommendationEngine.js
+
+Embora essa arquitetura seja tecnicamente adequada para projetos iniciados do zero, concluiu-se que ela não representa a melhor decisão para o estágio atual do Forex Assist.
+
+---
+
+Justificativa
+
+O projeto acaba de concluir uma Auditoria Arquitetural completa.
+
+Foram auditados todos os módulos existentes, emitidos 24 Laudos Técnicos Oficiais e consolidada toda a documentação de engenharia.
+
+Criar diversos novos arquivos neste momento implicaria:
+
+- aumento desnecessário da complexidade estrutural;
+- criação de novas auditorias;
+- ampliação da documentação técnica;
+- maior custo de manutenção;
+- perda parcial da simplicidade conquistada durante a auditoria.
+
+Como um dos princípios permanentes do projeto é preservar a arquitetura existente sempre que possível, optou-se por uma abordagem evolutiva em vez de uma reestruturação prematura.
+
+---
+
+Decisão Oficial
+
+O módulo "expert.js" permanecerá como único arquivo responsável pela inteligência operacional do Forex Assist.
+
+Entretanto, sua organização interna passará a seguir uma arquitetura modular lógica, dividida em blocos funcionais claramente identificados.
+
+Esses blocos representarão os componentes do Real Money Intelligence sem necessidade de criação imediata de novos arquivos.
+
+Estrutura prevista:
+
+===============================
+
+1. DECISION ENGINE
+
+===============================
+
+Responsável pela orquestração completa da decisão.
+
+===============================
+
+2. MARKET ANALYZER
+
+===============================
+
+Responsável pela leitura do mercado.
+
+===============================
+
+3. ECONOMIC ANALYZER
+
+===============================
+
+Responsável pela análise de notícias, calendário econômico e contexto macroeconômico.
+
+===============================
+
+4. HISTORICAL ANALYZER
+
+===============================
+
+Responsável pela interpretação do histórico armazenado no Firestore.
+
+===============================
+
+5. SMART TRADE MANAGER
+
+===============================
+
+Responsável pela definição automática da melhor configuração operacional (TP, SL e lote).
+
+===============================
+
+6. SMART SCORING ENGINE
+
+===============================
+
+Responsável pelo cálculo do Índice de Confiança Final (ICF).
+
+===============================
+
+7. CONFIDENCE ENGINE
+
+===============================
+
+Responsável pela consolidação da confiança da operação.
+
+===============================
+
+8. RECOMMENDATION ENGINE
+
+===============================
+
+Responsável pela emissão da decisão final:
+
+EXECUTAR
+
+ou
+
+NÃO EXECUTAR.
+
+---
+
+Critério para Futuro Desmembramento
+
+O projeto NÃO criará novos arquivos apenas por organização.
+
+O desmembramento do expert.js somente ocorrerá quando houver necessidade técnica comprovada, como:
+
+- dificuldade de manutenção;
+- crescimento excessivo do arquivo;
+- redução da legibilidade;
+- necessidade de reutilização independente dos componentes.
+
+Quando esse momento chegar, cada bloco poderá ser migrado para um módulo próprio, preservando integralmente sua responsabilidade.
+
+Essa migração será considerada uma refatoração arquitetural planejada e deverá gerar novos Laudos Técnicos Oficiais e atualização da documentação.
+
+---
+
+Princípio Arquitetural
+
+A arquitetura do Forex Assist deve evoluir por necessidade real, nunca por antecipação.
+
+Criar complexidade antes do momento adequado contraria os princípios definidos para o projeto.
+
+Enquanto o módulo permanecer saudável, organizado e de fácil manutenção, ele deverá permanecer único.
+
+---
+
+Conclusão
+
+Fica oficialmente definido que a Fase 05 será desenvolvida utilizando exclusivamente o arquivo "expert.js", preservando a arquitetura auditada do projeto.
+
+A evolução ocorrerá por meio da organização interna em blocos funcionais, mantendo compatibilidade com toda a documentação existente.
+
+Somente quando houver necessidade técnica comprovada será realizado o desmembramento em novos módulos.
+
+Essa decisão reforça os princípios de simplicidade, estabilidade, responsabilidade única e evolução incremental estabelecidos desde o início da Auditoria Arquitetural do Forex Assist.
+
+---
+
+CHECKPOINT
+
+Decisão Arquitetural Oficial registrada.
+
+O desenvolvimento do Real Money Intelligence (RMI) iniciará sobre o módulo existente "expert.js", sem criação de novos arquivos.
+
+A arquitetura permanece íntegra, auditada e preparada para evoluções futuras sem aumento desnecessário da complexidade estrutural.
+-------------
 
 
