@@ -26,8 +26,18 @@ async function analisarPar({
         const ema21 =
             ema(21, closes.slice(-50));
 
+        const ema50 =
+    ema(50, closes.slice(-80));
+
+const ema100 =
+    ema(100, closes.slice(-120));
+
+const ema200 =
+    ema(200, closes);
+
         const rsiAtual =
             rsi(14, closes.slice(-15));
+        const adx = 25;
 
         let direcao = null;
 
@@ -40,10 +50,15 @@ if (ema9 < ema21 && rsiAtual < 45)
 if (!direcao)
     return;
         const qualidade =
+    const qualidade =
     calcularQualidade(
         ema9,
         ema21,
-        rsiAtual
+        ema50,
+        ema100,
+        ema200,
+        rsiAtual,
+        adx
     );
 
 await salvarOperacao(db, {
