@@ -1,0 +1,228 @@
+FASE 05 — REAL MONEY INTELLIGENCE (RMI)
+
+ETAPA 01 — ESPECIFICAÇÃO OFICIAL DA INTELIGÊNCIA OPERACIONAL
+
+Status
+
+INICIADA.
+
+---
+
+MISSÃO
+
+O RMI (Real Money Intelligence) representa a inteligência central do Forex Assist.
+
+Sua missão não é gerar sinais.
+
+Sua missão é decidir se um sinal merece receber dinheiro real.
+
+O RMI deverá pensar exatamente como um operador profissional que preserva seu próprio capital.
+
+Pergunta principal:
+
+"Eu colocaria meu próprio dinheiro nesta operação?"
+
+Se a resposta for NÃO, a operação deverá ser rejeitada, mesmo que o Scanner tenha aprovado.
+
+---
+
+FILOSOFIA
+
+O Scanner procura oportunidades.
+
+O RMI julga oportunidades.
+
+O Result Checker aprende com os resultados.
+
+O Firebase preserva o conhecimento.
+
+Juntos formam o ciclo de inteligência do Forex Assist.
+
+---
+
+PRINCÍPIO FUNDAMENTAL
+
+Toda análise será realizada considerando capital real.
+
+Configuração operacional inicial (oficial)
+
+Lote:
+
+0.04
+
+Take Profit:
+
+US$ 5,00
+
+Stop Loss:
+
+US$ 5,00
+
+Relação Risco x Retorno:
+
+1:1
+
+Todas as recomendações do RMI deverão considerar obrigatoriamente estes valores.
+
+---
+
+CAMADA 1 — ANÁLISE TÉCNICA
+
+O RMI deverá analisar:
+
+• EMA 20
+• EMA 50
+• EMA 100
+• EMA 200
+• RSI
+• MACD
+• ADX
+• ATR
+• Bandas de Bollinger
+• Price Action
+• Candlestick de confirmação
+• Tendência
+• Consolidação
+• Rompimentos
+• Pullbacks
+• Suportes
+• Resistências
+• Volatilidade
+• Liquidez
+• Spread
+
+---
+
+CAMADA 2 — CONTEXTO DO MERCADO
+
+O RMI deverá verificar:
+
+• Sessão de mercado
+• Londres
+• Nova York
+• Ásia
+• Sobreposição entre sessões
+• Horário operacional
+• Horário de baixa liquidez
+• Horário de abertura
+• Horário de fechamento
+
+---
+
+CAMADA 3 — EVENTOS ECONÔMICOS
+
+Antes de aprovar qualquer operação o RMI deverá consultar:
+
+• Calendário Econômico
+
+Eventos de Alto Impacto
+
+• Payroll
+• CPI
+• PPI
+• FOMC
+• Decisão de Juros
+• BCE
+• BoE
+• Banco do Japão
+• Banco da Austrália
+• Banco do Canadá
+
+Caso exista evento relevante próximo, o RMI poderá cancelar a operação mesmo que todos os indicadores técnicos estejam favoráveis.
+
+---
+
+CAMADA 4 — INTELIGÊNCIA HISTÓRICA
+
+Consultar Firestore.
+
+Analisar:
+
+• Ativo
+
+• Horário
+
+• Dia da semana
+
+• Score
+
+• Tendência
+
+• Tipo de mercado
+
+• Histórico recente
+
+• Histórico geral
+
+---
+
+CAMADA 5 — GESTÃO DE RISCO
+
+Pergunta obrigatória:
+
+"Vale arriscar US$ 5 nesta operação?"
+
+O RMI deverá calcular:
+
+• Probabilidade estimada
+
+• Relação risco x retorno
+
+• Nível de confiança
+
+• Justificativa técnica
+
+• Justificativa estatística
+
+• Justificativa operacional
+
+---
+
+SAÍDA DO RMI
+
+Ao final da análise deverá emitir uma decisão única.
+
+EXECUTAR
+
+ou
+
+NÃO EXECUTAR
+
+Sempre acompanhada da justificativa técnica.
+
+---
+
+REGRA ABSOLUTA
+
+Quando existir qualquer conflito entre:
+
+• Scanner
+
+• Mercado
+
+• Histórico
+
+• Notícias
+
+• Gestão de risco
+
+Sempre prevalecerá a decisão mais conservadora.
+
+O objetivo do Forex Assist não é operar mais.
+
+O objetivo é preservar capital.
+
+---
+
+CHECKPOINT
+
+Fase 05 oficialmente iniciada.
+
+Etapa 01 iniciada.
+
+Definida a arquitetura da Real Money Intelligence (RMI).
+
+O Expert passa oficialmente a evoluir para um Analista-Chefe de Mercado, responsável por validar tecnicamente, estatisticamente e financeiramente cada operação antes de recomendar a utilização de dinheiro real.
+------
+
+
