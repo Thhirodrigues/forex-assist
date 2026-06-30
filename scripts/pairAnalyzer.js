@@ -49,7 +49,6 @@ if (ema9 < ema21 && rsiAtual < 45)
 
 if (!direcao)
     return;
-        const qualidade =
     const qualidade =
     calcularQualidade(
         ema9,
@@ -91,7 +90,7 @@ await salvarOperacao(db, {
 
     origem: "scanner",
 
-    engine: "RMI_V1"
+    engine: "RMI_V1",
 
     precoEntrada:
         closes[
