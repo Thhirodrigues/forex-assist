@@ -22,21 +22,123 @@
 // ANÁLISE DAS EMAs
 // ===================================================
 
-// (Sprint futura)
+function analisarEMAs(ema9, ema21, ema50, ema100, ema200) {
+
+  let score = 0;
+  let tendencia = "LATERAL";
+
+  if (
+    ema9 > ema21 &&
+    ema21 > ema50 &&
+    ema50 > ema100 &&
+    ema100 > ema200
+  ) {
+    score = 30;
+    tendencia = "ALTA";
+  }
+
+  else if (
+    ema9 < ema21 &&
+    ema21 < ema50 &&
+    ema50 < ema100 &&
+    ema100 < ema200
+  ) {
+    score = 30;
+    tendencia = "BAIXA";
+  }
+
+  return {
+    score,
+    tendencia
+  };
+
+}
 
 
 // ===================================================
 // ANÁLISE DO RSI
 // ===================================================
 
-// (Sprint futura)
+function analisarRSI(rsi) {
+
+  let score = 0;
+  let situacao = "NEUTRO";
+
+  if (rsi >= 55 && rsi <= 70) {
+    score = 35;
+    situacao = "COMPRA";
+  }
+
+  else if (rsi <= 45 && rsi >= 30) {
+    score = 35;
+    situacao = "VENDA";
+  }
+
+  else if (rsi > 70) {
+    score = 10;
+    situacao = "SOBRECOMPRADO";
+  }
+
+  else if (rsi < 30) {
+    score = 10;
+    situacao = "SOBREVENDIDO";
+  }
+
+  return {
+    score,
+    situacao
+  };
+
+}
 
 
 // ===================================================
 // ANÁLISE DA TENDÊNCIA
 // ===================================================
 
-// (Sprint futura)
+function analisarTendencia(emas, rsiInfo) {
+
+  let score = 0;
+  let qualidade = "NEUTRA";
+
+  if (
+    emas.tendencia === "ALTA" &&
+    rsiInfo.situacao === "COMPRA"
+  ) {
+    score = 20;
+    qualidade = "FORTE";
+  }
+
+  else if (
+    emas.tendencia === "BAIXA" &&
+    rsiInfo.situacao === "VENDA"
+  ) {
+    score = 20;
+    qualidade = "FORTE";
+  }
+
+  else if (
+    emas.tendencia === "LATERAL"
+  ) {
+    score = 5;
+    qualidade = "LATERAL";
+  }
+
+  else {
+
+    score = 0;
+    qualidade = "CONFLITO";
+
+  }
+
+  return {
+
+    score,
+    qualidade
+
+  };
+
+}
 
 
 // ===================================================
