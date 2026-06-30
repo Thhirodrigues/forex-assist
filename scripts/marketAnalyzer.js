@@ -145,32 +145,52 @@ function analisarTendencia(emas, rsiInfo) {
 // SMART SCORING ENGINE
 // ===================================================
 
-function calcularQualidade(ema9, ema21, rsiAtual) {
+function calcularQualidade(
+  ema9,
+  ema21,
+  ema50,
+  ema100,
+  ema200,
+  rsiAtual
+) {
 
   let score = 0;
 
-  const distancia = Math.abs(ema9 - ema21);
+  const emas = analisarEMAs(
+    ema9,
+    ema21,
+    ema50,
+    ema100,
+    ema200
+  );
 
-  if (distancia > 0.00020)
-    score += 30;
-  else if (distancia > 0.00010)
-    score += 20;
-  else
-    score += 10;
+  const rsi = analisarRSI(
+    rsiAtual
+  );
 
-  if (rsiAtual > 55 && rsiAtual < 70)
-    score += 35;
+  const tendencia = analisarTendencia(
+    emas,
+    rsi
+  );
 
-  if (rsiAtual < 45 && rsiAtual > 30)
-    score += 35;
-
-  if (distancia > 0.00030)
-    score += 20;
+  score += emas.score;
+  score += rsi.score;
+  score += tendencia.score;
 
   if (score > 100)
     score = 100;
 
-  return score;
+  return {
+
+    score,
+
+    tendencia: emas.tendencia,
+
+    rsi: rsi.situacao,
+
+    qualidade: tendencia.qualidade
+
+  };
 
 }
 
@@ -180,5 +200,13 @@ function calcularQualidade(ema9, ema21, rsiAtual) {
 // ===================================================
 
 module.exports = {
+
+  analisarEMAs,
+
+  analisarRSI,
+
+  analisarTendencia,
+
   calcularQualidade
+
 };
