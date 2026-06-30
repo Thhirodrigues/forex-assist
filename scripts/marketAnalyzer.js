@@ -1,3 +1,48 @@
+// ===================================================
+// FOREX ASSIST - REAL MONEY INTELLIGENCE
+// MARKET ANALYZER
+//
+// Responsabilidade:
+// Avaliar tecnicamente a qualidade do mercado e
+// fornecer um Score Inicial para o Scanner.
+//
+// FASE 05
+// Estrutura preparada para evolução incremental.
+// ===================================================
+
+
+// ===================================================
+// CONFIGURAÇÕES
+// ===================================================
+
+// (Reservado para configurações futuras)
+
+
+// ===================================================
+// ANÁLISE DAS EMAs
+// ===================================================
+
+// (Sprint futura)
+
+
+// ===================================================
+// ANÁLISE DO RSI
+// ===================================================
+
+// (Sprint futura)
+
+
+// ===================================================
+// ANÁLISE DA TENDÊNCIA
+// ===================================================
+
+// (Sprint futura)
+
+
+// ===================================================
+// SMART SCORING ENGINE
+// ===================================================
+
 function calcularQualidade(ema9, ema21, rsiAtual) {
 
   let score = 0;
@@ -26,6 +71,11 @@ function calcularQualidade(ema9, ema21, rsiAtual) {
   return score;
 
 }
+
+
+// ===================================================
+// EXPORTS
+// ===================================================
 
 module.exports = {
   calcularQualidade
