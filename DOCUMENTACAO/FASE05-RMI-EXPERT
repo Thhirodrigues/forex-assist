@@ -583,5 +583,91 @@ Objetivo
 
 Definir o peso de cada indicador técnico, evento econômico, informação histórica e condição de mercado na formação do Índice de Confiança Final (ICF), criando um modelo de decisão transparente, calibrável e evolutivo.
 --------
+AJUSTE PARA FILTRO 05.
+
+FILTRO 05
+
+GESTÃO INTELIGENTE DA OPERAÇÃO (SMART TRADE MANAGEMENT)
+
+Pergunta principal
+
+Qual é a configuração operacional mais adequada para este cenário?
+
+O objetivo não é apenas aprovar ou rejeitar uma operação.
+
+O objetivo é encontrar a configuração que maximize a probabilidade de preservar capital e obter lucro.
+
+O RMI deverá avaliar:
+
+• Distância provável do movimento (pips)
+• Volatilidade atual (ATR)
+• Força da tendência (ADX)
+• Distância até suporte/resistência
+• Spread
+• Horário
+• Liquidez
+• Histórico desse ativo
+• Relação risco x retorno
+• Probabilidade estatística
+
+Com base nessa análise poderá sugerir automaticamente uma estratégia operacional diferente da configuração padrão.
+
+Exemplos
+
+Cenário A
+
+Mercado muito forte
+
+TP = US$ 5
+SL = US$ 5
+Lote = 0.04
+
+Decisão
+
+Manter configuração padrão.
+
+---
+
+Cenário B
+
+Mercado com movimento curto
+
+TP = US$ 3
+SL = US$ 3
+Lote = 0.06
+
+Justificativa
+
+Existe elevada probabilidade de o mercado entregar poucos pips, porém com boa confiabilidade.
+
+É preferível capturar um lucro menor com maior probabilidade do que buscar um alvo maior com menor chance de sucesso.
+
+---
+
+Cenário C
+
+Mercado extremamente volátil
+
+TP = US$ 7
+SL = US$ 5
+Lote = 0.03
+
+Justificativa
+
+Maior espaço para desenvolvimento da operação, reduzindo exposição financeira.
+
+---
+
+Cenário D
+
+Mercado inconsistente
+
+Decisão
+
+NÃO OPERAR.
+
+Nenhuma configuração apresenta risco aceitável.
+---------
+
 
 
