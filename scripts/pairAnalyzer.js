@@ -47,6 +47,7 @@ if (!direcao)
     );
 
 await salvarOperacao(db, {
+
     par,
 
     direcao,
@@ -55,9 +56,21 @@ await salvarOperacao(db, {
 
     ema21,
 
+    ema50,
+
+    ema100,
+
+    ema200,
+
     rsi: rsiAtual,
 
-    qualidade,
+    score: qualidade.score,
+
+    tendencia: qualidade.tendencia,
+
+    situacaoRSI: qualidade.rsi,
+
+    qualidade: qualidade.qualidade,
 
     modo: "REAL",
 
