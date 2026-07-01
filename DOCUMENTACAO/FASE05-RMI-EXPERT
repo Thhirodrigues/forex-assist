@@ -2253,6 +2253,28 @@ Versão: RMI_V1
 Sprint: 03 — Modularização do Scanner
 Status: ✅ Encerrado e homologado. Próxima etapa: Sprint 04 – Inteligência Operacional, com foco em evolução dos critérios de análise, gestão de risco e refinamento da qualidade dos sinais, mantendo a arquitetura modular consolidada no Sprint 03.
 
+## Sprint 03 — Concluído
+
+Data: 27/06/2026
+
+Status: ✅ Concluído
+
+Foi concluída a modularização completa do Scanner Real.
+
+Principais entregas:
+- scanner.js como orquestrador
+- pairAnalyzer.js modular
+- utils.js com EMA, RSI e ADX
+- marketData.js modular
+- marketAnalyzer.js integrado
+- riskManager.js integrado
+- Workflow GitHub validado
+- Logs padronizados
+- Resumo final de execução
+- Scanner homologado em produção
+
+Documento completo:
+docs/sprints/Sprint-03-Conclusao.md
 
 para maiores detalhes vide documento mestre
 
