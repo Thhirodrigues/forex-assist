@@ -85,10 +85,6 @@ const qualidade = calcularQualidade(
 );
 
 await salvarOperacao(db, {
-    ...
-});
-        
-await salvarOperacao(db, {
 
     par,
 
