@@ -2948,4 +2948,98 @@ Seu objetivo será concentrar todas as opções de personalização da plataform
 Toda nova configuração permanente da aplicação deverá ser implementada neste módulo, preservando a organização e a previsibilidade da Interface.
 -----
 
+MODO ENGENHARIA
+
+REGISTRO DE ENGENHARIA
+
+Sprint: 03 – Integração de Indicadores
+
+Fase: Infraestrutura
+
+Status: APROVADO
+
+
+---
+
+JUSTIFICATIVA TÉCNICA
+
+Durante a evolução do Smart Scoring Engine foi identificada a necessidade de utilizar indicadores matemáticos consolidados (ADX, ATR, MACD, Bollinger, etc.).
+
+A auditoria confirmou que o projeto não possui package.json, impossibilitando o gerenciamento formal de dependências Node.js.
+
+Foi decidido criar o primeiro package.json oficial do Forex Assist.
+
+Esta alteração não modifica a arquitetura, apenas formaliza a infraestrutura do projeto.
+
+
+---
+
+IMPACTO
+
+Arquitetura
+
+Nenhum.
+
+Scanner
+
+Nenhum.
+
+RMI
+
+Nenhum.
+
+Frontend
+
+Nenhum.
+
+GitHub Actions
+
+Passará a instalar dependências automaticamente.
+
+
+---
+
+DOCUMENTO MESTRE
+
+Atualizar?
+
+SIM.
+
+Adicionar na seção de infraestrutura que o projeto passa a utilizar oficialmente um package.json para gerenciamento de dependências.
+
+
+---
+
+WORKLOG
+
+Registrar:
+
+> Criação do primeiro package.json oficial do projeto, estabelecendo o gerenciamento padronizado de dependências Node.js e preparando a infraestrutura para utilização de bibliotecas consolidadas de indicadores técnicos.
+
+
+
+
+---
+
+ENGINEERING
+
+Registrar:
+
+Infraestrutura
+
+Foi identificado durante a auditoria que o projeto não possuía um arquivo package.json.
+
+A partir deste Sprint passa a existir um ponto único para gerenciamento de dependências, facilitando reprodutibilidade, integração com GitHub Actions e evolução da Engine.
+
+
+---
+
+AÇÃO
+
+Na raiz do repositório (mesmo nível de index.html, manifest.json e .github), crie um novo arquivo chamado:
+
+package.json
+
+No próximo passo eu vou gerar o conteúdo completo desse arquivo, já preparado para o Forex Assist, incluindo as dependências necessárias e compatível com a arquitetura atual. Isso permitirá integrar a biblioteca de indicadores sem quebrar o projeto.
+--------
 
