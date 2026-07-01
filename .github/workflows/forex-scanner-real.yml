@@ -18,16 +18,9 @@ jobs:
         with:
           node-version: 20
 
-      - name: Create package.json
-        run: |
-          echo '{
-            "name":"forex-real",
-            "version":"2.0.0"
-          }' > package.json
-
       - name: Install Dependencies
         run: |
-          npm install firebase-admin@11.11.1 axios
+          npm install
 
       - name: Create Firebase Key
         run: |
