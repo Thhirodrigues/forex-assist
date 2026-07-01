@@ -35,7 +35,13 @@ const pares = [
   "EUR/GBP"
 ];
 
-  
+let totalOperacoes = 0;
+let totalSemSinal = 0;
+let totalCooldown = 0;
+let totalErros = 0;
+
+const inicioExecucao = Date.now();
+
 async function existeCooldown(par) {
 
   const limite =
@@ -65,14 +71,22 @@ async function existeCooldown(par) {
 }
 async function main() {
 
-  console.log(
-    "Scanner iniciado..."
-  );
+console.log("========================================");
+console.log("FOREX ASSIST - REAL MONEY INTELLIGENCE");
+console.log("Scanner RMI_V1");
+console.log("========================================");
+console.log(`Pares...............${pares.length}`);
+console.log("Timeframe...........5m");
+console.log("Modo................REAL");
+console.log("Engine..............RMI_V1");
+console.log("========================================");
 
   for (const par of pares) {
 
-    console.log("\n========================");
-    console.log(`Analisando ${par}`);
+console.log("\n========================");
+console.log("\n========================================");
+console.log(`Analisando...........${par}`);
+console.log("========================================");
 
     await analisarParNovo({
     db,
@@ -89,9 +103,18 @@ async function main() {
 console.log(`${par} finalizado.`);
   }
 
-  console.log(
-    "Scanner finalizado."
-  );
+  const tempo =
+    ((Date.now() - inicioExecucao) / 1000).toFixed(1);
+
+console.log("\n========================================");
+console.log("SCANNER FINALIZADO");
+console.log("========================================");
+console.log(`Operações..........${totalOperacoes}`);
+console.log(`Sem sinal..........${totalSemSinal}`);
+console.log(`Cooldown...........${totalCooldown}`);
+console.log(`Erros..............${totalErros}`);
+console.log(`Tempo..............${tempo}s`);
+console.log("========================================");
 
 }
 
