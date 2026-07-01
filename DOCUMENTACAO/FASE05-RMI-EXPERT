@@ -1759,6 +1759,7 @@ O Market Analyzer deixou de ser apenas um gerador de score e passou a atuar como
 // futuramente ver qual o sprint correto pra esse momento, se e contniacao do apeint 01 ou se ja e o 02.
 -------
 
-
+Decisão Oficial: manteremos a arquitetura atual. Não criaremos novos arquivos. Toda a evolução do RMI continuará sobre os módulos existentes, até que haja necessidade técnica comprovada para um desmembramento. Isso está alinhado com a decisão arquitetural registrada na documentação da Fase 05.
+---------
 
 
