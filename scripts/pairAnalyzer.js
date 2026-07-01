@@ -40,9 +40,12 @@ const ema100 =
 const ema200 =
     ema(200, closes);
 
-        const rsiAtual =
-            rsi(14, closes.slice(-15));
-
+        const adxAtual = calcularADX(
+    14,
+    highs,
+    lows,
+    closes
+);
         const adx = adx(14, highs, lows, closes);
 
         let direcao = null;
