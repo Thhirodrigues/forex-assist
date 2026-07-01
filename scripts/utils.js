@@ -18,27 +18,35 @@ function getApiKey(API_KEYS, apiIndex) {
 
 function ema(periodo, valores) {
 
+    if (!valores || valores.length < periodo)
+        return null;
+
     const resultado = EMA.calculate({
         period: periodo,
         values: valores
     });
 
-    return resultado[
-        resultado.length - 1
-    ];
+    if (!resultado.length)
+        return null;
+
+    return resultado[resultado.length - 1];
 
 }
 
 function rsi(periodo, valores) {
+
+    if (!valores || valores.length < periodo)
+        return null;
 
     const resultado = RSI.calculate({
         period: periodo,
         values: valores
     });
 
-    return resultado[
-        resultado.length - 1
-    ];
+    if (!resultado.length)
+        return null;
+
+    return resultado[resultado.length - 1];
 
 }
 
