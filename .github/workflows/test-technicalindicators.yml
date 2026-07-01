@@ -18,25 +18,23 @@ jobs:
       - name: Install
         run: npm install
 
-      - name: Test Library
-        run: |
+       - name: Test Library
+       run: |
          node -e "
-         const { EMA, RSI, ADX, ATR } = require('technicalindicators');
+         const { ADX } = require('technicalindicators');
 
-         console.log('EMA:', typeof EMA.calculate);
-         console.log('RSI:', typeof RSI.calculate);
-         console.log('ADX:', typeof ADX.calculate);
-         console.log('ATR:', typeof ATR.calculate);
+         const highs=[30,32,31,33,35,36,38,37,39,40,42,41,43,45,44];
+         const lows=[28,29,29,30,32,33,35,34,36,37,39,38,40,42,41];
+         const closes=[29,31,30,32,34,35,37,36,38,39,41,40,42,44,43];
 
-         console.log('EMA EXEMPLO');
-         console.log(EMA.calculate({
-         period: 3,
-         values: [1,2,3,4,5]
-         }));
-
-         console.log('RSI EXEMPLO');
-         console.log(RSI.calculate({
-         period: 3,
-         values: [1,2,3,4,5,6]
-          }));
-          "
+         console.log(JSON.stringify(
+         ADX.calculate({
+         period:14,
+         high:highs,
+         low:lows,
+         close:closes
+         }),
+         null,
+         2
+         ));
+         "
