@@ -88,7 +88,7 @@ console.log("\n========================================");
 console.log(`Analisando...........${par}`);
 console.log("========================================");
 
-    await analisarParNovo({
+    const resultado = await analisarParNovo({
     db,
     par,
     getCandles,
@@ -100,6 +100,26 @@ console.log("========================================");
     salvarOperacao
 });
 
+switch (resultado) {
+
+case "SALVO":
+    totalOperacoes++;
+    break;
+
+case "SEM_SINAL":
+    totalSemSinal++;
+    break;
+
+case "COOLDOWN":
+    totalCooldown++;
+    break;
+
+case "ERRO":
+    totalErros++;
+    break;
+
+}
+    
 console.log(`${par} finalizado.`);
   }
 
