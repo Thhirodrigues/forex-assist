@@ -2158,5 +2158,9 @@ A migração completa exige conhecer a API exata da versão da biblioteca techni
 Por isso, o próximo passo é integrar essa biblioteca usando sua API real. Depois disso, faremos a migração completa em uma única sequência, sem deixar pendências para sprints futuras.
 ---------
 
+Node.js
+Nos logs aparece o aviso de que o runner do GitHub está forçando o uso do Node 24 por causa da descontinuação do Node 20. Isso não é um erro do seu projeto, mas um aviso da infraestrutura do GitHub. Não vamos mexer nisso agora; podemos atualizar para Node 24 em uma sprint específica de infraestrutura.
+-----
+
 
 
