@@ -12,8 +12,10 @@ async function analisarPar({
 
     try {
 
-        if (await verificarCooldown(par))
-            return;
+        if (await verificarCooldown(par)) {
+    console.log("Status.............COOLDOWN");
+    return "COOLDOWN";
+        }
 
         const candles =
             await getCandles(par);
@@ -61,8 +63,8 @@ if (
     ema200 === null ||
     rsiAtual === null
 ) {
-    console.log(`${par} candles insuficientes.`);
-    return;
+    console.log("Status.............CANDLES INSUFICIENTES");
+return "SEM_DADOS";
 }
 
 if (ema9 > ema21 && rsiAtual > 55)
@@ -71,8 +73,10 @@ if (ema9 > ema21 && rsiAtual > 55)
 if (ema9 < ema21 && rsiAtual < 45)
     direcao = "SELL";
 
-if (!direcao)
-    return;
+if (!direcao) {
+    console.log("Status.............SEM SINAL");
+    return "SEM_SINAL";
+}
 
 const qualidade = calcularQualidade(
     ema9,
@@ -125,12 +129,23 @@ await salvarOperacao(db, {
 
 });
 
-console.log(
-    `${par} ${direcao} OK`
-);
+console.log(`Direção...........${direcao}`);
+console.log(`EMA9..............${ema9.toFixed(5)}`);
+console.log(`EMA21.............${ema21.toFixed(5)}`);
+console.log(`RSI...............${rsiAtual.toFixed(2)}`);
+console.log(`ADX...............${adxAtual.toFixed(2)}`);
+console.log(`Score.............${qualidade.score}`);
+console.log(`Qualidade.........${qualidade.qualidade}`);
+console.log("Status............SALVO");
+
+return "SALVO";
+
 
     } catch (e) {
-        console.log(`${par} erro`, e.message);
+console.log("Status............ERRO");
+console.log(`Motivo............${e.message}`);
+
+return "ERRO";
     }
 
 }
