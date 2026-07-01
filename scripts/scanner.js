@@ -14,7 +14,8 @@ const {
 } = require("./marketAnalyzer");
 const {
     ema,
-    rsi
+    rsi,
+    calcularADX
 } = require("./utils");
 const {
   existeCooldown: verificarCooldown,
@@ -79,6 +80,7 @@ async function main() {
     getCandles,
     ema,
     rsi,
+    calcularADX,
     calcularQualidade,
     verificarCooldown: existeCooldown,
     salvarOperacao
