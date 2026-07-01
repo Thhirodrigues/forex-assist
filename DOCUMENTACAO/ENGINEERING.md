@@ -5281,3 +5281,14 @@ Com a emissão deste Checkpoint Oficial, ficam formalmente encerradas as Fases 0
 A partir deste momento, todo desenvolvimento passará a seguir exclusivamente a documentação oficial consolidada, utilizando-a como referência permanente para implementação, manutenção e evolução da plataforma.
 ---------
 
+ENGINEERING
+Registrar:
+Infraestrutura
+Foi identificado durante a auditoria que o projeto não possuía um arquivo package.json.
+A partir deste Sprint passa a existir um ponto único para gerenciamento de dependências, facilitando reprodutibilidade, integração com GitHub Actions e evolução da Engine.
+AÇÃO
+Na raiz do repositório (mesmo nível de index.html, manifest.json e .github), crie um novo arquivo chamado:
+package.json
+No próximo passo eu vou gerar o conteúdo completo desse arquivo, já preparado para o Forex Assist, incluindo as dependências necessárias e compatível com a arquitetura atual. Isso permitirá integrar a biblioteca de indicadores sem quebrar o projeto.
+--------
+
