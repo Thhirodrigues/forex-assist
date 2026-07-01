@@ -1,0 +1,29 @@
+name: Test TechnicalIndicators
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        run: npm install
+
+      - name: Test Library
+        run: |
+          node -e "
+          const ti = require('technicalindicators');
+          console.log('==========================');
+          console.log('TECHNICALINDICATORS');
+          console.log('==========================');
+          console.log(Object.keys(ti).sort());
+          "
