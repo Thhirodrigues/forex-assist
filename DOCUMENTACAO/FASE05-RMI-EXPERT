@@ -1979,4 +1979,25 @@ No próximo passo vamos:
 Essa abordagem preserva a integridade da arquitetura e reduz significativamente o risco de erros matemáticos nos indicadores.
 -------
 
+REGISTRO DE ENGENHARIA
+Sprint: 03 – Integração de Indicadores
+Fase: Infraestrutura
+Status: APROVADO
+JUSTIFICATIVA TÉCNICA
+Durante a evolução do Smart Scoring Engine foi identificada a necessidade de utilizar indicadores matemáticos consolidados (ADX, ATR, MACD, Bollinger, etc.).
+A auditoria confirmou que o projeto não possui package.json, impossibilitando o gerenciamento formal de dependências Node.js.
+Foi decidido criar o primeiro package.json oficial do Forex Assist.
+Esta alteração não modifica a arquitetura, apenas formaliza a infraestrutura do projeto.
+IMPACTO
+Arquitetura
+Nenhum.
+Scanner
+Nenhum.
+RMI
+Nenhum.
+Frontend
+Nenhum.
+GitHub Actions
+Passará a instalar dependências automaticamente.
+----------
 
