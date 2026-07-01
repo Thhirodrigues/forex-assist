@@ -17,9 +17,14 @@ async function analisarPar({
         const candles =
             await getCandles(par);
 
-        const closes =
-            candles.map(c => Number(c.close));
+        const highs =
+    candles.map(c => Number(c.high));
 
+const lows =
+    candles.map(c => Number(c.low));
+
+const closes =
+    candles.map(c => Number(c.close));
         const ema9 =
             ema(9, closes.slice(-30));
 
@@ -37,7 +42,8 @@ const ema200 =
 
         const rsiAtual =
             rsi(14, closes.slice(-15));
-        const adx = 25;
+
+        const adx = adx(14, highs, lows, closes);
 
         let direcao = null;
 
