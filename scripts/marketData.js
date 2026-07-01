@@ -16,7 +16,7 @@ const url =
     `https://api.twelvedata.com/time_series` +
     `?symbol=${encodeURIComponent(symbol)}` +
     `&interval=5min` +
-    `&outputsize=120` +
+    `&outputsize=250` +
     `&apikey=${getApiKey(API_KEYS, apiIndex)}`;
 
   const res = await axios.get(url);
