@@ -2072,4 +2072,91 @@ Status do Sprint 03:
 ⏳ Próxima etapa: refatoração do utils.js para integrar technicalindicators e resolver definitivamente o ADX.
 -------
 
+Modo Engenharia.
+
+Concordo com a decisão.
+
+Pelos documentos oficiais, o projeto já atingiu um nível de maturidade em que vale mais a pena fazer uma migração completa e definitiva do que manter duas implementações paralelas. Isso está alinhado com a evolução incremental do RMI e com a governança estabelecida após a auditoria.
+
+Minha proposta para o Sprint 03
+
+Em vez de apenas "colocar o ADX", vamos concluir a camada de indicadores.
+
+Etapa 1
+
+utils.js
+
+Remover implementações próprias de EMA e RSI.
+
+Integrar technicalindicators.
+
+Adicionar:
+
+EMA
+
+RSI
+
+ADX
+
+ATR (já que a biblioteca fornece e ele está previsto no RMI)
+
+
+Exportar todas as funções padronizadas.
+
+
+
+Etapa 2
+
+scanner.js
+
+Atualizar a injeção de dependências para incluir as novas funções.
+
+
+
+Etapa 3
+
+pairAnalyzer.js
+
+Eliminar const adx = 25.
+
+Consumir EMA, RSI e ADX da nova camada.
+
+Corrigir definitivamente o conflito de nomes (adx).
+
+
+
+Etapa 4
+
+marketAnalyzer.js
+
+Manter apenas a interpretação dos indicadores, preservando sua responsabilidade única.
+
+
+
+
+---
+
+Resultado
+
+Quando terminarmos esta Sprint:
+
+❌ Não haverá mais indicadores matemáticos implementados manualmente.
+
+❌ Não haverá mais adx = 25.
+
+❌ Não haverá código duplicado para EMA e RSI.
+
+✅ Todos os indicadores virão de uma biblioteca consolidada.
+
+✅ O RMI continuará responsável apenas pela inteligência e tomada de decisão.
+
+
+Minha única ressalva
+
+A migração completa exige conhecer a API exata da versão da biblioteca technicalindicators instalada (assinaturas, nomes das funções e formato dos retornos). Eu não vou inventar chamadas de API ou gerar código especulativo para um sistema que você pretende usar com dinheiro real.
+
+Por isso, o próximo passo é integrar essa biblioteca usando sua API real. Depois disso, faremos a migração completa em uma única sequência, sem deixar pendências para sprints futuras.
+---------
+
+
 
