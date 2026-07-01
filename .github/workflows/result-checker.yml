@@ -24,7 +24,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm install firebase-admin@11.11.1 axios
+          npm install
 
       - name: Create Firebase Key
         run: |
