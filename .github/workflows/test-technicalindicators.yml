@@ -18,8 +18,8 @@ jobs:
       - name: Install
         run: npm install
 
-       - name: Test Library
-       run: |
+      - name: Test Library
+        run: |
          node -e "
          const { ADX } = require('technicalindicators');
 
