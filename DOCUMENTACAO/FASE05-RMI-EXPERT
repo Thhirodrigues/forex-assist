@@ -2162,5 +2162,88 @@ Node.js
 Nos logs aparece o aviso de que o runner do GitHub está forçando o uso do Node 24 por causa da descontinuação do Node 20. Isso não é um erro do seu projeto, mas um aviso da infraestrutura do GitHub. Não vamos mexer nisso agora; podemos atualizar para Node 24 em uma sprint específica de infraestrutura.
 -----
 
+Concordo. Antes de encerrar o Sprint 03, vale a pena deixar o log com padrão profissional. Isso facilita muito a auditoria do GitHub Actions e a identificação de problemas sem abrir o Firestore.
 
+Minha proposta é padronizar em cinco etapas para cada par:
+
+==============================
+Analisando EUR/USD
+
+Candles.............120
+EMA9................1.16842
+EMA21...............1.16831
+EMA50...............1.16810
+EMA100..............1.16782
+EMA200..............1.16735
+RSI.................58.42
+ADX.................27.81
+
+Direção.............BUY
+Score...............91
+Qualidade...........A+
+Tendência...........FORTE
+
+Resultado...........SALVO
+==============================
+
+Quando não houver operação, o log deve informar claramente o motivo:
+
+==============================
+Analisando EUR/JPY
+
+Candles.............120
+EMA9................1.16842
+EMA21...............1.16839
+RSI.................49.80
+ADX.................16.20
+
+Resultado...........SEM SINAL
+Motivo..............RSI neutro
+==============================
+
+Ou:
+
+Resultado...........COOLDOWN
+
+Ou:
+
+Resultado...........CANDLES INSUFICIENTES
+
+Ou:
+
+Resultado...........ERRO
+Motivo..............Sem candles
+
+Também padronizaria o início e o fim do workflow
+
+No começo:
+
+========================================
+FOREX ASSIST - REAL MONEY INTELLIGENCE
+Scanner V1
+========================================
+Pares...............10
+Timeframe...........5m
+Modo................REAL
+Engine..............RMI_V1
+========================================
+
+No final:
+
+========================================
+SCANNER FINALIZADO
+
+Pares analisados....10
+Operações...........7
+Sem sinal...........3
+Erros...............0
+
+Tempo...............32s
+========================================
+
+Esse formato deixa o log muito mais útil para auditoria, testes e acompanhamento da evolução do projeto, sem alterar a lógica do scanner.
+
+Acredito que essa seja a última melhoria necessária antes de emitir o relatório de conclusão do Sprint 03.
+
+--------
 
