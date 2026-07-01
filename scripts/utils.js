@@ -1,65 +1,83 @@
+const {
+    EMA,
+    RSI,
+    ADX
+} = require("technicalindicators");
+
 function getApiKey(API_KEYS, apiIndex) {
-  const key = API_KEYS[apiIndex.value];
-  apiIndex.value =
-    (apiIndex.value + 1) %
-    API_KEYS.length;
-  return key;
+
+    const key = API_KEYS[apiIndex.value];
+
+    apiIndex.value =
+        (apiIndex.value + 1) %
+        API_KEYS.length;
+
+    return key;
+
 }
 
 function ema(periodo, valores) {
 
-  const k = 2 / (periodo + 1);
+    const resultado = EMA.calculate({
+        period: periodo,
+        values: valores
+    });
 
-  let emaAtual = valores[0];
+    return resultado[
+        resultado.length - 1
+    ];
 
-  for (let i = 1; i < valores.length; i++) {
-
-    emaAtual =
-      valores[i] * k +
-      emaAtual * (1 - k);
-
-  }
-
-  return emaAtual;
 }
 
 function rsi(periodo, valores) {
 
-  let ganhos = 0;
-  let perdas = 0;
+    const resultado = RSI.calculate({
+        period: periodo,
+        values: valores
+    });
 
-  for (let i = 1; i <= periodo; i++) {
+    return resultado[
+        resultado.length - 1
+    ];
 
-    const dif =
-      valores[i] -
-      valores[i - 1];
+}
 
-    if (dif >= 0)
-      ganhos += dif;
-    else
-      perdas -= dif;
+function calcularADX(
+    periodo,
+    highs,
+    lows,
+    closes
+) {
 
-  }
+    const resultado = ADX.calculate({
 
-  let avgGain =
-    ganhos / periodo;
+        period: periodo,
 
-  let avgLoss =
-    perdas / periodo;
+        close: closes,
 
-  if (avgLoss === 0)
-    return 100;
+        high: highs,
 
-  const rs =
-    avgGain / avgLoss;
+        low: lows
 
-  return 100 -
-    (100 / (1 + rs));
+    });
+
+    if (!resultado.length)
+        return 0;
+
+    return resultado[
+        resultado.length - 1
+    ].adx;
 
 }
 
 module.exports = {
-  getApiKey,
-  ema,
-  rsi
+
+    getApiKey,
+
+    ema,
+
+    rsi,
+
+    calcularADX
+
 };
