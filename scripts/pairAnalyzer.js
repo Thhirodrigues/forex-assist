@@ -1,13 +1,15 @@
 async function analisarPar({
+    {
     db,
     par,
     getCandles,
     ema,
     rsi,
+    calcularADX,
     calcularQualidade,
     verificarCooldown,
     salvarOperacao
-}) {
+}
 
     try {
 
@@ -66,7 +68,7 @@ if (!direcao)
         ema100,
         ema200,
         rsiAtual,
-        adx
+        adxAtual
     );
 
 await salvarOperacao(db, {
