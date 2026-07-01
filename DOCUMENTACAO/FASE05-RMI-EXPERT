@@ -1762,4 +1762,221 @@ O Market Analyzer deixou de ser apenas um gerador de score e passou a atuar como
 Decisão Oficial: manteremos a arquitetura atual. Não criaremos novos arquivos. Toda a evolução do RMI continuará sobre os módulos existentes, até que haja necessidade técnica comprovada para um desmembramento. Isso está alinhado com a decisão arquitetural registrada na documentação da Fase 05.
 ---------
 
+Modo Engenharia.
+
+Decisão de Arquitetura — Sprint 03
+
+Aprovado o modelo híbrido.
+
+Essa passa a ser minha recomendação oficial para o projeto.
+
+
+---
+
+DECISÃO DE ENGENHARIA
+
+O Scanner NÃO calculará indicadores matemáticos.
+
+Ele apenas irá consumi-los.
+
+utils.js
+
+Responsabilidade futura:
+
+API Keys
+
+Funções auxiliares
+
+Conversões
+
+Utilidades
+
+
+Deixará gradualmente de ser uma biblioteca de indicadores.
+
+
+---
+
+Biblioteca de Indicadores
+
+Passará a fornecer:
+
+EMA
+
+RSI
+
+ADX
+
+ATR
+
+MACD
+
+Bollinger
+
+(+DI)
+
+(-DI)
+
+
+Todos utilizando algoritmos consolidados.
+
+
+---
+
+O que continua sendo proprietário
+
+Todo o diferencial competitivo permanece dentro do Forex Assist:
+
+Scanner
+
+MarketAnalyzer
+
+Smart Scoring Engine
+
+Decision Engine
+
+RMI
+
+Expert
+
+Gestão de risco
+
+Inteligência histórica
+
+Índice de Confiança Final (ICF)
+
+Convergência
+
+Regras de decisão
+
+
+Ou seja:
+
+Compramos a calculadora. A inteligência continua sendo nossa.
+
+
+---
+
+ALTERAÇÃO NO ROADMAP
+
+Sprint 03
+
+
+
+↓
+
+Integrar biblioteca oficial de indicadores.
+
+
+---
+
+Sprint 03.1
+
+Migrar
+
+EMA
+
+↓
+
+Biblioteca
+
+
+---
+
+Sprint 03.2
+
+Migrar
+
+RSI
+
+↓
+
+Biblioteca
+
+
+---
+
+Sprint 03.3
+
+Adicionar
+
+ADX
+
+ATR
+
+MACD
+
+Bollinger
+
+
+---
+
+Sprint 03.4
+
+Eliminar definitivamente
+
+const adx = 25;
+
+
+---
+
+BENEFÍCIOS
+
+✔ Cálculos auditados.
+
+✔ Menor manutenção.
+
+✔ Código menor.
+
+✔ Mais confiabilidade.
+
+✔ Mais precisão.
+
+✔ Evolução mais rápida.
+
+✔ Arquitetura preservada.
+
+
+---
+
+MINHA RECOMENDAÇÃO
+
+A biblioteca que melhor se encaixa no projeto é technicalindicators.
+
+Motivos:
+
+Muito madura e amplamente utilizada.
+
+Compatível com Node.js e GitHub Actions.
+
+Inclui EMA, RSI, ADX, ATR, MACD e Bollinger.
+
+API simples e consistente.
+
+Fácil integração com a arquitetura modular existente.
+
+
+
+---
+
+Próximo passo
+
+No próximo passo vamos:
+
+1. Adicionar a dependência technicalindicators ao projeto.
+
+
+2. Adaptar utils.js para utilizar a biblioteca.
+
+
+3. Atualizar pairAnalyzer.js para consumir o ADX real.
+
+
+4. Remover definitivamente o valor temporário const adx = 25;.
+
+
+
+Essa abordagem preserva a integridade da arquitetura e reduz significativamente o risco de erros matemáticos nos indicadores.
+-------
+
 
