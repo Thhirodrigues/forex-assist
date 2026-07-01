@@ -53,23 +53,6 @@ const ema200 =
 
         let direcao = null;
 
-if (ema9 > ema21 && rsiAtual > 55)
-    direcao = "BUY";
-
-if (ema9 < ema21 && rsiAtual < 45)
-    direcao = "SELL";
-
-if (!direcao)
-    return;
-    if (
-    const ema9 = ...
-    const ema21 = ...
-    const ema50 = ...
-    const ema100 = ...
-    const ema200 = ...
-    const rsiAtual = ...
-    const adxAtual = ...
-
 if (
     ema9 === null ||
     ema21 === null ||
@@ -82,13 +65,28 @@ if (
     return;
 }
 
-let direcao = null;
-
 if (ema9 > ema21 && rsiAtual > 55)
     direcao = "BUY";
 
 if (ema9 < ema21 && rsiAtual < 45)
     direcao = "SELL";
+
+if (!direcao)
+    return;
+
+const qualidade = calcularQualidade(
+    ema9,
+    ema21,
+    ema50,
+    ema100,
+    ema200,
+    rsiAtual,
+    adxAtual
+);
+
+await salvarOperacao(db, {
+    ...
+});
         
 await salvarOperacao(db, {
 
