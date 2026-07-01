@@ -39,7 +39,10 @@ const ema100 =
     ema(100, closes.slice(-120));
 
 const ema200 =
-    ema(200, closes);
+    ema(200, closes);   
+
+        const rsiAtual =
+    rsi(14, closes.slice(-15));
 
         const adxAtual = calcularADX(
     14,
