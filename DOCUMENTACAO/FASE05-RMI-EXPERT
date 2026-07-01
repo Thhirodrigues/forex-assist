@@ -2001,3 +2001,75 @@ GitHub Actions
 Passará a instalar dependências automaticamente.
 ----------
 
+Modo Engenharia.
+
+Excelente. As capturas mostram que chegamos a um checkpoint importante.
+
+Auditoria do estado atual
+
+Infraestrutura
+
+✅ package.json criado.
+
+✅ Dependências instaladas via npm install.
+
+✅ Scanner executando com o novo modelo.
+
+✅ Result Checker executando com o novo modelo.
+
+
+Essa parte foi concluída com sucesso.
+
+Erro encontrado
+
+O Scanner está registrando:
+
+Cannot access 'adx' before initialization
+
+Esse erro é esperado pela alteração que fizemos no pairAnalyzer.js. O problema não é o technicalindicators, mas sim uma colisão de nomes.
+
+Você alterou para algo como:
+
+const adx = adx(14, highs, lows, closes);
+
+Em JavaScript isso não funciona, porque a variável local adx entra em conflito com a função adx.
+
+O correto será usar nomes diferentes, por exemplo:
+
+const adxAtual = calcularADX(14, highs, lows, closes);
+
+ou qualquer outra combinação consistente, desde que a função e a variável não tenham o mesmo identificador.
+
+Próximo passo
+
+Agora precisamos integrar a biblioteca ao código. Para isso, o próximo arquivo é novamente:
+
+utils.js
+
+Mas desta vez não é para criar um algoritmo manual. Vamos:
+
+importar technicalindicators;
+
+substituir gradualmente as implementações próprias de EMA e RSI (ou encapsulá-las);
+
+criar uma função de cálculo do ADX usando a biblioteca;
+
+exportar essa função;
+
+depois ajustar o pairAnalyzer.js para usar calcularADX(...) em vez do valor fixo 25.
+
+
+Esse é o ponto em que a migração híbrida realmente começa.
+
+Status do Sprint 03:
+
+✅ Infraestrutura concluída.
+
+✅ Workflows validados.
+
+✅ Dependências centralizadas.
+
+⏳ Próxima etapa: refatoração do utils.js para integrar technicalindicators e resolver definitivamente o ADX.
+-------
+
+
