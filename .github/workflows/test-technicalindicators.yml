@@ -19,11 +19,24 @@ jobs:
         run: npm install
 
       - name: Test Library
-        run: |
-          node -e "
-          const ti = require('technicalindicators');
-          console.log('==========================');
-          console.log('TECHNICALINDICATORS');
-          console.log('==========================');
-          console.log(Object.keys(ti).sort());
-          "
+  run: |
+          node - <<'EOF'
+          const { EMA, RSI, ADX, ATR } = require("technicalindicators");
+
+               console.log("EMA:", typeof EMA.calculate);
+               console.log("RSI:", typeof RSI.calculate);
+               console.log("ADX:", typeof ADX.calculate);
+               console.log("ATR:", typeof ATR.calculate);
+
+               console.log("EMA EXEMPLO:");
+               console.log(EMA.calculate({
+               period: 3,
+               values: [1,2,3,4,5]
+          }));
+
+              console.log("RSI EXEMPLO:");
+              console.log(RSI.calculate({
+              period: 3,
+              values: [1,2,3,4,5,6]
+          }));
+EOF
