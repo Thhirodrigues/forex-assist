@@ -1,5 +1,4 @@
 async function analisarPar({
-    {
     db,
     par,
     getCandles,
@@ -9,7 +8,7 @@ async function analisarPar({
     calcularQualidade,
     verificarCooldown,
     salvarOperacao
-}
+}) {
 
     try {
 
@@ -48,7 +47,6 @@ const ema200 =
     lows,
     closes
 );
-        const adx = adx(14, highs, lows, closes);
 
         let direcao = null;
 
