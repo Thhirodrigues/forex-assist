@@ -372,29 +372,40 @@ function analisarADX(adx) {
 }
 
 // ===================================================
-// SLOPE DAS EMAs
+// ANÁLISE DO SLOPE
 // ===================================================
 
 function analisarSlope(
-  ema9,
-  ema21,
-  ema50
+    ema9,
+    ema21,
+    ema50
 ) {
 
-  let score = 0;
+    const d1 = Math.abs(ema9 - ema21);
+    const d2 = Math.abs(ema21 - ema50);
 
-  if (
+    if (
+        d1 >= 0.0010 &&
+        d2 >= 0.0010
+    ) {
+        return 15;
+    }
 
-    Math.abs(ema9 - ema21) > 0.00030 &&
-    Math.abs(ema21 - ema50) > 0.00030
+    if (
+        d1 >= 0.0007 &&
+        d2 >= 0.0007
+    ) {
+        return 10;
+    }
 
-  ) {
+    if (
+        d1 >= 0.0004 &&
+        d2 >= 0.0004
+    ) {
+        return 5;
+    }
 
-    score = 10;
-
-  }
-
-  return score;
+    return 0;
 
 }
 
