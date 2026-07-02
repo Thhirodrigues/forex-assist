@@ -2770,3 +2770,297 @@ Ao finalizar essa etapa, o banco de dados começará a armazenar apenas sinais c
 Status: Sprint 04 iniciado. Próximo arquivo: scripts/marketAnalyzer.js (refatoração da análise de tendência por EMAs).
 -----------
 
+RELATÓRIO PARCIAL — SPRINT 04
+
+FOREX ASSIST – REAL MONEY INTELLIGENCE (RMI)
+
+
+---
+
+Período
+
+Da conclusão do Sprint 03 até o estado atual do Sprint 04.
+
+
+---
+
+Objetivo
+
+Iniciar o refinamento institucional da Engine RMI, deixando o Scanner menos dependente de cruzamentos simples e preparando o banco de dados para aprendizado futuro.
+
+
+---
+
+Alterações realizadas
+
+1. Refatoração do Market Analyzer
+
+Arquivo:
+
+scripts/marketAnalyzer.js
+
+Padronização interna utilizando blocos de documentação:
+
+// ===================================================
+// TÍTULO
+// ===================================================
+
+Objetivo:
+
+facilitar manutenção;
+
+facilitar localização de funções;
+
+padronizar todo o projeto.
+
+
+
+---
+
+2. Expansão da análise das EMAs
+
+A função analisarEMAs() deixou de reconhecer apenas alinhamento completo das médias.
+
+Agora identifica:
+
+Tendência Forte
+
+Tendência Saudável
+
+Início de Tendência
+
+Compressão
+
+Conflito
+
+
+Essa alteração tornou a análise estrutural muito mais próxima da leitura utilizada por operadores institucionais.
+
+
+---
+
+3. Criação da análise do ADX
+
+Foi criada a função:
+
+analisarADX()
+
+Classificando a força da tendência em:
+
+MUITO_FRACA
+
+FRACA
+
+MODERADA
+
+BOA
+
+FORTE
+
+MUITO_FORTE
+
+EXTREMA
+
+
+Cada faixa passou a contribuir para o Score Final.
+
+
+---
+
+4. Evolução da Smart Scoring Engine
+
+O cálculo da qualidade passou a considerar simultaneamente:
+
+estrutura das EMAs;
+
+RSI;
+
+ADX;
+
+tendência.
+
+
+O Score continua limitado entre:
+
+0 → 100
+
+
+---
+
+5. Bônus institucional
+
+Foi criado um bônus adicional quando ocorre simultaneamente:
+
+ADX elevado;
+
+RSI forte;
+
+tendência válida.
+
+
+Esse bônus melhora a seleção de operações realmente consistentes.
+
+
+---
+
+6. Nova classificação institucional
+
+A função:
+
+analisarTendencia()
+
+foi completamente revisada.
+
+Agora identifica:
+
+INSTITUCIONAL
+
+FORTE
+
+LATERAL
+
+CONFLITO
+
+
+Essa classificação passa a representar a qualidade estrutural do mercado.
+
+
+---
+
+7. Integração completa com o Scanner
+
+O Scanner passou a registrar no Firestore:
+
+Score
+
+Tendência
+
+RSI
+
+ADX
+
+Qualidade Institucional
+
+
+sem alterar a arquitetura modular construída no Sprint 03.
+
+
+---
+
+8. Padronização dos Logs
+
+Os logs do workflow foram reorganizados.
+
+Cada ativo agora apresenta:
+
+Par
+
+Direção
+
+EMA9
+
+EMA21
+
+RSI
+
+ADX
+
+Score
+
+Qualidade
+
+Status
+
+Também foram adicionados retornos explícitos:
+
+SALVO
+
+SEM_SINAL
+
+SEM_DADOS
+
+ERRO
+
+permitindo ao Scanner gerar estatísticas confiáveis no encerramento da execução.
+
+
+---
+
+9. Correções realizadas
+
+Durante o desenvolvimento foram resolvidos:
+
+erro de exportação do ADX;
+
+valores undefined enviados ao Firestore;
+
+tratamento de candles insuficientes;
+
+erro de inicialização do adxInfo;
+
+ajustes na ordem de execução da Smart Engine;
+
+validação de compatibilidade com GitHub Actions.
+
+
+
+---
+
+Resultado
+
+Workflow executando com sucesso.
+
+Scanner operando normalmente.
+
+Score institucional ativo.
+
+Classificações:
+
+INSTITUCIONAL
+
+FORTE
+
+LATERAL
+
+CONFLITO
+
+
+sendo gravadas corretamente.
+
+Nenhuma quebra na arquitetura modular.
+
+
+---
+
+Estado atual do Sprint 04
+
+Concluído
+
+Refatoração do Market Analyzer
+
+Evolução da análise de EMAs
+
+Integração do ADX
+
+Smart Scoring Engine V2
+
+Classificação Institucional
+
+Padronização dos Logs
+
+Correções de estabilidade
+
+Validação completa no GitHub Actions
+
+
+
+---
+
+Próxima etapa
+
+Sprint 04 – Fase 04.4
+
+Implementação do Filtro Institucional de Qualidade, responsável por impedir que operações abaixo do padrão mínimo da Engine RMI sejam gravadas no Firestore.
+
+Esse será o primeiro mecanismo de curadoria automática do banco de dados, garantindo que a futura Inteligência Artificial seja treinada apenas com sinais de alta qualidade.
+
