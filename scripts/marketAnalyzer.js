@@ -477,6 +477,39 @@ function analisarAlinhamento(
 }
 
 // ===================================================
+// ANÁLISE DA DISTÂNCIA ENTRE EMAs
+// ===================================================
+
+function analisarDistanciaEMAs(
+    ema9,
+    ema21,
+    ema50
+) {
+
+    const d1 = Math.abs(ema9 - ema21);
+    const d2 = Math.abs(ema21 - ema50);
+
+    if (d1 >= 0.0015 && d2 >= 0.0015) {
+        return {
+            score: 10,
+            nivel: "IDEAL"
+        };
+    }
+
+    if (d1 >= 0.0008 && d2 >= 0.0008) {
+        return {
+            score: 5,
+            nivel: "BOA"
+        };
+    }
+
+    return {
+        score: 0,
+        nivel: "FRACA"
+    };
+}
+
+// ===================================================
 // SMART SCORING ENGINE
 // ===================================================
 
@@ -532,9 +565,18 @@ const alinhamento =
         ema100,
         ema200
 );
+
+const distancia =
+    analisarDistanciaEMAs(
+        ema9,
+        ema21,
+        ema50
+    );
   
 score += slope;
 score += alinhamento.score;
+score += distancia.score;
+
 
 if (
     adx >= 35 &&
@@ -563,8 +605,9 @@ if (
 
     slope,
 
-    alinhamento:
-        alinhamento.status
+    alinhamento: alinhamento.status
+
+    distancia: distancia.nivel,
 
 };
 }
@@ -587,6 +630,8 @@ module.exports = {
 
     analisarAlinhamento,
 
-    calcularQualidade
+    calcularQualidade,
+
+    analisarDistanciaEMAs,
 
 };
