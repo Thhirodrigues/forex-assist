@@ -22,34 +22,146 @@
 // ANÁLISE DAS EMAs
 // ===================================================
 
-function analisarEMAs(ema9, ema21, ema50, ema100, ema200) {
+function analisarEMAs(
+  ema9,
+  ema21,
+  ema50,
+  ema100,
+  ema200
+) {
 
   let score = 0;
+
   let tendencia = "LATERAL";
 
+  // ===================================================
+  // TENDÊNCIA FORTE
+  // ===================================================
+
   if (
+
     ema9 > ema21 &&
     ema21 > ema50 &&
     ema50 > ema100 &&
     ema100 > ema200
+
   ) {
+
     score = 30;
+
     tendencia = "ALTA";
+
   }
 
   else if (
+
     ema9 < ema21 &&
     ema21 < ema50 &&
     ema50 < ema100 &&
     ema100 < ema200
+
   ) {
+
     score = 30;
+
     tendencia = "BAIXA";
+
+  }
+
+  // ===================================================
+  // TENDÊNCIA SAUDÁVEL
+  // ===================================================
+
+  else if (
+
+    ema9 > ema21 &&
+    ema21 > ema50
+
+  ) {
+
+    score = 22;
+
+    tendencia = "ALTA";
+
+  }
+
+  else if (
+
+    ema9 < ema21 &&
+    ema21 < ema50
+
+  ) {
+
+    score = 22;
+
+    tendencia = "BAIXA";
+
+  }
+
+  // ===================================================
+  // INÍCIO DE TENDÊNCIA
+  // ===================================================
+
+  else if (
+
+    ema9 > ema21 &&
+    ema50 > ema100
+
+  ) {
+
+    score = 16;
+
+    tendencia = "ALTA";
+
+  }
+
+  else if (
+
+    ema9 < ema21 &&
+    ema50 < ema100
+
+  ) {
+
+    score = 16;
+
+    tendencia = "BAIXA";
+
+  }
+
+  // ===================================================
+  // COMPRESSÃO
+  // ===================================================
+
+  else if (
+
+    Math.abs(ema9 - ema21) < 0.00030
+
+  ) {
+
+    score = 8;
+
+    tendencia = "COMPRESSAO";
+
+  }
+
+  // ===================================================
+  // CONFLITO
+  // ===================================================
+
+  else {
+
+    score = 5;
+
+    tendencia = "CONFLITO";
+
   }
 
   return {
+
     score,
+
     tendencia
+
   };
 
 }
