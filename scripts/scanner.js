@@ -118,6 +118,12 @@ case "ERRO":
     totalErros++;
     break;
 
+case "SEM_QUALIDADE":
+
+    totalSemSinal++;
+
+    break;
+
 }
     
 console.log(`${par} finalizado.`);
