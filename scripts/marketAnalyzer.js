@@ -393,19 +393,20 @@ function calcularQualidade(
     ema50,
     ema100,
     ema200
-  );
+);
 
-  const rsi = analisarRSI(
+const rsi = analisarRSI(
     rsiAtual
-  );
+);
 
-  const tendencia = analisarTendencia(
+const adxInfo = analisarADX(
+    adx
+);
+
+const tendencia = analisarTendencia(
     emas,
     rsi,
     adxInfo
-);
-  const adxInfo = analisarADX(
-  adx
 );
 
   score += emas.score;
