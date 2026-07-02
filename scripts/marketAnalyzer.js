@@ -372,6 +372,33 @@ function analisarADX(adx) {
 }
 
 // ===================================================
+// SLOPE DAS EMAs
+// ===================================================
+
+function analisarSlope(
+  ema9,
+  ema21,
+  ema50
+) {
+
+  let score = 0;
+
+  if (
+
+    Math.abs(ema9 - ema21) > 0.00030 &&
+    Math.abs(ema21 - ema50) > 0.00030
+
+  ) {
+
+    score = 10;
+
+  }
+
+  return score;
+
+}
+
+// ===================================================
 // SMART SCORING ENGINE
 // ===================================================
 
@@ -414,6 +441,14 @@ const tendencia = analisarTendencia(
   score += tendencia.score;
   score += adxInfo.score;
 
+const slope = analisarSlope(
+    ema9,
+    ema21,
+    ema50
+);
+
+score += slope;
+
 if (
     adx >= 35 &&
     rsiAtual >= 58 &&
@@ -429,19 +464,19 @@ if (
 );
   return {
 
-  score,
+    score,
 
-  tendencia: emas.tendencia,
+    tendencia: emas.tendencia,
 
-  rsi: rsi.situacao,
+    rsi: rsi.situacao,
 
-  adx: adxInfo.forca,
+    adx: adxInfo.forca,
 
-  qualidade: tendencia.qualidade
+    qualidade: tendencia.qualidade,
+
+    slope
 
 };
-
-}
 
 
 // ===================================================
