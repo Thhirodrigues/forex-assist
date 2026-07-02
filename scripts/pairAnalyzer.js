@@ -88,6 +88,37 @@ const qualidade = calcularQualidade(
     adxAtual
 );
 
+// ===================================================
+// FILTRO INSTITUCIONAL
+// ===================================================
+
+if (qualidade.score < 75) {
+
+    console.log(`Score............${qualidade.score}`);
+    console.log("Status...........REPROVADO");
+
+    return "SEM_QUALIDADE";
+
+}
+
+if (qualidade.qualidade === "CONFLITO") {
+
+    console.log(`Score............${qualidade.score}`);
+    console.log("Status...........CONFLITO");
+
+    return "SEM_QUALIDADE";
+
+}
+
+if (qualidade.qualidade === "LATERAL") {
+
+    console.log(`Score............${qualidade.score}`);
+    console.log("Status...........LATERAL");
+
+    return "SEM_QUALIDADE";
+
+}
+        
 await salvarOperacao(db, {
 
     par,
