@@ -553,6 +553,31 @@ function analisarSimetria(
 }
 
 // ===================================================
+// CONFIRMAÇÃO MULTI-TIMEFRAME
+// ===================================================
+
+function analisarMultiTimeframe(
+    tendencia5m,
+    tendencia15m
+) {
+
+    if (tendencia5m === tendencia15m) {
+
+        return {
+            score: 10,
+            status: "CONFIRMADO"
+        };
+
+    }
+
+    return {
+        score: 0,
+        status: "DIVERGENTE"
+    };
+
+}
+
+// ===================================================
 // SMART SCORING ENGINE
 // ===================================================
 
@@ -622,11 +647,18 @@ const distancia =
         ema21,
         ema50
 );
+
+const multi =
+    analisarMultiTimeframe(
+        emas.tendencia,
+        emas.tendencia
+    );
   
 score += slope;
 score += alinhamento.score;
 score += simetria.score;
 score += distancia.score;
+score += multi.score;
 
 
 if (
@@ -662,6 +694,8 @@ if (
 
     distancia: distancia.nivel,
 
+    multi: multi.status,
+
 };
 }
 
@@ -688,5 +722,7 @@ module.exports = {
     calcularQualidade,
 
     analisarDistanciaEMAs,
+
+    analisarMultiTimeframe,
 
 };
