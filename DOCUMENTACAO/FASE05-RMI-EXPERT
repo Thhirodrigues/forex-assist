@@ -2678,5 +2678,95 @@ Arquivo ativo: marketAnalyzer.js.
 
 Próxima implementação: substituir analisarADX() por uma versão de pontuação progressiva, preservando a arquitetura do módulo. Essa será a primeira evolução da Smart Scoring Engine V2 antes de refinarmos EMAs, RSI e consistência entre indicadores.
 
+Modo Engenharia.
 
+Excelente resultado. O workflow executou sem erros, o log ficou muito mais legível e já começa a parecer um log de produção. Isso vai facilitar bastante as próximas auditorias.
+
+Sua observação sobre os blocos é muito boa. A partir do Sprint 04, vamos adotar esse padrão em todo arquivo que sofrer refatoração.
+
+Padrão oficial:
+
+// ===================================================
+// CONFIGURAÇÕES
+// ===================================================
+
+// ===================================================
+// CONSTANTES
+// ===================================================
+
+// ===================================================
+// FUNÇÕES AUXILIARES
+// ===================================================
+
+// ===================================================
+// ANÁLISE DAS EMAs
+// ===================================================
+
+// ===================================================
+// ANÁLISE DO RSI
+// ===================================================
+
+// ===================================================
+// ANÁLISE DO ADX
+// ===================================================
+
+// ===================================================
+// SCORE FINAL
+// ===================================================
+
+// ===================================================
+// EXPORTS
+// ===================================================
+
+Isso não altera o código, mas melhora muito a manutenção, principalmente trabalhando pelo celular.
+
+
+---
+
+Próxima etapa do Sprint 04
+
+Agora vamos atacar o ponto mais importante da inteligência do scanner.
+
+Fase 04.1 — Refinamento da tendência (EMAs)
+
+Hoje a tendência é definida praticamente pelo cruzamento da EMA9 e EMA21.
+
+Vamos evoluir para um modelo institucional considerando:
+
+EMA9 × EMA21
+
+EMA21 × EMA50
+
+EMA50 × EMA100
+
+EMA100 × EMA200
+
+alinhamento das cinco médias
+
+inclinação das médias
+
+distância entre elas
+
+compressão das médias
+
+tendência lateral
+
+tendência forte
+
+início de tendência
+
+exaustão de tendência
+
+
+Com isso, o campo Qualidade deixará de ser apenas FORTE, CONFLITO ou LATERAL e passará a refletir a estrutura real do mercado.
+
+
+---
+
+Objetivo desta fase
+
+Ao finalizar essa etapa, o banco de dados começará a armazenar apenas sinais com uma leitura de tendência muito mais refinada, preparando a base para o módulo de Inteligência (Sprint 05), que aprenderá com operações reais.
+
+Status: Sprint 04 iniciado. Próximo arquivo: scripts/marketAnalyzer.js (refatoração da análise de tendência por EMAs).
+-----------
 
