@@ -605,7 +605,7 @@ if (
 
     slope,
 
-    alinhamento: alinhamento.status
+    alinhamento: alinhamento.status,
 
     distancia: distancia.nivel,
 
