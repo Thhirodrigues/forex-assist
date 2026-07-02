@@ -3064,3 +3064,106 @@ Implementação do Filtro Institucional de Qualidade, responsável por impedir q
 
 Esse será o primeiro mecanismo de curadoria automática do banco de dados, garantindo que a futura Inteligência Artificial seja treinada apenas com sinais de alta qualidade.
 
+------
+RELATÓRIO DE DECISÃO — INÍCIO DA BASE HISTÓRICA OFICIAL RMI_V1 EXPERT
+
+Data: 28/06/2026
+
+
+---
+
+DECISÃO DE ARQUITETURA
+
+Após a conclusão dos principais refinamentos do Sprint 04 do motor RMI_V1 Expert, foi decidido iniciar uma nova base histórica de sinais.
+
+A base anterior foi produzida por versões intermediárias do algoritmo e não representa o padrão definitivo de qualidade estabelecido para o projeto.
+
+Para preservar a integridade estatística e permitir a futura evolução da Inteligência Artificial do Forex Assist, a coleta oficial passará a utilizar exclusivamente sinais produzidos pelo motor RMI_V1 Expert.
+
+
+---
+
+MOTIVOS DA DECISÃO
+
+Motor de Score totalmente reestruturado.
+
+Inclusão de análise de Tendência.
+
+Inclusão de análise de ADX.
+
+Inclusão de análise de Slope.
+
+Inclusão de Alinhamento das EMAs.
+
+Inclusão de Simetria.
+
+Inclusão de Distância entre EMAs.
+
+Novo Smart Scoring Engine.
+
+Critérios de aprovação significativamente mais rigorosos.
+
+
+Os sinais antigos não são comparáveis aos novos e poderiam contaminar futuras estatísticas e modelos de inteligência.
+
+
+---
+
+AÇÃO APROVADA
+
+Excluir todos os documentos existentes da coleção:
+
+historico
+
+Após a limpeza, considerar como Base Histórica Oficial apenas os sinais produzidos pelo motor RMI_V1 Expert.
+
+
+---
+
+IMPACTO
+
+A partir desta decisão:
+
+todas as estatísticas passam a utilizar apenas dados homogêneos;
+
+o Firestore torna-se a base oficial de aprendizado do projeto;
+
+futuras versões da IA trabalharão somente com dados produzidos pelo motor atual.
+
+
+
+---
+
+STATUS
+
+Aprovado para execução durante o Sprint 04.
+
+
+---
+
+Onde salvar
+
+Salve este texto em:
+
+DOCUMENTO_MESTRE.md
+
+na seção:
+
+DECISÕES DE ARQUITETURA
+
+Também registre uma entrada resumida no:
+
+WORKLOG.md
+
+indicando que a decisão foi tomada durante o Sprint 04.
+
+
+---
+
+Sobre apagar a coleção historico
+
+Não é necessário apagar documento por documento manualmente.
+
+Há formas de excluir toda a coleção de uma vez usando ferramentas como o Firebase CLI ou um script que percorre e remove todos os documentos automaticamente. Se você preferir continuar trabalhando apenas pelo GitHub e celular, podemos criar um script de manutenção para isso e executá-lo uma única vez. Isso é muito mais rápido e seguro do que excluir cada registro manualmente.
+--------
+
