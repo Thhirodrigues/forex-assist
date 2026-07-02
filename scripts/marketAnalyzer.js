@@ -208,37 +208,87 @@ function analisarRSI(rsi) {
 // ANÁLISE DA TENDÊNCIA
 // ===================================================
 
-function analisarTendencia(emas, rsiInfo) {
+function analisarTendencia(
+  emas,
+  rsiInfo,
+  adxInfo
+) {
 
   let score = 0;
-  let qualidade = "NEUTRA";
+
+  let qualidade = "CONFLITO";
+
+  // ===================================================
+  // TENDÊNCIA INSTITUCIONAL
+  // ===================================================
 
   if (
+
     emas.tendencia === "ALTA" &&
-    rsiInfo.situacao === "COMPRA"
+    rsiInfo.situacao === "COMPRA" &&
+    (
+      adxInfo.forca === "FORTE" ||
+      adxInfo.forca === "MUITO_FORTE" ||
+      adxInfo.forca === "EXTREMA"
+    )
+
   ) {
-    score = 20;
-    qualidade = "FORTE";
+
+    score = 30;
+
+    qualidade = "INSTITUCIONAL";
+
   }
 
-  else if (
-    emas.tendencia === "BAIXA" &&
-    rsiInfo.situacao === "VENDA"
-  ) {
-    score = 20;
-    qualidade = "FORTE";
-  }
+  // ===================================================
+  // TENDÊNCIA FORTE
+  // ===================================================
 
   else if (
-    emas.tendencia === "LATERAL"
+
+    (
+      emas.tendencia === "ALTA" &&
+      rsiInfo.situacao === "COMPRA"
+    ) ||
+
+    (
+      emas.tendencia === "BAIXA" &&
+      rsiInfo.situacao === "VENDA"
+    )
+
   ) {
-    score = 5;
+
+    score = 20;
+
+    qualidade = "FORTE";
+
+  }
+
+  // ===================================================
+  // LATERAL
+  // ===================================================
+
+  else if (
+
+    emas.tendencia === "LATERAL" ||
+    emas.tendencia === "COMPRESSAO"
+
+  ) {
+
+    score = 8;
+
     qualidade = "LATERAL";
+
   }
+
+  // ===================================================
+  // CONFLITO
+  // ===================================================
 
   else {
 
     score = 0;
+
     qualidade = "CONFLITO";
 
   }
@@ -246,6 +296,7 @@ function analisarTendencia(emas, rsiInfo) {
   return {
 
     score,
+
     qualidade
 
   };
@@ -350,8 +401,9 @@ function calcularQualidade(
 
   const tendencia = analisarTendencia(
     emas,
-    rsi
-  );
+    rsi,
+    adxInfo
+);
   const adxInfo = analisarADX(
   adx
 );
