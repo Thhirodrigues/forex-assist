@@ -1,0 +1,29 @@
+name: Clear Historico
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  clear:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install firebase-admin
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-key.json
+
+      - name: Limpar Firestore
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: firebase-key.json
+        run: node scripts/clearHistorico.js
