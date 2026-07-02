@@ -410,6 +410,73 @@ function analisarSlope(
 }
 
 // ===================================================
+// ANÁLISE DO ALINHAMENTO DAS EMAS
+// ===================================================
+
+function analisarAlinhamento(
+    ema9,
+    ema21,
+    ema50,
+    ema100,
+    ema200
+) {
+
+    const compra =
+        ema9 > ema21 &&
+        ema21 > ema50 &&
+        ema50 > ema100 &&
+        ema100 > ema200;
+
+    const venda =
+        ema9 < ema21 &&
+        ema21 < ema50 &&
+        ema50 < ema100 &&
+        ema100 < ema200;
+
+    if (compra || venda) {
+        return {
+            score: 15,
+            status: "PERFEITO"
+        };
+    }
+
+    let pontos = 0;
+
+    if (
+        (ema9 > ema21) ||
+        (ema9 < ema21)
+    ) pontos++;
+
+    if (
+        (ema21 > ema50) ||
+        (ema21 < ema50)
+    ) pontos++;
+
+    if (
+        (ema50 > ema100) ||
+        (ema50 < ema100)
+    ) pontos++;
+
+    if (
+        (ema100 > ema200) ||
+        (ema100 < ema200)
+    ) pontos++;
+
+    if (pontos >= 3) {
+        return {
+            score: 8,
+            status: "PARCIAL"
+        };
+    }
+
+    return {
+        score: 0,
+        status: "RUIM"
+    };
+
+}
+
+// ===================================================
 // SMART SCORING ENGINE
 // ===================================================
 
@@ -457,8 +524,17 @@ const slope = analisarSlope(
     ema21,
     ema50
 );
-
+const alinhamento =
+    analisarAlinhamento(
+        ema9,
+        ema21,
+        ema50,
+        ema100,
+        ema200
+);
+  
 score += slope;
+score += alinhamento.score;
 
 if (
     adx >= 35 &&
@@ -485,7 +561,10 @@ if (
 
     qualidade: tendencia.qualidade,
 
-    slope
+    slope,
+
+    alinhamento:
+        alinhamento.status
 
 };
 }
@@ -496,14 +575,18 @@ if (
 
 module.exports = {
 
-  analisarEMAs,
+    analisarEMAs,
 
-  analisarRSI,
+    analisarRSI,
 
-  analisarTendencia,
+    analisarTendencia,
 
-  analisarADX,
+    analisarADX,
 
-  calcularQualidade
+    analisarSlope,
+
+    analisarAlinhamento,
+
+    calcularQualidade
 
 };
