@@ -11,15 +11,23 @@ const apiIndex = {
   value: 0
 };
 
-async function getCandles(symbol) {
+async function getCandles(
+
+    symbol,
+
+    interval = "5min",
+
+    outputsize = 250
+
+) {
 const url =
     `https://api.twelvedata.com/time_series` +
     `?symbol=${encodeURIComponent(symbol)}` +
-    `&interval=5min` +
-    `&outputsize=250` +
+    `&interval=${interval}` +
+    `&outputsize=${outputsize}` +
     `&apikey=${getApiKey(API_KEYS, apiIndex)}`;
-
-  const res = await axios.get(url);
+  
+const res = await axios.get(url);
 
   if (!res.data.values)
     throw new Error("Sem candles");
