@@ -510,6 +510,49 @@ function analisarDistanciaEMAs(
 }
 
 // ===================================================
+// ANÁLISE DA SIMETRIA DA TENDÊNCIA
+// ===================================================
+
+function analisarSimetria(
+    ema9,
+    ema21,
+    ema50
+) {
+
+    const d1 = Math.abs(ema9 - ema21);
+    const d2 = Math.abs(ema21 - ema50);
+
+    const diferenca = Math.abs(d1 - d2);
+
+    if (diferenca <= 0.00010) {
+        return {
+            score: 10,
+            simetria: "EXCELENTE"
+        };
+    }
+
+    if (diferenca <= 0.00030) {
+        return {
+            score: 5,
+            simetria: "BOA"
+        };
+    }
+
+    if (diferenca <= 0.00060) {
+        return {
+            score: 2,
+            simetria: "ACEITÁVEL"
+        };
+    }
+
+    return {
+        score: 0,
+        simetria: "RUIM"
+    };
+
+}
+
+// ===================================================
 // SMART SCORING ENGINE
 // ===================================================
 
@@ -532,7 +575,7 @@ function calcularQualidade(
     ema100,
     ema200
 );
-
+  
 const rsi = analisarRSI(
     rsiAtual
 );
@@ -566,15 +609,23 @@ const alinhamento =
         ema200
 );
 
+const simetria =
+    analisarSimetria(
+        ema9,
+        ema21,
+        ema50
+);
+  
 const distancia =
     analisarDistanciaEMAs(
         ema9,
         ema21,
         ema50
-    );
+);
   
 score += slope;
 score += alinhamento.score;
+score += simetria.score;
 score += distancia.score;
 
 
@@ -607,6 +658,8 @@ if (
 
     alinhamento: alinhamento.status,
 
+    simetria: simetria.simetria,
+
     distancia: distancia.nivel,
 
 };
@@ -629,6 +682,8 @@ module.exports = {
     analisarSlope,
 
     analisarAlinhamento,
+
+    analisarSimetria,
 
     calcularQualidade,
 
