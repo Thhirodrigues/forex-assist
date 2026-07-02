@@ -149,24 +149,61 @@ function analisarADX(adx) {
   let score = 0;
   let forca = "FRACA";
 
-  if (adx >= 40) {
-    score = 30;
-    forca = "MUITO_FORTE";
+  if (adx < 15) {
+
+    score = 0;
+    forca = "MUITO_FRACA";
+
   }
 
-  else if (adx >= 25) {
-    score = 20;
-    forca = "FORTE";
+  else if (adx < 20) {
+
+    score = 5;
+    forca = "FRACA";
+
   }
 
-  else if (adx >= 20) {
+  else if (adx < 25) {
+
     score = 10;
     forca = "MODERADA";
+
+  }
+
+  else if (adx < 30) {
+
+    score = 15;
+    forca = "BOA";
+
+  }
+
+  else if (adx < 35) {
+
+    score = 20;
+    forca = "FORTE";
+
+  }
+
+  else if (adx < 40) {
+
+    score = 25;
+    forca = "MUITO_FORTE";
+
+  }
+
+  else {
+
+    score = 30;
+    forca = "EXTREMA";
+
   }
 
   return {
+
     score,
+
     forca
+
   };
 
 }
@@ -212,9 +249,19 @@ function calcularQualidade(
   score += tendencia.score;
   score += adxInfo.score;
 
-  if (score > 100)
-    score = 100;
+if (
+    adx >= 35 &&
+    rsiAtual >= 58 &&
+    emas.tendencia !== "LATERAL"
+) {
 
+    score += 5;
+
+}
+  score = Math.max(
+    0,
+    Math.min(score, 100)
+);
   return {
 
   score,
