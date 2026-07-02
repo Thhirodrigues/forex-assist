@@ -165,6 +165,7 @@ console.log(`EMA9..............${ema9.toFixed(5)}`);
 console.log(`EMA21.............${ema21.toFixed(5)}`);
 console.log(`RSI...............${rsiAtual.toFixed(2)}`);
 console.log(`ADX...............${adxAtual.toFixed(2)}`);
+console.log(`Slope............${qualidade.slope}`);
 console.log(`Score.............${qualidade.score}`);
 console.log(`Qualidade.........${qualidade.qualidade}`);
 console.log("Status............SALVO");
