@@ -2280,5 +2280,403 @@ para maiores detalhes vide documento mestre
 
 -----
 
+MODO ENGENHARIA
+
+Sprint 04 — Inteligência Operacional
+
+Status: ▶️ INICIADO
+
+Você definiu uma decisão importante para a arquitetura do projeto:
+
+> O banco de dados coletado até o Sprint 04 será tratado como fase de aprendizado. Após o refinamento da engine, manteremos apenas os sinais que seguirem o novo padrão de inteligência.
+
+
+
+Isso muda o foco do projeto: a partir de agora, o sistema deixa de apenas gerar sinais e passa a aprender com eles.
+
+
+---
+
+Objetivo do Sprint 04
+
+Transformar o Forex Assist em uma engine de inteligência operacional baseada em dados históricos.
+
+O scanner continuará funcionando, mas agora cada operação será utilizada para validar, ajustar e fortalecer os critérios da estratégia.
+
+
+---
+
+Entregas previstas
+
+Fase 01 — Refinamento da Engine
+
+Revisão das regras de BUY/SELL.
+
+Refinamento do Score.
+
+Refinamento da Qualidade.
+
+Ajuste dos pesos dos indicadores.
+
+Definição dos critérios institucionais.
+
+
+
+---
+
+Fase 02 — Inteligência Histórica
+
+Cada operação passará a responder perguntas como:
+
+Qual EMA acertou mais?
+
+Qual faixa de RSI produz maior acerto?
+
+Qual valor mínimo de ADX gera melhores resultados?
+
+Qual par apresenta melhor desempenho?
+
+Qual horário apresenta maior eficiência?
+
+BUY ou SELL possui melhor estatística?
+
+
+
+---
+
+Fase 03 — Banco Inteligente
+
+O Firestore deixará de ser apenas um histórico e passará a armazenar informações úteis para aprendizado, permitindo identificar padrões recorrentes.
+
+
+---
+
+Fase 04 — Autoavaliação
+
+Após um volume suficiente de operações, a engine poderá identificar automaticamente:
+
+regras que aumentam a taxa de acerto;
+
+filtros que reduzem operações ruins;
+
+condições de mercado favoráveis.
+
+
+
+---
+
+Regra do Sprint 04
+
+> Nenhuma alteração será baseada em opinião. Toda evolução da estratégia deverá ser justificada por dados coletados pelo próprio sistema.
+
+
+
+
+---
+
+Primeiro arquivo do Sprint 04
+
+O próximo passo será auditar e evoluir o marketAnalyzer.js.
+
+Esse módulo concentra a lógica de pontuação e qualidade dos sinais, sendo o ponto ideal para transformar regras fixas em critérios inteligentes baseados no histórico.
+
+Status do projeto
+
+✅ Sprint 01 — Concluído
+
+✅ Sprint 02 — Concluído
+
+✅ Sprint 03 — Concluído
+
+▶️ Sprint 04 — Inteligência Operacional iniciado
+
+Modo Engenharia.
+
+Recebi o marketAnalyzer.js e já identifiquei que ele é um excelente ponto de partida para o Sprint 04. 
+
+Auditoria inicial
+
+A arquitetura está limpa e bem separada:
+
+✅ analisarEMAs()
+
+✅ analisarRSI()
+
+✅ analisarTendencia()
+
+✅ analisarADX()
+
+✅ calcularQualidade()
+
+
+Isso significa que não precisamos refatorar a estrutura, apenas evoluir a inteligência.
+
+Principal limitação atual
+
+Hoje todas as regras utilizam pontuação fixa:
+
+EMAs = 30
+RSI = 35
+Tendência = 20
+ADX = 30
+
+Na prática, o sistema ainda não diferencia, por exemplo:
+
+ADX 25 de ADX 50.
+
+RSI 56 de RSI 68.
+
+EMAs muito afastadas de EMAs praticamente cruzadas.
+
+Tendências fortes de tendências apenas iniciando.
+
+
+Ou seja, ele classifica por faixas, mas ainda não mede a intensidade do cenário.
+
+Objetivo do Sprint 04
+
+A evolução será transformar esse módulo em uma Engine de Scoring Inteligente, em vez de apenas uma soma de pontos.
+
+O plano é evoluir por fases:
+
+1. Scoring Progressivo: substituir pontuações fixas por pontuações proporcionais à força dos indicadores.
+
+
+2. Consistência da Tendência: medir a distância e a coerência entre as EMAs, e não apenas sua ordem.
+
+
+3. Refino do RSI: valorizar zonas mais favoráveis e penalizar regiões extremas ou pouco confiáveis.
+
+
+4. Refino do ADX: tratar a força da tendência de forma gradual, em vez de apenas por categorias.
+
+
+5. Base para Aprendizado: deixar a engine preparada para, futuramente, ajustar pesos com base no histórico real armazenado no Firestore.
+
+
+
+Essa abordagem preserva a arquitetura atual, melhora a qualidade das decisões e prepara o sistema para usar os dados coletados como fonte de evolução da estratégia, sem quebrar a modularização conquistada no Sprint 03.
+
+MODO ENGENHARIA
+
+Sprint 04 — Fase 01
+
+Inteligência de Mercado (Smart Scoring Engine V2)
+
+Após auditar o marketAnalyzer.js, a conclusão é clara: 
+
+A arquitetura está correta. O algoritmo ainda é simples.
+
+Não vamos reescrever o arquivo.
+
+Vamos evoluir a inteligência.
+
+
+---
+
+Objetivo da Fase 01
+
+Fazer a Engine começar a pensar como um analista institucional.
+
+Hoje ela pergunta apenas:
+
+> Existe tendência?
+
+
+
+No final desta fase ela perguntará:
+
+Qual a força da tendência?
+
+A tendência está madura?
+
+Vale realmente entrar?
+
+O risco compensa?
+
+
+
+---
+
+AUDITORIA
+
+EMAs
+
+Hoje:
+
+EMA alinhada = 30 pontos
+
+Problema:
+
+Uma EMA9 apenas 0.00001 acima da EMA21 recebe a mesma nota que uma tendência extremamente forte.
+
+Precisamos medir a distância entre elas.
+
+
+---
+
+RSI
+
+Hoje:
+
+55~70 = 35 pontos
+
+Problema:
+
+RSI 56
+
+recebe
+
+a mesma nota de
+
+RSI 67.
+
+Isso não representa a força do movimento.
+
+
+---
+
+ADX
+
+Hoje:
+
+25 = Forte
+
+40 = Muito Forte
+
+Problema:
+
+ADX 26
+
+e
+
+ADX 39
+
+praticamente recebem o mesmo peso.
+
+
+---
+
+Tendência
+
+Hoje:
+
+Apenas verifica:
+
+EMA9 > EMA21 > EMA50...
+
+Isso não mede:
+
+aceleração
+
+compressão
+
+força
+
+maturidade
+
+
+
+---
+
+DECISÃO DE ENGENHARIA
+
+A partir do Sprint 04 a Engine deixa de trabalhar com:
+
+PONTOS FIXOS
+
+e passa a trabalhar com
+
+PONTOS DINÂMICOS
+
+
+---
+
+NOVA FILOSOFIA
+
+A qualidade será calculada em quatro camadas.
+
+Camada 1
+
+Estrutura
+
+(EMAs)
+
+↓
+
+Camada 2
+
+Momentum
+
+(RSI)
+
+↓
+
+Camada 3
+
+Força
+
+(ADX)
+
+↓
+
+Camada 4
+
+Consistência
+
+(confirmação entre todos os indicadores)
+
+
+---
+
+PRIMEIRA ENTREGA
+
+Não vamos alterar tudo de uma vez.
+
+Começaremos pelo indicador mais importante.
+
+ADX
+
+Motivo:
+
+Hoje ele é responsável por boa parte da qualidade do sinal.
+
+E ainda trabalha por faixas.
+
+Será transformado em
+
+Score Progressivo
+
+Exemplo:
+
+ADX 18 = 2
+
+ADX 20 = 5
+
+ADX 24 = 9
+
+ADX 27 = 14
+
+ADX 31 = 18
+
+ADX 35 = 23
+
+ADX 40 = 28
+
+ADX 50 = 30
+
+A Engine deixará de pensar em categorias ("forte", "muito forte") e passará a medir quanto a tendência é forte.
+
+
+---
+
+CHECKPOINT SPRINT 04
+
+Status: Iniciado.
+
+Arquivo ativo: marketAnalyzer.js.
+
+Próxima implementação: substituir analisarADX() por uma versão de pontuação progressiva, preservando a arquitetura do módulo. Essa será a primeira evolução da Smart Scoring Engine V2 antes de refinarmos EMAs, RSI e consistência entre indicadores.
+
 
 
