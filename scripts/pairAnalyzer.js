@@ -143,35 +143,24 @@ if (qualidade.qualidade === "LATERAL") {
 await salvarOperacao(db, {
 
     par,
-
     direcao,
-
     ema9,
-
     ema21,
-
     ema50,
-
     ema100,
-
     ema200,
-
+    ema9_15,
+    ema21_15,
+    ema50_15, 
     rsi: rsiAtual,
-
     score: qualidade.score,
-
     tendencia: qualidade.tendencia,
-
     situacaoRSI: qualidade.rsi,
-
     qualidade: qualidade.qualidade,
-
+    multiTimeframe: qualidade.multi,
     modo: "REAL",
-
     origem: "scanner",
-
     engine: "RMI_V1",
-
     precoEntrada:
         closes[
             closes.length - 1
@@ -188,6 +177,9 @@ console.log(`RSI...............${rsiAtual.toFixed(2)}`);
 console.log(`ADX...............${adxAtual.toFixed(2)}`);
 console.log(`Slope............${qualidade.slope}`);
 console.log(`Alinhamento......${qualidade.alinhamento}`);
+console.log(`Simetria.........${qualidade.simetria}`);
+console.log(`Distância........${qualidade.distancia}`);
+console.log(`Multi TF.........${qualidade.multi}`);
 console.log(`Score.............${qualidade.score}`);
 console.log(`Qualidade.........${qualidade.qualidade}`);
 console.log("Status............SALVO");
