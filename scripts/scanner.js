@@ -139,7 +139,7 @@ console.log(
 );
 
 console.log(
-  `Confiabilidade....${historico.status}`
+  `Confiabilidade....${estatisticas.status}`
 );
 
 console.log("========================================");
