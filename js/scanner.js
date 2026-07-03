@@ -1,3 +1,33 @@
+// ======================================================
+// FOREX ASSIST - REAL MONEY INTELLIGENCE
+// MÓDULO: SCANNER VIEW
+//
+// Responsabilidade:
+// Interface do Scanner no Dashboard.
+//
+// Este módulo é responsável por:
+//
+// • Exibir o status do Scanner em tempo real;
+// • Atualizar a última análise realizada;
+// • Exibir previsão da próxima análise;
+// • Controlar os botões Iniciar e Parar Scanner;
+// • Sincronizar o estado do Scanner com o Firestore;
+// • Executar reset diário dos contadores locais;
+// • Refletir no Dashboard apenas informações produzidas
+//   pela Engine RMI.
+//
+// Não possui regras de análise de mercado.
+// Não calcula Score.
+// Não gera sinais.
+// Não consulta indicadores.
+//
+// Atua exclusivamente como camada de apresentação
+// entre o Firestore e a interface do usuário.
+//
+// Sprint 05
+// Engine: RMI_V1
+// ======================================================
+
 function scannerView() {
   return `
     <div class="card">
