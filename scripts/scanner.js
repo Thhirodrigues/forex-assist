@@ -46,6 +46,9 @@ const {
   calcularQualidade
 } = require("./marketAnalyzer");
 const {
+    obterEstatisticasPar
+} = require("./statisticsEngine");
+const {
     ema,
     rsi,
     calcularADX
@@ -121,16 +124,44 @@ console.log("\n========================================");
 console.log(`Analisando...........${par}`);
 console.log("========================================");
 
+    const estatisticas =
+    await obterEstatisticasPar(
+        db,
+        par
+    );
+
+console.log(
+    `Histórico..........${estatisticas.wins}W/${estatisticas.loss}L`
+);
+
+console.log(
+    `Assertividade......${estatisticas.taxaAcerto}%`
+);
+
+console.log("========================================");
+
     const resultado = await analisarParNovo({
+
     db,
+
     par,
+
+    estatisticas,
+
     getCandles,
+
     ema,
+
     rsi,
+
     calcularADX,
+
     calcularQualidade,
+
     verificarCooldown: existeCooldown,
+
     salvarOperacao
+
 });
 
 switch (resultado) {
