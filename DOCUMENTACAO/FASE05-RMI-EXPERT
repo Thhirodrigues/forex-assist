@@ -4685,4 +4685,99 @@ Quando você validar essas três alterações, restará apenas a Sprint 05.08, q
 
 ---------
 
+Perfeito. O workflow passou com sucesso novamente. Pelo log, a Sprint 05 continua íntegra após a refatoração dos pesos da Engine.
+
+Validação da execução
+
+✅ Scanner executou todos os 10 pares.
+
+✅ Histórico estatístico sendo carregado.
+
+✅ Assertividade sendo exibida.
+
+✅ Confiabilidade histórica sendo calculada.
+
+✅ Todos os módulos da RMI funcionando em conjunto.
+
+✅ Nenhum erro de JavaScript.
+
+✅ Workflow concluído.
+
+
+O mais importante é que a mudança para ENGINE_WEIGHTS não alterou o comportamento da Engine, apenas centralizou os parâmetros de decisão. Isso era exatamente o objetivo desta etapa.
+
+Status da Sprint 05
+
+Até este ponto temos:
+
+✅ EMAs
+
+✅ RSI
+
+✅ ADX
+
+✅ Tendência
+
+✅ Slope
+
+✅ Alinhamento
+
+✅ Simetria
+
+✅ Distância entre EMAs
+
+✅ Multi-Timeframe
+
+✅ Histórico Estatístico
+
+✅ Bônus Adaptativo
+
+✅ Penalizações
+
+✅ Centralização dos pesos (ENGINE_WEIGHTS)
+
+✅ Logs detalhados
+
+✅ Workflow validado
+
+
+A Engine RMI V1 agora está muito mais organizada e preparada para evoluir.
+
+Próxima etapa
+
+Entraremos na última implementação da Sprint 05: separar a lógica de decisão do cálculo do score.
+
+Hoje a função calcularQualidade() faz duas coisas ao mesmo tempo:
+
+1. Calcula o Score.
+
+
+2. Decide se a operação será aprovada, reprovada ou ficará em cooldown.
+
+
+
+Vamos dividir essas responsabilidades.
+
+A ideia é criar uma função exclusiva, por exemplo:
+
+avaliarOperacao(resultado)
+
+Ela receberá o resultado produzido pela Engine e decidirá:
+
+REPROVADO
+
+COOLDOWN
+
+SEM_SINAL
+
+COMPRA
+
+VENDA
+
+
+Essa separação deixa a arquitetura muito mais limpa e é a base para a RMI V2, onde a decisão poderá considerar fatores adicionais (risco, TP/SL reais, volatilidade, gestão de banca, etc.) sem alterar o cálculo do score.
+
+É a última etapa técnica prevista para concluir a Sprint 05.
+----------
+
 
