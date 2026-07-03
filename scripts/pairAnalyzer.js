@@ -151,6 +151,26 @@ const qualidade = calcularQualidade(
 );
 
 // ===================================================
+// FILTRO ESTATÍSTICO
+// ===================================================
+
+if (
+    qualidade.historico === "RUIM"
+) {
+
+    console.log(
+        "Histórico.........RUIM"
+    );
+
+    console.log(
+        "Status............REPROVADO"
+    );
+
+    return "SEM_QUALIDADE";
+
+}
+        
+// ===================================================
 // FILTRO INSTITUCIONAL
 // ===================================================
 
@@ -199,6 +219,7 @@ await salvarOperacao(db, {
     situacaoRSI: qualidade.rsi,
     qualidade: qualidade.qualidade,
     multiTimeframe: qualidade.multi,
+    historico: qualidade.historico,
     taxaAcerto: estatisticas.taxaAcerto,
     winsHistoricos: estatisticas.wins,
     lossHistoricos: estatisticas.loss,
@@ -225,6 +246,7 @@ console.log(`Alinhamento......${qualidade.alinhamento}`);
 console.log(`Simetria.........${qualidade.simetria}`);
 console.log(`Distância........${qualidade.distancia}`);
 console.log(`Multi TF.........${qualidade.multi}`);
+console.log(`Histórico........${qualidade.historico}`);
 console.log(`Histórico.......${estatisticas.taxaAcerto}%`);
 console.log(`Wins............${estatisticas.wins}`);
 console.log(`Loss............${estatisticas.loss}`);
