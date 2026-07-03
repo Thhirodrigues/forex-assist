@@ -1,6 +1,43 @@
+// ===================================================
+// FOREX ASSIST - REAL MONEY INTELLIGENCE
+// PAIR ANALYZER
+//
+// Responsabilidade:
+// Realizar toda a análise técnica de um único ativo.
+//
+// Fluxo:
+//
+// 1. Receber os candles do mercado.
+//
+// 2. Calcular os indicadores técnicos.
+//
+// 3. Solicitar ao Market Analyzer o cálculo
+//    do Smart Score Institucional.
+//
+// 4. Aplicar os filtros de aprovação.
+//
+// 5. Registrar a operação aprovada.
+//
+// O Pair Analyzer NÃO executa varredura.
+//
+// O Pair Analyzer NÃO acessa diretamente
+// o Firestore para consultas estatísticas.
+//
+// Toda inteligência permanece distribuída:
+//
+// • marketAnalyzer.js
+// • statisticsEngine.js
+// • riskManager.js
+// • marketData.js
+//
+// SPRINT 05
+// Arquitetura Modular
+// ===================================================
+
 async function analisarPar({
     db,
     par,
+    estatisticas,
     getCandles,
     ema,
     rsi,
@@ -109,7 +146,8 @@ const qualidade = calcularQualidade(
     adxAtual,
     ema9_15,
     ema21_15,
-    ema50_15
+    ema50_15,
+    estatisticas
 );
 
 // ===================================================
@@ -161,6 +199,10 @@ await salvarOperacao(db, {
     situacaoRSI: qualidade.rsi,
     qualidade: qualidade.qualidade,
     multiTimeframe: qualidade.multi,
+    taxaAcerto: estatisticas.taxaAcerto,
+    winsHistoricos: estatisticas.wins,
+    lossHistoricos: estatisticas.loss,
+    operacoesHistoricas: estatisticas.operacoes,
     modo: "REAL",
     origem: "scanner",
     engine: "RMI_V1",
@@ -183,6 +225,10 @@ console.log(`Alinhamento......${qualidade.alinhamento}`);
 console.log(`Simetria.........${qualidade.simetria}`);
 console.log(`Distância........${qualidade.distancia}`);
 console.log(`Multi TF.........${qualidade.multi}`);
+console.log(`Histórico.......${estatisticas.taxaAcerto}%`);
+console.log(`Wins............${estatisticas.wins}`);
+console.log(`Loss............${estatisticas.loss}`);
+console.log(`Operações.......${estatisticas.operacoes}`);
 console.log(`Score.............${qualidade.score}`);
 console.log(`Qualidade.........${qualidade.qualidade}`);
 console.log("Status............SALVO");
