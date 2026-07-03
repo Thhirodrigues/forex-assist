@@ -79,6 +79,9 @@ if (
     ema50 === null ||
     ema100 === null ||
     ema200 === null ||
+    ema9_15 === null ||
+    ema21_15 === null ||
+    ema50_15 === null ||
     rsiAtual === null
 ) {
     console.log("Status.............CANDLES INSUFICIENTES");
