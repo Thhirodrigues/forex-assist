@@ -741,23 +741,32 @@ score += multi.score;
 score += historico.score;
 
 
-// ===================================================
+// ====================================================
 // BÔNUS ADAPTATIVO
-// ===================================================
+// ====================================================
 
 let bonus = 0;
 
-if (
-    historico.status === "EXCELENTE"
-) {
-    bonus += 5;
+switch (historico.status) {
+
+    case "EXCELENTE":
+        bonus = 5;
+        break;
+
+    case "BOM":
+        bonus = 2;
+        break;
+
+    case "RUIM":
+        bonus = -10;
+        break;
+
+    default:
+        bonus = 0;
+
 }
 
-if (
-    multi.status === "CONFIRMADO"
-) {
-    bonus += 3;
-}
+score += bonus;
 
 // ===================================================
 // PENALIZAÇÕES
@@ -767,14 +776,6 @@ let penalidade = 0;
 
 if (
     multi.status === "DIVERGENTE"
-) {
-
-    penalidade += 10;
-
-}
-
-if (
-    historico.status === "RUIM"
 ) {
 
     penalidade += 10;
