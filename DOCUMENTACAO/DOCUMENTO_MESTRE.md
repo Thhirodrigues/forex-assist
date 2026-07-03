@@ -3471,6 +3471,53 @@ Status: Sprint 05 iniciado.
 
 --------
 
+Sim.
+
+No Sprint 05, a evolução é incremental, preservando o que já funciona. Não vamos reescrever o arquivo; vamos transformá-lo em um módulo de inteligência histórica.
+
+A sequência será:
+
+1. Classificação do histórico
+
+Além de wins, loss e taxaAcerto, o arquivo passará a retornar um status (EXCELENTE, BOM, NEUTRO, RUIM ou SEM_DADOS).
+
+
+
+2. Histórico mínimo
+
+Verificar se há operações suficientes para que a estatística seja confiável.
+
+
+
+3. Estrutura preparada para expansão
+
+Organizar o retorno para que novos indicadores possam ser adicionados sem alterar quem consome o módulo.
+
+
+
+4. Integração com o marketAnalyzer
+
+O marketAnalyzer utilizará esse status para conceder bônus ou penalidades no score da Engine RMI.
+
+
+
+5. Expansões futuras (Sprint 05)
+
+Estatísticas por par.
+
+Tendência histórica.
+
+Assertividade recente.
+
+Outras métricas que alimentarão a Engine RMI.
+
+
+
+
+Ou seja, não estamos apenas melhorando o arquivo; estamos transformando o statisticsEngine.js na memória estatística da Engine RMI, que fornecerá informações para aumentar ou reduzir a confiança de cada sinal gerado.
+
+------
+
 
 
 
