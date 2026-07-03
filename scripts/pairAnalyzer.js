@@ -33,7 +33,10 @@ const lows =
 
 const closes =
     candles.map(c => Number(c.close));
-        
+
+const closes15 =
+    candles15.map(c => Number(c.close));
+              
 const ema9 =
             ema(9, closes.slice(-30));
 
@@ -100,7 +103,10 @@ const qualidade = calcularQualidade(
     ema100,
     ema200,
     rsiAtual,
-    adxAtual
+    adxAtual,
+    ema9_15,
+    ema21_15,
+    ema50_15
 );
 
 // ===================================================
