@@ -667,7 +667,8 @@ const distancia =
 const multi =
     analisarMultiTimeframe(
         emas.tendencia,
-);
+        tendencia15
+    );
   
 score += slope;
 score += alinhamento.score;
