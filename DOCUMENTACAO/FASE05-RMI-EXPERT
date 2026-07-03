@@ -4525,4 +4525,164 @@ Arquitetura: ✅ Preservada
 Próxima etapa: Sprint 05.07 – Refinamento final do Smart Scoring Engine e preparação para o congelamento da RMI V1.
 -------
 
+MODO ENGENHEIRO
+
+Sprint 05.07 — Refinamento Final do Smart Scoring Engine
+
+Objetivo: eliminar pequenas distorções do Score e preparar definitivamente a RMI V1 para congelamento.
+
+Nesta etapa não criaremos novas funcionalidades. Vamos consolidar a Engine para que cada componente tenha um peso coerente e previsível.
+
+
+---
+
+Arquivo
+
+scripts/marketAnalyzer.js
+
+
+---
+
+Objetivo da alteração
+
+Hoje o Score é composto por diversos módulos:
+
+EMAs
+
+RSI
+
+Tendência
+
+ADX
+
+Slope
+
+Alinhamento
+
+Simetria
+
+Distância
+
+Multi Timeframe
+
+Histórico
+
+Bônus
+
+Penalidades
+
+
+Embora o limite final seja 0–100, alguns módulos ainda podem exercer influência maior do que o desejado.
+
+Nesta Sprint vamos normalizar a composição do Score.
+
+
+---
+
+ALTERAÇÃO 01 — Criar bloco de Consolidação do Score
+
+Localização
+
+Dentro da função:
+
+function calcularQualidade(...)
+
+Procure o trecho:
+
+score -= penalidade;
+
+Logo abaixo dele existe:
+
+if (
+    tendencia15 === "ALTA" &&
+
+
+---
+
+Inserir ENTRE esses dois blocos
+
+// ===================================================
+// CONSOLIDAÇÃO DO SCORE
+// ===================================================
+
+// Evita que bônus excessivos distorçam o Score.
+
+if (score > 100) {
+    score = 100;
+}
+
+if (score < 0) {
+    score = 0;
+}
+
+
+---
+
+ALTERAÇÃO 02 — Remover duplicidade da normalização
+
+Mais abaixo da função existe novamente:
+
+if (score > 100) score = 100;
+if (score < 0) score = 0;
+
+Remover essas duas linhas.
+
+A normalização ficará centralizada em um único ponto da função.
+
+
+---
+
+ALTERAÇÃO 03 — Preparação para pesos configuráveis
+
+Logo acima do comentário:
+
+// SMART SCORING ENGINE
+
+Criar um novo bloco:
+
+// ===================================================
+// PESOS DA ENGINE
+// ===================================================
+
+const ENGINE_WEIGHTS = {
+
+    BONUS_EXCELENTE: 5,
+
+    BONUS_BOA: 3,
+
+    PENALIDADE_RUIM: 10,
+
+    PENALIDADE_SEM_BASE: 5,
+
+    PENALIDADE_DIVERGENCIA: 10
+
+};
+
+Nesta Sprint esses valores ainda não serão utilizados diretamente. O objetivo é preparar a Engine para que, na RMI V2, todos os pesos fiquem centralizados e possam ser calibrados facilmente.
+
+
+---
+
+Resultado esperado
+
+Após esta etapa:
+
+✅ Normalização do Score em um único ponto.
+
+✅ Estrutura preparada para pesos configuráveis.
+
+✅ Código mais organizado e fácil de evoluir.
+
+✅ Nenhuma alteração no comportamento atual da RMI V1.
+
+
+
+---
+
+Status após esta implementação
+
+Quando você validar essas três alterações, restará apenas a Sprint 05.08, que será o congelamento e a validação final da RMI V1, encerrando oficialmente a Sprint 05.
+
+---------
+
 
