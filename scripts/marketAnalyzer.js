@@ -635,6 +635,24 @@ function analisarHistorico(
 }
 
 // ===================================================
+// PESOS DA ENGINE
+// ===================================================
+
+const ENGINE_WEIGHTS = {
+
+    BONUS_EXCELENTE: 5,
+
+    BONUS_BOA: 3,
+
+    PENALIDADE_RUIM: 10,
+
+    PENALIDADE_SEM_BASE: 5,
+
+    PENALIDADE_DIVERGENCIA: 10
+
+};
+
+// ===================================================
 // SMART SCORING ENGINE
 // ===================================================
 
@@ -748,11 +766,11 @@ score += historico.score;
 let bonus = 0;
 
 if (historico.status === "EXCELENTE") {
-    bonus += 5;
+    bonus += ENGINE_WEIGHTS.BONUS_EXCELENTE;
 }
 
 if (historico.status === "BOA") {
-    bonus += 3;
+    bonus += ENGINE_WEIGHTS.BONUS_BOA;
 }
 score += bonus;
 
@@ -763,19 +781,33 @@ score += bonus;
 let penalidade = 0;
 
 if (multi.status === "DIVERGENTE") {
-    penalidade += 10;
+    penalidade += ENGINE_WEIGHTS.PENALIDADE_DIVERGENCIA;
 }
 
 if (historico.status === "RUIM") {
-    penalidade += 10;
+    penalidade += ENGINE_WEIGHTS.PENALIDADE_RUIM;
 }
 
 if (historico.status === "SEM_BASE") {
-    penalidade += 5;
+    penalidade += ENGINE_WEIGHTS.PENALIDADE_SEM_BASE;
 }
 
 score -= penalidade;
 
+// ===================================================
+// CONSOLIDAÇÃO DO SCORE
+// ===================================================
+
+// Evita que bônus excessivos distorçam o Score.
+
+if (score > 100) {
+    score = 100;
+}
+
+if (score < 0) {
+    score = 0;
+}
+  
 if (
     tendencia15 === "ALTA" &&
     emas.tendencia === "ALTA"
@@ -795,11 +827,8 @@ if (
     tendencia15 !== emas.tendencia
 ) {
     score -= 10;
-}
+} 
   
-  if (score > 100) score = 100;
-if (score < 0) score = 0;
-
   return {
 
     score,
