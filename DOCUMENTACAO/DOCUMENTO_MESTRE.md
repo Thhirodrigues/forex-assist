@@ -3725,6 +3725,122 @@ Essa evolução tornaria a RMI muito mais inteligente, porque ela passaria a apr
 
 -------------
 
+Essa decisão impacta a arquitetura do projeto, então vale a pena escolher o momento certo. Pela evolução que estamos seguindo, eu não começaria agora.
+
+Minha recomendação é esta:
+
+Sprint 05 (atual)
+
+Objetivo: concluir a inteligência da RMI usando o modelo atual.
+
+Finalizar statisticsEngine.
+
+Finalizar bônus adaptativos.
+
+Finalizar aprendizado por histórico.
+
+Consolidar a Engine RMI V1.
+
+
+Não alterar a lógica de WIN/LOSS ainda.
+
+
+---
+
+Sprint 06
+
+Consolidar a arquitetura e validar que toda a Engine está estável.
+
+Auditoria dos módulos.
+
+Ajustes finos.
+
+Testes prolongados.
+
+Verificar consistência dos scores.
+
+
+Ainda manter o fechamento por 15 minutos.
+
+
+---
+
+Sprint 07 (ou início da Sprint 08)
+
+Aqui sim eu faria a mudança.
+
+Esse seria um marco de versão, por exemplo:
+
+RMI V2 – Resultado Financeiro Real
+
+Nesse momento substituiríamos completamente a lógica atual.
+
+Em vez de:
+
+15 minutos →
+comparar preço →
+WIN/LOSS
+
+Passaria a ser:
+
+Sinal
+↓
+Calcula TP e SL reais
+↓
+Grava operação como PENDENTE
+↓
+Monitor contínuo
+↓
+Atingiu TP → WIN
+Atingiu SL → LOSS
+Continua aberta → PENDENTE
+
+
+---
+
+Por que esperar?
+
+Porque hoje toda a inteligência está aprendendo sobre um conceito de resultado. Se mudarmos esse conceito no meio da Sprint 05, teremos que reescrever várias partes ao mesmo tempo:
+
+Result Checker
+
+statisticsEngine
+
+marketAnalyzer
+
+Score adaptativo
+
+Histórico
+
+Firestore
+
+Relatórios
+
+
+Isso aumenta bastante o risco e dificulta identificar a origem de problemas.
+
+
+---
+
+Minha recomendação
+
+Eu trataria essa mudança como uma nova geração da Engine, não como uma melhoria.
+
+Roadmap sugerido:
+
+✅ Sprint 05 → Inteligência estatística.
+
+✅ Sprint 06 → Consolidação e estabilização.
+
+🚀 Sprint 07 → Engine Financeira (RMI V2).
+
+🚀 Sprint 08 → Aprendizado baseado em lucro real.
+
+
+Assim, quando iniciarmos a Sprint 07, faremos essa migração de forma planejada, preservando o que já foi construído e evoluindo o Forex Assist para um sistema que toma decisões com base em resultado financeiro real, que é exatamente o objetivo do projeto.
+
+----------
+
 
 
 
