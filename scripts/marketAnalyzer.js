@@ -741,16 +741,65 @@ score += multi.score;
 score += historico.score;
 
 
+// ===================================================
+// BÔNUS ADAPTATIVO
+// ===================================================
+
+let bonus = 0;
+
 if (
     adx >= 35 &&
     rsiAtual >= 58 &&
     emas.tendencia !== "LATERAL"
 ) {
 
-    score += 5;
+    bonus += 5;
 
 }
- 
+
+if (
+    historico.status === "EXCELENTE"
+) {
+
+    bonus += 5;
+
+}
+
+if (
+    multi.status === "CONFIRMADO"
+) {
+
+    bonus += 3;
+
+}
+
+score += bonus;
+
+// ===================================================
+// PENALIZAÇÕES
+// ===================================================
+
+let penalidade = 0;
+
+if (
+    multi.status === "DIVERGENTE"
+) {
+
+    penalidade += 10;
+
+}
+
+if (
+    historico.status === "RUIM"
+) {
+
+    penalidade += 10;
+
+}
+
+score -= penalidade;
+  
+
 if (
     tendencia15 === "ALTA" &&
     emas.tendencia === "ALTA"
@@ -779,16 +828,30 @@ if (
   return {
 
     score,
+
     tendencia: emas.tendencia,
+
     rsi: rsi.situacao,
+
     adx: adxInfo.forca,
+
     qualidade: tendencia.qualidade,
+
     slope,
+
     alinhamento: alinhamento.status,
+
     simetria: simetria.simetria,
+
     distancia: distancia.nivel,
+
     multi: multi.status,
+
     historico: historico.status,
+
+    bonus,
+
+    penalidade,
 
 };
 }
