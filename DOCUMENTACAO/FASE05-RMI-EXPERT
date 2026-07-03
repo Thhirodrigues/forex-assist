@@ -3166,4 +3166,295 @@ Não é necessário apagar documento por documento manualmente.
 
 Há formas de excluir toda a coleção de uma vez usando ferramentas como o Firebase CLI ou um script que percorre e remove todos os documentos automaticamente. Se você preferir continuar trabalhando apenas pelo GitHub e celular, podemos criar um script de manutenção para isso e executá-lo uma única vez. Isso é muito mais rápido e seguro do que excluir cada registro manualmente.
 --------
+FOREX ASSIST – REAL MONEY INTELLIGENCE
 
+RELATÓRIO PARCIAL DE AUDITORIA E EVOLUÇÃO
+
+Sprint 04 – Multi-Timeframe (Parcial 02)
+
+Data: 01/07/2026
+
+
+---
+
+Objetivo da Sprint
+
+Iniciar a evolução do Scanner RMI_V1 para um modelo institucional, adicionando confirmação entre múltiplos timeframes antes da futura implementação da Engine Inteligente.
+
+A meta desta etapa é aumentar a confiabilidade dos sinais sem alterar a arquitetura existente.
+
+
+---
+
+Atividades concluídas
+
+1. Refatoração do Market Analyzer
+
+Foi ampliado o motor de análise de qualidade.
+
+Novas análises implementadas:
+
+Análise de Slope
+
+Análise de Alinhamento das EMAs
+
+Análise de Distância entre EMAs
+
+Análise de Simetria
+
+Estrutura para Multi-Timeframe
+
+
+O Smart Scoring passou a considerar esses novos fatores juntamente com:
+
+Tendência
+
+RSI
+
+ADX
+
+
+
+---
+
+2. Novo Smart Scoring
+
+O Score passou a considerar:
+
+Tendência das EMAs
+
+Força do RSI
+
+ADX
+
+Inclinação das médias
+
+Alinhamento institucional
+
+Distância entre médias
+
+Simetria da tendência
+
+Confirmação Multi-Timeframe
+
+Bônus institucional
+
+
+O Score continua limitado entre:
+
+0 → 100
+
+
+---
+
+3. Nova classificação de qualidade
+
+O sistema passou a reconhecer:
+
+INSTITUCIONAL
+
+FORTE
+
+LATERAL
+
+CONFLITO
+
+
+Essa classificação passa a representar a qualidade estrutural do mercado.
+
+
+---
+
+4. Inclusão da Simetria
+
+Foi criada análise exclusiva para medir a regularidade entre:
+
+EMA9
+
+EMA21
+
+EMA50
+
+Quanto mais uniforme a abertura das médias:
+
+Maior pontuação.
+
+
+---
+
+5. Estrutura Multi-Timeframe criada
+
+Foi criado:
+
+analisarMultiTimeframe()
+
+Responsável por validar se:
+
+Tendência do M5
+
+é igual
+
+Tendência do M15
+
+Atualmente fornece confirmação estrutural.
+
+
+---
+
+6. Pair Analyzer atualizado
+
+O Scanner agora realiza duas leituras da API TwelveData.
+
+M5
+
+Utilizado para entrada.
+
+M15
+
+Utilizado para confirmação estrutural.
+
+Também foram adicionados:
+
+closes15
+
+ema9_15
+
+ema21_15
+
+ema50_15
+
+
+Preparando a Engine para confirmação institucional.
+
+
+---
+
+7. Scanner validado
+
+Diversos deploys executados.
+
+Resultados:
+
+execução estável
+
+nenhuma exceção
+
+nenhuma quebra
+
+tempo médio entre 5 e 10 segundos
+
+gravação no Firestore funcionando normalmente
+
+
+
+---
+
+8. Limpeza completa do Firestore
+
+Foi criado um Workflow exclusivo para limpeza.
+
+Resultado:
+
+863 registros removidos
+
+Banco reiniciado do zero.
+
+A partir deste ponto todo histórico será produzido pela nova Engine.
+
+
+---
+
+9. Workflow administrativo
+
+Foi criado um Workflow dedicado para:
+
+clearHistorico.js
+
+Permitindo limpeza total da coleção diretamente pelo GitHub Actions.
+
+Ferramenta incorporada ao projeto para futuras auditorias.
+
+
+---
+
+10. Correções realizadas
+
+Durante a Sprint foram corrigidos:
+
+leitura duplicada do M15
+
+cálculo duplicado de closes15
+
+organização do Pair Analyzer
+
+integração correta do Scanner
+
+compatibilidade com Firebase
+
+validação completa dos deploys
+
+
+
+---
+
+Estado atual do projeto
+
+Scanner
+
+✔ Estável
+
+Firestore
+
+✔ Limpo
+
+Smart Scoring
+
+✔ Operacional
+
+Simetria
+
+✔ Operacional
+
+Distância entre EMAs
+
+✔ Operacional
+
+Slope
+
+✔ Operacional
+
+Multi-Timeframe
+
+✔ Estrutura implantada
+
+Deploy
+
+✔ Validado
+
+
+---
+
+Pendências da Sprint 04
+
+Ainda faltam:
+
+integrar definitivamente o M15 ao cálculo do calcularQualidade() (utilizando os parâmetros ema9_15, ema21_15 e ema50_15 de forma completa)
+
+transformar a confirmação do M15 em filtro institucional efetivo, deixando de ser apenas um bônus de pontuação
+
+gravar as informações do Multi-Timeframe no Firestore
+
+validar os novos campos na interface de histórico
+
+finalizar a documentação da Sprint 04
+
+
+
+---
+
+Status Geral
+
+Sprint 04: aproximadamente 85% concluída.
+
+A arquitetura permanece íntegra, o Scanner está estável e a base foi preparada para a próxima evolução da Engine Institucional.
+-----
