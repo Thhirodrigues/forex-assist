@@ -17,10 +17,21 @@ async function analisarPar({
     return "COOLDOWN";
         }
 
-        const candles =
-            await getCandles(par);
+const candles =
+    await getCandles(
+        par,
+        "5min",
+        250
+    );
 
-        const highs =
+const candles15 =
+    await getCandles(
+        par,
+        "15min",
+        250
+    );
+        
+const highs =
     candles.map(c => Number(c.high));
 
 const lows =
@@ -28,13 +39,19 @@ const lows =
 
 const closes =
     candles.map(c => Number(c.close));
-        const ema9 =
+
+const closes15 =
+    candles15.map(
+        c => Number(c.close)
+    );
+        
+const ema9 =
             ema(9, closes.slice(-30));
 
-        const ema21 =
+const ema21 =
             ema(21, closes.slice(-50));
 
-        const ema50 =
+const ema50 =
     ema(50, closes.slice(-80));
 
 const ema100 =
@@ -43,10 +60,19 @@ const ema100 =
 const ema200 =
     ema(200, closes);   
 
-        const rsiAtual =
+const ema9_15 =
+    ema(9, closes15.slice(-30));
+
+const ema21_15 =
+    ema(21, closes15.slice(-50));
+
+const ema50_15 =
+    ema(50, closes15.slice(-80));
+ 
+ const rsiAtual =
     rsi(14, closes.slice(-15));
 
-        const adxAtual = calcularADX(
+const adxAtual = calcularADX(
     14,
     highs,
     lows,
