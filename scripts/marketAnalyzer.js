@@ -748,32 +748,16 @@ score += historico.score;
 let bonus = 0;
 
 if (
-    adx >= 35 &&
-    rsiAtual >= 58 &&
-    emas.tendencia !== "LATERAL"
-) {
-
-    bonus += 5;
-
-}
-
-if (
     historico.status === "EXCELENTE"
 ) {
-
     bonus += 5;
-
 }
 
 if (
     multi.status === "CONFIRMADO"
 ) {
-
     bonus += 3;
-
 }
-
-score += bonus;
 
 // ===================================================
 // PENALIZAÇÕES
@@ -797,6 +781,7 @@ if (
 
 }
 
+score += bonus;
 score -= penalidade;
   
 
@@ -821,10 +806,9 @@ if (
     score -= 10;
 }
   
-  score = Math.max(
-    0,
-    Math.min(score, 100)
-);
+  if (score > 100) score = 100;
+if (score < 0) score = 0;
+
   return {
 
     score,
