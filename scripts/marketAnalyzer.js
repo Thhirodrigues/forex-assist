@@ -754,7 +754,6 @@ if (historico.status === "EXCELENTE") {
 if (historico.status === "BOA") {
     bonus += 3;
 }
-}
 score += bonus;
 
 // ===================================================
@@ -775,21 +774,7 @@ if (historico.status === "SEM_BASE") {
     penalidade += 5;
 }
 
-// ============================================
-// CONFIABILIDADE DO HISTÓRICO
-// ============================================
-
-if (historico.confiabilidade === "ALTA") {
-    score += 5;
-}
-
-if (historico.confiabilidade === "MEDIA") {
-    score += 2;
-}
-
-if (historico.confiabilidade === "BAIXA") {
-    score -= 5;
-}
+score -= penalidade;
 
 if (
     tendencia15 === "ALTA" &&
@@ -838,8 +823,6 @@ if (score < 0) score = 0;
     multi: multi.status,
 
     historico: historico.status,
-
-    confiabilidade: historico.confiabilidade,
 
     bonus,
 
