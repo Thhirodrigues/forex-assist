@@ -3518,6 +3518,213 @@ Ou seja, não estamos apenas melhorando o arquivo; estamos transformando o stati
 
 ------
 
+Concordo plenamente. Na verdade, o que você acabou de definir muda a filosofia do Forex Assist de forma importante.
+
+Hoje a Engine responde à pergunta:
+
+> "A direção estava certa?"
+
+
+
+Mas um sistema para operar dinheiro real deve responder:
+
+> "Essa operação realmente atingiu o objetivo financeiro definido pelo operador?"
+
+
+
+São coisas diferentes.
+
+Proposta para documentar como decisão oficial do projeto
+
+
+---
+
+DECISÃO DE ARQUITETURA – Engine de Resultado Real
+
+Status: Aprovada para implementação futura.
+
+Objetivo
+
+O Forex Assist deixará de classificar operações apenas pela direção do preço após 15 minutos.
+
+A classificação oficial passará a ser baseada no resultado operacional real da configuração do usuário.
+
+Parâmetros da operação
+
+Cada operação possuirá, no mínimo:
+
+Preço de entrada
+
+Direção (BUY/SELL)
+
+Lote configurado
+
+Take Profit (US$)
+
+Stop Loss (US$)
+
+Valor do pip do ativo
+
+TP convertido para preço
+
+SL convertido para preço
+
+
+Nova lógica
+
+Após o sinal:
+
+A operação permanecerá como PENDENTE.
+
+O sistema continuará monitorando o mercado.
+
+Somente quando atingir TP ou SL a operação será encerrada.
+
+
+Classificações possíveis:
+
+WIN
+
+LOSS
+
+PENDENTE
+
+CANCELADA (casos futuros)
+
+
+O tempo deixa de ser o fator principal.
+
+Consequências
+
+O histórico passará a refletir exatamente o comportamento de uma conta real.
+
+As estatísticas passarão a representar:
+
+Lucro líquido
+
+Drawdown
+
+Profit Factor
+
+Expectativa Matemática
+
+Tempo médio das operações
+
+Pips ganhos
+
+Pips perdidos
+
+Ganho financeiro
+
+Perda financeira
+
+Eficiência por ativo
+
+Eficiência por horário
+
+Eficiência por tendência
+
+
+Benefício para a Engine RMI
+
+A RMI deixará de aprender apenas "direção correta" e passará a aprender "operações realmente lucrativas".
+
+As recomendações futuras serão baseadas em desempenho financeiro real, respeitando integralmente as configurações definidas pelo operador (lote, TP, SL e gestão de risco).
+
+
+---
+
+Na minha avaliação, essa decisão é um dos marcos mais importantes do projeto até agora. Ela alinha a Engine com o propósito que você definiu desde o início: o Forex Assist não deve prever candles; ele deve ajudar o operador a ganhar dinheiro de forma consistente, respeitando exatamente a sua estratégia de gerenciamento de risco.
+
+Eu recomendo registrar essa decisão no Documento Mestre, na seção "Decisões de Arquitetura", para que ela se torne uma diretriz oficial e todas as futuras implementações sigam esse princípio.
+
+-------
+
+Exatamente. Essa é a pergunta certa.
+
+Pelo que desenvolvemos até agora, o sistema não mede quantos pips o preço andou. O critério é muito mais simples.
+
+A lógica atual do Result Checker é esta:
+
+1. O scanner gera um sinal:
+
+BUY ou SELL.
+
+
+
+2. Ele grava o preço de entrada (precoEntrada).
+
+
+3. Após aproximadamente 15 minutos, o Result Checker consulta o preço de fechamento.
+
+
+4. Então compara os dois preços.
+
+
+
+Para um BUY:
+
+Se preço final > preço de entrada  → WIN
+Se preço final < preço de entrada  → LOSS
+Se igual                           → normalmente LOSS ou EMPATE (dependendo da implementação)
+
+Para um SELL:
+
+Se preço final < preço de entrada  → WIN
+Se preço final > preço de entrada  → LOSS
+
+Ou seja, basta que o mercado tenha terminado um único ponto acima (no BUY) ou um único ponto abaixo (no SELL) para a operação ser considerada WIN.
+
+Ele não verifica:
+
+se chegou ao TP de US$ 5;
+
+se bateu o SL de US$ 5;
+
+quantos pips ganhou;
+
+quanto dinheiro teria sido ganho.
+
+
+Ele apenas verifica a direção final do candle de 15 minutos em relação ao preço de entrada.
+
+
+---
+
+Isso é bom?
+
+Como primeira etapa, sim. É um método muito usado para validar a qualidade direcional de uma estratégia.
+
+Mas, pensando no Forex Assist como um sistema profissional, eu evoluiria isso.
+
+O ideal seria armazenar também:
+
+preço de entrada;
+
+preço de fechamento;
+
+variação em pips;
+
+lucro/prejuízo teórico conforme o lote;
+
+se atingiu TP ou SL antes dos 15 minutos (quando essa informação estiver disponível).
+
+
+Assim, em vez de termos apenas:
+
+5W / 1L
+
+poderemos ter algo como:
+
+5W / 1L
++42 pips
+Profit Factor: 1,84
+Lucro teórico: +US$ 21
+
+Essa evolução tornaria a RMI muito mais inteligente, porque ela passaria a aprender não só se acertou a direção, mas quanto aquela decisão realmente agregou em desempenho financeiro. Na minha avaliação, esse é um dos próximos grandes saltos de qualidade da Engine.
+
+-------------
+
 
 
 
