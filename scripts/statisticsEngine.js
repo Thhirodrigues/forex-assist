@@ -51,18 +51,54 @@ async function obterEstatisticasPar(
                     operacoes
                 ).toFixed(1)
             );
+    
+// ===================================================
+// CLASSIFICAÇÃO DO HISTÓRICO
+// ===================================================
 
+let status = "SEM_DADOS";
+
+if (operacoes >= 20) {
+
+    if (taxaAcerto >= 80) {
+
+        status = "EXCELENTE";
+
+    }
+
+    else if (taxaAcerto >= 70) {
+
+        status = "BOM";
+
+    }
+
+    else if (taxaAcerto >= 55) {
+
+        status = "NEUTRO";
+
+    }
+
+    else {
+
+        status = "RUIM";
+
+    }
+
+}
+    
     return {
 
-        wins,
+    wins,
 
-        loss,
+    loss,
 
-        operacoes,
+    operacoes,
 
-        taxaAcerto
+    taxaAcerto,
 
-    };
+    status
+
+};
 
 }
 
