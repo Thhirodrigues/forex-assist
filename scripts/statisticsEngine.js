@@ -15,14 +15,16 @@ async function obterEstatisticasPar(
 ) {
 
     const snapshot =
-        await db
-            .collection("historico")
-            .where("par", "==", par)
-            .where("resultado", "in", [
-                "WIN",
-                "LOSS"
-            ])
-            .get();
+    await db
+        .collection("historico")
+        .where("par", "==", par)
+        .where("resultado", "in", [
+            "WIN",
+            "LOSS"
+        ])
+        .orderBy("dataHora", "desc")
+        .limit(10)
+        .get();
 
     let wins = 0;
     let loss = 0;
