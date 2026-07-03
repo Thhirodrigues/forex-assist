@@ -578,6 +578,63 @@ function analisarMultiTimeframe(
 }
 
 // ===================================================
+// ANÁLISE DO HISTÓRICO ESTATÍSTICO
+// ===================================================
+
+function analisarHistorico(
+    estatisticas
+) {
+
+    if (
+        !estatisticas ||
+        estatisticas.operacoes < 20
+    ) {
+
+        return {
+            score: 0,
+            status: "SEM_BASE"
+        };
+
+    }
+
+    if (estatisticas.taxaAcerto >= 80) {
+
+        return {
+            score: 10,
+            status: "EXCELENTE"
+        };
+
+    }
+
+    if (estatisticas.taxaAcerto >= 70) {
+
+        return {
+            score: 5,
+            status: "BOA"
+        };
+
+    }
+
+    if (estatisticas.taxaAcerto < 50) {
+
+        return {
+            score: -10,
+            status: "RUIM"
+        };
+
+    }
+
+    return {
+
+        score: 0,
+
+        status: "NEUTRA"
+
+    };
+
+}
+
+// ===================================================
 // SMART SCORING ENGINE
 // ===================================================
 
@@ -591,7 +648,8 @@ function calcularQualidade(
   adx,
   ema9_15,
   ema21_15,
-  ema50_15
+  ema50_15,
+  estatisticas
 ) {
 
   let score = 0;
@@ -670,11 +728,17 @@ const multi =
         tendencia15
     );
   
+const historico =
+    analisarHistorico(
+        estatisticas
+    );
+  
 score += slope;
 score += alinhamento.score;
 score += simetria.score;
 score += distancia.score;
 score += multi.score;
+score += historico.score;
 
 
 if (
@@ -715,24 +779,16 @@ if (
   return {
 
     score,
-
     tendencia: emas.tendencia,
-
     rsi: rsi.situacao,
-
     adx: adxInfo.forca,
-
     qualidade: tendencia.qualidade,
-
     slope,
-
     alinhamento: alinhamento.status,
-
     simetria: simetria.simetria,
-
     distancia: distancia.nivel,
-
     multi: multi.status,
+    historico: historico.status,
 
 };
 }
@@ -756,6 +812,8 @@ module.exports = {
     analisarAlinhamento,
 
     analisarSimetria,
+
+    analisarHistorico,
 
     calcularQualidade,
 
