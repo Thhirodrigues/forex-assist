@@ -4047,4 +4047,134 @@ Depois desse bloco faremos a RMI começar a usar essa informação na tomada de 
 
 --------
 
+MODO ENGENHARIA — SPRINT 05
+
+Etapa: Integrar confianca ao marketAnalyzer.js
+
+Agora vamos fazer a RMI considerar a confiabilidade do histórico na pontuação final.
+
+
+---
+
+Arquivo
+
+scripts/marketAnalyzer.js
+
+
+---
+
+PASSO 1 — Localizar
+
+Procure exatamente pelo bloco:
+
+// ============================================
+// BÔNUS ADAPTATIVO
+// ============================================
+
+e desça até o final desse bloco.
+
+Você verá algo semelhante a:
+
+score += bonus;
+score -= penalidade;
+
+e logo abaixo começam as verificações de tendência M15.
+
+
+---
+
+PASSO 2 — Inserir
+
+Entre
+
+score -= penalidade;
+
+e
+
+if (
+    tendencia15 === "ALTA" &&
+
+insira exatamente este bloco:
+
+// ============================================
+// CONFIABILIDADE DO HISTÓRICO
+// ============================================
+
+if (historico.confiabilidade === "ALTA") {
+    score += 5;
+}
+
+if (historico.confiabilidade === "MEDIA") {
+    score += 2;
+}
+
+if (historico.confiabilidade === "BAIXA") {
+    score -= 5;
+}
+
+
+---
+
+O resultado deverá ficar assim:
+
+score += bonus;
+
+score -= penalidade;
+
+// ============================================
+// CONFIABILIDADE DO HISTÓRICO
+// ============================================
+
+if (historico.confiabilidade === "ALTA") {
+    score += 5;
+}
+
+if (historico.confiabilidade === "MEDIA") {
+    score += 2;
+}
+
+if (historico.confiabilidade === "BAIXA") {
+    score -= 5;
+}
+
+if (
+    tendencia15 === "ALTA" &&
+    emas.tendencia === "ALTA"
+) {
+
+
+---
+
+PASSO 3 — Retorno
+
+Depois localize o bloco:
+
+return {
+
+Nele já existe:
+
+historico: historico.status,
+
+Logo abaixo adicione:
+
+confiabilidade: historico.confiabilidade,
+
+Ficando assim:
+
+historico: historico.status,
+confiabilidade: historico.confiabilidade,
+bonus,
+penalidade,
+
+
+---
+
+Objetivo desta etapa
+
+A partir de agora, a Engine RMI não analisará apenas se o histórico foi "EXCELENTE" ou "RUIM". Ela também avaliará o quanto esse histórico é confiável estatisticamente, reduzindo a influência de amostras pequenas e valorizando pares com base histórica mais sólida.
+
+Depois de aplicar essas alterações e executar um workflow, envie o resultado para validarmos antes do próximo commit.
+
+------
+
 
