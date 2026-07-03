@@ -138,6 +138,10 @@ console.log(
     `Assertividade......${estatisticas.taxaAcerto}%`
 );
 
+console.log(
+  `Confiabilidade....${historico.status}`
+);
+
 console.log("========================================");
 
     const resultado = await analisarParNovo({
