@@ -784,7 +784,22 @@ if (
 
 score += bonus;
 score -= penalidade;
-  
+
+// ============================================
+// CONFIABILIDADE DO HISTÓRICO
+// ============================================
+
+if (historico.confiabilidade === "ALTA") {
+    score += 5;
+}
+
+if (historico.confiabilidade === "MEDIA") {
+    score += 2;
+}
+
+if (historico.confiabilidade === "BAIXA") {
+    score -= 5;
+}
 
 if (
     tendencia15 === "ALTA" &&
@@ -833,6 +848,8 @@ if (score < 0) score = 0;
     multi: multi.status,
 
     historico: historico.status,
+
+    confiabilidade: historico.confiabilidade,
 
     bonus,
 
