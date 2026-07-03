@@ -18,17 +18,11 @@ async function analisarPar({
         }
 
 const candles =
-    await getCandles(
-        par,
-        "5min",
-        250
+    await getCandles(par,"5min",250
     );
 
 const candles15 =
-    await getCandles(
-        par,
-        "15min",
-        250
+    await getCandles(par,"15min",250
     );
         
 const highs =
@@ -39,11 +33,6 @@ const lows =
 
 const closes =
     candles.map(c => Number(c.close));
-
-const closes15 =
-    candles15.map(
-        c => Number(c.close)
-    );
         
 const ema9 =
             ema(9, closes.slice(-30));
