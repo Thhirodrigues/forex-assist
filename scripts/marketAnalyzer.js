@@ -747,25 +747,14 @@ score += historico.score;
 
 let bonus = 0;
 
-switch (historico.status) {
-
-    case "EXCELENTE":
-        bonus = 5;
-        break;
-
-    case "BOM":
-        bonus = 2;
-        break;
-
-    case "RUIM":
-        bonus = -10;
-        break;
-
-    default:
-        bonus = 0;
-
+if (historico.status === "EXCELENTE") {
+    bonus += 5;
 }
 
+if (historico.status === "BOA") {
+    bonus += 3;
+}
+}
 score += bonus;
 
 // ===================================================
@@ -774,16 +763,17 @@ score += bonus;
 
 let penalidade = 0;
 
-if (
-    multi.status === "DIVERGENTE"
-) {
-
+if (multi.status === "DIVERGENTE") {
     penalidade += 10;
-
 }
 
-score += bonus;
-score -= penalidade;
+if (historico.status === "RUIM") {
+    penalidade += 10;
+}
+
+if (historico.status === "SEM_BASE") {
+    penalidade += 5;
+}
 
 // ============================================
 // CONFIABILIDADE DO HISTÓRICO
