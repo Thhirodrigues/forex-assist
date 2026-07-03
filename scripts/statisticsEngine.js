@@ -64,7 +64,13 @@ ultimasOperacoes.forEach(dados => {
 
     const operacoes =
         wins + loss;
+// ===================================================
+// CONFIABILIDADE DO HISTÓRICO
+// ===================================================
 
+const historicoSuficiente =
+    operacoes >= 10;
+    
     const taxaAcerto =
         operacoes === 0
             ? 0
@@ -116,6 +122,8 @@ if (operacoes >= 20) {
     loss,
 
     operacoes,
+
+    historicoSuficiente,
 
     taxaAcerto,
 
