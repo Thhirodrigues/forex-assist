@@ -1,3 +1,36 @@
+// ===================================================
+// FOREX ASSIST - REAL MONEY INTELLIGENCE
+// SCANNER
+//
+// Responsabilidade:
+// Coordenar todo o processo de varredura do mercado.
+//
+// Fluxo:
+//
+// 1. Percorrer todos os pares configurados.
+//
+// 2. Solicitar ao Pair Analyzer a análise
+//    individual de cada ativo.
+//
+// 3. Registrar estatísticas da execução.
+//
+// 4. Consolidar os resultados do Scanner.
+//
+// O Scanner NÃO possui regras de análise.
+//
+// Toda inteligência de mercado permanece nos
+// módulos especializados:
+//
+// • pairAnalyzer.js
+// • marketAnalyzer.js
+// • statisticsEngine.js
+// • riskManager.js
+// • marketData.js
+//
+// SPRINT 05
+// Arquitetura Modular
+// ===================================================
+
 const { admin, db } =
   require("./firebase");
 
