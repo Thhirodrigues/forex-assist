@@ -13,33 +13,54 @@ async function obterEstatisticasPar(
     db,
     par
 ) {
-
     const snapshot =
     await db
         .collection("historico")
         .where("par", "==", par)
-        .where("resultado", "in", [
-            "WIN",
-            "LOSS"
-        ])
-        .orderBy("dataHora", "desc")
-        .limit(10)
         .get();
-
+    
     let wins = 0;
     let loss = 0;
 
-    snapshot.forEach(doc => {
+    const operacoesHistorico = [];
 
-        const dados = doc.data();
+snapshot.forEach(doc => {
 
-        if (dados.resultado === "WIN")
-            wins++;
+    const dados = doc.data();
 
-        if (dados.resultado === "LOSS")
-            loss++;
+    if (
+        dados.resultado === "WIN" ||
+        dados.resultado === "LOSS"
+    ) {
 
-    });
+        operacoesHistorico.push(dados);
+
+    }
+
+});
+
+operacoesHistorico.sort((a, b) => {
+
+    const dataA = new Date(a.dataHora || 0);
+
+    const dataB = new Date(b.dataHora || 0);
+
+    return dataB - dataA;
+
+});
+
+const ultimasOperacoes =
+    operacoesHistorico.slice(0, 10);
+
+ultimasOperacoes.forEach(dados => {
+
+    if (dados.resultado === "WIN")
+        wins++;
+
+    if (dados.resultado === "LOSS")
+        loss++;
+
+});
 
     const operacoes =
         wins + loss;
