@@ -3902,6 +3902,149 @@ Status do Sprint 04: ✅ Encerrado e documentado.
 
 -----------
 
+Perfeito. Esse é um bom ponto de transição.
 
+A partir de agora, durante o avanço das Sprints 05 e 06, vou observar continuamente a arquitetura. Quando chegarmos ao momento em que a base estiver madura para suportar a mudança, vou interromper o fluxo normal e propor oficialmente o início da RMI V2, conforme combinamos.
+
+A ideia será fazer uma migração controlada, sem perder compatibilidade com a V1 e aproveitando toda a inteligência estatística construída até lá.
+
+
+---
+
+MODO ENGENHEIRO
+
+Sprint 05 — Próxima Etapa
+
+ARQUIVO
+
+scripts/statisticsEngine.js
+
+
+---
+
+OBJETIVO
+
+Adicionar um indicador de confiabilidade estatística, separado da taxa de acerto.
+
+Hoje temos:
+
+taxaAcerto
+
+status
+
+historicoSuficiente
+
+
+Agora adicionaremos um novo indicador que mede a robustez da amostra.
+
+
+---
+
+PASSO 1 — LOCALIZAÇÃO
+
+Localize este bloco:
+
+// ===================================================
+// CONFIABILIDADE DO HISTÓRICO
+// ===================================================
+
+const historicoSuficiente =
+    operacoes >= 10;
+
+
+---
+
+PASSO 2 — INSERIR
+
+Logo abaixo desse bloco, adicione:
+
+// ===================================================
+// CONFIANÇA ESTATÍSTICA
+// ===================================================
+
+let confianca = "BAIXA";
+
+if (operacoes >= 100) {
+
+    confianca = "ALTA";
+
+}
+
+else if (operacoes >= 50) {
+
+    confianca = "MÉDIA";
+
+}
+
+
+---
+
+PASSO 3 — LOCALIZAÇÃO
+
+Localize o return:
+
+return {
+
+    wins,
+
+    loss,
+
+    operacoes,
+
+    historicoSuficiente,
+
+    taxaAcerto,
+
+    status
+
+};
+
+
+---
+
+PASSO 4 — ALTERAR
+
+Substitua por:
+
+return {
+
+    wins,
+
+    loss,
+
+    operacoes,
+
+    historicoSuficiente,
+
+    confianca,
+
+    taxaAcerto,
+
+    status
+
+};
+
+
+---
+
+NÃO ALTERAR
+
+Não alterar os cálculos existentes.
+
+Não alterar o module.exports.
+
+Não alterar a consulta ao Firestore.
+
+
+
+---
+
+RESULTADO
+
+A Statistics Engine passará a responder não apenas qual foi a taxa de acerto, mas também o quanto essa taxa é confiável com base no tamanho da amostra.
+
+Depois desse bloco faremos a RMI começar a usar essa informação na tomada de decisão.
+
+--------
 
 
