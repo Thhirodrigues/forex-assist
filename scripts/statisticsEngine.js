@@ -80,6 +80,24 @@ const historicoSuficiente =
                     operacoes
                 ).toFixed(1)
             );
+
+// ===================================================
+// CONFIANÇA ESTATÍSTICA
+// ===================================================
+
+let confianca = "BAIXA";
+
+if (operacoes >= 100) {
+
+    confianca = "ALTA";
+
+}
+
+else if (operacoes >= 50) {
+
+    confianca = "MÉDIA";
+
+}
     
 // ===================================================
 // CLASSIFICAÇÃO DO HISTÓRICO
@@ -124,6 +142,8 @@ if (operacoes >= 20) {
     operacoes,
 
     historicoSuficiente,
+
+    confianca,
 
     taxaAcerto,
 
