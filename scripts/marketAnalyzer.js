@@ -588,7 +588,7 @@ function calcularQualidade(
   ema100,
   ema200,
   rsiAtual,
-  adx
+  adx,
   ema9_15,
   ema21_15,
   ema50_15
@@ -667,8 +667,7 @@ const distancia =
 const multi =
     analisarMultiTimeframe(
         emas.tendencia,
-        emas.tendencia
-    );
+);
   
 score += slope;
 score += alinhamento.score;
