@@ -3361,3 +3361,118 @@ Versão: RMI_V1
 Sprint: 03 — Modularização do Scanner
 
 Status: ✅ Encerrado e homologado. Próxima etapa: Sprint 04 – Inteligência Operacional, com foco em evolução dos critérios de análise, gestão de risco e refinamento da qualidade dos sinais, mantendo a arquitetura modular consolidada no Sprint 03.
+-----
+esta faltando etapas do aprint aqui, estao nondocumento  fase 05 rmi expert.
+
+------
+MODO ENGENHEIRO
+
+SPRINT 05 — ETAPA 01
+
+Engine Estatística Adaptativa
+
+Objetivo
+
+A partir deste Sprint, a Engine deixa de analisar apenas o mercado atual e passa a utilizar o histórico real das operações para tomar decisões.
+
+
+---
+
+Ordem de implantação
+
+ETAPA 01
+
+Criar módulo estatístico.
+
+Novo arquivo:
+
+scripts/statisticsEngine.js
+
+Responsabilidades:
+
+calcular taxa de acerto por par;
+
+calcular operações totais;
+
+calcular WIN;
+
+calcular LOSS;
+
+calcular assertividade;
+
+fornecer estatísticas para o Scanner.
+
+
+
+---
+
+ETAPA 02
+
+Modificar o pairAnalyzer.js.
+
+Após carregar o par, consultar:
+
+const estatisticas =
+    await obterEstatisticasPar(
+        db,
+        par
+    );
+
+
+---
+
+ETAPA 03
+
+Incluir novo peso no Score.
+
+Exemplo:
+
+Assertividade > 70%  +5
+
+Assertividade > 80% +10
+
+Assertividade < 50% -10
+
+
+---
+
+ETAPA 04
+
+Salvar novos campos no Firestore.
+
+taxaAcerto
+winsHistoricos
+lossHistoricos
+operacoesHistoricas
+
+
+---
+
+ETAPA 05
+
+Adicionar novos logs.
+
+Histórico...........82%
+
+Wins................41
+
+Loss................9
+
+Operações...........50
+
+
+---
+
+Arquivo a ser desenvolvido primeiro
+
+scripts/statisticsEngine.js
+
+Status: Sprint 05 iniciado.
+
+--------
+
+
+
+
+
+
