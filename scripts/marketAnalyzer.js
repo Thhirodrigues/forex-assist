@@ -589,6 +589,9 @@ function calcularQualidade(
   ema200,
   rsiAtual,
   adx
+  ema9_15,
+  ema21_15,
+  ema50_15
 ) {
 
   let score = 0;
@@ -634,6 +637,19 @@ const alinhamento =
         ema200
 );
 
+const tendencia15 =
+    ema9_15 > ema21_15 &&
+    ema21_15 > ema50_15
+
+    ? "ALTA"
+
+    : ema9_15 < ema21_15 &&
+      ema21_15 < ema50_15
+
+    ? "BAIXA"
+
+    : "LATERAL";
+  
 const simetria =
     analisarSimetria(
         ema9,
@@ -670,6 +686,28 @@ if (
     score += 5;
 
 }
+ 
+if (
+    tendencia15 === "ALTA" &&
+    emas.tendencia === "ALTA"
+) {
+    score += 5;
+}
+
+if (
+    tendencia15 === "BAIXA" &&
+    emas.tendencia === "BAIXA"
+) {
+    score += 5;
+}
+
+if (
+    tendencia15 !== "LATERAL" &&
+    tendencia15 !== emas.tendencia
+) {
+    score -= 10;
+}
+  
   score = Math.max(
     0,
     Math.min(score, 100)
