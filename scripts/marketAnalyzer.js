@@ -832,6 +832,35 @@ else if (historico.confiabilidade <= 30) {
 }
 
 // ===================================================
+// PENALIZAÇÕES
+// ===================================================
+
+let penalidade = 0;
+
+if (multi.status === "DIVERGENTE") {
+
+    penalidade +=
+        ENGINE_WEIGHTS.PENALIDADE_DIVERGENCIA;
+
+}
+
+if (historico.status === "RUIM") {
+
+    penalidade +=
+        ENGINE_WEIGHTS.PENALIDADE_RUIM;
+
+}
+
+if (historico.status === "SEM_BASE") {
+
+    penalidade +=
+        ENGINE_WEIGHTS.PENALIDADE_SEM_BASE;
+
+}
+
+score -= penalidade;
+  
+// ===================================================
 // CONSOLIDAÇÃO DO SCORE
 // ===================================================
 
