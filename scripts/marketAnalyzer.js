@@ -861,6 +861,63 @@ if (
 }
 
 // ===================================================
+// DECISÃO DA OPERAÇÃO
+// ===================================================
+
+function avaliarOperacao(resultado) {
+
+    if (resultado.score < 45) {
+
+        return {
+            status: "REPROVADO"
+        };
+
+    }
+
+    if (resultado.multi === "DIVERGENTE") {
+
+        return {
+            status: "COOLDOWN"
+        };
+
+    }
+
+    if (
+        resultado.qualidade === "LATERAL" ||
+        resultado.qualidade === "CONFLITO"
+    ) {
+
+        return {
+            status: "SEM_SINAL"
+        };
+
+    }
+
+    if (resultado.tendencia === "ALTA") {
+
+        return {
+            status: "COMPRA"
+        };
+
+    }
+
+    if (resultado.tendencia === "BAIXA") {
+
+        return {
+            status: "VENDA"
+        };
+
+    }
+
+    return {
+
+        status: "SEM_SINAL"
+
+    };
+
+}
+
+// ===================================================
 // EXPORTS
 // ===================================================
 
@@ -887,5 +944,7 @@ module.exports = {
     analisarDistanciaEMAs,
 
     analisarMultiTimeframe,
+
+    avaliarOperacao,
 
 };
