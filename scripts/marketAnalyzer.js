@@ -651,7 +651,7 @@ function analisarHistorico(
 
     return {
 
-        score: pesoHistorico,
+        score,
 
         status,
 
@@ -660,6 +660,34 @@ function analisarHistorico(
         pesoHistorico,
 
         confidenceMultiplier
+
+    };
+
+}
+
+// ===================================================
+// ADAPTIVE CONFIDENCE LAYER
+// ===================================================
+
+function calcularAdaptiveConfidence(historico) {
+
+    const confidenceMultiplier =
+        historico.confidenceMultiplier;
+
+    const pesoHistorico =
+        Math.round(
+            historico.score *
+            confidenceMultiplier
+        );
+
+    return {
+
+        confiabilidade:
+            historico.confiabilidade,
+
+        confidenceMultiplier,
+
+        pesoHistorico
 
     };
 
@@ -781,14 +809,20 @@ const historico =
     analisarHistorico(
         estatisticas
     );
+
+const adaptive =
+    calcularAdaptiveConfidence(
+        historico
+    );
   
 score += slope;
 score += alinhamento.score;
 score += simetria.score;
 score += distancia.score;
 score += multi.score;
-score += historico.pesoHistorico;
+score += adaptive.pesoHistorico;
 
+  
 // ====================================================
 // BÔNUS ADAPTATIVO
 // ====================================================
@@ -919,12 +953,12 @@ if (
 
     historico: historico.status,
 
-    confiabilidade: historico.confiabilidade,
+    confiabilidade: adaptive.confiabilidade,
 
-    pesoHistorico: historico.pesoHistorico,
+    pesoHistorico: adaptive.pesoHistorico,
 
-    confidenceMultiplier: historico.confidenceMultiplier,
-
+    confidenceMultiplier: adaptive.confidenceMultiplier,
+    
     bonus,
 
     penalidade,
