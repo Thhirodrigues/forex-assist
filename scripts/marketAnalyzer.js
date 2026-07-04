@@ -591,44 +591,70 @@ function analisarHistorico(
     ) {
 
         return {
+
             score: 0,
-            status: "SEM_BASE"
+
+            status: "SEM_BASE",
+
+            confiabilidade: 0,
+
+            pesoHistorico: 0,
+
+            confidenceMultiplier: 0
+
         };
 
     }
 
-    if (estatisticas.taxaAcerto >= 80) {
+    const operacoes = estatisticas.operacoes;
+    const taxa = estatisticas.taxaAcerto;
 
-        return {
-            score: 10,
-            status: "EXCELENTE"
-        };
+    const confiabilidade = Math.min(
+        100,
+        Math.round((operacoes / 100) * 100)
+    );
+
+    const confidenceMultiplier =
+        confiabilidade / 100;
+
+    let score = 0;
+    let status = "NEUTRA";
+
+    if (taxa >= 80) {
+
+        score = 10;
+        status = "EXCELENTE";
+
+    }
+
+    else if (taxa >= 70) {
+
+        score = 5;
+        status = "BOA";
 
     }
 
-    if (estatisticas.taxaAcerto >= 70) {
+    else if (taxa < 50) {
 
-        return {
-            score: 5,
-            status: "BOA"
-        };
+        score = -10;
+        status = "RUIM";
 
     }
 
-    if (estatisticas.taxaAcerto < 50) {
-
-        return {
-            score: -10,
-            status: "RUIM"
-        };
-
-    }
+    const pesoHistorico =
+        Math.round(score * confidenceMultiplier);
 
     return {
 
-        score: 0,
+        score: pesoHistorico,
 
-        status: "NEUTRA"
+        status,
+
+        confiabilidade,
+
+        pesoHistorico,
+
+        confidenceMultiplier
 
     };
 
