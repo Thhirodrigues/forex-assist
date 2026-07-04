@@ -791,33 +791,40 @@ score += historico.pesoHistorico;
 let bonus = 0;
 
 if (historico.status === "EXCELENTE") {
-    bonus += ENGINE_WEIGHTS.BONUS_EXCELENTE;
+
+    bonus += Math.round(
+        ENGINE_WEIGHTS.BONUS_EXCELENTE *
+        historico.confidenceMultiplier
+    );
+
 }
 
-if (historico.status === "BOA") {
-    bonus += ENGINE_WEIGHTS.BONUS_BOA;
+else if (historico.status === "BOA") {
+
+    bonus += Math.round(
+        ENGINE_WEIGHTS.BONUS_BOA *
+        historico.confidenceMultiplier
+    );
+
 }
+
 score += bonus;
 
-// ===================================================
-// PENALIZAÇÕES
-// ===================================================
+// ====================================================
+// AJUSTE ADAPTATIVO DO HISTÓRICO
+// ====================================================
 
-let penalidade = 0;
+if (historico.confiabilidade >= 90) {
 
-if (multi.status === "DIVERGENTE") {
-    penalidade += ENGINE_WEIGHTS.PENALIDADE_DIVERGENCIA;
+    score += 2;
+
 }
 
-if (historico.status === "RUIM") {
-    penalidade += ENGINE_WEIGHTS.PENALIDADE_RUIM;
-}
+else if (historico.confiabilidade <= 30) {
 
-if (historico.status === "SEM_BASE") {
-    penalidade += ENGINE_WEIGHTS.PENALIDADE_SEM_BASE;
-}
+    score -= 2;
 
-score -= penalidade;
+}
 
 // ===================================================
 // CONSOLIDAÇÃO DO SCORE
