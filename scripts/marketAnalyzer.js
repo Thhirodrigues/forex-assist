@@ -610,12 +610,17 @@ function analisarHistorico(
     const taxa = estatisticas.taxaAcerto;
 
     const confiabilidade = Math.min(
-        100,
-        Math.round((operacoes / 100) * 100)
-    );
+    100,
+    Math.round(
+        (operacoes / 50) * 100
+    )
+);
 
     const confidenceMultiplier =
-        confiabilidade / 100;
+    Math.max(
+        0.25,
+        confiabilidade / 100
+    );
 
     let score = 0;
     let status = "NEUTRA";
