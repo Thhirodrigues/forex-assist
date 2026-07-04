@@ -220,6 +220,9 @@ await salvarOperacao(db, {
     qualidade: qualidade.qualidade,
     multiTimeframe: qualidade.multi,
     historico: qualidade.historico,
+    confiabilidade: qualidade.confiabilidade,
+    pesoHistorico: qualidade.pesoHistorico,
+    confidenceMultiplier: qualidade.confidenceMultiplier,
     taxaAcerto: estatisticas.taxaAcerto,
     winsHistoricos: estatisticas.wins,
     lossHistoricos: estatisticas.loss,
@@ -247,7 +250,9 @@ console.log(`Simetria.........${qualidade.simetria}`);
 console.log(`Distância........${qualidade.distancia}`);
 console.log(`Multi TF.........${qualidade.multi}`);
 console.log(`Histórico........${qualidade.historico}`);
-console.log(`Histórico.......${estatisticas.taxaAcerto}%`);
+console.log(`Assertividade....${estatisticas.taxaAcerto}%`);
+console.log(`Confiabilidade...${qualidade.confiabilidade}%`);
+console.log(`Peso Histórico...${qualidade.pesoHistorico}`);
 console.log(`Wins............${estatisticas.wins}`);
 console.log(`Loss............${estatisticas.loss}`);
 console.log(`Operações.......${estatisticas.operacoes}`);
