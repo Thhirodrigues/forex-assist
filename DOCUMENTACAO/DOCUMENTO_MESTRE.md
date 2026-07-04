@@ -3867,7 +3867,81 @@ Minha recomendação é não copiar todo o conteúdo do arquivo para o Documento
 
 ------------
 
+Modo Engenharia.
 
+FASE 05 — SPRINT 06
+
+Nome: RMI V2 — Inteligência Adaptativa
+
+Objetivo
+
+Evoluir a RMI de pesos estáticos para um modelo adaptativo, preservando integralmente a arquitetura atual.
+
+Escopo da Sprint 06
+
+Sprint 06.01 — Adaptive Confidence Foundation
+
+Implementar a primeira camada de inteligência adaptativa:
+
+Memória estatística por ativo.
+
+Confiança dinâmica baseada na confiabilidade do histórico.
+
+Ajuste adaptativo dos pesos do histórico.
+
+Preparação para pesos dinâmicos da Engine.
+
+Nenhuma alteração estrutural.
+
+Nenhum novo arquivo.
+
+
+Arquivo da Sprint
+
+scripts/marketAnalyzer.js
+
+
+Implementações previstas
+
+1. Adaptive Confidence.
+
+
+2. Dynamic History Weight.
+
+
+3. Confidence Multiplier.
+
+
+4. Preparação para Adaptive Engine Weights.
+
+
+5. Exportação dos novos campos para Scanner e Firestore.
+
+
+6. Compatibilidade total com RMI_V1.
+
+
+
+Critérios de Aceite
+
+GitHub Actions: ✅
+
+Sem quebra de compatibilidade.
+
+Engine continua produzindo Score entre 0–100.
+
+Arquitetura preservada.
+
+Histórico passa a influenciar o Score de forma adaptativa.
+
+
+Status
+
+🟢 Sprint 06 oficialmente iniciada.
+
+Próximo arquivo: scripts/marketAnalyzer.js
+
+-------
 
 
 
