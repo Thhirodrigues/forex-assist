@@ -145,7 +145,7 @@ console.log(
 console.log("========================================");
 
     const resultado = await analisarParNovo({
-
+    
     db,
 
     par,
@@ -167,6 +167,9 @@ console.log("========================================");
     salvarOperacao
 
 });
+
+const decisao =
+    avaliarOperacao(resultado);
 
 switch (resultado) {
 
