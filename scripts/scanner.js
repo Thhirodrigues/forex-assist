@@ -43,7 +43,8 @@ const {
     getCandles
 } = require("./marketData");
 const {
-  calcularQualidade
+    calcularQualidade,
+    avaliarOperacao
 } = require("./marketAnalyzer");
 const {
     obterEstatisticasPar
