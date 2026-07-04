@@ -782,8 +782,7 @@ score += alinhamento.score;
 score += simetria.score;
 score += distancia.score;
 score += multi.score;
-score += historico.score;
-
+score += historico.pesoHistorico;
 
 // ====================================================
 // BÔNUS ADAPTATIVO
@@ -878,6 +877,12 @@ if (
     multi: multi.status,
 
     historico: historico.status,
+
+    confiabilidade: historico.confiabilidade,
+
+    pesoHistorico: historico.pesoHistorico,
+
+    confidenceMultiplier: historico.confidenceMultiplier,
 
     bonus,
 
