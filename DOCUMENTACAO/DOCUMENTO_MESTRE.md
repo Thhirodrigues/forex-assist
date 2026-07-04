@@ -3840,6 +3840,34 @@ Roadmap sugerido:
 Assim, quando iniciarmos a Sprint 07, faremos essa migração de forma planejada, preservando o que já foi construído e evoluindo o Forex Assist para um sistema que toma decisões com base em resultado financeiro real, que é exatamente o objetivo do projeto.
 
 ----------
+FALANDO SOBRE O DOCUMENTO FASE05 RMI EXPERT.
+
+Sim. Revisei o material e encontrei alguns pontos que ainda não aparecem de forma consolidada no Documento Mestre/Worklog, mas que considero importantes preservar para a continuidade da engenharia.
+
+Os principais itens são:
+
+Versionamento da Engine: a criação do campo engine: "RMI_V1" gravado no Firestore para identificar qual versão da inteligência gerou cada operação. Isso permitirá comparar estatísticas entre RMI_V1, RMI_V2 e futuras versões sem misturar resultados. 
+
+Enriquecimento da base histórica: o histórico passou a registrar contexto operacional (EMAs, tendência, situação do RSI, score, Multi-Timeframe etc.), deixando de armazenar apenas a qualidade da operação. Isso é um marco importante para futuras análises estatísticas e aprendizado.
+
+Mudança conceitual da Engine: a evolução deixou de ser "Indicadores → Score" para "Indicadores → Engine Inteligente → Score → Análise Estatística → Bônus → Penalizações → Decisão Final". Essa transição merece constar como decisão arquitetural permanente. 
+
+Histórico Inteligente: o histórico deixou de ser apenas informativo e passou a participar diretamente do cálculo do Score por meio de classificação, bônus, penalizações e confiabilidade estatística. Esse é o primeiro passo oficial da inteligência adaptativa.
+
+Centralização dos pesos: a criação do bloco ENGINE_WEIGHTS foi uma decisão de arquitetura para preparar a calibração futura dos pesos, sem alterar o comportamento da RMI V1.
+
+Separação entre cálculo e decisão: a decisão de separar o cálculo do Score da lógica de aprovação (avaliarOperacao) é um marco arquitetural importante, pois prepara a RMI V2 para incorporar gestão de risco, volatilidade e outros fatores sem alterar o Smart Scoring Engine. 
+
+Base histórica oficial: a decisão de iniciar uma nova base estatística utilizando apenas sinais produzidos pela RMI_V1 Expert deve permanecer registrada, pois garante a integridade das análises futuras.
+
+Objetivo formal da Sprint 06: a documentação define claramente que a próxima etapa será transformar a Engine em um sistema adaptativo, incluindo calibração automática dos pesos, memória estatística por ativo, confiança dinâmica, qualidade por horário, qualidade por tendência e aprendizado baseado em resultados reais. Esse conjunto deveria constar no Roadmap oficial como meta da Sprint 06. 
+
+
+Minha recomendação é não copiar todo o conteúdo do arquivo para o Documento Mestre, porque há bastante material de implementação, validação e instruções temporárias. O ideal é extrair apenas as decisões permanentes de arquitetura, os marcos da evolução da Engine e os checkpoints, mantendo o restante (logs, correções, validações e detalhes de sprint) no Worklog/Engineering. Isso mantém o Documento Mestre como um documento de governança e evita duplicação futura.
+
+------------
+
+
 
 
 
