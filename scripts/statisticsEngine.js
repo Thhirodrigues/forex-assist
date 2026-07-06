@@ -132,6 +132,14 @@ if (operacoes >= 20) {
     }
 
 }
+
+const ultimos =
+    snap.docs
+        .map(doc => doc.data())
+        .sort(
+            (a, b) =>
+                b.timestamp - a.timestamp
+        );
     
     return {
 
