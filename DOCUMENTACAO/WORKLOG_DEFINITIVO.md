@@ -1768,7 +1768,61 @@ Vamos manter esse mesmo padrão de rastreabilidade para toda nova estrutura cria
 ----------
 
 
+Perfeito. Vamos adotar esse padrão daqui para frente.
+Você está editando pelo celular e diretamente no GitHub. Então não vou mais dizer apenas "adicione isso". Vou indicar exatamente onde procurar e onde colar, usando o código que já existe como referência.
+MODO ENGENHARIA
+NÃO ALTERE NADA AINDA.
+Primeiro preciso analisar o statisticsEngine.js na versão atual, porque já fizemos várias alterações nele e não quero mandar você editar em um ponto errado novamente.
+Daqui em diante, o padrão será este:
+ARQUIVO
+scripts/statisticsEngine.js
 
+LOCALIZAR
+
+const historicoSuficiente = ...
+
+↓↓↓
+
+COLE IMEDIATAMENTE ABAIXO
+
+(código)
+
+------------------------------------------------
+
+LOCALIZAR
+
+return {
+
+↓↓↓
+
+LOCALIZAR A LINHA
+
+status,
+
+↓↓↓
+
+COLE IMEDIATAMENTE ABAIXO
+
+BUY: {
+...
+},
+
+SELL: {
+...
+},
+Ou, quando for necessário substituir:
+LOCALIZAR
+
+(código antigo)
+
+APAGAR SOMENTE ESTE BLOCO
+
+...
+
+COLAR NO LUGAR
+
+(código novo)
+Assim praticamente eliminamos o risco de editar no lugar errado.
 
 
 
