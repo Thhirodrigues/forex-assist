@@ -1630,6 +1630,142 @@ Registrar:
 Criação do primeiro package.json oficial do projeto, estabelecendo o gerenciamento padronizado de dependências Node.js e preparando a infraestrutura para utilização de bibliotecas consolidadas de indicadores técnicos.
 ------
 
+ Entendido. A partir deste checkpoint adotaremos uma regra de engenharia mais rígida.
+
+REGRA OFICIAL — EVOLUÇÃO CONTROLADA
+
+Sempre que for necessário criar uma variável, função ou objeto novo, seguiremos este fluxo:
+
+1. Justificativa
+
+Por que ela precisa existir.
+
+Qual problema resolve.
+
+
+2. Origem dos dados
+
+De onde vêm os dados.
+
+Qual arquivo produz essas informações.
+
+
+3. Dependências
+
+Quais arquivos utilizam essa variável.
+
+Quem chama a função.
+
+Quem recebe o retorno.
+
+
+4. Fluxo
+
+Arquivo A
+    ↓
+gera dados
+    ↓
+Arquivo B
+    ↓
+processa
+    ↓
+Arquivo C
+    ↓
+consome
+
+5. Impacto
+
+Nenhum arquivo afetado.
+
+Arquivos modificados.
+
+Compatibilidade com versões anteriores.
+
+
+6. Documentação Toda nova estrutura passa a ser registrada no CHANGELOG ao final do Sprint.
+
+
+---
+
+Próximo passo da Sprint 04
+
+Vamos evoluir o Statistics Engine para deixar de ser apenas um contador de WIN/LOSS e passar a produzir inteligência reutilizável.
+
+Nova estrutura
+
+statisticsEngine.js
+
+Responsável por produzir:
+
+estatisticas
+│
+├── wins
+├── loss
+├── operacoes
+├── taxaAcerto
+├── confianca
+├── status
+├── ultimos5
+├── ultimos10
+├── consistencia
+├── tendenciaRecente
+├── pesoHistorico
+├── confidenceMultiplier
+│
+├── BUY
+│     ├── wins
+│     ├── loss
+│     ├── taxa
+│
+└── SELL
+      ├── wins
+      ├── loss
+      ├── taxa
+
+
+---
+
+Quem utilizará
+
+statisticsEngine.js
+        │
+        ▼
+marketAnalyzer.js
+        │
+        ▼
+calcularAdaptiveConfidence()
+        │
+        ▼
+calcularQualidade()
+        │
+        ▼
+pairAnalyzer.js
+        │
+        ▼
+scanner.js
+
+
+---
+
+Objetivo
+
+Com isso a Engine deixará de pensar apenas:
+
+> "EURUSD possui 74% de acerto."
+
+
+
+E passará a pensar:
+
+> "EURUSD tem 74% de acerto, porém BUY possui 82%, SELL apenas 58%, os últimos 10 trades estão positivos e o histórico possui alta confiabilidade."
+
+
+
+Esse é o primeiro passo para a RMI Expert V2, em que a decisão passa a ser baseada no comportamento estatístico do próprio ativo, e não apenas nos indicadores técnicos.
+
+Vamos manter esse mesmo padrão de rastreabilidade para toda nova estrutura criada daqui em diante.
+
+----------
 
 
 
