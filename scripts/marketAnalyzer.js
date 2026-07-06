@@ -608,6 +608,8 @@ function analisarHistorico(
 
     const operacoes = estatisticas.operacoes;
     const taxa = estatisticas.taxaAcerto;
+    const ultimos5 = estatisticas.ultimos5 || [];
+    const ultimos10 = estatisticas.ultimos10 || [];
 
     const confiabilidade = Math.min(
     100,
@@ -646,6 +648,28 @@ function analisarHistorico(
 
     }
 
+let tendenciaRecente = 0;
+
+const winsRecentes =
+    ultimos5.filter(op => op.resultado === "WIN").length;
+
+const lossesRecentes =
+    ultimos5.filter(op => op.resultado === "LOSS").length;
+
+if (winsRecentes >= 4) {
+
+    tendenciaRecente = 3;
+
+}
+
+else if (lossesRecentes >= 4) {
+
+    tendenciaRecente = -3;
+
+}
+
+score += tendenciaRecente;
+  
     const pesoHistorico =
         Math.round(score * confidenceMultiplier);
 
