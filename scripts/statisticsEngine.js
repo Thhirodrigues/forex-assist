@@ -52,6 +52,16 @@ operacoesHistorico.sort((a, b) => {
 const ultimasOperacoes =
     operacoesHistorico.slice(0, 10);
 
+const historicoBUY =
+    ultimasOperacoes.filter(
+        op => op.direcao === "BUY"
+    );
+
+const historicoSELL =
+    ultimasOperacoes.filter(
+        op => op.direcao === "SELL"
+    );
+    
 ultimasOperacoes.forEach(dados => {
 
     if (dados.resultado === "WIN")
