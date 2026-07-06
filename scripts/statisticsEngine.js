@@ -74,6 +74,46 @@ ultimasOperacoes.forEach(dados => {
 
     const operacoes =
         wins + loss;
+
+    const winsBUY =
+    historicoBUY.filter(
+        op => op.resultado === "WIN"
+    ).length;
+
+const lossBUY =
+    historicoBUY.filter(
+        op => op.resultado === "LOSS"
+    ).length;
+
+const taxaBUY =
+    historicoBUY.length === 0
+        ? 0
+        : Number(
+            (
+                winsBUY * 100 /
+                historicoBUY.length
+            ).toFixed(1)
+        );
+
+const winsSELL =
+    historicoSELL.filter(
+        op => op.resultado === "WIN"
+    ).length;
+
+const lossSELL =
+    historicoSELL.filter(
+        op => op.resultado === "LOSS"
+    ).length;
+
+const taxaSELL =
+    historicoSELL.length === 0
+        ? 0
+        : Number(
+            (
+                winsSELL * 100 /
+                historicoSELL.length
+            ).toFixed(1)
+        );
 // ===================================================
 // CONFIABILIDADE DO HISTÓRICO
 // ===================================================
@@ -158,6 +198,25 @@ if (operacoes >= 20) {
     taxaAcerto,
 
     status,
+
+    BUY: {
+
+    wins: winsBUY,
+
+    loss: lossBUY,
+
+    taxaAcerto: taxaBUY
+
+},
+
+SELL: {
+
+    wins: winsSELL,
+
+    loss: lossSELL,
+
+    taxaAcerto: taxaSELL
+},
 
     ultimos5: ultimasOperacoes.slice(0, 5),
 
