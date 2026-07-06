@@ -656,6 +656,40 @@ const winsRecentes =
 const lossesRecentes =
     ultimos5.filter(op => op.resultado === "LOSS").length;
 
+const wins10 =
+    ultimos10.filter(op => op.resultado === "WIN").length;
+
+const losses10 =
+    ultimos10.filter(op => op.resultado === "LOSS").length;
+
+let consistencia = 0;
+
+if (wins10 >= 8) {
+
+    consistencia = 5;
+
+}
+
+else if (wins10 >= 6) {
+
+    consistencia = 3;
+
+}
+
+else if (losses10 >= 8) {
+
+    consistencia = -5;
+
+}
+
+else if (losses10 >= 6) {
+
+    consistencia = -3;
+
+}
+
+score += consistencia;
+
 if (winsRecentes >= 4) {
 
     tendenciaRecente = 3;
