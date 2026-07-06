@@ -872,6 +872,12 @@ const historico =
         estatisticas
     );
 
+const historicoBUY =
+    estatisticas.BUY;
+
+const historicoSELL =
+    estatisticas.SELL;
+  
 const adaptive =
     calcularAdaptiveConfidence(
         historico
