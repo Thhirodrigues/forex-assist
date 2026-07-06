@@ -715,7 +715,11 @@ score += tendenciaRecente;
 
         confiabilidade,
 
+        consistencia,
+
         pesoHistorico,
+
+        tendenciaRecente,
 
         confidenceMultiplier
 
@@ -1010,6 +1014,10 @@ if (
     multi: multi.status,
 
     historico: historico.status,
+
+    consistencia: historico.consistencia,
+
+    tendenciaRecente: historico.tendenciaRecente,
 
     confiabilidade: adaptive.confiabilidade,
 
