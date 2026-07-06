@@ -877,6 +877,24 @@ const historicoBUY =
 
 const historicoSELL =
     estatisticas.SELL;
+
+const direcaoAtual =
+    emas.tendencia;
+
+let historicoDirecao =
+    null;
+
+if (direcaoAtual === "BUY") {
+
+    historicoDirecao = historicoBUY;
+
+}
+
+else if (direcaoAtual === "SELL") {
+
+    historicoDirecao = historicoSELL;
+
+}
   
 const adaptive =
     calcularAdaptiveConfidence(
@@ -889,13 +907,37 @@ score += simetria.score;
 score += distancia.score;
 score += multi.score;
 score += adaptive.pesoHistorico;
-
+score += bonusDirecao;
   
 // ====================================================
 // BÔNUS ADAPTATIVO
 // ====================================================
 
 let bonus = 0;
+
+let bonusDirecao = 0;
+
+if (historicoDirecao) {
+
+    if (historicoDirecao.taxaAcerto >= 80) {
+
+        bonusDirecao = 5;
+
+    }
+
+    else if (historicoDirecao.taxaAcerto >= 70) {
+
+        bonusDirecao = 3;
+
+    }
+
+    else if (historicoDirecao.taxaAcerto < 50) {
+
+        bonusDirecao = -5;
+
+    }
+
+}
 
 if (historico.status === "EXCELENTE") {
 
@@ -1020,6 +1062,12 @@ if (
     multi: multi.status,
 
     historico: historico.status,
+
+    historicoBUY,
+
+    historicoSELL,
+
+    bonusDirecao,
 
     consistencia: historico.consistencia,
 
