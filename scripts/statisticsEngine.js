@@ -149,6 +149,10 @@ if (operacoes >= 20) {
 
     status
 
+    ultimos5: ultimos.slice(0, 5),
+
+    ultimos10: ultimos.slice(0, 10),
+
 };
 
 }
