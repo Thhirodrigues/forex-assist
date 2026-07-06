@@ -132,14 +132,6 @@ if (operacoes >= 20) {
     }
 
 }
-
-const ultimos =
-    snap.docs
-        .map(doc => doc.data())
-        .sort(
-            (a, b) =>
-                b.timestamp - a.timestamp
-        );
     
     return {
 
@@ -157,9 +149,9 @@ const ultimos =
 
     status,
 
-    ultimos5: ultimos.slice(0, 5),
+    ultimos5: ultimasOperacoes.slice(0, 5),
 
-    ultimos10: ultimos.slice(0, 10),
+    ultimos10: ultimasOperacoes,
 
 };
 
