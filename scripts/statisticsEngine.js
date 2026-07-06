@@ -147,7 +147,7 @@ if (operacoes >= 20) {
 
     taxaAcerto,
 
-    status
+    status,
 
     ultimos5: ultimos.slice(0, 5),
 
