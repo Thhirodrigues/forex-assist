@@ -454,6 +454,106 @@ function calcularExpectativa(
 }
 
 // ===================================================
+// ENGINE DE DECISÃO FINANCEIRA
+// ===================================================
+//
+// Responsabilidade:
+//
+// Decidir automaticamente se:
+//
+// • Mantém configuração.
+// • Reduz lote.
+// • Aumenta TP.
+// • Reduz TP.
+// • Não operar.
+//
+// Baseado em:
+//
+// • Score
+// • ADX
+// • ATR
+// • Histórico
+// • Assertividade
+// • Expectativa
+//
+// ===================================================
+
+function decidirConfiguracaoMercado({
+
+    score,
+
+    adx,
+
+    atr,
+
+    expectativa,
+
+    lote,
+
+    tpUSD,
+
+    slUSD
+
+}) {
+
+    let configuracao = {
+
+        lote,
+
+        tpUSD,
+
+        slUSD,
+
+        risco: "NORMAL",
+
+        decisao: "MANTER"
+
+    };
+
+    if (score < 80) {
+
+        configuracao.decisao = "NAO_OPERAR";
+
+        configuracao.risco = "ALTO";
+
+        return configuracao;
+
+    }
+
+    if (adx < 20) {
+
+        configuracao.lote = 0.02;
+
+        configuracao.tpUSD = 3;
+
+        configuracao.slUSD = 3;
+
+        configuracao.risco = "ALTO";
+
+        configuracao.decisao = "REDUZIR_EXPOSICAO";
+    }
+
+    if (atr < 0.0012) {
+
+        configuracao.tpUSD = 3;
+
+        configuracao.slUSD = 3;
+
+        configuracao.decisao = "MERCADO_LENTO";
+    }
+
+    if (expectativa < 0) {
+
+        configuracao.lote = 0.02;
+
+        configuracao.decisao = "EXPECTATIVA_NEGATIVA";
+    }
+
+    return configuracao;
+
+}
+
+// ===================================================
 // SIMULADOR FINANCEIRO
 // ===================================================
 
