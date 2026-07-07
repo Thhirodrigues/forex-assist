@@ -966,5 +966,213 @@ CHECKPOINT
 
 ------
 
+Sim. Pelo log, esta Sprint foi concluída com sucesso.
+
+Status da Sprint
+
+✅ Scanner executando sem erros.
+
+✅ API Resilience integrada e funcionando.
+
+✅ Money Manager integrado ao fluxo do Scanner.
+
+✅ Position Sizing operacional.
+
+✅ Validação de Perfil Financeiro integrada.
+
+✅ Engine de Decisão Financeira integrada.
+
+✅ ADX agora sendo recebido pelo Money Manager (não mais valor exclusivamente interno).
+
+✅ Nenhum erro de execução no GitHub Actions.
+
+✅ Scanner finalizado normalmente.
+
+
+
+---
+
+CHANGELOG
+
+FASE 06 — MONEY MANAGEMENT INSTITUCIONAL
+
+Sprint 04 — Integração Financeira Institucional
+
+Versão: RMI V1 Alpha
+
+Objetivo
+
+Integrar definitivamente a Engine Financeira ao Scanner principal, permitindo que a análise técnica passe também por uma avaliação institucional de risco antes da geração do sinal.
+
+
+---
+
+Arquivos alterados
+
+scripts/moneyManager.js
+
+Novidades
+
+Inclusão de Perfis Financeiros
+
+CONSERVADOR
+
+BALANCEADO
+
+AGRESSIVO
+
+
+Implementação da validação automática do perfil financeiro.
+
+Integração da Engine de Position Sizing.
+
+Integração da Engine de Decisão Financeira.
+
+Inclusão dos parâmetros:
+
+
+probabilidade
+adx
+atr
+perfil
+
+na função:
+
+analisarFinanceiro()
+
+Remoção dos valores fixos internos para ADX.
+
+Preparação da Engine para receber indicadores reais do Scanner.
+
+
+
+---
+
+scripts/pairAnalyzer.js
+
+Integração do Money Manager.
+
+Agora o Scanner envia:
+
+probabilidade
+adxAtual
+atr
+
+diretamente para:
+
+analisarFinanceiro()
+
+eliminando parte da dependência de parâmetros estáticos.
+
+
+---
+
+scripts/marketData.js
+
+Implementada a API Resilience Engine.
+
+Recursos adicionados:
+
+Retry automático
+
+Backoff exponencial
+
+Tratamento de erros 500
+
+Tratamento de erros 502
+
+Tratamento de erros 503
+
+Tratamento de erros 504
+
+Timeout configurável
+
+Continuidade automática do Scanner
+
+
+
+---
+
+Resultado
+
+Antes:
+
+Scanner interrompia após erro HTTP.
+
+
+Agora:
+
+Scanner permanece operacional mesmo diante de falhas temporárias da TwelveData.
+
+
+
+---
+
+Resultado funcional
+
+A Engine Financeira passa a participar diretamente da decisão operacional.
+
+Fluxo atual:
+
+MarketData
+        ↓
+PairAnalyzer
+        ↓
+MarketAnalyzer
+        ↓
+Expert Score
+        ↓
+MoneyManager
+        ↓
+Decision Engine
+        ↓
+Scanner
+        ↓
+Firestore
+
+
+---
+
+Situação da arquitetura
+
+Scanner ............. Integrado
+Market Analyzer ..... Integrado
+Expert Engine ....... Integrado
+Money Manager ....... Integrado
+Position Sizing ..... Integrado
+Perfil Financeiro ... Integrado
+API Resilience ...... Integrada
+
+
+---
+
+Pendências da Fase 06
+
+Substituir o ATR fixo pelo ATR calculado em tempo real.
+
+Ajustar TP e SL dinamicamente conforme volatilidade.
+
+Tornar o lote totalmente adaptativo ao risco.
+
+Incorporar volatilidade na expectativa matemática.
+
+Adicionar classificação institucional (A+, A, B, C) baseada na combinação de Score Técnico + Score Financeiro.
+
+
+
+---
+
+Status do Projeto
+
+Fase 06: Em andamento.
+
+Sprint concluída: Sprint 04 — Integração Financeira Institucional.
+
+Próxima Sprint: Sprint 05 — Volatilidade Institucional (ATR Dinâmico).
+
+Resultado: ✅ Aprovado. Projeto segue consistente e alinhado ao roadmap definido.
+
+---------
+
 
 
