@@ -567,3 +567,196 @@ CHECKPOINT
 🚀 Início oficial da Fase 06 — Money Management Institucional.
 
 -------
+MODO ENGENHEIRO
+
+Validação do Workflow: ✅ APROVADO
+
+Pelo log enviado, a integração ocorreu sem erros de execução. O scanner continuou analisando os pares, aplicando os filtros e registrando as decisões normalmente. A nova camada financeira não causou falhas aparentes.
+
+
+---
+
+CHANGELOG — FASE 06 • SPRINT 02
+
+FOREX ASSIST – REAL MONEY INTELLIGENCE (RMI)
+
+Objetivo
+
+Introduzir a primeira camada de inteligência financeira, preparando o sistema para operar com dinheiro real de forma conservadora e adaptativa.
+
+
+---
+
+Novo módulo
+
+moneyManager.js
+
+
+Responsável por:
+
+cálculo financeiro da operação;
+
+configuração padrão TP/SL;
+
+lote operacional;
+
+risco financeiro;
+
+expectativa matemática;
+
+recomendação de operação;
+
+sugestão automática de configuração quando a operação não for viável.
+
+
+
+---
+
+Integração
+
+pairAnalyzer.js
+
+Adicionado:
+
+integração com Money Manager;
+
+filtro financeiro antes da aprovação institucional;
+
+persistência das configurações financeiras;
+
+novos logs operacionais.
+
+
+
+---
+
+Dados gravados
+
+Agora cada operação salva contém também:
+
+lote;
+
+TP (USD);
+
+SL (USD);
+
+TP em pips;
+
+SL em pips;
+
+Risk/Reward;
+
+expectativa matemática;
+
+risco percentual;
+
+configuração recomendada;
+
+recomendação financeira.
+
+
+
+---
+
+Nova camada de decisão
+
+O Scanner agora valida:
+
+1. tendência;
+
+
+2. RSI;
+
+
+3. ADX;
+
+
+4. slope;
+
+
+5. alinhamento;
+
+
+6. simetria;
+
+
+7. distância das EMAs;
+
+
+8. multi-timeframe;
+
+
+9. histórico;
+
+
+10. confiança adaptativa;
+
+
+11. volatilidade (ATR);
+
+
+12. viabilidade financeira.
+
+
+
+
+---
+
+Arquitetura
+
+Nova distribuição da inteligência:
+
+marketAnalyzer.js
+
+pairAnalyzer.js
+
+moneyManager.js
+
+statisticsEngine.js
+
+riskManager.js
+
+scanner.js
+
+
+
+---
+
+Status
+
+FASE 06
+
+Sprint 02 concluído.
+
+Workflow: ✅ Sucesso
+
+Build: Estável
+
+Arquitetura: Preservada
+
+
+---
+
+Próxima etapa (Sprint 03)
+
+Implementar o Position Sizing Inteligente, permitindo que o sistema sugira automaticamente:
+
+lote ideal;
+
+TP ideal;
+
+SL ideal;
+
+risco percentual ideal;
+
+relação risco/retorno mínima aceitável;
+
+expectativa financeira em dólares por operação;
+
+bloqueio automático de operações com expectativa matemática negativa.
+
+
+Esse é o início da camada que transformará o RMI de um scanner técnico em um sistema de apoio à decisão para operações com dinheiro real.
+
+-----
+
