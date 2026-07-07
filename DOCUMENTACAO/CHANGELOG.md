@@ -759,4 +759,212 @@ bloqueio automático de operações com expectativa matemática negativa.
 Esse é o início da camada que transformará o RMI de um scanner técnico em um sistema de apoio à decisão para operações com dinheiro real.
 
 -----
+MODO ENGENHEIRO
+
+FASE 06 — SPRINT 03
+
+MÓDULO: POSITION SIZING INTELIGENTE
+
+
+---
+
+Objetivo
+
+Adicionar a primeira camada de decisão financeira institucional.
+
+A partir desta Sprint o sistema deixará de apenas dizer COMPRA ou VENDA.
+
+Ele também responderá:
+
+Vale a pena operar?
+
+Quanto arriscar?
+
+Qual lote utilizar?
+
+TP/SL atual é adequado?
+
+Existe configuração melhor?
+
+Vale reduzir o risco?
+
+Vale aumentar o TP?
+
+Melhor não operar?
+
+
+
+---
+
+Criar novo arquivo
+
+scripts/positionSizing.js
+
+
+---
+
+Estrutura do arquivo
+
+Separar exatamente nos seguintes blocos:
+
+===================================================
+FOREX ASSIST
+POSITION SIZING ENGINE
+===================================================
+
+CONFIGURAÇÕES
+
+CÁLCULO DO RISCO
+
+EXPECTATIVA MATEMÁTICA
+
+RISCO POR OPERAÇÃO
+
+SUGESTÃO DE LOTE
+
+SUGESTÃO DE TP
+
+SUGESTÃO DE SL
+
+CONFIGURAÇÃO IDEAL
+
+CLASSIFICAÇÃO FINAL
+
+EXPORTS
+
+
+---
+
+Primeira versão deverá calcular
+
+Entrada:
+
+Score
+
+ATR
+
+Confiança
+
+Taxa de acerto
+
+TP atual
+
+SL atual
+
+lote atual
+
+
+Saída:
+
+Lote recomendado
+
+TP recomendado
+
+SL recomendado
+
+Risco %
+
+Expectativa
+
+Risk Reward
+
+Status
+
+Observação
+
+
+---
+
+Regras iniciais
+
+Score < 60
+
+↓
+
+Não aumentar lote.
+
+
+---
+
+Score 60~75
+
+↓
+
+Manter lote.
+
+
+---
+
+Score > 85
+
+↓
+
+Permitir aumento moderado.
+
+
+---
+
+ATR baixo
+
+↓
+
+Reduzir TP.
+
+Reduzir lote.
+
+
+---
+
+ATR alto
+
+↓
+
+Permitir TP maior.
+
+
+---
+
+Histórico ruim
+
+↓
+
+Reduzir lote.
+
+
+---
+
+Histórico excelente
+
+↓
+
+Permitir aumento controlado.
+
+
+---
+
+Objetivo arquitetural
+
+Este módulo ficará responsável por toda decisão financeira.
+
+O pairAnalyzer apenas solicitará:
+
+const sugestao =
+    calcularPositionSizing(...);
+
+Todo o restante ficará isolado.
+
+
+---
+
+CHECKPOINT
+
+✅ Sprint 02 concluída.
+
+✅ Arquitetura preservada.
+
+▶️ Iniciando Sprint 03 — Position Sizing Engine.
+
+------
+
+
 
