@@ -11,6 +11,63 @@ const apiIndex = {
   value: 0
 };
 
+// ===================================================
+// API RESILIENCE ENGINE
+// ===================================================
+//
+// Responsabilidade:
+//
+// Garantir comunicação estável com a TwelveData.
+//
+// Recursos:
+//
+// • Retry automático
+// • Backoff progressivo
+// • Timeout
+// • Continuidade do Scanner
+//
+// ===================================================
+
+const MAX_RETRIES = 3;
+
+const RETRY_DELAY = 1000;
+
+function esperar(ms) {
+
+    return new Promise(resolve =>
+
+        setTimeout(resolve, ms)
+
+    );
+
+}
+
+function deveTentarNovamente(error) {
+
+    if (!error.response) {
+
+        return true;
+
+    }
+
+    return [
+
+        500,
+
+        502,
+
+        503,
+
+        504
+
+    ].includes(
+
+        error.response.status
+
+    );
+
+}
+
 async function getCandles(
 
     symbol,
@@ -27,12 +84,48 @@ const url =
     `&outputsize=${outputsize}` +
     `&apikey=${getApiKey(API_KEYS, apiIndex)}`;
   
-const res = await axios.get(url);
+for (let tentativa = 1; tentativa <= MAX_RETRIES; tentativa++) {
 
-  if (!res.data.values)
-    throw new Error("Sem candles");
+    try {
 
-  return res.data.values.reverse();
+        const res = await axios.get(url, {
+
+            timeout: 10000
+
+        });
+
+        if (!res.data.values) {
+
+            throw new Error("Sem candles");
+
+        }
+
+        return res.data.values.reverse();
+
+    }
+
+    catch (error) {
+
+        if (
+
+            tentativa === MAX_RETRIES ||
+
+            !deveTentarNovamente(error)
+
+        ) {
+
+            throw error;
+
+        }
+
+        await esperar(
+
+            RETRY_DELAY * tentativa
+
+        );
+
+    }
+
 }
 module.exports = {
     getCandles
