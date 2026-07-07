@@ -143,4 +143,95 @@ Próxima etapa: Integrar as novas estatísticas por direção ao marketAnalyzer.
 Acho que essa forma de registrar é a mais adequada. Ela documenta o que foi alterado, por que foi alterado, qual arquivo foi impactado e qual é o próximo passo, sem depender da nossa memória ou da janela de contexto. Isso vai facilitar muito retomar o projeto em qualquer conversa futura.
 
 ---------
+Perfeito. O workflow executou com sucesso e a integração permaneceu estável.
 
+RELATÓRIO PADRÃO — FASE 05 | SPRINT 04 | ETAPA 02
+
+Status: ✅ CONCLUÍDO
+
+Objetivo
+
+Integrar o histórico específico por direção (BUY/SELL) ao processo de decisão do Expert Engine, preparando a IA para avaliar o desempenho histórico conforme a direção da operação.
+
+Alterações realizadas
+
+Arquivo: scripts/statisticsEngine.js
+
+Adicionada separação das últimas operações por direção.
+
+Criadas estatísticas individuais para BUY.
+
+Criadas estatísticas individuais para SELL.
+
+Calculada taxa de acerto independente para cada direção.
+
+Exportadas as estruturas BUY e SELL para consumo pelo Expert Engine.
+
+
+Arquivo: scripts/marketAnalyzer.js
+
+Recebimento das estatísticas BUY e SELL.
+
+Identificação automática da direção analisada.
+
+Seleção do histórico correspondente à direção atual.
+
+Implementação do bonusDirecao.
+
+Integração do bonusDirecao ao cálculo do Score Final.
+
+Inclusão das novas informações no retorno da análise para futuras camadas da IA.
+
+
+Resultado técnico
+
+O Expert Engine agora consegue:
+
+Avaliar histórico geral.
+
+Avaliar histórico exclusivo de BUY.
+
+Avaliar histórico exclusivo de SELL.
+
+Aplicar bônus conforme desempenho histórico da direção.
+
+Aplicar penalidade quando a direção possui baixo desempenho.
+
+Manter total compatibilidade com a arquitetura existente.
+
+
+Validação
+
+✅ Workflow Manual: Aprovado.
+
+✅ Workflow Agendado: Estrutura preservada.
+
+✅ Scanner executando normalmente.
+
+✅ Nenhuma regressão identificada.
+
+✅ Compilação sem erros.
+
+
+Estado atual do projeto
+
+Fase 05 — RMI Expert
+
+Sprint 01: ✅ Concluído
+
+Sprint 02: ✅ Concluído
+
+Sprint 03: ✅ Concluído
+
+Sprint 04 — Etapa 01: ✅ Concluída
+
+Sprint 04 — Etapa 02: ✅ Concluída
+
+
+Próximo passo
+
+Sprint 04 — Etapa 03
+
+Implementar a camada de memória operacional, permitindo que o Expert Engine reconheça sequências recentes (streaks), detecte mudanças de comportamento do mercado e ajuste o peso das decisões de forma dinâmica, mantendo a arquitetura modular já estabelecida.
+
+------------
