@@ -756,6 +756,39 @@ function calcularAdaptiveConfidence(historico) {
 }
 
 // ===================================================
+// ANÁLISE DA VOLATILIDADE (ATR)
+// ===================================================
+
+function analisarATR(atr) {
+
+    if (atr >= 0.0020) {
+
+        return {
+            score: 10,
+            nivel: "ALTA"
+        };
+
+    }
+
+    if (atr >= 0.0012) {
+
+        return {
+            score: 6,
+            nivel: "NORMAL"
+        };
+
+    }
+
+    return {
+
+        score: -5,
+        nivel: "BAIXA"
+
+    };
+
+}
+
+// ===================================================
 // PESOS DA ENGINE
 // ===================================================
 
@@ -788,7 +821,8 @@ function calcularQualidade(
   ema9_15,
   ema21_15,
   ema50_15,
-  estatisticas
+  estatisticas,
+  atr
 ) {
 
   let score = 0;
@@ -900,6 +934,11 @@ const adaptive =
     calcularAdaptiveConfidence(
         historico
     );
+
+const volatilidade =
+    analisarATR(
+        atr
+    );
   
   
 // ====================================================
@@ -988,6 +1027,7 @@ score += simetria.score;
 score += distancia.score;
 score += multi.score;
 score += adaptive.pesoHistorico;
+score += volatilidade.score;
 score += bonusDirecao;
 score += memoriaOperacional;
 
@@ -1099,6 +1139,8 @@ if (
 
     historicoSELL,
 
+    volatilidade: volatilidade.nivel,
+
     bonusDirecao,
 
     memoriaOperacional,
@@ -1198,6 +1240,8 @@ module.exports = {
     analisarSimetria,
 
     analisarHistorico,
+
+    analisarATR,
 
     calcularQualidade,
 
