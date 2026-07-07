@@ -34,6 +34,12 @@
 // Arquitetura Modular
 // ===================================================
 
+const {
+
+    analisarFinanceiro
+
+} = require("./moneyManager");
+
 async function analisarPar({
     db,
     par,
@@ -151,6 +157,18 @@ const qualidade = calcularQualidade(
 );
 
 // ===================================================
+// MONEY MANAGER
+// ===================================================
+
+const financeiro =
+    analisarFinanceiro({
+
+        probabilidade:
+            estatisticas.taxaAcerto
+
+    });
+        
+// ===================================================
 // FILTRO ESTATÍSTICO
 // ===================================================
 
@@ -169,7 +187,45 @@ if (
     return "SEM_QUALIDADE";
 
 }
-        
+
+// ===================================================
+// FILTRO FINANCEIRO
+// ===================================================
+
+if (
+
+    !financeiro.recomendacao.operar
+
+) {
+
+    console.log(
+
+        "Financeiro.......REPROVADO"
+
+    );
+
+    console.log(
+
+        `Sugestão.........Lote ${financeiro.configuracaoIdeal.lote}`
+
+    );
+
+    console.log(
+
+        `TP...............$${financeiro.configuracaoIdeal.tpUSD}`
+
+    );
+
+    console.log(
+
+        `SL...............$${financeiro.configuracaoIdeal.slUSD}`
+
+    );
+
+    return "SEM_VIABILIDADE";
+
+}
+    
 // ===================================================
 // FILTRO INSTITUCIONAL
 // ===================================================
@@ -227,6 +283,28 @@ await salvarOperacao(db, {
     winsHistoricos: estatisticas.wins,
     lossHistoricos: estatisticas.loss,
     operacoesHistoricas: estatisticas.operacoes,
+    lote: financeiro.lote,
+
+tpUSD: financeiro.tpUSD,
+
+slUSD: financeiro.slUSD,
+
+tpPips: financeiro.tpPips,
+
+slPips: financeiro.slPips,
+
+rewardRisk: financeiro.rewardRisk,
+
+riscoPercentual: financeiro.riscoPercentual,
+
+expectativa: financeiro.expectativa,
+
+configuracaoIdeal:
+    financeiro.configuracaoIdeal,
+
+recomendacaoFinanceira:
+    financeiro.recomendacao.mensagem,
+    
     modo: "REAL",
     origem: "scanner",
     engine: "RMI_V1",
@@ -258,6 +336,12 @@ console.log(`Loss............${estatisticas.loss}`);
 console.log(`Operações.......${estatisticas.operacoes}`);
 console.log(`Score.............${qualidade.score}`);
 console.log(`Qualidade.........${qualidade.qualidade}`);
+console.log(`Lote............${financeiro.lote}`);
+console.log(`TP USD..........${financeiro.tpUSD}`);
+console.log(`SL USD..........${financeiro.slUSD}`);
+console.log(`Risk/Reward.....${financeiro.rewardRisk}`);
+console.log(`Expectativa.....${financeiro.expectativa}`);
+console.log(`Financeiro......${financeiro.recomendacao.mensagem}`);
 console.log("Status............SALVO");
 
 return "SALVO";
