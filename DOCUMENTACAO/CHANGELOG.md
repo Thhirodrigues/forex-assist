@@ -235,3 +235,179 @@ Sprint 04 — Etapa 03
 Implementar a camada de memória operacional, permitindo que o Expert Engine reconheça sequências recentes (streaks), detecte mudanças de comportamento do mercado e ajuste o peso das decisões de forma dinâmica, mantendo a arquitetura modular já estabelecida.
 
 ------------
+Pelas capturas, esta etapa está consistente. Vejo que:
+
+✅ analisarATR() foi criada corretamente.
+
+✅ const volatilidade = analisarATR(atr) foi adicionada.
+
+✅ score += volatilidade.score está sendo somado.
+
+✅ volatilidade: volatilidade.nivel foi incluída no retorno.
+
+✅ analisarATR foi exportada no module.exports.
+
+
+Não identifiquei nenhum erro estrutural nessa implementação.
+
+
+---
+
+CHANGELOG — FASE 05 / SPRINT 07
+
+Engine RMI V1 — Camada de Contexto de Mercado (ATR)
+
+Objetivo
+
+Adicionar consciência de volatilidade ao motor de decisão, evitando que operações sejam avaliadas apenas por tendência e histórico.
+
+
+---
+
+Arquivo alterado
+
+scripts/marketAnalyzer.js
+
+
+---
+
+Novo módulo
+
+analisarATR()
+
+Nova função responsável por classificar a volatilidade do ativo utilizando o indicador ATR.
+
+Classificações implementadas:
+
+ATR	Classificação	Score
+
+≥ 0.0020	ALTA	+10
+≥ 0.0012	NORMAL	+6
+< 0.0012	BAIXA	-5
+
+
+
+---
+
+Alterações na Smart Scoring Engine
+
+A função calcularQualidade() passou a receber um novo parâmetro:
+
+atr
+
+Foi adicionada a chamada:
+
+const volatilidade = analisarATR(atr);
+
+O resultado passou a compor o Score Inteligente:
+
+score += volatilidade.score;
+
+
+---
+
+Novo campo de retorno
+
+Agora a Engine retorna:
+
+volatilidade
+
+Valores possíveis:
+
+ALTA
+
+NORMAL
+
+BAIXA
+
+
+Esse dado ficará disponível para:
+
+Scanner
+
+Logs
+
+Firestore
+
+Dashboard
+
+IA futura
+
+
+
+---
+
+Exportações
+
+Novo export:
+
+analisarATR
+
+
+---
+
+Impacto na Engine RMI
+
+Antes:
+
+Trend
++
+RSI
++
+ADX
++
+Slope
++
+Multi-Timeframe
++
+Histórico
+
+Agora:
+
+Trend
++
+RSI
++
+ADX
++
+Slope
++
+Distância
++
+Simetria
++
+Multi-Timeframe
++
+Histórico
++
+ATR (Volatilidade)
+
+
+---
+
+Resultado esperado
+
+A Engine passa a diferenciar:
+
+mercados fortes e com expansão de preço;
+
+mercados com baixa volatilidade, reduzindo falsos sinais;
+
+tendência forte sem movimento suficiente para justificar entrada.
+
+
+
+---
+
+Status do Projeto
+
+✅ Fase 05 em andamento.
+
+✅ Sprint 07 — Etapa ATR concluída.
+
+✅ marketAnalyzer.js atualizado e documentado.
+
+⏳ Próxima etapa: integrar o cálculo do ATR em pairAnalyzer.js, para alimentar a Engine RMI com o valor real do indicador.
+
+-------
+
