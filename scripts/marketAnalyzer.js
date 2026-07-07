@@ -908,6 +908,7 @@ score += distancia.score;
 score += multi.score;
 score += adaptive.pesoHistorico;
 score += bonusDirecao;
+score += memoriaOperacional;
   
 // ====================================================
 // BÔNUS ADAPTATIVO
@@ -925,6 +926,37 @@ if (historicoDirecao) {
 
     }
 
+let memoriaOperacional = 0;
+
+if (historicoDirecao) {
+
+    const ultimos5Direcao =
+        historicoDirecao.ultimos5 || [];
+
+    const winsRecentes =
+        ultimos5Direcao.filter(
+            op => op.resultado === "WIN"
+        ).length;
+
+    const lossesRecentes =
+        ultimos5Direcao.filter(
+            op => op.resultado === "LOSS"
+        ).length;
+
+    if (winsRecentes >= 4) {
+
+        memoriaOperacional = 4;
+
+    }
+
+    else if (lossesRecentes >= 4) {
+
+        memoriaOperacional = -4;
+
+    }
+
+}
+      
     else if (historicoDirecao.taxaAcerto >= 70) {
 
         bonusDirecao = 3;
@@ -1068,6 +1100,8 @@ if (
     historicoSELL,
 
     bonusDirecao,
+
+    memoriaOperacional,
 
     consistencia: historico.consistencia,
 
