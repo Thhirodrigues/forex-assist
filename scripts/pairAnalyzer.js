@@ -164,7 +164,13 @@ const financeiro =
     analisarFinanceiro({
 
         probabilidade:
-            estatisticas.taxaAcerto
+            estatisticas.taxaAcerto,
+
+        adx:
+            adxAtual,
+
+        atr:
+            0.0015
 
     });
         
