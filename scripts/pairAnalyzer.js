@@ -41,16 +41,17 @@ const {
 } = require("./moneyManager");
 
 async function analisarPar({
-    db,
-    par,
-    estatisticas,
-    getCandles,
-    ema,
-    rsi,
-    calcularADX,
-    calcularQualidade,
-    verificarCooldown,
-    salvarOperacao
+db,
+par,
+estatisticas,
+getCandles,
+ema,
+rsi,
+calcularADX,
+calcularATR,
+calcularQualidade,
+verificarCooldown,
+salvarOperacao
 }) {
 
     try {
@@ -160,6 +161,13 @@ const qualidade = calcularQualidade(
 // MONEY MANAGER
 // ===================================================
 
+const atrAtual = calcularATR(
+    14,
+    highs,
+    lows,
+    closes
+);
+
 const financeiro =
     analisarFinanceiro({
 
@@ -170,7 +178,7 @@ const financeiro =
             adxAtual,
 
         atr:
-            0.0015
+            atrAtual
 
     });
         
