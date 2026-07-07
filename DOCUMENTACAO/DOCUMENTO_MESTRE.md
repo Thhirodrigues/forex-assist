@@ -4324,6 +4324,116 @@ Nova Regra de Ouro do Forex Assist
 Essa funcionalidade eleva o projeto de um scanner técnico para um copiloto de gestão de risco, alinhado com o objetivo do Forex Assist de operar com dinheiro real de forma disciplinada e orientada por dados.
 --------
 
+Acho que é exatamente o momento de seguir, mas com uma mudança de estratégia.
 
+Até agora construímos uma engine de análise. A partir de agora precisamos construir uma engine de decisão financeira. São coisas diferentes.
+
+Minha sugestão é dividir essa etapa em pequenos blocos, mantendo o padrão do projeto:
+
+FASE 06 — MONEY ENGINE
+
+Sprint 01 — Perfil Financeiro (próxima)
+
+Objetivo financeiro (conservador, balanceado, agressivo).
+
+Banca.
+
+Risco máximo por operação.
+
+Risco diário.
+
+Perda máxima consecutiva.
+
+
+
+---
+
+Sprint 02 — Position Sizing Inteligente
+
+Em vez de fixar lote 0,04, calcular o lote ideal.
+
+Nunca sugerir lote acima do risco permitido.
+
+Adequar ao saldo da banca.
+
+
+
+---
+
+Sprint 03 — TP/SL Inteligente
+
+O TP de US$5 deixa de ser fixo.
+
+O sistema passa a responder:
+
+"Para este mercado, TP ideal = US$3,80."
+
+"SL ideal = US$4,60."
+
+"Não vale buscar US$5 neste cenário."
+
+
+
+
+---
+
+Sprint 04 — Risk/Reward Inteligente
+
+Calcular automaticamente o R:R esperado.
+
+Rejeitar operações com R:R abaixo do mínimo definido.
+
+
+
+---
+
+Sprint 05 — Expectativa Matemática
+
+Valor esperado (EV).
+
+Expectativa por operação.
+
+Expectativa por 100 operações.
+
+Lucro esperado mensal.
+
+
+
+---
+
+Sprint 06 — Decisão Financeira Final O sistema deixa de apenas aprovar ou reprovar e passa a orientar, por exemplo:
+
+Mercado favorável.
+
+Sugestão:
+
+Lote........0.03
+TP..........US$4.20
+SL..........US$5.00
+
+Probabilidade........82%
+
+Expectativa..........+US$1.84
+
+CONFIGURAÇÃO RECOMENDADA
+
+ou
+
+Mercado tecnicamente bom.
+
+Porém...
+
+ATR baixo
+R:R ruim
+Expectativa negativa
+
+Sugestão:
+Não operar.
+
+Esse caminho atende diretamente ao objetivo que definimos desde o início: o sistema não apenas encontra sinais; ele protege o capital e recomenda a melhor forma de executar a operação.
+
+Na minha avaliação, esse é o próximo grande marco do projeto e o que mais aproxima o Forex Assist de um assistente de nível profissional para uso com dinheiro real.
+
+-------
 
 
