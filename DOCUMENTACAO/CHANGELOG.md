@@ -411,3 +411,159 @@ Status do Projeto
 
 -------
 
+MODO ENGENHEIRO
+
+FASE 06 — SPRINT 01
+
+Próximo arquivo
+
+scripts/moneyManager.js
+
+Objetivo
+
+Criar o primeiro módulo independente de Gestão Financeira Inteligente.
+
+
+---
+
+Estrutura inicial
+
+Implementar as seguintes funções:
+
+calcularValorPip()
+
+calcularTP()
+
+calcularSL()
+
+calcularRiskReward()
+
+calcularRiscoPercentual()
+
+avaliarConfiguracao()
+
+sugerirConfiguracao()
+
+simularOperacao()
+
+
+---
+
+Primeira versão deverá retornar
+
+{
+    lote,
+
+    tpUSD,
+
+    slUSD,
+
+    tpPips,
+
+    slPips,
+
+    valorPip,
+
+    riscoPercentual,
+
+    rewardRisk,
+
+    expectativa,
+
+    configuracaoIdeal,
+
+    recomendacao
+}
+
+
+---
+
+Critérios da Engine
+
+Prioridade absoluta:
+
+1. Preservação da banca.
+
+
+2. Probabilidade de execução.
+
+
+3. Expectativa matemática positiva.
+
+
+4. Consistência.
+
+
+5. Lucro.
+
+
+
+
+---
+
+Critérios para sugestão automática
+
+A Engine deverá conseguir recomendar:
+
+Redução de lote.
+
+Aumento de lote (quando justificado).
+
+Redução de TP.
+
+Aumento de TP.
+
+Ajuste proporcional de SL.
+
+Configuração personalizada para cada operação.
+
+
+
+---
+
+Integração prevista
+
+Após concluir moneyManager.js, a integração seguirá nesta ordem:
+
+1. pairAnalyzer.js
+
+
+2. marketAnalyzer.js
+
+
+3. scanner.js
+
+
+4. Logs do Scanner
+
+
+5. Firestore
+
+
+6. Dashboard
+
+
+7. Relatórios estatísticos
+
+
+
+
+---
+
+CHECKPOINT
+
+✅ Fase 05 concluída.
+
+✅ Engine RMI V1 consolidada.
+
+✅ ATR integrado.
+
+✅ Histórico adaptativo implementado.
+
+✅ Memória operacional implementada.
+
+✅ Estatísticas por direção (BUY/SELL) implementadas.
+
+🚀 Início oficial da Fase 06 — Money Management Institucional.
+
+-------
