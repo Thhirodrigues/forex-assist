@@ -684,15 +684,38 @@ function analisarFinanceiro({
             slUSD
         );
 
-    const configuracao = {
+// ===================================================
+// DECISÃO FINANCEIRA DO MERCADO
+// ===================================================
 
-        banca,
+const decisaoMercado =
+    decidirConfiguracaoMercado({
+
+        score: probabilidade,
+
+        adx: 25,
+
+        atr: 0.0015,
+
+        expectativa,
 
         lote,
 
         tpUSD,
 
-        slUSD,
+        slUSD
+
+    });
+    
+    const configuracao = {
+
+        banca,
+
+        lote: decisaoMercado.lote,
+
+        tpUSD: decisaoMercado.tpUSD,
+
+        slUSD: decisaoMercado.slUSD,
 
         tpPips,
 
@@ -766,21 +789,23 @@ const classificacaoFinanceira =
 
         ...configuracao,
 
+        decisaoMercado,
+
         perfil,
 
-validacaoPerfil,
+        validacaoPerfil,
 
         configuracaoIdeal:
     simulacao.sugestao,
 
-avaliacao:
+         avaliacao:
     simulacao.avaliacao,
 
-positionSizing,
+        positionSizing,
 
-classificacaoFinanceira,
+        classificacaoFinanceira,
 
-recomendacao
+        recomendacao
 
     };
 
