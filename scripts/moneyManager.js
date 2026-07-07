@@ -644,7 +644,11 @@ function analisarFinanceiro({
 
     probabilidade = 80,
 
-    perfil = "CONSERVADOR"
+adx = 25,
+
+atr = 0.0015,
+
+perfil = "CONSERVADOR"
 
 }) {
 
@@ -693,9 +697,9 @@ const decisaoMercado =
 
         score: probabilidade,
 
-        adx: 25,
+        adx,
 
-        atr: 0.0015,
+        atr,
 
         expectativa,
 
