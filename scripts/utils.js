@@ -1,7 +1,8 @@
 const {
     EMA,
     RSI,
-    ADX
+    ADX,
+    ATR
 } = require("technicalindicators");
 
 function getApiKey(API_KEYS, apiIndex) {
@@ -78,6 +79,24 @@ function calcularADX(
 
 }
 
+function calcularATR(periodo, highs, lows, closes) {
+
+    const resultado = ATR.calculate({
+
+        period: periodo,
+
+        high: highs,
+
+        low: lows,
+
+        close: closes
+
+    });
+
+    return resultado.at(-1) || 0;
+
+}
+
 module.exports = {
 
     getApiKey,
@@ -86,6 +105,8 @@ module.exports = {
 
     rsi,
 
-    calcularADX
+    calcularADX,
+
+    calcularATR
 
 };
