@@ -3943,7 +3943,386 @@ Próximo arquivo: scripts/marketAnalyzer.js
 
 -------
 
+MARCO OFICIAL DO PROJETO
 
+INÍCIO DA FASE 06 — MONEY MANAGEMENT INSTITUCIONAL (REAL MONEY)
+
+Esta passa a ser a fase mais importante de todo o projeto.
+
+Até agora construímos uma Engine capaz de identificar operações com maior qualidade técnica. A partir desta fase, o objetivo deixa de ser apenas encontrar sinais e passa a ser proteger capital e operar como um gestor profissional.
+
+O princípio que vai orientar todas as decisões daqui em diante será:
+
+> Nenhum sinal será considerado bom se não oferecer expectativa matemática positiva para uma operação real com TP = US$5, SL = US$5 e lote 0,04.
+
+
+
+Essa será a nova "Regra de Ouro" do Forex Assist.
+
+
+---
+
+Objetivos da Fase 06
+
+1. Engine de TP/SL Inteligente
+
+A decisão não será baseada apenas no score.
+
+Também responderá:
+
+existe espaço suficiente para atingir US$5?
+
+existe risco excessivo até o stop?
+
+a volatilidade suporta esse alvo?
+
+o ATR permite essa operação?
+
+existe liquidez suficiente?
+
+
+
+---
+
+2. Filtro de Expectativa Matemática
+
+Toda operação deverá possuir:
+
+Probabilidade elevada;
+
+Movimento esperado suficiente;
+
+Relação risco x retorno válida;
+
+Contexto favorável.
+
+
+Caso contrário:
+
+SEM SINAL
+
+Mesmo com score elevado.
+
+
+---
+
+3. Simulação Financeira
+
+A Engine começará a pensar em dólares.
+
+Exemplo:
+
+Entrada
+
+↓
+
+Movimento esperado
+
+↓
+
+Pips necessários
+
+↓
+
+Valor financeiro
+
+↓
+
+TP = +5 USD ?
+
+↓
+
+SL = -5 USD ?
+
+↓
+
+Operação aprovada
+
+
+---
+
+4. Novo Módulo
+
+Será criado um novo componente dedicado:
+
+moneyManager.js
+
+Responsabilidades:
+
+cálculo de pip value;
+
+cálculo financeiro;
+
+TP/SL;
+
+risco;
+
+expectativa;
+
+margem de segurança.
+
+
+
+---
+
+5. Novo Score
+
+Além do Score Técnico teremos:
+
+Score Financeiro;
+
+Score Operacional;
+
+Score Final.
+
+
+Uma operação só será enviada quando os três forem aprovados.
+
+
+---
+
+6. Proteção de Capital
+
+A Engine aprenderá a dizer:
+
+> "O mercado está bonito, mas hoje não vale colocar dinheiro."
+
+
+
+Esse comportamento é essencial para operar com capital real.
+
+
+---
+
+Roadmap da Fase 06
+
+Sprint 01
+
+Money Manager
+
+Valor do Pip
+
+TP/SL em dólares
+
+
+Sprint 02
+
+Distância real até TP
+
+Distância real até SL
+
+Expectativa financeira
+
+
+Sprint 03
+
+Risk Reward Inteligente
+
+
+Sprint 04
+
+Expectativa Matemática
+
+
+Sprint 05
+
+Simulador Financeiro
+
+
+Sprint 06
+
+Gestão de banca
+
+
+Sprint 07
+
+Lote dinâmico
+
+
+Sprint 08
+
+Engine de preservação de capital
+
+
+
+---
+
+Objetivo Final
+
+Ao concluir esta fase, o Forex Assist deixará de ser apenas um scanner técnico e passará a funcionar como um assistente de decisão para operações com dinheiro real, priorizando a preservação do capital e filtrando operações que não apresentem expectativa matemática favorável.
+
+Status: ✅ Fase 05 concluída e documentada.
+Próxima etapa: 🚀 Início da Fase 06 — Sprint 01: implementação do moneyManager.js com a lógica de TP/SL em US$5 para lote 0,04.
+
+-------
+
+Concordo. Na verdade, isso vai além de um simples TP/SL e transforma o Forex Assist em um assistente operacional inteligente. Eu documentaria isso como um requisito central da Fase 06.
+
+
+---
+
+NOVO MÓDULO — ADAPTIVE MONEY MANAGER (AMM)
+
+Princípio Fundamental
+
+A Engine nunca ficará presa a uma configuração fixa.
+
+Se a configuração padrão não for a mais segura ou lucrativa, ela deverá sugerir automaticamente uma alternativa baseada no contexto atual do mercado.
+
+
+---
+
+Configuração padrão do operador
+
+Lote: 0,04
+
+TP: US$5
+
+SL: US$5
+
+Essa continua sendo a configuração preferencial.
+
+
+---
+
+Caso não seja recomendada
+
+A Engine fará uma simulação completa.
+
+Exemplo:
+
+Mercado atual:
+
+Volatilidade baixa
+
+Movimento médio:
+7 pips
+
+Probabilidade:
+84%
+
+Conclusão:
+
+TP de US$5 possui baixa probabilidade de execução.
+
+Sugestão:
+
+Lote:
+0,03
+
+TP:
+US$3,80
+
+SL:
+US$3,80
+
+Probabilidade:
+93%
+
+Expectativa Matemática:
+Positiva
+
+Recomendação:
+OPERAR COM CONFIGURAÇÃO ADAPTADA
+
+
+---
+
+Caso o mercado esteja extremamente favorável
+
+A Engine também poderá recomendar aumento controlado.
+
+Exemplo:
+
+Mercado muito forte
+
+ATR elevado
+
+Histórico excelente
+
+Multi-timeframe confirmado
+
+Sugestão:
+
+Lote:
+0,05
+
+TP:
+US$6,50
+
+SL:
+US$5
+
+Risco:
+Baixo
+
+Expectativa:
+Muito positiva
+
+
+---
+
+O sistema passará a calcular
+
+Melhor lote.
+
+Melhor TP.
+
+Melhor SL.
+
+Valor financeiro esperado.
+
+Valor esperado (EV).
+
+Risco percentual da banca.
+
+Probabilidade de atingir TP.
+
+Probabilidade de atingir SL.
+
+Distância em pips.
+
+Tempo médio esperado até TP.
+
+Margem de segurança.
+
+
+
+---
+
+Nova filosofia da Engine
+
+Ela deixará de responder apenas:
+
+> "Existe sinal?"
+
+
+
+E passará a responder:
+
+> "Existe uma forma inteligente de operar este sinal?"
+
+
+
+Se existir, mostrará a melhor configuração.
+
+Se não existir, responderá:
+
+NÃO OPERAR
+
+mesmo que haja tendência.
+
+
+---
+
+Nova Regra de Ouro do Forex Assist
+
+> Nunca adaptar o mercado ao operador. Adaptar a operação ao mercado, preservando o capital e buscando a melhor expectativa matemática possível.
+
+
+
+Essa funcionalidade eleva o projeto de um scanner técnico para um copiloto de gestão de risco, alinhado com o objetivo do Forex Assist de operar com dinheiro real de forma disciplinada e orientada por dados.
+--------
 
 
 
