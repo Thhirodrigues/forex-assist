@@ -123,9 +123,8 @@ for (let tentativa = 1; tentativa <= MAX_RETRIES; tentativa++) {
             RETRY_DELAY * tentativa
 
         );
-
     }
-
+}
 }
 module.exports = {
     getCandles
