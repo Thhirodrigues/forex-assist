@@ -24,7 +24,151 @@
 // MONEY MANAGEMENT INSTITUCIONAL
 // ===================================================
 
+// ===================================================
+// PERFIL FINANCEIRO
+// ===================================================
 
+const PERFIL_FINANCEIRO = {
+
+    CONSERVADOR: {
+
+        riscoPorOperacao: 1,
+
+        riscoDiario: 3,
+
+        perdasConsecutivas: 3,
+
+        rrMinimo: 1.2,
+
+        expectativaMinima: 0
+
+    },
+
+    BALANCEADO: {
+
+        riscoPorOperacao: 2,
+
+        riscoDiario: 5,
+
+        perdasConsecutivas: 4,
+
+        rrMinimo: 1.0,
+
+        expectativaMinima: 0
+
+    },
+
+    AGRESSIVO: {
+
+        riscoPorOperacao: 3,
+
+        riscoDiario: 8,
+
+        perdasConsecutivas: 5,
+
+        rrMinimo: 1.0,
+
+        expectativaMinima: -1
+
+    }
+
+};
+
+// ===================================================
+// OBTÉM PERFIL FINANCEIRO
+// ===================================================
+
+function obterPerfilFinanceiro(
+
+    perfil = "CONSERVADOR"
+
+) {
+
+    return (
+
+        PERFIL_FINANCEIRO[perfil]
+
+        ||
+
+        PERFIL_FINANCEIRO.CONSERVADOR
+
+    );
+
+}
+
+// ===================================================
+// VALIDAÇÃO DO PERFIL FINANCEIRO
+// ===================================================
+
+function validarPerfilFinanceiro(
+
+    configuracao,
+
+    perfil
+
+) {
+
+    const regras = obterPerfilFinanceiro(
+
+        perfil
+
+    );
+
+    let aprovado = true;
+
+    const motivos = [];
+
+    if (
+
+        configuracao.riscoMaximo >
+
+        regras.riscoPorOperacao
+
+    ) {
+
+        aprovado = false;
+
+        motivos.push(
+
+            "RISCO_ACIMA_DO_PERMITIDO"
+
+        );
+
+    }
+
+    if (
+
+        configuracao.tpUSD /
+
+        configuracao.slUSD
+
+        <
+
+        regras.rrMinimo
+
+    ) {
+
+        aprovado = false;
+
+        motivos.push(
+
+            "RISK_REWARD_INSUFICIENTE"
+
+        );
+
+    }
+
+    return {
+
+        aprovado,
+
+        motivos,
+
+        regras
+
+    };
+
+}
 
 // ===================================================
 // CONFIGURAÇÕES PADRÃO
@@ -398,7 +542,9 @@ function analisarFinanceiro({
 
     slUSD = DEFAULT_CONFIG.slUSD,
 
-    probabilidade = 80
+    probabilidade = 80,
+
+    perfil = "CONSERVADOR"
 
 }) {
 
@@ -462,6 +608,16 @@ function analisarFinanceiro({
 
     };
 
+    const validacaoPerfil =
+
+    validarPerfilFinanceiro(
+
+        configuracao,
+
+        perfil
+
+    );
+    
     const simulacao =
         simularOperacao(
             configuracao
@@ -509,6 +665,10 @@ const classificacaoFinanceira =
     return {
 
         ...configuracao,
+
+        perfil,
+
+validacaoPerfil,
 
         configuracaoIdeal:
     simulacao.sugestao,
