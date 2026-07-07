@@ -52,7 +52,8 @@ const {
 const {
     ema,
     rsi,
-    calcularADX
+    calcularADX,
+    calcularATR
 } = require("./utils");
 const {
   existeCooldown: verificarCooldown,
@@ -160,6 +161,8 @@ console.log("========================================");
     rsi,
 
     calcularADX,
+
+    calcularATR,
 
     calcularQualidade,
 
