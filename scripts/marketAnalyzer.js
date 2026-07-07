@@ -901,14 +901,6 @@ const adaptive =
         historico
     );
   
-score += slope;
-score += alinhamento.score;
-score += simetria.score;
-score += distancia.score;
-score += multi.score;
-score += adaptive.pesoHistorico;
-score += bonusDirecao;
-score += memoriaOperacional;
   
 // ====================================================
 // BÔNUS ADAPTATIVO
@@ -925,6 +917,51 @@ if (historicoDirecao) {
         bonusDirecao = 5;
 
     }
+
+    else if (historicoDirecao.taxaAcerto >= 70) {
+
+        bonusDirecao = 3;
+
+    }
+
+    else if (historicoDirecao.taxaAcerto < 50) {
+
+        bonusDirecao = -5;
+
+    }
+
+}
+
+let memoriaOperacional = 0;
+
+if (historicoDirecao) {
+
+    const ultimos5Direcao =
+        historicoDirecao.ultimos5 || [];
+
+    const winsRecentes =
+        ultimos5Direcao.filter(
+            op => op.resultado === "WIN"
+        ).length;
+
+    const lossesRecentes =
+        ultimos5Direcao.filter(
+            op => op.resultado === "LOSS"
+        ).length;
+
+    if (winsRecentes >= 4) {
+
+        memoriaOperacional = 4;
+
+    }
+
+    else if (lossesRecentes >= 4) {
+
+        memoriaOperacional = -4;
+
+    }
+
+}
 
 let memoriaOperacional = 0;
 
@@ -990,6 +1027,15 @@ else if (historico.status === "BOA") {
 }
 
 score += bonus;
+
+score += slope;
+score += alinhamento.score;
+score += simetria.score;
+score += distancia.score;
+score += multi.score;
+score += adaptive.pesoHistorico;
+score += bonusDirecao;
+score += memoriaOperacional;
 
 // ====================================================
 // AJUSTE ADAPTATIVO DO HISTÓRICO
