@@ -44,7 +44,17 @@ const DEFAULT_CONFIG = {
 
 };
 
+// ===================================================
+// POSITION SIZING ENGINE
+// ===================================================
 
+const {
+
+    configurarOperacao,
+
+    classificarOperacao
+
+} = require("./positionSizing");
 
 // ===================================================
 // VALOR DO PIP
@@ -462,17 +472,55 @@ function analisarFinanceiro({
             simulacao
         );
 
+// ===================================================
+// POSITION SIZING
+// ===================================================
+
+const positionSizing =
+
+    configurarOperacao(
+
+        banca,
+
+        probabilidade,
+
+        0,
+
+        100,
+
+        probabilidade,
+
+        lote,
+
+        tpUSD,
+
+        slUSD
+
+    );
+
+const classificacaoFinanceira =
+
+    classificarOperacao(
+
+        positionSizing
+
+    );
+
     return {
 
         ...configuracao,
 
         configuracaoIdeal:
-            simulacao.sugestao,
+    simulacao.sugestao,
 
-        avaliacao:
-            simulacao.avaliacao,
+avaliacao:
+    simulacao.avaliacao,
 
-        recomendacao
+positionSizing,
+
+classificacaoFinanceira,
+
+recomendacao
 
     };
 
