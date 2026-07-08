@@ -39,22 +39,26 @@ const COOLDOWN_MINUTOS = 30;
 const {
     analisarPar: analisarParNovo
 } = require("./pairAnalyzer");
+
 const {
     getCandles
 } = require("./marketData");
+
 const {
-    calcularQualidade,
-    avaliarOperacao
+    calcularQualidade
 } = require("./marketAnalyzer");
+
 const {
     obterEstatisticasPar
 } = require("./statisticsEngine");
+
 const {
     ema,
     rsi,
     calcularADX,
     calcularATR
 } = require("./utils");
+
 const {
   existeCooldown: verificarCooldown,
   salvarOperacao
@@ -171,9 +175,6 @@ console.log("========================================");
     salvarOperacao
 
 });
-
-const decisao =
-    avaliarOperacao(resultado);
 
 switch (resultado) {
 
