@@ -29,6 +29,20 @@ const {
     calcularAdaptiveConfidence
 } = require("./historyAnalyzer");
 
+const {
+
+    calcularScoreBase,
+
+    aplicarBonusDirecao,
+
+    aplicarConfidenceLevel,
+
+    aplicarPenalidadeHistorico,
+
+    aplicarNormalizacao
+
+} = require("./scoreEngine");
+
 // ===================================================
 // ANÁLISE DAS EMAs
 // ===================================================
