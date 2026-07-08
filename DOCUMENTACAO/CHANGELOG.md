@@ -1328,6 +1328,128 @@ Estamos prontos para continuar em Modo Engenharia para a próxima etapa do roadm
 
 -------------
 
+Perfeito. Li o arquivo e ele está consistente com o final da Sprint 06. 
+
+Não vamos refatorar tudo. Vamos evoluí-lo incrementalmente.
+
+Sprint 07 — Statistics Engine V2
+
+Etapa 1 — Sequência de Wins/Loss (Streak)
+
+Essa informação será usada futuramente pelo Smart Score.
+
+
+---
+
+1. Logo após este bloco:
+
+const ultimasOperacoes =
+    operacoesHistorico.slice(0, 10);
+
+adicione exatamente:
+
+// ===================================================
+// STREAKS
+// ===================================================
+
+let winStreak = 0;
+let lossStreak = 0;
+
+for (const op of ultimasOperacoes) {
+
+    if (op.resultado === "WIN") {
+
+        if (lossStreak > 0) break;
+
+        winStreak++;
+
+    }
+
+    else if (op.resultado === "LOSS") {
+
+        if (winStreak > 0) break;
+
+        lossStreak++;
+
+    }
+
+}
+
+
+---
+
+2. No return
+
+Hoje você possui:
+
+wins,
+
+loss,
+
+operacoes,
+
+Logo abaixo de operacoes, adicione:
+
+winStreak,
+
+lossStreak,
+
+Ficando assim:
+
+wins,
+
+loss,
+
+operacoes,
+
+winStreak,
+
+lossStreak,
+
+historicoSuficiente,
+
+
+---
+
+O que muda?
+
+Antes o sistema sabia apenas:
+
+6W / 4L
+
+Agora ele saberá também:
+
+6W / 4L
+
+Win Streak = 4
+
+Loss Streak = 0
+
+ou
+
+5W / 5L
+
+Win Streak = 0
+
+Loss Streak = 3
+
+Essa informação será utilizada na próxima etapa para aumentar ou reduzir o peso estatístico do par.
+
+
+---
+
+Status
+
+✅ Arquivo: statisticsEngine.js
+
+✅ Alterações: pequenas e localizadas
+
+✅ Arquitetura: preservada
+
+⏳ Próximo teste: executar o Workflow e verificar que não há erros de compilação. Depois seguimos para a Etapa 2 da Sprint 07.
+
+-----------
+
 
 
 
