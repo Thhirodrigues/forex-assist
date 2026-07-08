@@ -1026,15 +1026,36 @@ else if (historico.status === "BOA") {
 score += bonus;
 
 score += slope;
+
 score += alinhamento.score;
+
 score += simetria.score;
+
 score += distancia.score;
+
 score += multi.score;
+
+// Histórico adaptativo
 score += adaptive.pesoHistorico;
-score += volatilidade.score;
+
+// Bônus da direção histórica
 score += bonusDirecao;
+
+// Memória operacional
 score += memoriaOperacional;
 
+// Volatilidade entra apenas como ajuste fino
+score += Math.round(volatilidade.score * 0.5);
+
+// =====================================================
+// NORMALIZAÇÃO DO SCORE
+// =====================================================
+
+score = Math.max(
+    0,
+    Math.round(score)
+);
+  
 // ====================================================
 // AJUSTE ADAPTATIVO DO HISTÓRICO
 // ====================================================
