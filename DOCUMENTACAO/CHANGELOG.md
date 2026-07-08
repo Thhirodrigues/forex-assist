@@ -1450,6 +1450,19 @@ Status
 
 -----------
 
+Changelog sugerido
+Você pode registrar:
+Sprint 07 – Statistics Engine V2 – Etapa 1
+Implementado cálculo de winStreak.
+Implementado cálculo de lossStreak.
+Adicionados novos campos ao retorno do statisticsEngine.
+Preparada a base para cálculo de Peso Estatístico.
+Workflow GitHub validado com sucesso.
+Arquitetura modular preservada.
+Nenhuma regressão identificada.
+
+--------------
+
 
 
 
