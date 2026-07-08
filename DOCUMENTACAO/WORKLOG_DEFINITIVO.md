@@ -1912,6 +1912,192 @@ Continuamos em Modo Engenharia, priorizando estabilidade, rastreabilidade e ader
 
 --------
 
+MODO ENGENHEIRO
+
+Auditoria Técnica — Reinício Oficial (baseado no repositório atualizado)
+
+Vamos retomar exatamente conforme o Documento Mestre e o Roadmap.
+
+
+---
+
+Situação Atual
+
+Engine
+
+✅ RMI_V1 funcional.
+
+✅ Scanner estável.
+
+✅ Workflow GitHub Actions validado.
+
+✅ Histórico adaptativo implementado.
+
+✅ Confidence Layer implementado.
+
+✅ Penalidades implementadas.
+
+✅ Filtro Final implementado.
+
+
+A arquitetura continua íntegra.
+
+
+---
+
+Onde estamos no Roadmap
+
+Estamos encerrando a Sprint 06.
+
+Esta Sprint tem como objetivo:
+
+estabilizar a RMI_V1;
+
+remover inconsistências;
+
+eliminar duplicidades;
+
+preparar a arquitetura para a V2.
+
+
+Não é momento de adicionar novas inteligências.
+
+
+---
+
+Primeira Auditoria
+
+A primeira revisão será concentrada em quatro arquivos:
+
+1.
+
+scripts/marketAnalyzer.js
+
+Objetivo:
+
+eliminar cálculos repetidos;
+
+separar claramente:
+
+Score Base
+
+Ajustes
+
+Penalidades
+
+Filtro Final
+
+
+
+
+---
+
+2.
+
+scripts/statisticsEngine.js
+
+Verificar se toda inteligência estatística realmente pertence a ele.
+
+Na Sprint 07 ele será o responsável por:
+
+histórico;
+
+tendência;
+
+consistência;
+
+confiança;
+
+peso adaptativo.
+
+
+
+---
+
+3.
+
+scripts/pairAnalyzer.js
+
+Verificar:
+
+chamadas repetidas;
+
+responsabilidades;
+
+fluxo do scanner.
+
+
+
+---
+
+4.
+
+scripts/scanner.js
+
+Confirmar que ele atua apenas como orquestrador:
+
+Scanner
+
+↓
+
+Pair Analyzer
+
+↓
+
+Market Analyzer
+
+↓
+
+Risk Manager
+
+↓
+
+Salvar operação
+
+Sem lógica de decisão duplicada.
+
+
+---
+
+Objetivo da Sprint 06
+
+Ao final dela teremos:
+
+código mais limpo;
+
+módulos independentes;
+
+responsabilidades bem definidas;
+
+pronto para iniciar a RMI Expert V2 na Sprint 07.
+
+
+
+---
+
+Forma de trabalho
+
+Continuaremos exatamente como fizemos nas últimas alterações:
+
+uma alteração por vez;
+
+indicar o arquivo exato;
+
+indicar o bloco;
+
+indicar aproximadamente as linhas;
+
+validar no GitHub Actions;
+
+somente depois seguir para a próxima alteração.
+
+
+Assim mantemos rastreabilidade completa e evitamos regressões antes da migração para a V2.
+
+
+-------
+
+
 
 
 
