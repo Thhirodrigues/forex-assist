@@ -1114,6 +1114,12 @@ if (historico.status === "SEM_BASE") {
 }
 
 score -= penalidade;
+
+// ===================================================
+// SCORE BASE FINAL
+// ===================================================
+
+const scoreBase = score;
   
 // ===================================================
 // CONSOLIDAÇÃO DO SCORE
@@ -1169,9 +1175,11 @@ else if (confidenceLevel === "MEDIA") {
   return {
 
     score,
+    
+    scoreBase,
 
     tendencia: emas.tendencia,
-
+    
     rsi: rsi.situacao,
 
     adx: adxInfo.forca,
@@ -1225,7 +1233,10 @@ else if (confidenceLevel === "MEDIA") {
 
 function avaliarOperacao(resultado) {
 
-    if (resultado.score < 45) {
+   const scoreFinal = resultado.score;
+   const scoreBase = resultado.scoreBase;
+   
+  if (scoreFinal < 45) {
 
         return {
             status: "REPROVADO"
