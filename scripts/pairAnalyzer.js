@@ -158,6 +158,19 @@ const qualidade = calcularQualidade(
 );
 
 // ===================================================
+// FILTRO DE CONFIANÇA
+// ===================================================
+
+if (qualidade.confidenceLevel === "BAIXA") {
+
+    console.log("Confidence.......BAIXA");
+    console.log("Status...........REPROVADO");
+
+    return "SEM_CONFIANCA";
+
+}
+        
+// ===================================================
 // MONEY MANAGER
 // ===================================================
 
