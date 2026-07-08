@@ -175,6 +175,35 @@ else if (operacoes >= 50) {
     confianca = "MÉDIA";
 
 }
+
+// ===================================================
+// PESO ESTATÍSTICO
+// ===================================================
+
+let pesoEstatistico = taxaAcerto;
+
+pesoEstatistico +=
+    Math.min(
+        operacoes,
+        50
+    ) * 0.4;
+
+pesoEstatistico +=
+    winStreak * 2;
+
+pesoEstatistico -=
+    lossStreak * 2;
+
+pesoEstatistico =
+    Math.max(
+        0,
+        Math.min(
+            100,
+            Number(
+                pesoEstatistico.toFixed(1)
+            )
+        )
+    );
     
 // ===================================================
 // CLASSIFICAÇÃO DO HISTÓRICO
@@ -227,6 +256,8 @@ if (operacoes >= 20) {
     confianca,
 
     taxaAcerto,
+
+    pesoEstatistico,
 
     status,
 
