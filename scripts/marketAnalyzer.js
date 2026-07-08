@@ -1072,6 +1072,19 @@ else if (historico.confiabilidade <= 30) {
 
 }
 
+// =====================================================
+// CONFIDENCE LAYER
+// =====================================================
+
+const confidenceScore =
+    historico.confiabilidade +
+    adaptive.pesoHistorico * 10;
+
+const confidenceLevel =
+    confidenceScore >= 90 ? "ALTA" :
+    confidenceScore >= 70 ? "MEDIA" :
+    "BAIXA";
+  
 // ===================================================
 // PENALIZAÇÕES
 // ===================================================
@@ -1179,6 +1192,8 @@ if (
     pesoHistorico: adaptive.pesoHistorico,
 
     confidenceMultiplier: adaptive.confidenceMultiplier,
+
+    confidenceLevel,
     
     bonus,
 
