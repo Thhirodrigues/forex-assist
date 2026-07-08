@@ -261,6 +261,24 @@ if (operacoes >= 10) {
 
     status,
 
+    resumo: {
+
+    historico: status,
+
+    confianca,
+
+    pesoEstatistico,
+
+    taxaAcerto,
+
+    winStreak,
+
+    lossStreak,
+
+    historicoSuficiente
+
+},
+
     BUY: {
 
     wins: winsBUY,
