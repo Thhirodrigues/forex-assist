@@ -52,6 +52,33 @@ operacoesHistorico.sort((a, b) => {
 const ultimasOperacoes =
     operacoesHistorico.slice(0, 10);
 
+// ===================================================
+// STREAKS
+// ===================================================
+
+let winStreak = 0;
+let lossStreak = 0;
+
+for (const op of ultimasOperacoes) {
+
+    if (op.resultado === "WIN") {
+
+        if (lossStreak > 0) break;
+
+        winStreak++;
+
+    }
+
+    else if (op.resultado === "LOSS") {
+
+        if (winStreak > 0) break;
+
+        lossStreak++;
+
+    }
+
+}
+    
 const historicoBUY =
     ultimasOperacoes.filter(
         op => op.direcao === "BUY"
@@ -190,6 +217,10 @@ if (operacoes >= 20) {
     loss,
 
     operacoes,
+
+    winStreak,
+
+    lossStreak,
 
     historicoSuficiente,
 
