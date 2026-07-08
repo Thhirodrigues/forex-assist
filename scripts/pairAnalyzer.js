@@ -185,7 +185,7 @@ const financeiro =
     analisarFinanceiro({
 
         probabilidade:
-            estatisticas.taxaAcerto,
+             estatisticas.resumo.taxaAcerto,
 
         adx:
             adxAtual,
@@ -307,7 +307,7 @@ await salvarOperacao(db, {
     pesoHistorico: qualidade.pesoHistorico,
     confidenceMultiplier: qualidade.confidenceMultiplier,
     confidenceLevel: qualidade.confidenceLevel,
-    taxaAcerto: estatisticas.taxaAcerto,
+    taxaAcerto: estatisticas.resumo.taxaAcerto,
     winsHistoricos: estatisticas.wins,
     lossHistoricos: estatisticas.loss,
     operacoesHistoricas: estatisticas.operacoes,
