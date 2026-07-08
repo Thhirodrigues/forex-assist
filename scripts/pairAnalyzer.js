@@ -293,6 +293,7 @@ await salvarOperacao(db, {
     confiabilidade: qualidade.confiabilidade,
     pesoHistorico: qualidade.pesoHistorico,
     confidenceMultiplier: qualidade.confidenceMultiplier,
+    confidenceLevel: qualidade.confidenceLevel,
     taxaAcerto: estatisticas.taxaAcerto,
     winsHistoricos: estatisticas.wins,
     lossHistoricos: estatisticas.loss,
@@ -344,6 +345,7 @@ console.log(`Multi TF.........${qualidade.multi}`);
 console.log(`Histórico........${qualidade.historico}`);
 console.log(`Assertividade....${estatisticas.taxaAcerto}%`);
 console.log(`Confiabilidade...${qualidade.confiabilidade}%`);
+console.log(`Confidence.......${qualidade.confidenceLevel}`);
 console.log(`Peso Histórico...${qualidade.pesoHistorico}`);
 console.log(`Wins............${estatisticas.wins}`);
 console.log(`Loss............${estatisticas.loss}`);
