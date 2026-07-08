@@ -211,7 +211,7 @@ pesoEstatistico =
 
 let status = "SEM_DADOS";
 
-if (operacoes >= 20) {
+if (operacoes >= 10) {
 
     if (taxaAcerto >= 80) {
 
