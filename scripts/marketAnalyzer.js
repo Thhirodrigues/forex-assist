@@ -1078,11 +1078,12 @@ else if (historico.confiabilidade <= 30) {
 
 const confidenceScore =
     historico.confiabilidade +
-    adaptive.pesoHistorico * 10;
+    adaptive.pesoHistorico * 20 +
+    historico.consistencia * 0.2;
 
 const confidenceLevel =
-    confidenceScore >= 90 ? "ALTA" :
-    confidenceScore >= 70 ? "MEDIA" :
+    confidenceScore >= 80 ? "ALTA" :
+    confidenceScore >= 55 ? "MEDIA" :
     "BAIXA";
   
 // ===================================================
