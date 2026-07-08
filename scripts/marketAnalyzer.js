@@ -1233,9 +1233,14 @@ else if (confidenceLevel === "MEDIA") {
 
 function avaliarOperacao(resultado) {
 
-   const scoreFinal = resultado.score;
-   const scoreBase = resultado.scoreBase;
-   
+  const scoreFinal = resultado.score;
+  const scoreBase = resultado.scoreBase;
+  const confidenceLevel = resultado.confidenceLevel;
+
+  const multi = resultado.multi;
+  const qualidade = resultado.qualidade;
+  const tendencia = resultado.tendencia;
+  
   if (scoreFinal < 45) {
 
         return {
@@ -1244,7 +1249,7 @@ function avaliarOperacao(resultado) {
 
     }
 
-    if (resultado.multi === "DIVERGENTE") {
+    if (multi === "DIVERGENTE") {
 
         return {
             status: "COOLDOWN"
@@ -1253,8 +1258,8 @@ function avaliarOperacao(resultado) {
     }
 
     if (
-        resultado.qualidade === "LATERAL" ||
-        resultado.qualidade === "CONFLITO"
+        qualidade === "LATERAL" ||
+        qualidade === "CONFLITO"
     ) {
 
         return {
@@ -1263,7 +1268,7 @@ function avaliarOperacao(resultado) {
 
     }
 
-    if (resultado.tendencia === "ALTA") {
+    if (tendencia === "ALTA") {
 
         return {
             status: "COMPRA"
