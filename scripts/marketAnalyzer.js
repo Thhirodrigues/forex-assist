@@ -18,6 +18,12 @@
 // (Reservado para configurações futuras)
 
 
+const {
+
+    avaliarOperacao
+
+} = require("./decisionEngine");
+
 // ===================================================
 // ANÁLISE DAS EMAs
 // ===================================================
@@ -1225,71 +1231,6 @@ else if (confidenceLevel === "MEDIA") {
     penalidade,
 
 };
-}
-
-// ===================================================
-// DECISÃO DA OPERAÇÃO
-// ===================================================
-
-function avaliarOperacao(resultado) {
-
-  const scoreFinal = resultado.score;
-  const scoreBase = resultado.scoreBase;
-  const confidenceLevel = resultado.confidenceLevel;
-
-  const multi = resultado.multi;
-  const qualidade = resultado.qualidade;
-  const tendencia = resultado.tendencia;
-  
-  if (scoreFinal < 45) {
-
-        return {
-            status: "REPROVADO"
-        };
-
-    }
-
-    if (multi === "DIVERGENTE") {
-
-        return {
-            status: "COOLDOWN"
-        };
-
-    }
-
-    if (
-        qualidade === "LATERAL" ||
-        qualidade === "CONFLITO"
-    ) {
-
-        return {
-            status: "SEM_SINAL"
-        };
-
-    }
-
-    if (tendencia === "ALTA") {
-
-        return {
-            status: "COMPRA"
-        };
-
-    }
-
-    if (resultado.tendencia === "BAIXA") {
-
-        return {
-            status: "VENDA"
-        };
-
-    }
-
-    return {
-
-        status: "SEM_SINAL"
-
-    };
-
 }
 
 // ===================================================
