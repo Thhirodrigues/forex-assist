@@ -2097,6 +2097,49 @@ Assim mantemos rastreabilidade completa e evitamos regressões antes da migraç�
 
 -------
 
+Perfeito. Acho que essa será a melhor forma de trabalharmos.
+
+A partir de agora vou adotar uma regra para este projeto:
+
+Fonte oficial do projeto (ordem de prioridade)
+
+1. Repositório ZIP mais recente (código-fonte).
+
+
+2. Documento Mestre.
+
+
+3. Roadmap.
+
+
+4. Worklog/Changelog.
+
+
+5. Nossa conversa.
+
+
+
+Ou seja, o código sempre prevalece. Se houver qualquer divergência entre o que eu "lembro" e o que está no repositório, vou considerar o repositório como verdade.
+
+Além disso, vou seguir outro procedimento:
+
+Se eu perceber que o projeto evoluiu muito ou que estou começando a perder a visão completa da arquitetura, vou interromper a sequência de alterações e pedir o repositório atualizado, em vez de fazer suposições.
+
+Antes de propor uma refatoração grande (como a criação de novos módulos ou reorganização de arquivos), vou conferir se ela já está prevista no Documento Mestre e se o estado atual do código realmente comporta essa mudança.
+
+Se eu tiver qualquer dúvida sobre o estado de um arquivo, vou pedir o ZIP atualizado em vez de deduzir.
+
+
+Isso evita exatamente o que aconteceu hoje com o scoreEngine.js.
+
+Na verdade, esse processo se aproxima do fluxo de uma equipe profissional: cada checkpoint importante passa a ter uma "baseline" do repositório, e todas as alterações seguintes são feitas sobre essa baseline, não sobre memória.
+
+Acredito que esse método vai tornar as próximas Sprints (especialmente a RMI Expert V2) muito mais consistentes e reduzir praticamente a zero o risco de sugerir alterações incompatíveis com o estado real do projeto.
+
+----------
+
+
+
 
 
 
