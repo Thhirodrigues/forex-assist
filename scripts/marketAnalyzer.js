@@ -1148,6 +1148,22 @@ if (
 ) {
     score -= 10;
 } 
+
+// ===============================================
+// FILTRO FINAL DE CONFIANÇA
+// ===============================================
+
+if (confidenceLevel === "BAIXA") {
+
+    score -= 5;
+
+}
+
+else if (confidenceLevel === "MEDIA") {
+
+    score -= 2;
+
+}
   
   return {
 
