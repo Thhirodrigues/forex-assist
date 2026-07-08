@@ -4436,4 +4436,329 @@ Na minha avaliação, esse é o próximo grande marco do projeto e o que mais ap
 
 -------
 
+Perfeito. Concordo com a pausa para documentação. Já acumulamos alterações suficientes para justificar um novo checkpoint. Abaixo está o relatório em formato padrão, pronto para copiar para o WORKLOG e para o Documento Mestre.
+
+
+---
+
+FOREX ASSIST – WORKLOG
+
+Fase 05 – Sprint 06
+
+Relatório de Evolução – Motor RMI_V1
+
+Status: Em andamento
+
+Resultado Geral: O motor RMI_V1 evoluiu da simples soma de indicadores para um sistema com múltiplas camadas de decisão, incluindo histórico adaptativo, memória operacional e camada de confiança.
+
+
+---
+
+Alterações implementadas
+
+1. Histórico Adaptativo
+
+Implementado cálculo baseado em:
+
+confiabilidade histórica;
+
+quantidade de operações;
+
+consistência;
+
+tendência recente.
+
+
+Novos parâmetros:
+
+pesoHistorico
+
+confidenceMultiplier
+
+
+Objetivo:
+
+Permitir que o histórico influencie o Score de forma proporcional à qualidade dos dados.
+
+
+---
+
+2. Direção Histórica
+
+Criada comparação entre:
+
+direção atual
+
+histórico BUY
+
+histórico SELL
+
+
+Novos retornos:
+
+historicoBUY
+
+historicoSELL
+
+bonusDirecao
+
+
+Objetivo:
+
+Recompensar operações alinhadas ao comportamento histórico do ativo.
+
+
+---
+
+3. Memória Operacional
+
+Implementado bônus institucional quando:
+
+tendência histórica;
+
+direção atual;
+
+comportamento recente
+
+
+apontam para a mesma direção.
+
+Novo parâmetro:
+
+memoriaOperacional
+
+
+---
+
+4. Camada de Bônus
+
+Criados bônus variáveis utilizando:
+
+Histórico Excelente
+
+Histórico Bom
+
+
+ponderados por:
+
+confidenceMultiplier
+
+Objetivo:
+
+Históricos confiáveis passam a aumentar o Score mais do que históricos pequenos.
+
+
+---
+
+5. Volatilidade
+
+A volatilidade deixou de ser decisiva.
+
+Agora funciona apenas como:
+
+Ajuste fino do Score.
+
+
+---
+
+6. Confidence Layer
+
+Implementado novo conceito:
+
+confidenceLevel
+
+Classificações:
+
+ALTA
+
+MEDIA
+
+BAIXA
+
+
+Baseado em:
+
+confiabilidade;
+
+peso histórico;
+
+consistência.
+
+
+
+---
+
+7. Penalidades
+
+Criada camada de penalização institucional.
+
+São descontados pontos quando:
+
+Multi TF divergente;
+
+Histórico ruim.
+
+
+Novo campo:
+
+penalidade
+
+
+---
+
+8. Filtro Institucional
+
+Implementado filtro capaz de rejeitar operações com:
+
+Confidence BAIXA.
+
+Resultado:
+
+Grande redução das operações de baixa qualidade.
+
+
+---
+
+9. Calibração do Confidence
+
+Após os primeiros testes foi observado excesso de rigidez.
+
+Foram alterados:
+
+cálculo do Confidence Score;
+
+limites entre ALTA, MEDIA e BAIXA.
+
+
+Objetivo:
+
+Evitar eliminar históricos considerados bons.
+
+
+---
+
+10. Exportação de Dados
+
+O retorno de calcularQualidade() passou a fornecer também:
+
+confidenceLevel
+
+bonus
+
+penalidade
+
+memoriaOperacional
+
+bonusDirecao
+
+confidenceMultiplier
+
+pesoHistorico
+
+consistencia
+
+tendenciaRecente
+
+
+Permitindo auditoria completa do motor.
+
+
+---
+
+Testes realizados
+
+Diversos Workflows executados.
+
+Resultados observados:
+
+compilação sem erros;
+
+nenhuma exceção JavaScript;
+
+scanner estável;
+
+tempo médio entre 7 e 10 segundos;
+
+filtros respondendo corretamente às alterações.
+
+
+
+---
+
+Problema identificado
+
+Durante os testes foi observado:
+
+Históricos classificados como:
+
+7W / 3L
+
+Confiabilidade BOM
+
+
+ainda não chegam à decisão final.
+
+Isso indica que o gargalo deixou de ser o Confidence Layer e passou para outra etapa da cadeia de decisão.
+
+
+---
+
+Próxima etapa
+
+Será realizada auditoria completa do fluxo de decisão.
+
+Objetivo:
+
+Descobrir exatamente qual módulo está descartando operações após a aprovação do histórico.
+
+A auditoria deverá analisar:
+
+Score parcial;
+
+EMAs;
+
+RSI;
+
+ADX;
+
+Slope;
+
+Alinhamento;
+
+Simetria;
+
+Distância;
+
+Multi TF;
+
+Financeiro;
+
+Decisão Final.
+
+
+
+---
+
+Status do Sprint
+
+Arquitetura: Estável.
+
+Compilação: Aprovada.
+
+Workflow GitHub: Aprovado.
+
+Motor RMI_V1: Operacional.
+
+Próximo Sprint: Auditoria completa da árvore de decisão e calibração fina dos filtros institucionais.
+
+
+---
+
+Na minha avaliação, este já é um marco importante do projeto. O RMI_V1 deixou de ser um simples somador de indicadores e passou a funcionar como um motor de decisão em camadas, aproximando-se do comportamento analítico que foi definido para o Forex Assist.
+
+------------
+
+
+
+
 
