@@ -585,25 +585,19 @@ function analisarHistorico(
     estatisticas
 ) {
 
-    if (
-        !estatisticas ||
-        estatisticas.operacoes < 20
-    ) {
+    if (!estatisticas) {
 
-        return {
+    return {
 
-            score: 0,
+        score: 0,
+        status: "SEM_DADOS",
+        confiabilidade: 0,
+        consistencia: 0,
+        pesoHistorico: 0,
+        tendenciaRecente: 0,
+        confidenceMultiplier: 0
 
-            status: "SEM_BASE",
-
-            confiabilidade: 0,
-
-            pesoHistorico: 0,
-
-            confidenceMultiplier: 0
-
-        };
-
+    };
     }
 
     const operacoes = estatisticas.operacoes;
@@ -912,9 +906,19 @@ const historicoBUY =
 const historicoSELL =
     estatisticas.SELL;
 
-const direcaoAtual =
-    emas.tendencia;
+let direcaoAtual = null;
 
+if (emas.tendencia === "ALTA") {
+
+    direcaoAtual = "BUY";
+
+}
+
+else if (emas.tendencia === "BAIXA") {
+
+    direcaoAtual = "SELL";
+
+}
 let historicoDirecao =
     null;
 
