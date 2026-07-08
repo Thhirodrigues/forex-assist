@@ -3,7 +3,13 @@
 // Forex Assist - RMI V2
 // ======================================================
 
-const ENGINE_WEIGHTS = require("./engineWeights");
+const ENGINE_WEIGHTS = {
+    BONUS_EXCELENTE: 5,
+    BONUS_BOA: 3,
+    PENALIDADE_RUIM: 10,
+    PENALIDADE_SEM_BASE: 5,
+    PENALIDADE_DIVERGENCIA: 10
+};
 
 // ======================================================
 // SCORE BASE
