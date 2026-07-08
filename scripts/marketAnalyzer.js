@@ -925,114 +925,12 @@ else if (historico.confiabilidade <= 30) {
 
 }
 
-// =====================================================
-// CONFIDENCE LAYER
-// =====================================================
-
-const confidenceScore =
-    historico.confiabilidade +
-    adaptive.pesoHistorico * 20 +
-    historico.consistencia * 0.2;
-
-const confidenceLevel =
-    confidenceScore >= 80 ? "ALTA" :
-    confidenceScore >= 55 ? "MEDIA" :
-    "BAIXA";
-  
-// ===================================================
-// PENALIZAÇÕES
-// ===================================================
-
-let penalidade = 0;
-
-if (multi.status === "DIVERGENTE") {
-
-    penalidade +=
-        ENGINE_WEIGHTS.PENALIDADE_DIVERGENCIA;
-
-}
-
-if (historico.status === "RUIM") {
-
-    penalidade +=
-        ENGINE_WEIGHTS.PENALIDADE_RUIM;
-
-}
-
-if (historico.status === "SEM_BASE") {
-
-    penalidade +=
-        ENGINE_WEIGHTS.PENALIDADE_SEM_BASE;
-
-}
-
-score -= penalidade;
-
-// ===================================================
-// SCORE BASE FINAL
-// ===================================================
-
-const scoreBase = score;
-  
-// ===================================================
-// CONSOLIDAÇÃO DO SCORE
-// ===================================================
-
-// Evita que bônus excessivos distorçam o Score.
-
-if (score > 100) {
-    score = 100;
-}
-
-if (score < 0) {
-    score = 0;
-}
-  
-if (
-    tendencia15 === "ALTA" &&
-    emas.tendencia === "ALTA"
-) {
-    score += 5;
-}
-
-if (
-    tendencia15 === "BAIXA" &&
-    emas.tendencia === "BAIXA"
-) {
-    score += 5;
-}
-
-if (
-    tendencia15 !== "LATERAL" &&
-    tendencia15 !== emas.tendencia
-) {
-    score -= 10;
-} 
-
-// ===============================================
-// FILTRO FINAL DE CONFIANÇA
-// ===============================================
-
-if (confidenceLevel === "BAIXA") {
-
-    score -= 5;
-
-}
-
-else if (confidenceLevel === "MEDIA") {
-
-    score -= 2;
-
-}
-  
-  return {
+return {
 
     score,
-    
-    scoreBase,
 
     tendencia: emas.tendencia,
-    
+
     rsi: rsi.situacao,
 
     adx: adxInfo.forca,
@@ -1063,21 +961,10 @@ else if (confidenceLevel === "MEDIA") {
 
     consistencia: historico.consistencia,
 
-    tendenciaRecente: historico.tendenciaRecente,
-
-    confiabilidade: adaptive.confiabilidade,
-
-    pesoHistorico: adaptive.pesoHistorico,
-
-    confidenceMultiplier: adaptive.confidenceMultiplier,
-
-    confidenceLevel,
-    
-    bonus,
-
-    penalidade,
+    tendenciaRecente: historico.tendenciaRecente
 
 };
+
 }
 
 // ===================================================
