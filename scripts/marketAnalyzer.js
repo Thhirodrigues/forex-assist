@@ -897,17 +897,10 @@ score = calcularScoreBase(score);
 // AJUSTE ADAPTATIVO DO HISTÓRICO
 // ====================================================
 
-if (historico.confiabilidade >= 90) {
-
-    score += 2;
-
-}
-
-else if (historico.confiabilidade <= 30) {
-
-    score -= 2;
-
-}
+score = aplicarConfidenceLevel(
+    score,
+    historico
+);
 
 return {
 
