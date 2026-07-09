@@ -4758,6 +4758,209 @@ Na minha avaliação, este já é um marco importante do projeto. O RMI_V1 deixo
 
 ------------
 
+😂 Concordo. Para um fluxo de engenharia moderno, isso deveria ser um commit automático. Enquanto essa limitação existir, vamos deixar o processo o mais enxuto possível.
+
+Segue o texto pronto para copiar e colar no final do DOCUMENTACAO/DOCUMENTO_MESTRE.md.
+
+
+---
+
+DECISÃO DE ENGENHARIA Nº 018
+
+Padronização do Fluxo de Desenvolvimento e Continuidade
+
+Data: Julho/2026
+
+Fase: 05 — RMI V2
+
+Sprint: 07
+
+
+---
+
+Objetivo
+
+Padronizar oficialmente o fluxo de desenvolvimento do Forex Assist visando:
+
+preservar a arquitetura;
+
+reduzir retrabalho;
+
+acelerar a implementação;
+
+eliminar perda de contexto entre conversas.
+
+
+
+---
+
+Repositório Oficial
+
+Durante esta conversa, a fonte oficial da verdade passa a ser exclusivamente:
+
+Repositório GitHub
+
+Thhirodrigues/forex-assist
+
+Arquivos locais, ZIPs e versões anteriores passam a ser utilizados apenas quando necessários para auditoria ou recuperação.
+
+
+---
+
+Documentação Oficial
+
+Toda documentação deste projeto está centralizada em:
+
+DOCUMENTACAO/
+
+Arquivos oficiais:
+
+DOCUMENTO_MESTRE.md
+
+WORKLOG_DEFINITIVO.md
+
+CHANGELOG.md
+
+ENGINEERING.md
+
+
+
+---
+
+Fluxo Oficial de Engenharia
+
+Toda alteração deverá seguir obrigatoriamente a sequência:
+
+Auditoria
+
+↓
+
+Implementação
+
+↓
+
+Commit
+
+↓
+
+Workflow GREEN
+
+↓
+
+Documentação
+
+↓
+
+Próxima Etapa
+
+Nenhuma alteração estrutural poderá ser considerada concluída antes da validação do Workflow.
+
+
+---
+
+Atualização da Documentação
+
+Sempre que uma Sprint for concluída, ou quando a janela de contexto estiver próxima do limite, deverão ser atualizados:
+
+DOCUMENTO_MESTRE
+
+WORKLOG_DEFINITIVO
+
+CHANGELOG
+
+ENGINEERING (quando houver decisões técnicas relevantes)
+
+
+Cada atualização deverá conter obrigatoriamente:
+
+Sprint atual
+
+Arquivos modificados
+
+Decisões arquiteturais
+
+Commits relevantes
+
+Resultado dos Workflows
+
+Estado atual da implementação
+
+Próximo objetivo definido
+
+
+
+---
+
+Regra de Contexto por Projeto
+
+Cada conversa representa exclusivamente o projeto ao qual pertence.
+
+Para esta conversa:
+
+Projeto:
+
+Forex Assist
+
+Repositório Oficial:
+
+Thhirodrigues/forex-assist
+
+Arquitetura oficial:
+
+RMI V2
+
+Documento Mestre:
+
+DOCUMENTACAO/DOCUMENTO_MESTRE.md
+
+Roadmap:
+
+FASE 05
+
+É expressamente proibido reutilizar documentação, arquitetura, decisões ou repositórios de outros projetos.
+
+Cada projeto possuirá seu próprio contexto de engenharia.
+
+
+---
+
+Procedimento de Continuidade
+
+Quando houver necessidade de iniciar uma nova conversa, deverá ser registrada documentação suficiente para permitir continuidade imediata do desenvolvimento sem perda de contexto.
+
+O novo contexto deverá permitir retomar exatamente do último ponto validado.
+
+
+---
+
+Objetivo Estratégico
+
+A partir desta decisão, o desenvolvimento do Forex Assist passa a seguir um fluxo incremental orientado por auditoria, mantendo:
+
+arquitetura consistente;
+
+responsabilidade única por módulo;
+
+rastreabilidade completa das alterações;
+
+documentação sincronizada;
+
+Workflows permanentemente em estado GREEN.
+
+
+
+---
+
+STATUS: ✅ APROVADO
+
+Vigência: Imediata.
+
+
+---
+
+Na minha avaliação, essa passa a ser uma das decisões mais importantes do projeto. Ela formaliza o nosso método de trabalho e deve reduzir significativamente o retrabalho e a perda de contexto durante o restante do desenvolvimento da RMI V2.
+
+----------
 
 
 
