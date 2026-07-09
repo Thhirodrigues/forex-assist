@@ -103,10 +103,7 @@ function aplicarPenalidadeHistorico(
 
 function aplicarNormalizacao(score) {
 
-    score = Math.max(
-        0,
-        Math.round(score)
-    );
+    score = Math.round(score);
 
     if (score > 100) {
         score = 100;
