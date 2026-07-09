@@ -876,6 +876,14 @@ score += bonusDirecao;
 // Memória operacional
 score += memoriaOperacional;
 
+const penalidade =
+    aplicarPenalidadeHistorico(
+        historico,
+        multi
+    );
+
+score -= penalidade;
+
 // Volatilidade entra apenas como ajuste fino
 score += Math.round(volatilidade.score * 0.5);
 
