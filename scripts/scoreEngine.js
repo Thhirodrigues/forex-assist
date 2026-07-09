@@ -31,40 +31,25 @@ function calcularScoreBase(score) {
 // BÔNUS DE ALINHAMENTO
 // ======================================================
 
-function aplicarBonusDirecao(
-    score,
-    tendencia15,
-    tendenciaEMA
-) {
+function aplicarBonusDirecao(historicoDirecao) {
 
-    if (
-        tendencia15 === "ALTA" &&
-        tendenciaEMA === "ALTA"
-    ) {
-
-        score += 5;
-
+    if (!historicoDirecao) {
+        return 0;
     }
 
-    if (
-        tendencia15 === "BAIXA" &&
-        tendenciaEMA === "BAIXA"
-    ) {
-
-        score += 5;
-
+    if (historicoDirecao.taxaAcerto >= 80) {
+        return 5;
     }
 
-    if (
-        tendencia15 !== "LATERAL" &&
-        tendencia15 !== tendenciaEMA
-    ) {
-
-        score -= 10;
-
+    if (historicoDirecao.taxaAcerto >= 70) {
+        return 3;
     }
 
-    return score;
+    if (historicoDirecao.taxaAcerto < 50) {
+        return -5;
+    }
+
+    return 0;
 
 }
 
