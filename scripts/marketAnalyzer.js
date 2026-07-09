@@ -804,29 +804,8 @@ const volatilidade =
 
 let bonus = 0;
 
-let bonusDirecao = 0;
-
-if (historicoDirecao) {
-
-    if (historicoDirecao.taxaAcerto >= 80) {
-
-        bonusDirecao = 5;
-
-    }
-
-    else if (historicoDirecao.taxaAcerto >= 70) {
-
-        bonusDirecao = 3;
-
-    }
-
-    else if (historicoDirecao.taxaAcerto < 50) {
-
-        bonusDirecao = -5;
-
-    }
-
-}
+const bonusDirecao =
+    aplicarBonusDirecao(historicoDirecao);
 
 let memoriaOperacional = 0;
 
