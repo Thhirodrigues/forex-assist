@@ -904,10 +904,7 @@ score += Math.round(volatilidade.score * 0.5);
 // NORMALIZAÇÃO DO SCORE
 // =====================================================
 
-score = Math.max(
-    0,
-    Math.round(score)
-);
+score = calcularScoreBase(score);
   
 // ====================================================
 // AJUSTE ADAPTATIVO DO HISTÓRICO
