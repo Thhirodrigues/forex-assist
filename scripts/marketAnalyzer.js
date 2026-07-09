@@ -37,9 +37,8 @@ const {
 
     aplicarConfidenceLevel,
 
-    aplicarPenalidadeHistorico,
+    aplicarPenalidadeHistorico
 
-    aplicarNormalizacao
 
 } = require("./scoreEngine");
 
