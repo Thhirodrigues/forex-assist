@@ -59,19 +59,15 @@ function aplicarBonusDirecao(historicoDirecao) {
 
 function aplicarConfidenceLevel(
     score,
-    confidenceLevel
+    historico
 ) {
 
-    if (confidenceLevel === "BAIXA") {
-
-        score -= 5;
-
+    if (historico.confiabilidade >= 90) {
+        score += 2;
     }
 
-    else if (confidenceLevel === "MEDIA") {
-
+    else if (historico.confiabilidade <= 30) {
         score -= 2;
-
     }
 
     return score;
