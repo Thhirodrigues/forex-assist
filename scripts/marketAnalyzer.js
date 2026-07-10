@@ -35,10 +35,13 @@ const {
 
     aplicarBonusDirecao,
 
+    aplicarBonusHistorico,
+
     aplicarConfidenceLevel,
 
-    aplicarPenalidadeHistorico
+    aplicarPenalidadeHistorico,
 
+    aplicarNormalizacao
 
 } = require("./scoreEngine");
 
@@ -800,61 +803,7 @@ const volatilidade =
 // ====================================================
 // BÔNUS ADAPTATIVO
 // ====================================================
-
-let bonus = 0;
-
-const bonusDirecao =
-    aplicarBonusDirecao(historicoDirecao);
-
-let memoriaOperacional = 0;
-
-if (historicoDirecao) {
-
-    const ultimos5Direcao =
-        historicoDirecao.ultimos5 || [];
-
-    const winsRecentes =
-        ultimos5Direcao.filter(
-            op => op.resultado === "WIN"
-        ).length;
-
-    const lossesRecentes =
-        ultimos5Direcao.filter(
-            op => op.resultado === "LOSS"
-        ).length;
-
-    if (winsRecentes >= 4) {
-
-        memoriaOperacional = 4;
-
-    }
-
-    else if (lossesRecentes >= 4) {
-
-        memoriaOperacional = -4;
-
-    }
-}
-
-if (historico.status === "EXCELENTE") {
-
-    bonus += Math.round(
-        ENGINE_WEIGHTS.BONUS_EXCELENTE *
-        historico.confidenceMultiplier
-    );
-
-}
-
-else if (historico.status === "BOA") {
-
-    bonus += Math.round(
-        ENGINE_WEIGHTS.BONUS_BOA *
-        historico.confidenceMultiplier
-    );
-
-}
-
-score += bonus;
+score += aplicarBonusHistorico(historico);
 
 score += slope;
 
