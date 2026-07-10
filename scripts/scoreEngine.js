@@ -27,29 +27,33 @@ function calcularScoreBase(score) {
 
 }
 
-// ======================================================
-// BÔNUS DE ALINHAMENTO
-// ======================================================
+// ===================================================
+// BÔNUS DO HISTÓRICO
+// ===================================================
 
-function aplicarBonusDirecao(historicoDirecao) {
+function aplicarBonusHistorico(historico) {
 
-    if (!historicoDirecao) {
-        return 0;
+    let bonus = 0;
+
+    if (historico.status === "EXCELENTE") {
+
+        bonus += Math.round(
+            ENGINE_WEIGHTS.BONUS_EXCELENTE *
+            historico.confidenceMultiplier
+        );
+
     }
 
-    if (historicoDirecao.taxaAcerto >= 80) {
-        return 5;
+    else if (historico.status === "BOA") {
+
+        bonus += Math.round(
+            ENGINE_WEIGHTS.BONUS_BOA *
+            historico.confidenceMultiplier
+        );
+
     }
 
-    if (historicoDirecao.taxaAcerto >= 70) {
-        return 3;
-    }
-
-    if (historicoDirecao.taxaAcerto < 50) {
-        return -5;
-    }
-
-    return 0;
+    return bonus;
 
 }
 
@@ -110,6 +114,8 @@ module.exports = {
     calcularScoreBase,
 
     aplicarBonusDirecao,
+
+    aplicarBonusHistorico,
 
     aplicarConfidenceLevel,
 
