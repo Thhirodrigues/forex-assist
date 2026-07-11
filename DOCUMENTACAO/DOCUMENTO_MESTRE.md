@@ -5203,3 +5203,64 @@ Em seguida, iniciamos oficialmente a Sprint 07 – Risk Intelligence Engine, des
 Essa sequência reduz o risco de regressões e mantém a evolução alinhada com o Documento Mestre e o roadmap que estamos seguindo.
 
 --------
+FASE 05
+SPRINT 07
+DECISÕES DE ARQUITETURA
+
+# DECISÃO DE ARQUITETURA
+Data: 11/07/2026
+
+## Separação do módulo de risco
+
+Durante a implementação da RMI V2 foi identificado que já existia o arquivo:
+
+scripts/riskManager.js
+
+Esse módulo possui responsabilidade operacional, contendo:
+
+- existeCooldown()
+- salvarOperacao()
+
+Seu objetivo é controlar cooldown das operações e persistir dados no Firestore.
+
+Foi decidido NÃO reutilizar esse arquivo para a nova inteligência de risco da RMI V2.
+
+### Motivo
+
+Seguir o princípio de responsabilidade única (Single Responsibility Principle).
+
+### Nova arquitetura
+
+riskManager.js
+Responsável por:
+- Cooldown
+- Persistência das operações
+
+riskEngine.js
+Responsável por:
+- Cálculo de lote
+- TP
+- SL
+- Relação risco x retorno
+- Gestão da banca
+- Recomendação operacional da RMI V2
+
+Essa separação evita acoplamento, facilita manutenção e permite evolução independente dos módulos.
+
+STATUS:
+
+------------
+A pasta scripts agora está assim (entre os principais módulos):
+✅ marketAnalyzer.js → inteligência técnica do mercado
+✅ decisionEngine.js → decisão final BUY/SELL
+✅ historyAnalyzer.js → histórico
+✅ scoreEngine.js → cálculo do score
+✅ riskManager.js → persistência e cooldown
+✅ riskEngine.js → gestão de risco (novo)
+✅ positionSizing.js → cálculo de lote
+✅ moneyManager.js → gerenciamento da banca
+✅ statisticsEngine.js → estatísticas
+
+------------
+
+
