@@ -357,7 +357,7 @@ console.log(`Simetria.........${qualidade.simetria}`);
 console.log(`Distância........${qualidade.distancia}`);
 console.log(`Multi TF.........${qualidade.multi}`);
 console.log(`Histórico........${qualidade.historico}`);
-console.log(`Assertividade....${estatisticas.taxaAcerto}%`);
+console.log(`Assertividade....${estatisticas.resumo.taxaAcerto}%`);
 console.log(`Confiabilidade...${qualidade.confiabilidade}%`);
 console.log(`Confidence.......${qualidade.confidenceLevel}`);
 console.log(`Peso Histórico...${qualidade.pesoHistorico}`);
