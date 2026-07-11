@@ -64,6 +64,10 @@ const {
   salvarOperacao
 } = require("./riskManager");
 
+const {
+    calcularRisco
+} = require("./riskEngine");
+
 const pares = [
   "EUR/USD",
   "GBP/USD",
