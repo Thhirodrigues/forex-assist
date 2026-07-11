@@ -203,7 +203,15 @@ if (
         slBase: resultado.operacao.slUSD
 
     });
-
+console.log("========== RMI V2 ==========");
+console.log(`Lote..............${risco.lote}`);
+console.log(`TP................${risco.tpUSD} USD`);
+console.log(`SL................${risco.slUSD} USD`);
+console.log(`Risco.............${risco.riscoPercentual}%`);
+console.log(`R/R...............${risco.rewardRisk}`);
+console.log(`Expectativa.......${risco.expectativa}`);
+console.log("============================");
+  
 }
 
 switch (
