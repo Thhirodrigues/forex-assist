@@ -5527,5 +5527,139 @@ Na próxima conversa retomaremos exatamente deste checkpoint: Sprint 09 — Cont
 
 ------------
 
+Eu concordo, e essa observação muda um aspecto importante do projeto.
+
+Na verdade, hoje o sistema ainda não mede o que realmente importa.
+
+Atualmente ele responde:
+
+> "A direção estava correta?"
+
+
+
+Mas um operador de dinheiro real quer saber:
+
+> "Essa operação daria lucro?"
+
+
+
+Essas são perguntas diferentes.
+
+Exemplo
+
+Hoje o sistema faz algo parecido com isto:
+
+BUY em EUR/USD.
+
+Preço sobe 3 pips.
+
+Após 15 minutos continua acima da entrada.
+
+Resultado = WIN.
+
+
+Só que na vida real:
+
+Lote: 0,04.
+
+TP: US$5.
+
+SL: US$5.
+
+
+Se nesses 15 minutos o preço subiu apenas 3 pips e nunca atingiu o TP, essa operação não deveria ser contabilizada como WIN.
+
+Da mesma forma:
+
+O preço pode subir primeiro, quase atingir o TP e depois voltar até o SL.
+
+Ou pode atingir o SL antes do tempo.
+
+
+Hoje o sistema não distingue esses cenários.
+
+Minha visão
+
+Essa implementação não é uma evolução futura, ela faz parte da validação do próprio RMI V2.
+
+Se continuarmos registrando apenas "subiu ou desceu", estaremos alimentando o histórico com uma métrica diferente daquela que será usada quando houver dinheiro real.
+
+Isso prejudica a qualidade do aprendizado.
+
+Minha proposta
+
+Após concluirmos a Sprint 09 (Mercado Aberto/Fechado), eu anteciparia esta funcionalidade antes de qualquer IA mais sofisticada.
+
+O fluxo passaria a ser:
+
+Scanner
+      ↓
+Operação aprovada
+      ↓
+Money Manager
+      ↓
+Define:
+• lote
+• TP
+• SL
+      ↓
+Result Checker
+      ↓
+Verifica:
+
+Preço atingiu TP?
+
+↓
+
+SIM → WIN
+
+NÃO
+
+↓
+
+Preço atingiu SL?
+
+↓
+
+SIM → LOSS
+
+↓
+
+Nenhum atingido
+
+↓
+
+EXPIRADA / EMPATE
+
+Assim deixamos de medir "direção" e passamos a medir resultado financeiro.
+
+Isso também resolve outro problema
+
+Hoje o histórico considera um WIN e um LOSS com o mesmo peso.
+
+No futuro poderemos registrar:
+
+WIN por TP.
+
+LOSS por SL.
+
+EXPIRADA (nem TP nem SL).
+
+FECHAMENTO MANUAL (quando essa funcionalidade existir).
+
+
+Isso enriquece muito a base estatística.
+
+Minha recomendação
+
+Eu incluiria esta decisão no Documento Mestre como uma diretriz oficial:
+
+> O histórico do Forex Assist será baseado no resultado financeiro da estratégia (TP/SL), e não apenas na direção do preço.
+
+
+
+Na minha opinião, essa é uma decisão de arquitetura muito importante. Ela mantém o projeto alinhado com o propósito definido desde o início: ser um assistente para operações com dinheiro real, e não apenas um classificador de direção do mercado. Isso faz com que toda a inteligência futura seja treinada sobre o mesmo critério que será utilizado na operação real.
+
+-------
 
 
