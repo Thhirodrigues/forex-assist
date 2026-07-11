@@ -2948,6 +2948,129 @@ Após sincronização, retomar imediatamente os Sprint 07 e 08 da implementaçã
 
 ------
 
+Perfeito. Vamos manter o ritmo e seguir em Modo Engenharia.
+
+FASE 05 — Sprint 08
+
+Integração inicial da RMI V2
+
+O marketAnalyzer agora está suficientemente limpo. A partir deste ponto não voltaremos a adicionar lógica de risco nele.
+
+O próximo passo é fazer o scanner.js consumir o novo RiskEngine.
+
+
+---
+
+Objetivo desta Sprint
+
+Hoje o fluxo é aproximadamente:
+
+Scanner
+    ↓
+MarketAnalyzer
+    ↓
+DecisionEngine
+
+Ao final desta Sprint ele deverá ficar assim:
+
+Scanner
+    ↓
+MarketAnalyzer
+    ↓
+DecisionEngine
+    ↓
+RiskEngine
+    ↓
+RiskManager
+
+É exatamente essa arquitetura que planejamos para a RMI V2.
+
+
+---
+
+O que vamos implementar
+
+Depois que o DecisionEngine aprovar uma operação, o Scanner deverá chamar o RiskEngine.
+
+Fluxo:
+
+const operacao = avaliarOperacao(...);
+
+if (operacao) {
+
+    const risco = calcularRisco(...);
+
+}
+
+O RiskEngine será responsável por retornar algo semelhante a:
+
+{
+    lote: 0.04,
+    stopLoss: 5,
+    takeProfit: 5,
+    riscoPercentual: 1,
+    riscoUSD: 5,
+    recompensaUSD: 5
+}
+
+Depois o Scanner apenas incorpora essas informações à operação.
+
+
+---
+
+Resultado esperado
+
+Cada sinal salvo no Firestore passará a possuir informações completas, por exemplo:
+
+PAR: EUR/USD
+
+DIREÇÃO: BUY
+
+SCORE: 92
+
+LOTE: 0.04
+
+TP: +5 USD
+
+SL: -5 USD
+
+RISCO: 1%
+
+BANCA: 500 USD
+
+R:R = 1:1
+
+Esse será o primeiro passo para transformar o sistema em um assistente operacional completo, e não apenas um gerador de direção.
+
+
+---
+
+Próximo arquivo
+
+scripts/scanner.js
+
+Será nele que começaremos a integrar o RiskEngine ao fluxo principal.
+
+
+---
+
+Status do projeto
+
+✅ scoreEngine estabilizado.
+
+✅ marketAnalyzer limpo.
+
+✅ RiskEngine criado.
+
+✅ RiskManager preparado.
+
+✅ Arquitetura modular consolidada.
+
+
+Próxima etapa: integração do RiskEngine ao scanner.js, preservando toda a arquitetura e o roadmap definidos no Documento Mestre.
+
+----------
+
 
 
 
