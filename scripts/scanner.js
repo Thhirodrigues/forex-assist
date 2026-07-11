@@ -204,14 +204,14 @@ if (
 
     });
 console.log("========== RMI V2 ==========");
-console.log(`Lote..............${risco.lote}`);
-console.log(`TP................${risco.tpUSD} USD`);
-console.log(`SL................${risco.slUSD} USD`);
-console.log(`Risco.............${risco.riscoPercentual}%`);
-console.log(`R/R...............${risco.rewardRisk}`);
-console.log(`Expectativa.......${risco.expectativa}`);
+console.log(`Lote..............${resultado.operacao.lote}`);
+console.log(`TP................${resultado.operacao.tpUSD} USD`);
+console.log(`SL................${resultado.operacao.slUSD} USD`);
+console.log(`Risco.............${resultado.operacao.riscoPercentual}%`);
+console.log(`R/R...............${resultado.operacao.rewardRisk}`);
+console.log(`Expectativa.......${resultado.operacao.expectativa}`);
 console.log("============================");
-  
+
 }
 
 switch (
