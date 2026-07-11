@@ -119,12 +119,12 @@ async function main() {
 
 console.log("========================================");
 console.log("FOREX ASSIST - REAL MONEY INTELLIGENCE");
-console.log("Scanner RMI_V1");
+console.log("Scanner RMI_V2");
 console.log("========================================");
 console.log(`Pares...............${pares.length}`);
 console.log("Timeframe...........5m");
 console.log("Modo................REAL");
-console.log("Engine..............RMI_V1");
+console.log("Engine..............RMI_V2");
 console.log("========================================");
 
   for (const par of pares) {
