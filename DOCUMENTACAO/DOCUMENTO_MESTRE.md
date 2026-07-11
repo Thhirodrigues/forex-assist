@@ -5070,4 +5070,136 @@ Na minha avaliação, esse módulo é uma das próximas evoluções mais importa
 
 --------
 
+Perfeito. Revendo todo o contexto do projeto, essa funcionalidade realmente não é uma ideia nova, ela faz parte da visão original da RMI V2. Agora que o scoreEngine foi modularizado e estabilizado, temos a base necessária para começar essa implementação.
 
+Modo Engenharia
+
+Sprint 07 — Risk Intelligence Engine (RIE)
+
+Objetivo: transformar um sinal em um plano completo de operação.
+
+O fluxo passará a ser:
+
+Scanner
+      ↓
+Market Analyzer
+      ↓
+Score Engine
+      ↓
+Decision Engine
+      ↓
+Risk Manager
+      ↓
+Operação Recomendada
+
+O Risk Manager deixará de ser apenas um cálculo de lote e passará a ser uma engine de gestão de risco.
+
+
+---
+
+Primeira versão (V2)
+
+Ela receberá:
+
+Score final
+
+Confiança
+
+ATR
+
+ADX
+
+Histórico
+
+Volatilidade
+
+Lote base configurado
+
+Valor da banca
+
+
+E retornará:
+
+{
+    aprovado: true,
+
+    lote: 0.04,
+
+    tpUSD: 5,
+
+    slUSD: 5,
+
+    riscoPercentual: 1.0,
+
+    riscoRetorno: "1:1",
+
+    justificativa: [
+        "Histórico excelente",
+        "ADX forte",
+        "ATR ideal",
+        "Score 92"
+    ]
+}
+
+
+---
+
+Evolução prevista (V2.1)
+
+Depois disso, o sistema deixará de usar TP/SL fixos.
+
+Exemplo:
+
+Score	Lote	TP	SL
+
+95+	0.05	US$10	US$5
+90	0.04	US$8	US$5
+85	0.04	US$6	US$5
+80	0.03	US$5	US$5
+<80	Não opera	—	—
+
+
+
+---
+
+Evolução prevista (V2.2)
+
+Depois entraremos na gestão baseada na banca.
+
+Exemplo:
+
+Banca = US$500
+
+Risco máximo = 1%
+
+Perda máxima = US$5
+
+↓
+
+Risk Manager calcula automaticamente:
+
+• lote
+• TP
+• SL
+• relação risco/retorno
+
+Assim o usuário informará apenas:
+
+Minha banca = US$500
+
+E o sistema fará todos os cálculos.
+
+
+---
+
+Minha recomendação
+
+Acho que não devemos interromper a arquitetura atual para começar isso imediatamente.
+
+Primeiro, concluiríamos a modularização da Fase 05 (o trabalho que está em andamento), garantindo que marketAnalyzer, scoreEngine e decisionEngine estejam limpos e estáveis.
+
+Em seguida, iniciamos oficialmente a Sprint 07 – Risk Intelligence Engine, desenvolvendo o riskManager sobre uma base sólida, sem precisar voltar para refatorar código depois.
+
+Essa sequência reduz o risco de regressões e mantém a evolução alinhada com o Documento Mestre e o roadmap que estamos seguindo.
+
+--------
