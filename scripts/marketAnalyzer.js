@@ -867,10 +867,8 @@ score = calcularScoreBase(score);
 // AJUSTE ADAPTATIVO DO HISTÓRICO
 // ====================================================
 
-score = aplicarConfidenceLevel(
-    score,
-    historico
-);
+// Score já ajustado pelo Adaptive Confidence.
+// Não aplicar novamente.
 
     
 return {
