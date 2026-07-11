@@ -405,7 +405,9 @@ return {
 
         riscoPercentual: financeiro.riscoPercentual,
 
-        expectativa: financeiro.expectativa
+        expectativa: financeiro.expectativa,
+
+        atr: atrAtual,
 
     }
 
