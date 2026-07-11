@@ -5263,4 +5263,269 @@ A pasta scripts agora está assim (entre os principais módulos):
 
 ------------
 
+Perfeito. Pela sequência do Documento Mestre e pelo que executamos nesta conversa, a numeração correta é:
+
+Fase 05 – RMI (Real Money Intelligence)
+
+Sprint 08 – Consolidação do Motor de Decisão RMI V2
+
+
+O Sprint 06 e 07 já haviam sido iniciados anteriormente; nesta conversa concluímos a consolidação do motor, integração e estabilização da V2.
+
+Segue o relatório no padrão para copiar e colar no DOCUMENTO_MESTRE.
+
+
+---
+
+RELATÓRIO DE CONCLUSÃO
+
+FASE 05 — REAL MONEY INTELLIGENCE
+
+Sprint 08 — Consolidação do Motor RMI V2
+
+Status: CONCLUÍDO
+
+Objetivo
+
+Consolidar o novo motor institucional do Forex Assist, integrando todos os módulos responsáveis pelo cálculo inteligente da qualidade operacional, histórico adaptativo, gerenciamento financeiro e validação estatística.
+
+
+---
+
+Implementações concluídas
+
+Market Analyzer
+
+Implementado:
+
+Smart Scoring Engine
+
+Adaptive Confidence
+
+History Analyzer
+
+Score Engine
+
+Análise de EMAs
+
+RSI
+
+ADX
+
+Slope
+
+Alinhamento institucional
+
+Simetria
+
+Distância entre EMAs
+
+Multi Timeframe
+
+ATR (Volatilidade)
+
+Memória Operacional
+
+Bônus por direção
+
+Normalização do Score
+
+Exportação completa das novas métricas
+
+
+
+---
+
+Pair Analyzer
+
+Integração concluída com:
+
+Market Analyzer
+
+Money Manager
+
+ATR
+
+Adaptive Confidence
+
+Histórico Adaptativo
+
+Score Institucional
+
+Salvamento da operação
+
+Logs completos
+
+
+
+---
+
+Money Manager
+
+Validado:
+
+TP
+
+SL
+
+Risk Reward
+
+Percentual de risco
+
+Expectativa Matemática
+
+Configuração Financeira
+
+
+Todos os campos passaram a ser gravados corretamente.
+
+
+---
+
+Scanner
+
+Validado:
+
+Scanner modular
+
+Execução sem erros
+
+Comunicação correta entre módulos
+
+Workflow GitHub Actions funcionando
+
+
+
+---
+
+Correções realizadas
+
+Remoção do bloqueio permanente por Confidence.
+
+Correção do fluxo do ATR.
+
+Correção do Money Manager.
+
+Correção de campos undefined.
+
+Correção do Cooldown temporário.
+
+Ajuste do limite mínimo de Score.
+
+Ajuste dos logs operacionais.
+
+Correção das estatísticas exibidas.
+
+
+
+---
+
+Resultado da Sprint
+
+Motor RMI V2 operacional.
+
+Arquitetura estabilizada.
+
+Fluxo modular funcionando.
+
+Scanner executando normalmente.
+
+Nenhum erro crítico identificado.
+
+
+---
+
+Pendências conhecidas
+
+PRIORIDADE MÁXIMA
+
+Controle de Sessão Forex
+
+Foi identificado que o Scanner continua realizando análises mesmo durante períodos em que o mercado Forex encontra-se fechado.
+
+Essa condição pode contaminar toda a base estatística do sistema.
+
+Antes da coleta de histórico real deverá ser implementado:
+
+Verificação de Mercado Aberto.
+
+Bloqueio automático aos sábados.
+
+Bloqueio automático aos domingos.
+
+Respeito ao horário oficial de abertura semanal do mercado Forex.
+
+Encerramento automático do Scanner quando mercado estiver fechado.
+
+
+Esta implementação passa a ser a próxima prioridade oficial do projeto.
+
+
+---
+
+Próximo Sprint
+
+Fase 05
+
+Sprint 09
+
+Controle Inteligente de Sessão de Mercado
+
+Objetivos:
+
+Detectar Mercado Aberto.
+
+Detectar Mercado Fechado.
+
+Impedir geração de sinais fora do horário.
+
+Garantir integridade estatística do histórico.
+
+Preparar ambiente para coleta massiva de operações reais.
+
+
+
+---
+
+Checkpoint Oficial
+
+Versão:
+
+Forex Assist — RMI V2
+
+Status:
+
+ESTÁVEL
+
+Arquitetura:
+
+MODULAR
+
+Pronto para iniciar a Sprint 09.
+
+
+---
+
+Onde salvar
+
+Como combinamos desde o início do projeto, eu salvaria este relatório em:
+
+DOCUMENTO_MESTRE.txt
+
+Logo após a última entrada da Fase 05, criando um novo bloco com o título:
+
+====================================================
+FASE 05 — SPRINT 08
+CONSOLIDAÇÃO DO MOTOR RMI V2
+Data: 11/07/2026
+Status: CONCLUÍDO
+====================================================
+
+Não é necessário criar outro arquivo. O DOCUMENTO_MESTRE continua sendo a fonte oficial de decisões, checkpoints e evolução do projeto.
+
+Na próxima conversa retomaremos exatamente deste checkpoint: Sprint 09 — Controle Inteligente de Sessão de Mercado, e depois seguiremos o roadmap já definido no Documento Mestre, sem perder o contexto nem alterar a arquitetura estabelecida.
+
+------------
+
+
 
