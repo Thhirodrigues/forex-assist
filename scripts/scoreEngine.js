@@ -26,7 +26,31 @@ function calcularScoreBase(score) {
     return score;
 
 }
+// ======================================================
+// BÔNUS DE DIREÇÃO
+// ======================================================
 
+function aplicarBonusDirecao(historicoDirecao) {
+
+    if (!historicoDirecao) {
+        return 0;
+    }
+
+    if (historicoDirecao.taxaAcerto >= 80) {
+        return 5;
+    }
+
+    if (historicoDirecao.taxaAcerto >= 70) {
+        return 3;
+    }
+
+    if (historicoDirecao.taxaAcerto < 50) {
+        return -5;
+    }
+
+    return 0;
+
+}
 // ===================================================
 // BÔNUS DO HISTÓRICO
 // ===================================================
