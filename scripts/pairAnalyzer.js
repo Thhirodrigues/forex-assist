@@ -373,7 +373,43 @@ console.log(`Expectativa.....${financeiro.expectativa}`);
 console.log(`Financeiro......${financeiro.recomendacao.mensagem}`);
 console.log("Status............SALVO");
 
-return "SALVO";
+return {
+
+    status: "SALVO",
+
+    operacao: {
+
+        par,
+
+        direcao,
+
+        score: qualidade.score,
+
+        qualidade: qualidade.qualidade,
+
+        tendencia: qualidade.tendencia,
+
+        confiabilidade: qualidade.confiabilidade,
+
+        lote: financeiro.lote,
+
+        tpUSD: financeiro.tpUSD,
+
+        slUSD: financeiro.slUSD,
+
+        tpPips: financeiro.tpPips,
+
+        slPips: financeiro.slPips,
+
+        rewardRisk: financeiro.rewardRisk,
+
+        riscoPercentual: financeiro.riscoPercentual,
+
+        expectativa: financeiro.expectativa
+
+    }
+
+};
 
 
     } catch (e) {
