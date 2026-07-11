@@ -652,7 +652,7 @@ function calcularQualidade(
   ema21_15,
   ema50_15,
   estatisticas,
-  atr
+  atrAtual
 ) {
 
   let score = 0;
@@ -741,11 +741,11 @@ const historico =
     );
 
 const historicoBUY =
-    estatisticas.BUY;
+    estatisticas.BUY || {};
 
 const historicoSELL =
-    estatisticas.SELL;
-
+    estatisticas.SELL || {};
+    
 let direcaoAtual = null;
 
 if (emas.tendencia === "ALTA") {
@@ -817,7 +817,7 @@ const adaptive =
 
 const volatilidade =
     analisarATR(
-        atr
+        atrAtual
     );
   
   
@@ -885,8 +885,6 @@ return {
 
     qualidade: tendencia.qualidade,
 
-    confiabilidade: historico.status,
-
     slope,
 
     alinhamento: alinhamento.status,
@@ -908,6 +906,19 @@ return {
     bonusDirecao,
 
     memoriaOperacional,
+
+    confiabilidade: adaptive.confiabilidade,
+
+confidenceMultiplier: adaptive.confidenceMultiplier,
+
+pesoHistorico: adaptive.pesoHistorico,
+
+confidenceLevel:
+    adaptive.confiabilidade >= 80
+        ? "ALTA"
+        : adaptive.confiabilidade >= 50
+        ? "MEDIA"
+        : "BAIXA",
 
     consistencia: historico.consistencia,
 
