@@ -258,7 +258,7 @@ if (
 // FILTRO INSTITUCIONAL
 // ===================================================
 
-if (qualidade.score < 75) {
+if (qualidade.score < 60) {
 
     console.log(`Score............${qualidade.score}`);
     console.log("Status...........REPROVADO");
