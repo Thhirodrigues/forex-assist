@@ -3195,7 +3195,100 @@ Esse deve ser o último grande ajuste antes de passarmos para a revisão do scor
 
 ------------
 
+Concordo plenamente com você. Na verdade, essa é uma observação de arquitetura, não apenas de planejamento.
 
+Nós mesmos definimos um princípio no início do projeto:
+
+> "Não desenvolver por entusiasmo. Desenvolver por roadmap."
+
+
+
+Nas últimas Sprints, identificamos melhorias legítimas (Market Session Validator, Data Validator, RIE, DIE...), mas elas começaram a competir entre si. Se aceitarmos toda ideia boa assim que ela surge, o projeto entra em um ciclo infinito de refatoração e nunca chega a uma versão consolidada.
+
+Minha proposta de regra (para incluir no Documento Mestre)
+
+REGRA DE OURO DO ROADMAP
+
+> Uma Sprint somente poderá ser interrompida por um erro crítico que comprometa a segurança, a integridade dos dados ou o funcionamento do sistema.
+
+
+
+Melhorias, novas ideias e evoluções não interrompem a Sprint atual. Elas devem ser registradas no Roadmap e implementadas na Sprint planejada.
+
+
+---
+
+Como vamos trabalhar daqui para frente
+
+Quando surgir uma ideia (mesmo que excelente), faremos uma destas três classificações:
+
+1. Erro crítico
+
+Exemplo:
+
+Corrupção de dados.
+
+Firestore gravando incorretamente.
+
+Scanner deixando de funcionar.
+
+
+➡️ Corrige imediatamente.
+
+2. Débito técnico
+
+Exemplo:
+
+Código duplicado.
+
+Método que pode ser otimizado.
+
+Melhor organização.
+
+
+➡️ Entra na Sprint de Refatoração, sem interromper a atual.
+
+3. Evolução
+
+Exemplo:
+
+RIE.
+
+DIE.
+
+IA estatística.
+
+Painel Administrativo.
+
+
+➡️ Vai para o Roadmap, sem mudar a Sprint em andamento.
+
+
+---
+
+Aplicando isso ao momento atual
+
+A geração de sinais com o mercado fechado não é uma melhoria, é um problema que compromete a validade dos dados. Portanto, continua sendo a prioridade da próxima Sprint.
+
+Já a RIE, a DIE e outras evoluções permanecem no roadmap, sem alterar a sequência de trabalho.
+
+
+---
+
+Compromisso
+
+A partir da próxima Sprint, vou seguir uma disciplina ainda mais rígida:
+
+Não vou propor mudanças de rumo no meio de uma Sprint.
+
+Sempre que surgir uma boa ideia, vou classificá-la (erro crítico, débito técnico ou evolução).
+
+Só alteraremos a ordem do roadmap se você decidir conscientemente fazer isso.
+
+
+Acredito que essa é a melhor forma de levar o Forex Assist até uma versão estável e profissional. A arquitetura já está madura; agora nosso foco precisa ser concluir, e não perseguir continuamente a "próxima melhoria". Essa mudança de disciplina é, na minha opinião, um passo tão importante quanto qualquer evolução técnica do projeto.
+
+----------
 
 
 
