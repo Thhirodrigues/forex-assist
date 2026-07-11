@@ -885,6 +885,8 @@ return {
 
     qualidade: tendencia.qualidade,
 
+    confiabilidade: historico.status,
+
     slope,
 
     alinhamento: alinhamento.status,
