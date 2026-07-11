@@ -39,7 +39,7 @@ const {
 
     aplicarConfidenceLevel,
 
-    aplicarPenalidadeHistorico,
+    aplicarPenalidadeHistorico
 
 
 } = require("./scoreEngine");
@@ -822,7 +822,7 @@ const volatilidade =
   
   
 // ====================================================
-// BÔNUS ADAPTATIVO
+// CÁLCULO DO SCORE
 // ====================================================
 score += aplicarBonusHistorico(historico);
 
@@ -863,14 +863,15 @@ score += Math.round(volatilidade.score * 0.5);
 
 score = calcularScoreBase(score);
 
+// ====================================================
+// AJUSTE ADAPTATIVO DO HISTÓRICO
+// ====================================================
+
 score = aplicarConfidenceLevel(
     score,
     historico
 );
 
-// ====================================================
-// AJUSTE ADAPTATIVO DO HISTÓRICO
-// ====================================================
     
 return {
 
