@@ -788,7 +788,43 @@ else if (direcaoAtual === "SELL") {
     historicoDirecao = historicoSELL;
 
 }
-  
+
+const bonusDirecao =
+    aplicarBonusDirecao(
+        historicoDirecao
+    );
+
+let memoriaOperacional = 0;
+
+if (historicoDirecao) {
+
+    const ultimos5 =
+        historicoDirecao.ultimos5 || [];
+
+    const winsRecentes =
+        ultimos5.filter(
+            op => op.resultado === "WIN"
+        ).length;
+
+    const lossesRecentes =
+        ultimos5.filter(
+            op => op.resultado === "LOSS"
+        ).length;
+
+    if (winsRecentes >= 4) {
+
+        memoriaOperacional = 4;
+
+    }
+
+    else if (lossesRecentes >= 4) {
+
+        memoriaOperacional = -4;
+
+    }
+
+}
+    
 const adaptive =
     calcularAdaptiveConfidence(
         historico
@@ -817,6 +853,7 @@ score += multi.score;
 
 // Histórico adaptativo
 score += adaptive.pesoHistorico;
+
 
 // Bônus da direção histórica
 score += bonusDirecao;
