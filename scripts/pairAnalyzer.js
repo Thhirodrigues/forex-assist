@@ -115,7 +115,14 @@ const adxAtual = calcularADX(
     closes
 );
 
-        let direcao = null;
+ let direcao = null;
+
+ const atrAtual = calcularATR(
+    14,
+    highs,
+    lows,
+    closes
+);
 
 if (
     ema9 === null ||
@@ -154,7 +161,9 @@ const qualidade = calcularQualidade(
     ema9_15,
     ema21_15,
     ema50_15,
-    estatisticas
+    estatisticas,
+    atrAtual
+    
 );
 
 // ===================================================
@@ -173,13 +182,6 @@ if (qualidade.confidenceLevel === "BAIXA") {
 // ===================================================
 // MONEY MANAGER
 // ===================================================
-
-const atrAtual = calcularATR(
-    14,
-    highs,
-    lows,
-    closes
-);
 
 const financeiro =
     analisarFinanceiro({
@@ -335,7 +337,7 @@ recomendacaoFinanceira:
     
     modo: "REAL",
     origem: "scanner",
-    engine: "RMI_V1",
+    engine: "RMI_V2",
     precoEntrada:
         closes[
             closes.length - 1
