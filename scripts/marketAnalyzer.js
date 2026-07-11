@@ -41,7 +41,6 @@ const {
 
     aplicarPenalidadeHistorico,
 
-    aplicarNormalizacao
 
 } = require("./scoreEngine");
 
@@ -638,24 +637,6 @@ function analisarATR(atr) {
 }
 
 // ===================================================
-// PESOS DA ENGINE
-// ===================================================
-
-const ENGINE_WEIGHTS = {
-
-    BONUS_EXCELENTE: 5,
-
-    BONUS_BOA: 3,
-
-    PENALIDADE_RUIM: 10,
-
-    PENALIDADE_SEM_BASE: 5,
-
-    PENALIDADE_DIVERGENCIA: 10
-
-};
-
-// ===================================================
 // SMART SCORING ENGINE
 // ===================================================
 
@@ -749,7 +730,11 @@ const multi =
         emas.tendencia,
         tendencia15
     );
-  
+    
+// ===================================================
+// HISTÓRICO
+// ===================================================
+    
 const historico =
     analisarHistorico(
         estatisticas
@@ -877,16 +862,16 @@ score += Math.round(volatilidade.score * 0.5);
 // =====================================================
 
 score = calcularScoreBase(score);
-  
-// ====================================================
-// AJUSTE ADAPTATIVO DO HISTÓRICO
-// ====================================================
 
 score = aplicarConfidenceLevel(
     score,
     historico
 );
 
+// ====================================================
+// AJUSTE ADAPTATIVO DO HISTÓRICO
+// ====================================================
+    
 return {
 
     score,
