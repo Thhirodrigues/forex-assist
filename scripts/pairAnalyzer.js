@@ -56,10 +56,10 @@ salvarOperacao
 
     try {
 
-        if (await verificarCooldown(par)) {
-    console.log("Status.............COOLDOWN");
-    return "COOLDOWN";
-        }
+        // if (await verificarCooldown(par)) {
+//     console.log("Status.............COOLDOWN");
+//     return "COOLDOWN";
+// }
 
 const candles =
     await getCandles(par,"5min",250
