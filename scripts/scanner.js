@@ -180,7 +180,37 @@ console.log("========================================");
 
 });
 
-switch (resultado) {
+    let risco = null;
+
+if (
+    resultado &&
+    typeof resultado === "object" &&
+    resultado.status === "SALVO"
+) {
+
+    risco = calcularRisco({
+
+        score: resultado.operacao.score,
+
+        historico: estatisticas,
+
+        atr: resultado.operacao.atr,
+
+        loteBase: resultado.operacao.lote,
+
+        tpBase: resultado.operacao.tpUSD,
+
+        slBase: resultado.operacao.slUSD
+
+    });
+
+}
+
+switch (
+    typeof resultado === "object"
+        ? resultado.status
+        : resultado
+) {
 
 case "SALVO":
     totalOperacoes++;
