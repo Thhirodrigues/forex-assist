@@ -170,14 +170,13 @@ const qualidade = calcularQualidade(
 // FILTRO DE CONFIANÇA
 // ===================================================
 
-if (qualidade.confidenceLevel === "BAIXA") {
+// Apenas registra a confiança.
+// Nesta fase ela não reprova operações.
+// O peso já é aplicado pelo Market Analyzer.
 
-    console.log("Confidence.......BAIXA");
-    console.log("Status...........REPROVADO");
-
-    return "SEM_CONFIANCA";
-
-}
+console.log(
+    `Confidence.......${qualidade.confidenceLevel}`
+);
         
 // ===================================================
 // MONEY MANAGER
