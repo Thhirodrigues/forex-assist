@@ -5662,4 +5662,96 @@ Na minha opinião, essa é uma decisão de arquitetura muito importante. Ela man
 
 -------
 
+Sim. Depois de revisar todo o projeto e considerando a sua observação, eu mudaria a prioridade uma única vez, de forma consciente, e depois congelaria o roadmap.
+
+Ficaria assim:
+
+Prioridade 1 — Resultado Financeiro Real (TP/SL)
+
+Motivo: hoje o sistema aprende baseado em "acertou a direção". Isso não representa uma operação real.
+
+Objetivo:
+
+O MoneyManager define:
+
+Lote
+
+TP
+
+SL
+
+
+O ResultChecker deixa de verificar apenas direção.
+
+Passa a verificar:
+
+✅ TP atingido → WIN
+
+❌ SL atingido → LOSS
+
+⏳ Nenhum atingido → EXPIRADA (ou resultado equivalente que definirmos)
+
+
+
+A partir desse momento, todo o histórico passa a refletir dinheiro real, que é a missão do Forex Assist.
+
+
+---
+
+Prioridade 2 — Controle de Mercado Fechado
+
+Implementar o Market Session Validator para:
+
+Não executar o scanner aos sábados.
+
+Não executar o scanner aos domingos.
+
+Respeitar a abertura oficial do mercado.
+
+Não consumir créditos da API quando o mercado estiver fechado.
+
+Não gerar sinais inválidos.
+
+
+
+---
+
+Roadmap congelado
+
+Depois dessas duas implementações, não mudaremos mais a ordem.
+
+Seguiremos exatamente o Documento Mestre:
+
+✅ Concluir TP/SL financeiro.
+
+✅ Concluir controle de mercado fechado.
+
+✅ Coletar operações reais.
+
+✅ Calibrar a RMI.
+
+✅ Evoluir para a RIE.
+
+✅ Evoluir para a DIE.
+
+
+Sem novas mudanças de prioridade, salvo um erro crítico que impeça o funcionamento do sistema.
+
+Nova regra de engenharia
+
+Gostaria de acrescentar mais uma regra ao Documento Mestre:
+
+> Toda nova funcionalidade deverá responder à pergunta: "Isso aproxima o Forex Assist de operar dinheiro real?"
+
+Se sim, ela entra no roadmap conforme a ordem planejada.
+
+Se não, ela fica registrada como melhoria futura e não interrompe o desenvolvimento atual.
+
+
+
+
+Acredito que essa regra representa exatamente a filosofia do projeto. Nosso objetivo não é construir o scanner com mais indicadores possível, mas sim um sistema capaz de recomendar operações que possam ser executadas com capital real, de forma consistente e baseada em evidências. Essa diretriz vai nos ajudar a manter o foco até a primeira versão estável.
+
+---------
+
 
