@@ -5753,5 +5753,258 @@ Se não, ela fica registrada como melhoria futura e não interrompe o desenvolvi
 Acredito que essa regra representa exatamente a filosofia do projeto. Nosso objetivo não é construir o scanner com mais indicadores possível, mas sim um sistema capaz de recomendar operações que possam ser executadas com capital real, de forma consistente e baseada em evidências. Essa diretriz vai nos ajudar a manter o foco até a primeira versão estável.
 
 ---------
+MODO ENGENHARIA
+
+SPRINT 09 — BLOCO 01
+
+Objetivo
+
+Definir o Trade Object Oficial da RMI V2.
+
+A partir deste momento, todas as engines deverão falar a mesma linguagem.
+
+Nenhuma engine deverá criar seus próprios campos.
+
+
+---
+
+Problema Atual
+
+Hoje cada módulo conhece apenas parte da operação.
+
+Scanner conhece:
+
+par
+
+direção
+
+horário
+
+
+Decision Engine conhece:
+
+score
+
+
+Result Checker conhece:
+
+win/loss
+
+
+Risk Manager praticamente não participa.
+
+Isso impede a evolução para uma plataforma institucional.
+
+
+---
+
+Arquitetura Alvo
+
+Scanner
+      │
+      ▼
+Trade Object
+      │
+      ├──────── Market Analyzer
+      ├──────── Score Engine
+      ├──────── Decision Engine
+      ├──────── Risk Manager
+      ├──────── Firestore
+      ├──────── Dashboard
+      ├──────── Histórico
+      └──────── Result Checker
+
+O Trade Object será a única fonte de verdade da operação.
+
+
+---
+
+Trade Object V1 (Proposta)
+
+{
+    // Identificação
+    id: "",
+    timestamp: "",
+    par: "EUR/USD",
+    timeframe: "15min",
+
+    // Operação
+    direcao: "BUY",
+    precoEntrada: 0,
+    precoSaida: null,
+    status: "PENDENTE",
+
+    // Inteligência
+    score: 92,
+    confidence: 95,
+    decisao: "APROVADO",
+
+    justificativas: [],
+
+    // Mercado
+    tendencia: "",
+    adx: 0,
+    atr: 0,
+    rsi: 0,
+    volatilidade: "",
+
+    // Financeiro
+    lote: 0.04,
+    tpUSD: 5,
+    slUSD: 5,
+    riscoPercentual: 1,
+    riscoRetorno: "1:1",
+
+    // Resultado
+    resultado: null,
+    lucroUSD: 0,
+    pips: 0,
+    duracao: 0,
+
+    // Auditoria
+    criadoEm: "",
+    atualizadoEm: "",
+    versao: "RMI_V2"
+}
+
+
+---
+
+Vantagens
+
+Scanner
+
+Passa a criar apenas um objeto.
+
+
+---
+
+Firestore
+
+Armazena exatamente o mesmo objeto.
+
+Sem adaptações.
+
+
+---
+
+Dashboard
+
+Lê exatamente o mesmo objeto.
+
+
+---
+
+Histórico
+
+Lê exatamente o mesmo objeto.
+
+
+---
+
+Result Checker
+
+Atualiza apenas alguns campos:
+
+resultado
+
+precoSaida
+
+lucroUSD
+
+pips
+
+duracao
+
+status
+
+Nada mais.
+
+
+---
+
+Risk Manager
+
+Passa apenas a preencher:
+
+lote
+
+tpUSD
+
+slUSD
+
+riscoPercentual
+
+riscoRetorno
+
+
+---
+
+Score Engine
+
+Preenche:
+
+score
+
+confidence
+
+justificativas
+
+
+---
+
+Market Analyzer
+
+Preenche:
+
+ADX
+
+ATR
+
+RSI
+
+Tendência
+
+Volatilidade
+
+
+---
+
+Impacto no Código
+
+Após analisar a arquitetura, não recomendo criar um novo arquivo trade.js neste momento.
+
+O projeto ainda está consolidando a modularização, e introduzir um novo módulo agora aumentaria o acoplamento e exigiria alterações em diversos pontos.
+
+A recomendação é:
+
+manter o contrato documentado no DOCUMENTO_MESTRE;
+
+implementar sua construção diretamente no Scanner, que é a origem da operação;
+
+evoluir para um módulo compartilhado apenas quando houver necessidade real.
+
+
+Essa abordagem preserva a arquitetura atual e reduz o risco de regressões.
+
+
+---
+
+PRÓXIMO BLOCO
+
+BLOCO 02 — Auditoria profunda do Scanner
+
+Objetivos:
+
+localizar exatamente onde a operação é criada;
+
+identificar todos os campos atualmente gravados;
+
+mapear os pontos de impacto para adoção do Trade Object;
+
+preparar a primeira alteração no GitHub, em um bloco pequeno, seguro e reversível.
+
+----------------
+
 
 
