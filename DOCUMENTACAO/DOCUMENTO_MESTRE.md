@@ -6006,5 +6006,276 @@ preparar a primeira alteração no GitHub, em um bloco pequeno, seguro e revers�
 
 ----------------
 
+MODO ENGENHARIA
 
+Essa é exatamente a pergunta que define a diferença entre um scanner de sinais e uma plataforma de inteligência operacional.
+
+Minha resposta é: sim, mas eu iria um passo além.
+
+O sinal não deveria terminar em 15 minutos.
+
+Ele deveria terminar quando a operação termina.
+
+Isso pode acontecer em:
+
+6 minutos
+
+18 minutos
+
+43 minutos
+
+2 horas
+
+1 dia
+
+
+O tempo passa a ser apenas uma informação estatística.
+
+
+---
+
+Hoje
+
+Entrada
+
+↓
+
+15 minutos
+
+↓
+
+WIN ou LOSS
+
+
+---
+
+RMI V2
+
+Entrada
+
+↓
+
+Operação aberta
+
+↓
+
+Monitoramento
+
+↓
+
+TP atingido
+
+OU
+
+SL atingido
+
+↓
+
+Operação encerrada
+
+
+---
+
+E aqui entra a inteligência que eu acho que faltava no projeto.
+
+Durante toda a operação o Result Checker pode armazenar:
+
+Preço de entrada
+
+↓
+
+Maior preço atingido
+
+↓
+
+Menor preço atingido
+
+↓
+
+Preço atual
+
+↓
+
+Preço de saída
+
+Assim teremos:
+
+BUY
+
+Entrada
+
+1.12000
+
+Maior preço
+
+1.12240
+
+↓
+
++24 pips
+
+Menor preço
+
+1.11910
+
+↓
+
+-9 pips
+
+Saída
+
+1.12130
+
+↓
+
++13 pips
+
+
+---
+
+SELL
+
+Entrada
+
+1.12000
+
+Menor preço
+
+1.11730
+
+↓
+
++27 pips
+
+Maior preço
+
+1.12090
+
+↓
+
+-9 pips
+
+Saída
+
+1.11880
+
+↓
+
++12 pips
+
+
+---
+
+Isso muda completamente a inteligência.
+
+Porque começamos a responder perguntas como:
+
+> Quantos pips o mercado andou a favor?
+
+
+
+> Quantos pips andou contra?
+
+
+
+> O TP poderia ter sido maior?
+
+
+
+> O SL estava muito curto?
+
+
+
+> Vale a pena aumentar o Reward?
+
+
+
+> O mercado costuma devolver quantos pips antes de buscar o alvo?
+
+
+
+Essas respostas são extremamente valiosas.
+
+
+---
+
+Eu acrescentaria quatro campos ao histórico
+
+maxPipsFavor
+
+maxPipsContra
+
+tempoOperacao
+
+precoMaximo
+
+precoMinimo
+
+Depois:
+
+precoSaida
+
+resultado
+
+lucroUSD
+
+
+---
+
+Isso abre a porta para a RMI V3
+
+Porque o sistema começará a aprender sozinho.
+
+Exemplo:
+
+EUR/USD
+
+Últimas 300 operações
+
+Antes do TP
+
+o mercado costuma recuar
+
+6,2 pips
+
+↓
+
+Podemos aumentar o SL em 6 pips.
+
+Outro exemplo:
+
+GBP/JPY
+
+O mercado normalmente alcança
+
+18 pips
+
+antes de corrigir.
+
+↓
+
+TP pode ser aumentado.
+
+
+---
+
+Minha recomendação
+
+Eu mudaria uma única regra do Documento Mestre.
+
+Em vez de:
+
+> O Result Checker verifica após 15 minutos.
+
+
+
+Passaria para:
+
+> O Result Checker monitora a operação até que uma condição de encerramento seja atendida (TP, SL ou outro critério futuro).
+
+
+
+Essa mudança parece pequena, mas transforma a RMI de um verificador de sinais em uma plataforma de gestão completa de operações. Além disso, cria a base para uma inteligência adaptativa, capaz de aprender com o comportamento real do mercado e evoluir automaticamente os parâmetros de risco e retorno ao longo do tempo. Acho que essa é uma evolução totalmente alinhada com a visão original do Forex Assist.
+
+-------
 
