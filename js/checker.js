@@ -33,15 +33,6 @@ function calcularPips(par, entrada, fechamento) {
 
 }
 
-function calcularVariacaoPercentual(entrada, fechamento) {
-
-    return Number(
-        (
-            ((fechamento - entrada) / entrada) * 100
-        ).toFixed(4)
-    );
-
-}
 async function buscarUltimoCandle(par) {
 
     const candles = await getCandles(par);
@@ -167,21 +158,6 @@ async function verificarSinais() {
 
                 maxPipsContra,
                 
-                // resultado,
-
-// precoFechamento: precoAtual,
-
-// horarioResultado:
-//     new Date().toLocaleTimeString("pt-BR"),
-
-// movimentoPips,
-
-// variacaoPercentual,
-
-// tempoDecorrido:
-//     Math.floor(minutos)
-
-            });
 
             console.log(
 `${sinal.par} | ABERTA | Atual: ${precoAtual} | Máx: ${precoMaximo} | Mín: ${precoMinimo} | Favor: ${maxPipsFavor} pips | Contra: ${maxPipsContra} pips`
