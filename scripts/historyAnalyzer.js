@@ -156,10 +156,7 @@ function calcularAdaptiveConfidence(historico) {
         historico.confidenceMultiplier;
 
     const pesoHistorico =
-        Math.round(
-            historico.score *
-            confidenceMultiplier
-        );
+    historico.pesoHistorico;
 
     return {
 
