@@ -6279,3 +6279,168 @@ Essa mudança parece pequena, mas transforma a RMI de um verificador de sinais e
 
 -------
 
+MODO ENGENHARIA
+
+SPRINT 09 — BLOCO 07
+
+Próximo módulo
+
+Result Checker
+
+Objetivo da Sprint
+
+Substituir a lógica baseada em tempo por uma lógica baseada em estado da operação.
+
+
+---
+
+NOVO FLUXO
+
+Scanner
+        ↓
+Trade criado
+        ↓
+Firestore
+        ↓
+Status = ABERTA
+        ↓
+Result Checker
+        ↓
+Monitoramento
+        ↓
+Maior preço
+Menor preço
+Pips Favoráveis
+Pips Contrários
+        ↓
+TP?
+        ↓
+SL?
+        ↓
+Operação FINALIZADA
+        ↓
+Risk Engine
+        ↓
+Resultado Financeiro
+        ↓
+Histórico
+
+
+---
+
+NOVOS CAMPOS DA OPERAÇÃO
+
+Adicionar ao objeto operacao:
+
+status: "ABERTA",
+
+inicioOperacao: Date.now(),
+
+fimOperacao: null,
+
+tempoOperacao: null,
+
+precoMaximo: precoEntrada,
+
+precoMinimo: precoEntrada,
+
+maxPipsFavor: 0,
+
+maxPipsContra: 0,
+
+precoSaida: null,
+
+resultadoFinanceiro: null,
+
+lucroUSD: null
+
+
+---
+
+REGRAS
+
+Enquanto:
+
+status == ABERTA
+
+o Result Checker continuará monitorando.
+
+
+---
+
+Durante cada execução:
+
+Atualizar:
+
+precoAtual
+
+precoMaximo
+
+precoMinimo
+
+maxPipsFavor
+
+maxPipsContra
+
+
+
+---
+
+Somente quando:
+
+TP atingido
+
+ou
+
+SL atingido
+
+executar:
+
+status = FINALIZADA
+
+
+---
+
+Depois:
+
+Risk Engine
+
+↓
+
+Resultado Financeiro
+
+↓
+
+Firestore
+
+
+---
+
+PRÓXIMO BLOCO
+
+Auditoria completa do checker.js
+
+Objetivos:
+
+1. Remover dependência fixa dos 15 minutos.
+
+
+2. Transformar o checker em monitor de operações abertas.
+
+
+3. Implementar atualização contínua dos novos campos.
+
+
+4. Encerrar apenas quando TP ou SL forem atingidos.
+
+
+5. Integrar cálculo financeiro ao encerramento da operação.
+
+
+
+STATUS: Pronto para iniciar a auditoria e implementação do checker.js.
+
+------------
+
+
+
