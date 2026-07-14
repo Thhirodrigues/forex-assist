@@ -13,8 +13,8 @@
 
 function avaliarOperacao(resultado) {
 
-    const score = resultado.score;
-
+    const score = resultado.scoreFinal ?? resultado.score;
+    
     const multi = resultado.multi;
 
     const qualidade = resultado.qualidade;
