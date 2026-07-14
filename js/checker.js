@@ -177,25 +177,19 @@ const lucroAtual = calcularLucroUSD(
 
 let motivoEncerramento = null;
 
-            if (lucroAtual >= TP_USD) {
+if (lucroAtual >= TP_USD) {
 
     motivoEncerramento = "TP_FINANCEIRO";
 
-}
-
-if (lucroAtual <= -SL_USD) {
+} else if (lucroAtual <= SL_USD) {
 
     motivoEncerramento = "SL_FINANCEIRO";
 
-}
-
-if (maxPipsFavor >= TP_PIPS) {
+} else if (maxPipsFavor >= TP_PIPS) {
 
     motivoEncerramento = "TP_PIPS";
 
-}
-
-if (maxPipsContra <= SL_PIPS) {
+} else if (maxPipsContra <= SL_PIPS) {
 
     motivoEncerramento = "SL_PIPS";
 
@@ -223,9 +217,14 @@ if (maxPipsContra <= SL_PIPS) {
         status: "ENCERRADA",
 
         resultado:
-            lucroAtual >= 0
-                ? "WIN"
-                : "LOSS",
+
+    motivoEncerramento === "TP_FINANCEIRO" ||
+
+    motivoEncerramento === "TP_PIPS"
+
+        ? "WIN"
+
+        : "LOSS",
 
         motivoEncerramento,
 
