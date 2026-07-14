@@ -17,7 +17,7 @@ const db = admin.firestore();
 // CONFIGURAÇÕES
 // =====================================================
 
-const TEMPO_RESULTADO_MINUTOS = 15;
+const INTERVALO_MONITORAMENTO_MINUTOS = 5;
 
 // =====================================================
 // UTILITÁRIOS
@@ -62,8 +62,7 @@ async function verificarSinais() {
 
     const snapshot = await db
         .collection("historico")
-        .where("resultado", "==", "PENDENTE")
-        .get();
+        .where("status", "==", "ABERTA")
 
     console.log(`Pendentes: ${snapshot.size}`);
 
@@ -74,22 +73,10 @@ async function verificarSinais() {
         const sinal = documento.data();
 
         if (
-            !sinal.timestamp ||
+            !sinal.inicioOperacao ||
             !sinal.precoEntrada ||
             !sinal.par
         ) {
-            continue;
-        }
-
-        const entrada =
-    typeof sinal.timestamp === "number"
-        ? sinal.timestamp
-        : sinal.timestamp.toDate().getTime();
-
-        const minutos =
-            (agora - entrada) / 60000;
-
-        if (minutos < TEMPO_RESULTADO_MINUTOS) {
             continue;
         }
 
@@ -98,6 +85,22 @@ async function verificarSinais() {
             const precoAtual =
                 await buscarPrecoFechamento(sinal.par);
 
+            const precoMaximo =
+    Math.max(
+        sinal.precoMaximo ?? sinal.precoEntrada,
+        precoAtual
+    );
+
+            const precoMinimo =
+    Math.min(
+        sinal.precoMinimo ?? sinal.precoEntrada,
+        precoAtual
+    );
+    
+            let maxPipsFavor = sinal.maxPipsFavor ?? 0;
+
+            let maxPipsContra = sinal.maxPipsContra ?? 0;
+            
             let resultado = "LOSS";
 
             if (
@@ -113,7 +116,7 @@ async function verificarSinais() {
             ) {
                 resultado = "WIN";
             }
-
+            
             const movimentoPips =
                 calcularPips(
                     sinal.par,
@@ -121,6 +124,7 @@ async function verificarSinais() {
                     precoAtual
                 );
 
+            
             const variacaoPercentual =
                 calcularVariacaoPercentual(
                     sinal.precoEntrada,
