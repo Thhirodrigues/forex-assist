@@ -40,6 +40,10 @@ const {
 
 } = require("./moneyManager");
 
+const {
+    calcularRisco
+} = require("./riskEngine");
+
 async function analisarPar({
 db,
 par,
@@ -284,67 +288,118 @@ if (qualidade.qualidade === "LATERAL") {
     return "SEM_QUALIDADE";
 
 }
-        
-await salvarOperacao(db, {
+
+const risco = calcularRisco({
+
+    score: qualidade.score,
+
+    historico: estatisticas.resumo,
+
+    atr: atrAtual,
+
+    loteBase: financeiro.lote,
+
+    tpBase: financeiro.tpUSD,
+
+    slBase: financeiro.slUSD
+
+});
+
+const operacao = {
 
     par,
+
     direcao,
+
     ema9,
+
     ema21,
+
     ema50,
+
     ema100,
+
     ema200,
+
     ema9_15,
+
     ema21_15,
-    ema50_15, 
+
+    ema50_15,
+
     rsi: rsiAtual,
+
+    atr: atrAtual,
+
     score: qualidade.score,
+
     tendencia: qualidade.tendencia,
+
     situacaoRSI: qualidade.rsi,
+
     qualidade: qualidade.qualidade,
+
     multiTimeframe: qualidade.multi,
+
     historico: qualidade.historico,
+
     confiabilidade: qualidade.confiabilidade,
+
     pesoHistorico: qualidade.pesoHistorico,
+
     confidenceMultiplier: qualidade.confidenceMultiplier,
+
     confidenceLevel: qualidade.confidenceLevel,
+
     taxaAcerto: estatisticas.resumo.taxaAcerto,
+
     winsHistoricos: estatisticas.wins,
+
     lossHistoricos: estatisticas.loss,
+
     operacoesHistoricas: estatisticas.operacoes,
-    lote: financeiro.lote,
 
-tpUSD: financeiro.tpUSD,
+    lote: risco.lote,
 
-slUSD: financeiro.slUSD,
+    tpUSD: risco.tpUSD,
 
-tpPips: financeiro.tpPips,
+    slUSD: risco.slUSD,
 
-slPips: financeiro.slPips,
+    tpPips: financeiro.tpPips,
 
-rewardRisk: financeiro.rewardRisk,
+    slPips: financeiro.slPips,
 
-riscoPercentual: financeiro.riscoPercentual,
+    rewardRisk: risco.riscoRetorno,
 
-expectativa: financeiro.expectativa,
+    riscoPercentual: risco.riscoPercentual,
 
-configuracaoIdeal:
-    financeiro.configuracaoIdeal,
+    aprovado: risco.aprovado,
 
-recomendacaoFinanceira:
-    financeiro.recomendacao.mensagem,
-    
+    justificativasRisco: risco.justificativas,
+
+    expectativa: financeiro.expectativa,
+
+    configuracaoIdeal: financeiro.configuracaoIdeal,
+
+    recomendacaoFinanceira:
+
+        financeiro.recomendacao.mensagem,
+
     modo: "REAL",
+
     origem: "scanner",
+
     engine: "RMI_V2",
+
     precoEntrada:
-        closes[
-            closes.length - 1
-        ],
+
+        closes[closes.length - 1],
 
     resultado: "PENDENTE"
 
-});
+};
+        
+await salvarOperacao(db, operacao);
 
 console.log(`Direção...........${direcao}`);
 console.log(`EMA9..............${ema9.toFixed(5)}`);
@@ -366,54 +421,18 @@ console.log(`Loss............${estatisticas.loss}`);
 console.log(`Operações.......${estatisticas.operacoes}`);
 console.log(`Score.............${qualidade.score}`);
 console.log(`Qualidade.........${qualidade.qualidade}`);
-console.log(`Lote............${financeiro.lote}`);
-console.log(`TP USD..........${financeiro.tpUSD}`);
-console.log(`SL USD..........${financeiro.slUSD}`);
-console.log(`Risk/Reward.....${financeiro.rewardRisk}`);
-console.log(`Expectativa.....${financeiro.expectativa}`);
+console.log(`Lote............${operacao.lote}`);
+console.log(`TP USD..........${operacao.tpUSD}`);
+console.log(`SL USD..........${operacao.slUSD}`);
+console.log(`Risk/Reward.....${operacao.rewardRisk}`);
+console.log(`Expectativa.....${operacao.expectativa}`);
 console.log(`Financeiro......${financeiro.recomendacao.mensagem}`);
 console.log("Status............SALVO");
 
 return {
-
     status: "SALVO",
-
-    operacao: {
-
-        par,
-
-        direcao,
-
-        score: qualidade.score,
-
-        qualidade: qualidade.qualidade,
-
-        tendencia: qualidade.tendencia,
-
-        confiabilidade: qualidade.confiabilidade,
-
-        lote: financeiro.lote,
-
-        tpUSD: financeiro.tpUSD,
-
-        slUSD: financeiro.slUSD,
-
-        tpPips: financeiro.tpPips,
-
-        slPips: financeiro.slPips,
-
-        rewardRisk: financeiro.rewardRisk,
-
-        riscoPercentual: financeiro.riscoPercentual,
-
-        expectativa: financeiro.expectativa,
-
-        atr: atrAtual,
-
-    }
-
+    operacao
 };
-
 
     } catch (e) {
 console.log("Status............ERRO");
