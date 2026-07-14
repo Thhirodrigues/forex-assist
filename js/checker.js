@@ -114,20 +114,47 @@ async function verificarSinais() {
 
             let maxPipsContra = sinal.maxPipsContra ?? 0;
             
-            const movimentoPips =
-                calcularPips(
-                    sinal.par,
-                    sinal.precoEntrada,
-                    precoAtual
-                );
+            if (sinal.direcao === "BUY") {
 
-            
-            const variacaoPercentual =
-                calcularVariacaoPercentual(
-                    sinal.precoEntrada,
-                    precoAtual
-                );
+    maxPipsFavor = Math.max(
+        maxPipsFavor,
+        calcularPips(
+            sinal.par,
+            sinal.precoEntrada,
+            precoMaximo
+        )
+    );
 
+    maxPipsContra = Math.min(
+        maxPipsContra,
+        calcularPips(
+            sinal.par,
+            sinal.precoEntrada,
+            precoMinimo
+        )
+    );
+
+} else {
+
+    maxPipsFavor = Math.max(
+        maxPipsFavor,
+        calcularPips(
+            sinal.par,
+            precoMinimo,
+            sinal.precoEntrada
+        )
+    );
+
+    maxPipsContra = Math.min(
+        maxPipsContra,
+        calcularPips(
+            sinal.par,
+            precoMaximo,
+            sinal.precoEntrada
+        )
+    );
+
+            }
             await documento.ref.update({
 
                 precoAtual,
