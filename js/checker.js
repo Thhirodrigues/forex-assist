@@ -72,12 +72,12 @@ async function verificarSinais() {
     console.log("====================================");
 
     const snapshot = await db
-        .collection("historico")
-        .where("status", "==", "ABERTA")
-
+    .collection("historico")
+    .where("status", "==", "ABERTA")
+    .get();
+    
     console.log(`Pendentes: ${snapshot.size}`);
 
-    const agora = Date.now();
 
     for (const documento of snapshot.docs) {
 
@@ -113,22 +113,6 @@ async function verificarSinais() {
             let maxPipsFavor = sinal.maxPipsFavor ?? 0;
 
             let maxPipsContra = sinal.maxPipsContra ?? 0;
-            
-            let resultado = "LOSS";
-
-            if (
-                sinal.direcao === "BUY" &&
-                precoAtual > sinal.precoEntrada
-            ) {
-                resultado = "WIN";
-            }
-
-            if (
-                sinal.direcao === "SELL" &&
-                precoAtual < sinal.precoEntrada
-            ) {
-                resultado = "WIN";
-            }
             
             const movimentoPips =
                 calcularPips(
