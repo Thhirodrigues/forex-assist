@@ -19,6 +19,12 @@ const db = admin.firestore();
 
 const INTERVALO_MONITORAMENTO_MINUTOS = 5;
 
+const TP_PIPS = 50;
+const SL_PIPS = -50;
+
+const TP_USD = 5;
+const SL_USD = -5;
+
 // =====================================================
 // UTILITÁRIOS
 // =====================================================
@@ -29,6 +35,16 @@ function calcularPips(par, entrada, fechamento) {
 
     return Number(
         ((fechamento - entrada) * fator).toFixed(1)
+    );
+
+}
+
+function calcularLucroUSD(pips, lote) {
+
+    const valorPip = 10 * lote;
+
+    return Number(
+        (pips * valorPip).toFixed(2)
     );
 
 }
@@ -144,23 +160,96 @@ async function verificarSinais() {
             sinal.precoEntrada
         )
     );
+       }
 
-            }
+       const movimentoPips = calcularPips(
+    sinal.par,
+    sinal.precoEntrada,
+    precoAtual
+);
+
+const lote = sinal.lote ?? 0.01;
+
+const lucroAtual = calcularLucroUSD(
+    movimentoPips,
+    lote
+);
+
+let motivoEncerramento = null;
+
+            if (lucroAtual >= TP_USD) {
+
+    motivoEncerramento = "TP_FINANCEIRO";
+
+}
+
+if (lucroAtual <= -SL_USD) {
+
+    motivoEncerramento = "SL_FINANCEIRO";
+
+}
+
+if (maxPipsFavor >= TP_PIPS) {
+
+    motivoEncerramento = "TP_PIPS";
+
+}
+
+if (maxPipsContra <= SL_PIPS) {
+
+    motivoEncerramento = "SL_PIPS";
+
+}
+
+    const operacaoFinalizada =
+    motivoEncerramento !== null;
+            
             await documento.ref.update({
 
-                precoAtual,
+    precoAtual,
 
-                precoMaximo,
+    precoMaximo,
 
-                precoMinimo,
+    precoMinimo,
 
-                maxPipsFavor,
+    maxPipsFavor,
 
-                maxPipsContra,
-                
+    maxPipsContra,
 
+    lucroAtual,
+
+    ...(operacaoFinalizada && {
+
+        status: "ENCERRADA",
+
+        resultado:
+            lucroAtual >= 0
+                ? "WIN"
+                : "LOSS",
+
+        motivoEncerramento,
+
+        precoFechamento: precoAtual,
+
+        fimOperacao: Date.now(),
+
+        tempoOperacao:
+            Date.now() - sinal.inicioOperacao
+
+    })
+
+});
+
+            if (operacaoFinalizada) {
+
+    console.log(
+        `Operação encerrada: ${sinal.par} -> ${motivoEncerramento}`
+    );
+
+            }
+            
             console.log(
-`${sinal.par} | ABERTA | Atual: ${precoAtual} | Máx: ${precoMaximo} | Mín: ${precoMinimo} | Favor: ${maxPipsFavor} pips | Contra: ${maxPipsContra} pips`
+`${sinal.par} | ${operacaoFinalizada ? "ENCERRADA" : "ABERTA"} | Atual: ${precoAtual} | Máx: ${precoMaximo} | Mín: ${precoMinimo} | Favor: ${maxPipsFavor} pips | Contra: ${maxPipsContra} pips | USD: ${lucroAtual.toFixed(2)}${operacaoFinalizada ? ` | ${motivoEncerramento}` : ""}`
 );
 
         } catch (erro) {
