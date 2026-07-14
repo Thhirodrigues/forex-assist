@@ -391,7 +391,7 @@ precoEntrada: closes[closes.length - 1],
 
 status: "ABERTA",
 
-inicioOperacao: admin.firestore.Timestamp.now(),
+inicioOperacao: Date.now(),
 
 fimOperacao: null,
 
