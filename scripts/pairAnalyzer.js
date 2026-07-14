@@ -35,9 +35,7 @@
 // ===================================================
 
 const {
-
     analisarFinanceiro
-
 } = require("./moneyManager");
 
 const {
@@ -381,9 +379,7 @@ const operacao = {
 
     configuracaoIdeal: financeiro.configuracaoIdeal,
 
-    recomendacaoFinanceira:
-
-        financeiro.recomendacao.mensagem,
+    recomendacaoFinanceira: financeiro.recomendacao.mensagem,
 
     modo: "REAL",
 
@@ -391,12 +387,34 @@ const operacao = {
 
     engine: "RMI_V2",
 
-    precoEntrada:
+precoEntrada: closes[closes.length - 1],
 
-        closes[closes.length - 1],
+status: "ABERTA",
 
-    resultado: "PENDENTE"
+inicioOperacao: admin.firestore.Timestamp.now(),
 
+fimOperacao: null,
+
+tempoOperacao: null,
+
+precoAtual: closes[closes.length - 1],
+
+precoMaximo: closes[closes.length - 1],
+
+precoMinimo: closes[closes.length - 1],
+
+maxPipsFavor: 0,
+
+maxPipsContra: 0,
+
+precoSaida: null,
+
+resultado: null,
+
+resultadoFinanceiro: null,
+
+lucroUSD: null
+    
 };
         
 await salvarOperacao(db, operacao);
