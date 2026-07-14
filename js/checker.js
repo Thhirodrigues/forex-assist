@@ -42,14 +42,25 @@ function calcularVariacaoPercentual(entrada, fechamento) {
     );
 
 }
-async function buscarPrecoFechamento(par) {
+async function buscarUltimoCandle(par) {
 
     const candles = await getCandles(par);
 
-    return Number(candles[candles.length - 1].close);
+    const candle = candles[candles.length - 1];
+
+    return {
+
+        open: Number(candle.open),
+
+        high: Number(candle.high),
+
+        low: Number(candle.low),
+
+        close: Number(candle.close)
+
+    };
 
 }
-
 // =====================================================
 // PROCESSAMENTO
 // =====================================================
@@ -82,19 +93,21 @@ async function verificarSinais() {
 
         try {
 
-            const precoAtual =
-                await buscarPrecoFechamento(sinal.par);
+            const candle =
+                  await buscarUltimoCandle(sinal.par);
 
+           const precoAtual = candle.close;
+            
             const precoMaximo =
     Math.max(
         sinal.precoMaximo ?? sinal.precoEntrada,
-        precoAtual
+        candle.high
     );
 
             const precoMinimo =
     Math.min(
         sinal.precoMinimo ?? sinal.precoEntrada,
-        precoAtual
+        candle.low
     );
     
             let maxPipsFavor = sinal.maxPipsFavor ?? 0;
@@ -133,25 +146,35 @@ async function verificarSinais() {
 
             await documento.ref.update({
 
-                resultado,
+                precoAtual,
 
-                precoFechamento: precoAtual,
+                precoMaximo,
 
-                horarioResultado:
-                    new Date().toLocaleTimeString("pt-BR"),
+                precoMinimo,
 
-                movimentoPips,
+                maxPipsFavor,
 
-                variacaoPercentual,
+                maxPipsContra,
+                
+                // resultado,
 
-                tempoDecorrido:
-                    Math.floor(minutos)
+// precoFechamento: precoAtual,
+
+// horarioResultado:
+//     new Date().toLocaleTimeString("pt-BR"),
+
+// movimentoPips,
+
+// variacaoPercentual,
+
+// tempoDecorrido:
+//     Math.floor(minutos)
 
             });
 
             console.log(
-                `${sinal.par} | ${resultado} | ${movimentoPips} pips`
-            );
+`${sinal.par} | ABERTA | Atual: ${precoAtual} | Máx: ${precoMaximo} | Mín: ${precoMinimo} | Favor: ${maxPipsFavor} pips | Contra: ${maxPipsContra} pips`
+);
 
         } catch (erro) {
 
