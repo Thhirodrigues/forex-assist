@@ -245,8 +245,11 @@ case "SEM_QUALIDADE":
 }
     
 console.log(`${par} finalizado.`);
-  }
 
+// Aguarda 1,5 segundo antes de analisar o próximo par
+await new Promise(resolve => setTimeout(resolve, 1500));
+
+  }
   const tempo =
     ((Date.now() - inicioExecucao) / 1000).toFixed(1);
 
