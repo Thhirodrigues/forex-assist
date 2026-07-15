@@ -43,10 +43,25 @@ function analisarHistorico(estatisticas) {
         Math.round((operacoes / 50) * 100)
     );
 
-    const confidenceMultiplier = Math.max(
-        0.25,
-        confiabilidade / 100
-    );
+    let confidenceMultiplier = 1.0;
+
+if (confiabilidade >= 80) {
+
+    confidenceMultiplier = 1.00;
+
+}
+
+else if (confiabilidade >= 50) {
+
+    confidenceMultiplier = 0.90;
+
+}
+
+else {
+
+    confidenceMultiplier = 0.80;
+
+}
 
     let score = 0;
     let status = "NEUTRA";
