@@ -870,7 +870,7 @@ return {
 
     scoreFinal,
 
-    score: score,
+    score: scoreFinal,
 
     tendencia: emas.tendencia,
 
