@@ -640,6 +640,19 @@ function analisarATR(atr) {
 // SMART SCORING ENGINE
 // ===================================================
 
+function classificarQualidade(scoreFinal) {
+
+    if (scoreFinal >= 95) return "INSTITUCIONAL";
+
+    if (scoreFinal >= 90) return "FORTE";
+
+    if (scoreFinal >= 80) return "BOA";
+
+    if (scoreFinal >= 70) return "ACEITAVEL";
+
+    return "CONFLITO";
+}
+
 function calcularQualidade(
   ema9,
   ema21,
@@ -851,6 +864,9 @@ scoreFinal += Math.round(volatilidade.score * 0.5);
 // =====================================================
 
 scoreFinal = calcularScoreBase(scoreFinal);
+
+const qualidadeFinal =
+    classificarQualidade(scoreFinal);
     
 // ====================================================
 // AJUSTE ADAPTATIVO DO HISTÓRICO
@@ -878,8 +894,8 @@ return {
 
     adx: adxInfo.forca,
 
-    qualidade: tendencia.qualidade,
-
+    qualidade: qualidadeFinal,
+    
     slope,
 
     alinhamento: alinhamento.status,
