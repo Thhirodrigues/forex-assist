@@ -870,6 +870,8 @@ return {
 
     scoreFinal,
 
+    score: score,
+
     tendencia: emas.tendencia,
 
     rsi: rsi.situacao,
