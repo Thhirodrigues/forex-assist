@@ -3290,6 +3290,126 @@ Acredito que essa é a melhor forma de levar o Forex Assist até uma versão est
 
 ----------
 
+Estamos exatamente no ponto em que eu esperava chegar. A infraestrutura da RMI V2 já está montada; agora precisamos fazer a calibração do cérebro, não adicionar novas funcionalidades.
+
+Eu dividiria a próxima etapa em cinco sprints curtas, sempre validando no GitHub Actions após cada uma.
+
+Sprint 08.1 – Auditoria dos pesos (prioridade máxima)
+
+Antes de mudar qualquer valor, vamos descobrir de onde vêm os pontos do score.
+
+No marketAnalyzer, logo após montar o scoreTecnico, adicione temporariamente um log detalhado mostrando a contribuição de cada componente:
+
+EMAs ............. 30
+RSI .............. 35
+ADX .............. 25
+Tendência ........ 30
+Slope ............ 15
+Alinhamento ...... 15
+Simetria ......... 0
+Distância ........ 10
+Multi TF ......... 10
+Histórico ........ +5
+Penalidade ....... -0
+Score Técnico .... XXX
+Score Final ...... XXX
+
+Hoje nós vemos apenas o resultado final. Precisamos enxergar a composição completa.
+
+
+---
+
+Sprint 08.2 – Rebalanceamento
+
+Com esses logs, recalibramos os pesos.
+
+Exemplo:
+
+EMAs: 30 → 35
+
+Tendência: 30 → 25
+
+RSI: 35 → 25
+
+ADX: manter
+
+Multi TF: aumentar levemente
+
+Simetria: aumentar importância
+
+Distância: reduzir um pouco
+
+
+Esses valores só serão ajustados depois de observarmos vários pares.
+
+
+---
+
+Sprint 08.3 – Classificação Inteligente
+
+Hoje a qualidade depende apenas do score.
+
+Ela deveria considerar também fatores críticos.
+
+Por exemplo:
+
+ADX muito fraco nunca pode gerar "Institucional".
+
+Multi TF divergente limita a qualidade.
+
+Alinhamento ruim impede notas máximas.
+
+Histórico muito ruim pode limitar a classificação.
+
+
+Assim, não será apenas uma escala numérica.
+
+
+---
+
+Sprint 08.4 – Banco de testes
+
+Criar uma bateria de casos conhecidos:
+
+Tendência perfeita
+
+Mercado lateral
+
+Pullback
+
+Rompimento
+
+Falso rompimento
+
+ADX fraco
+
+ADX forte
+
+
+Rodamos todos automaticamente e verificamos se o motor atribui a classificação esperada.
+
+
+---
+
+Sprint 08.5 – Calibração Final
+
+Depois de muitos testes, congelamos oficialmente os pesos da RMI V2.
+
+Esse passa a ser o padrão institucional do projeto.
+
+
+---
+
+Minha recomendação
+
+Não começaria alterando pesos ainda.
+
+Começaria pela Sprint 08.1, porque ela nos dará dados objetivos. Sem enxergar a contribuição individual de cada módulo, qualquer ajuste seria baseado em tentativa e erro.
+
+Esse passo é rápido, não altera a lógica do sistema e nos permitirá calibrar o motor com muito mais precisão nas próximas etapas. É exatamente assim que eu conduziria a evolução do núcleo de análise da RMI antes de avançarmos para funcionalidades adicionais.
+
+---------
+
 
 
 
