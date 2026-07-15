@@ -824,45 +824,34 @@ const volatilidade =
 // ====================================================
 // CÁLCULO DO SCORE
 // ====================================================
-score += aplicarBonusHistorico(historico);
-
-score += slope;
-
-score += alinhamento.score;
-
-score += simetria.score;
-
-score += distancia.score;
-
-score += multi.score;
-
-// Histórico adaptativo
-score += adaptive.pesoHistorico;
-
-
-// Bônus da direção histórica
-score += bonusDirecao;
-
-// Memória operacional
-score += memoriaOperacional;
+let scoreTecnico = score;
+let scoreFinal = scoreTecnico;
+    
+scoreFinal += aplicarBonusHistorico(historico);
+scoreFinal += slope;
+scoreFinal += alinhamento.score;
+scoreFinal += simetria.score;
+scoreFinal += distancia.score;
+scoreFinal += multi.score;
+scoreFinal += adaptive.pesoHistorico;
+scoreFinal += bonusDirecao;
+scoreFinal += memoriaOperacional;
 
 const penalidade =
     aplicarPenalidadeHistorico(
         historico,
         multi
     );
-
-score -= penalidade;
-
-// Volatilidade entra apenas como ajuste fino
-score += Math.round(volatilidade.score * 0.5);
-
+scoreFinal -= penalidade;
+    
+scoreFinal += Math.round(volatilidade.score * 0.5);
+    
 // =====================================================
 // NORMALIZAÇÃO DO SCORE
 // =====================================================
 
-score = calcularScoreBase(score);
-
+scoreFinal = calcularScoreBase(scoreFinal);
+    
 // ====================================================
 // AJUSTE ADAPTATIVO DO HISTÓRICO
 // ====================================================
@@ -873,7 +862,13 @@ score = calcularScoreBase(score);
     
 return {
 
-    score,
+    scoreTecnico,
+
+    confidence: adaptive.confiabilidade,
+
+    penalizacao: penalidade,
+
+    scoreFinal,
 
     tendencia: emas.tendencia,
 
