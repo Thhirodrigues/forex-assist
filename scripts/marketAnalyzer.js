@@ -865,6 +865,16 @@ scoreFinal += Math.round(volatilidade.score * 0.5);
 
 scoreFinal = calcularScoreBase(scoreFinal);
 
+// Adaptive Confidence influencia o score final
+scoreFinal = Math.round(
+    scoreFinal * adaptive.confidenceMultiplier
+);
+
+scoreFinal = Math.max(
+    0,
+    Math.min(100, scoreFinal)
+);
+
 const qualidadeFinal =
     classificarQualidade(scoreFinal);
     
