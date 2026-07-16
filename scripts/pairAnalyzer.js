@@ -331,6 +331,18 @@ const operacao = {
 
     score: qualidade.score,
 
+    scoreTecnico: qualidade.scoreTecnico,
+
+emaScore: qualidade.emaScore,
+
+rsiScore: qualidade.rsiScore,
+
+adxScore: qualidade.adxScore,
+
+tendenciaScore: qualidade.tendenciaScore,
+
+penalizacao: qualidade.penalizacao,
+
     tendencia: qualidade.tendencia,
 
     situacaoRSI: qualidade.rsi,
@@ -437,8 +449,14 @@ console.log(`Peso Histórico...${qualidade.pesoHistorico}`);
 console.log(`Wins............${estatisticas.wins}`);
 console.log(`Loss............${estatisticas.loss}`);
 console.log(`Operações.......${estatisticas.operacoes}`);
-console.log(`Score.............${qualidade.score}`);
+console.log(`EMA Score........${qualidade.emaScore}`);
+console.log(`RSI Score........${qualidade.rsiScore}`);
+console.log(`ADX Score........${qualidade.adxScore}`);
+console.log(`Trend Score......${qualidade.tendenciaScore}`);
+console.log(`Score Técnico....${qualidade.scoreTecnico}`);
+console.log(`Penalização......${qualidade.penalizacao}`);
 console.log(`Qualidade.........${qualidade.qualidade}`);
+console.log(`Score.............${qualidade.score}`);
 console.log(`Lote............${operacao.lote}`);
 console.log(`TP USD..........${operacao.tpUSD}`);
 console.log(`SL USD..........${operacao.slUSD}`);
