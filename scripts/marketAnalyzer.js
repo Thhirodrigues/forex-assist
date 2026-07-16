@@ -235,97 +235,73 @@ function analisarRSI(rsi) {
 // ===================================================
 
 function analisarTendencia(
-  emas,
-  rsiInfo,
-  adxInfo
+    emas,
+    rsiInfo,
+    adxInfo
 ) {
 
-  let score = 0;
+    let score = 0;
 
-  let qualidade = "CONFLITO";
+    // EMA confirma tendência
+    if (
+        emas.tendencia === "ALTA" ||
+        emas.tendencia === "BAIXA"
+    ) {
+        score += 10;
+    }
 
-  // ===================================================
-  // TENDÊNCIA INSTITUCIONAL
-  // ===================================================
+    // RSI confirma direção
+    if (
+        (emas.tendencia === "ALTA" && rsiInfo.situacao === "COMPRA") ||
+        (emas.tendencia === "BAIXA" && rsiInfo.situacao === "VENDA")
+    ) {
+        score += 10;
+    }
 
-  if (
+    // ADX moderado
+    if (
+        adxInfo.forca === "MODERADA" ||
+        adxInfo.forca === "BOA"
+    ) {
+        score += 5;
+    }
 
-    emas.tendencia === "ALTA" &&
-    rsiInfo.situacao === "COMPRA" &&
-    (
-      adxInfo.forca === "FORTE" ||
-      adxInfo.forca === "MUITO_FORTE" ||
-      adxInfo.forca === "EXTREMA"
-    )
+    // ADX forte
+    if (
+        adxInfo.forca === "FORTE" ||
+        adxInfo.forca === "MUITO_FORTE" ||
+        adxInfo.forca === "EXTREMA"
+    ) {
+        score += 10;
+    }
 
-  ) {
+    let qualidade = "CONFLITO";
 
-    score = 30;
+    if (score >= 30) {
 
-    qualidade = "INSTITUCIONAL";
+        qualidade = "INSTITUCIONAL";
 
-  }
+    } else if (score >= 20) {
 
-  // ===================================================
-  // TENDÊNCIA FORTE
-  // ===================================================
+        qualidade = "FORTE";
 
-  else if (
+    } else if (score >= 10) {
 
-    (
-      emas.tendencia === "ALTA" &&
-      rsiInfo.situacao === "COMPRA"
-    ) ||
+        qualidade = "ACEITAVEL";
 
-    (
-      emas.tendencia === "BAIXA" &&
-      rsiInfo.situacao === "VENDA"
-    )
+    } else if (score > 0) {
 
-  ) {
+        qualidade = "FRACA";
 
-    score = 20;
+    }
 
-    qualidade = "FORTE";
+    return {
 
-  }
+        score,
 
-  // ===================================================
-  // LATERAL
-  // ===================================================
+        qualidade
 
-  else if (
-
-    emas.tendencia === "LATERAL" ||
-    emas.tendencia === "COMPRESSAO"
-
-  ) {
-
-    score = 8;
-
-    qualidade = "LATERAL";
-
-  }
-
-  // ===================================================
-  // CONFLITO
-  // ===================================================
-
-  else {
-
-    score = 0;
-
-    qualidade = "CONFLITO";
-
-  }
-
-  return {
-
-    score,
-
-    qualidade
-
-  };
+    };
 
 }
 
