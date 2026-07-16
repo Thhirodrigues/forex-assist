@@ -890,6 +890,14 @@ return {
 
     scoreTecnico,
 
+    emaScore: emas.score,
+
+    rsiScore: rsi.score,
+
+    adxScore: adxInfo.score,
+
+    tendenciaScore: tendencia.score,
+
     confidence: adaptive.confiabilidade,
 
     penalizacao: penalidade,
