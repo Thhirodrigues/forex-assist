@@ -141,16 +141,16 @@ if (
 return "SEM_DADOS";
 }
 
-if (ema9 > ema21 && rsiAtual > 55)
-    direcao = "BUY";
+// if (ema9 > ema21 && rsiAtual > 55)
+//     direcao = "BUY";
 
-if (ema9 < ema21 && rsiAtual < 45)
-    direcao = "SELL";
+// if (ema9 < ema21 && rsiAtual < 45)
+//     direcao = "SELL";
 
-if (!direcao) {
-    console.log("Status.............SEM SINAL");
-    return "SEM_SINAL";
-}
+// if (!direcao) {
+//     console.log("Status.............SEM SINAL");
+//     return "SEM_SINAL";
+// }
 
 const qualidade = calcularQualidade(
     ema9,
@@ -168,6 +168,25 @@ const qualidade = calcularQualidade(
     
 );
 
+// ===================================================
+// DIREÇÃO DEFINIDA PELO MARKET ANALYZER
+// ===================================================
+
+direcao = qualidade.tendencia;
+
+if (direcao === "ALTA") {
+    direcao = "BUY";
+}
+
+else if (direcao === "BAIXA") {
+    direcao = "SELL";
+}
+
+else {
+    console.log("Status.............SEM SINAL");
+    return "SEM_SINAL";
+}
+        
 // ===================================================
 // FILTRO DE CONFIANÇA
 // ===================================================
