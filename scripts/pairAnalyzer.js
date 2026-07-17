@@ -221,19 +221,11 @@ const financeiro =
 // FILTRO ESTATÍSTICO
 // ===================================================
 
-if (
-    qualidade.historico === "RUIM"
-) {
+if (qualidade.historico === "RUIM") {
 
     console.log(
-        "Histórico.........RUIM"
+        "Histórico.........RUIM (penalizado no score)"
     );
-
-    console.log(
-        "Status............REPROVADO"
-    );
-
-    return "SEM_QUALIDADE";
 
 }
 
