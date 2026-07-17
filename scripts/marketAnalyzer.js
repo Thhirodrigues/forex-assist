@@ -73,7 +73,7 @@ function analisarEMAs(
 
   ) {
 
-    score = 30;
+    score = 20;
 
     tendencia = "ALTA";
 
@@ -88,7 +88,7 @@ function analisarEMAs(
 
   ) {
 
-    score = 30;
+    score = 20;
 
     tendencia = "BAIXA";
 
@@ -105,7 +105,7 @@ function analisarEMAs(
 
   ) {
 
-    score = 22;
+    score = 15;
 
     tendencia = "ALTA";
 
@@ -118,7 +118,7 @@ function analisarEMAs(
 
   ) {
 
-    score = 22;
+    score = 15;
 
     tendencia = "BAIXA";
 
@@ -135,7 +135,7 @@ function analisarEMAs(
 
   ) {
 
-    score = 16;
+    score = 10;
 
     tendencia = "ALTA";
 
@@ -148,7 +148,7 @@ function analisarEMAs(
 
   ) {
 
-    score = 16;
+    score = 10;
 
     tendencia = "BAIXA";
 
@@ -164,7 +164,7 @@ function analisarEMAs(
 
   ) {
 
-    score = 8;
+    score = 5;
 
     tendencia = "COMPRESSAO";
 
@@ -203,22 +203,22 @@ function analisarRSI(rsi) {
   let situacao = "NEUTRO";
 
   if (rsi >= 55 && rsi <= 70) {
-    score = 35;
+    score = 20;
     situacao = "COMPRA";
   }
 
   else if (rsi <= 45 && rsi >= 30) {
-    score = 35;
+    score = 20;
     situacao = "VENDA";
   }
 
   else if (rsi > 70) {
-    score = 10;
+    score = 5;
     situacao = "SOBRECOMPRADO";
   }
 
   else if (rsi < 30) {
-    score = 10;
+    score = 5;
     situacao = "SOBREVENDIDO";
   }
 
@@ -323,42 +323,42 @@ function analisarADX(adx) {
 
   else if (adx < 20) {
 
-    score = 5;
+    score = 3;
     forca = "FRACA";
 
   }
 
   else if (adx < 25) {
 
-    score = 10;
+    score = 6;
     forca = "MODERADA";
 
   }
 
   else if (adx < 30) {
 
-    score = 15;
+    score = 9;
     forca = "BOA";
 
   }
 
   else if (adx < 35) {
 
-    score = 20;
+    score = 12;
     forca = "FORTE";
 
   }
 
   else if (adx < 40) {
 
-    score = 25;
+    score = 14;
     forca = "MUITO_FORTE";
 
   }
 
   else {
 
-    score = 30;
+    score = 15;
     forca = "EXTREMA";
 
   }
@@ -390,21 +390,21 @@ function analisarSlope(
         d1 >= 0.0010 &&
         d2 >= 0.0010
     ) {
-        return 15;
+        return 8;
     }
 
     if (
         d1 >= 0.0007 &&
         d2 >= 0.0007
     ) {
-        return 10;
+        return 5;
     }
 
     if (
         d1 >= 0.0004 &&
         d2 >= 0.0004
     ) {
-        return 5;
+        return 3;
     }
 
     return 0;
@@ -437,7 +437,7 @@ function analisarAlinhamento(
 
     if (compra || venda) {
         return {
-            score: 15,
+            score: 5,
             status: "PERFEITO"
         };
     }
@@ -466,7 +466,7 @@ function analisarAlinhamento(
 
     if (pontos >= 3) {
         return {
-            score: 8,
+            score: 3,
             status: "PARCIAL"
         };
     }
@@ -493,14 +493,14 @@ function analisarDistanciaEMAs(
 
     if (d1 >= 0.0015 && d2 >= 0.0015) {
         return {
-            score: 10,
+            score: 5,
             nivel: "IDEAL"
         };
     }
 
     if (d1 >= 0.0008 && d2 >= 0.0008) {
         return {
-            score: 5,
+            score: 3,
             nivel: "BOA"
         };
     }
@@ -528,21 +528,21 @@ function analisarSimetria(
 
     if (diferenca <= 0.00010) {
         return {
-            score: 10,
+            score: 3,
             simetria: "EXCELENTE"
         };
     }
 
     if (diferenca <= 0.00030) {
         return {
-            score: 5,
+            score: 2,
             simetria: "BOA"
         };
     }
 
     if (diferenca <= 0.00060) {
         return {
-            score: 2,
+            score: 1,
             simetria: "ACEITÁVEL"
         };
     }
@@ -566,7 +566,7 @@ function analisarMultiTimeframe(
     if (tendencia5m === tendencia15m) {
 
         return {
-            score: 10,
+            score: 4,
             status: "CONFIRMADO"
         };
 
