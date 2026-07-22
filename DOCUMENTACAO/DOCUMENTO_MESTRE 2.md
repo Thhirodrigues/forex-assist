@@ -2461,4 +2461,428 @@ Com essa entrega, temos um mapa de responsabilidades e um inventário funcional 
 Próxima entrega: ENTREGA 05 — Matriz de Acoplamento e Dependências, identificando, para cada módulo, quais dependências são necessárias, quais são desnecessárias e quais deverão ser eliminadas ou invertidas durante a refatoração da FASE 07.
 
 ------------
+RMI V2 — FASE 06
+
+ENTREGA 05 — MATRIZ DE ACOPLAMENTO E DEPENDÊNCIAS
+
+Status: CONCLUÍDA
+
+
+---
+
+Objetivo
+
+Mapear o nível de acoplamento entre os módulos da RMI V2, identificando dependências saudáveis, dependências excessivas e pontos que deverão ser desacoplados durante a FASE 07.
+
+
+---
+
+PRINCÍPIO ARQUITETURAL
+
+A RMI V2 adotará oficialmente o princípio:
+
+> Dependência unidirecional.
+
+
+
+Cada módulo conhece apenas os módulos estritamente necessários para cumprir sua responsabilidade.
+
+Nenhum módulo deve "conhecer" a lógica interna de outro.
+
+
+---
+
+MATRIZ DE DEPENDÊNCIAS
+
+Módulo	Depende de	Nível
+
+scanner	pairAnalyzer	Ideal
+pairAnalyzer	marketData	Ideal
+pairAnalyzer	utils	Ideal
+pairAnalyzer	marketAnalyzer	Ideal
+pairAnalyzer	historyAnalyzer	Ideal
+pairAnalyzer	scoreEngine	Ideal
+pairAnalyzer	decisionEngine	Ideal
+pairAnalyzer	riskEngine	Ideal
+pairAnalyzer	moneyManager	Ideal
+marketAnalyzer	utils	Ideal
+historyAnalyzer	Firestore	Ideal
+scoreEngine	marketAnalyzer + historyAnalyzer	Ideal
+decisionEngine	score + history + market	Ideal
+riskEngine	decisionEngine	Ideal
+moneyManager	decisionEngine	Ideal
+Result Checker	Firestore	Ideal
+
+
+
+---
+
+GRAU DE ACOPLAMENTO
+
+scanner.js
+
+Baixíssimo.
+
+Conhece apenas o Pair Analyzer.
+
+Situação: Excelente.
+
+
+---
+
+marketData.js
+
+Muito baixo.
+
+Não conhece regras de negócio.
+
+Situação: Excelente.
+
+
+---
+
+utils.js
+
+Nulo.
+
+Biblioteca pura.
+
+Situação: Excelente.
+
+
+---
+
+historyAnalyzer.js
+
+Baixo.
+
+Recebe dados históricos.
+
+Não interfere em decisões.
+
+Situação: Excelente.
+
+
+---
+
+scoreEngine.js
+
+Baixo.
+
+Recebe evidências.
+
+Devolve pontuação.
+
+Situação: Excelente.
+
+
+---
+
+riskEngine.js
+
+Muito baixo.
+
+Atua apenas após decisão.
+
+Situação: Excelente.
+
+
+---
+
+moneyManager.js
+
+Muito baixo.
+
+Independente.
+
+Situação: Excelente.
+
+
+---
+
+statisticsEngine.js
+
+Muito baixo.
+
+Somente leitura.
+
+Situação: Excelente.
+
+
+---
+
+Result Checker
+
+Muito baixo.
+
+Somente pós-processamento.
+
+Situação: Excelente.
+
+
+---
+
+MARKET ANALYZER
+
+Acoplamento
+
+Médio.
+
+Depende apenas dos indicadores.
+
+O problema não é o acoplamento.
+
+O problema é o excesso de responsabilidade.
+
+
+---
+
+Classificação
+
+Aceitável.
+
+
+---
+
+DECISION ENGINE
+
+Acoplamento
+
+Hoje ainda abaixo do esperado.
+
+Ele deveria ser o centro da arquitetura.
+
+Ainda recebe menos responsabilidade do que deveria.
+
+
+---
+
+Classificação
+
+Necessita fortalecimento.
+
+
+---
+
+PAIR ANALYZER
+
+Acoplamento
+
+Muito alto.
+
+Conhece praticamente todos os módulos.
+
+Isso é esperado para um orquestrador, mas ele não pode utilizar esse conhecimento para substituir responsabilidades alheias.
+
+O objetivo da FASE 07 não é reduzir o número de dependências do Pair Analyzer, e sim garantir que ele apenas coordene as chamadas, sem incorporar regras de negócio.
+
+
+---
+
+MATRIZ DE COMUNICAÇÃO
+
+Permitido
+
+Scanner
+      ↓
+Pair Analyzer
+      ↓
+Market Data
+      ↓
+Utils
+      ↓
+Market Analyzer
+      ↓
+History Analyzer
+      ↓
+Score Engine
+      ↓
+Decision Engine
+      ↓
+Risk Engine
+      ↓
+Money Manager
+      ↓
+Persistência
+
+
+---
+
+Não permitido
+
+Market Analyzer
+
+↓
+
+Risk Engine
+
+
+---
+
+Market Analyzer
+
+↓
+
+Money Manager
+
+
+---
+
+Risk Engine
+
+↓
+
+Market Analyzer
+
+
+---
+
+Money Manager
+
+↓
+
+Score Engine
+
+
+---
+
+History Analyzer
+
+↓
+
+Decision Engine
+
+↓
+
+History Analyzer
+
+Não pode haver ciclos de dependência.
+
+
+---
+
+DEPENDÊNCIAS PROIBIDAS
+
+RA-011
+
+Nenhum módulo pode depender de um módulo de camada superior.
+
+
+---
+
+RA-012
+
+Nenhum módulo pode modificar informações produzidas por outro módulo.
+
+
+---
+
+RA-013
+
+Nenhum módulo pode recalcular dados já consolidados.
+
+
+---
+
+RA-014
+
+Toda comunicação ocorre através de objetos estruturados.
+
+Nunca através de variáveis globais.
+
+
+---
+
+RA-015
+
+Toda decisão operacional passa obrigatoriamente pelo Decision Engine.
+
+
+---
+
+MATRIZ DE RISCO DE ACOPLAMENTO
+
+Módulo	Grau
+
+scanner	Muito Baixo
+marketData	Muito Baixo
+utils	Nulo
+historyAnalyzer	Baixo
+scoreEngine	Baixo
+riskEngine	Muito Baixo
+moneyManager	Muito Baixo
+statisticsEngine	Muito Baixo
+Result Checker	Muito Baixo
+marketAnalyzer	Médio
+decisionEngine	Médio
+pairAnalyzer	Alto (aceitável por ser orquestrador)
+
+
+
+---
+
+VISÃO ARQUITETURAL FINAL
+
+Após a FASE 07, a RMI V2 deverá operar segundo o seguinte modelo:
+
+GitHub Actions
+        │
+        ▼
+scanner.js
+        │
+        ▼
+pairAnalyzer.js
+        │
+ ┌──────┼──────────────┐
+ ▼      ▼              ▼
+marketData      historyAnalyzer
+ │
+ ▼
+utils
+ │
+ ▼
+marketAnalyzer
+ │
+ ▼
+scoreEngine
+ │
+ ▼
+decisionEngine
+ ├──────────────┐
+ ▼              ▼
+riskEngine   moneyManager
+        │
+        ▼
+Persistência
+        │
+        ▼
+Result Checker
+        │
+        ▼
+statisticsEngine
+
+
+---
+
+CONCLUSÃO DA ENTREGA 05
+
+A análise de acoplamento confirma que a arquitetura escolhida para a RMI V2 é adequada e escalável. O principal desafio não está nas dependências entre módulos, mas na distribuição das responsabilidades dentro dos módulos centrais.
+
+Com as entregas 01 a 05 concluídas, a arquitetura já possui:
+
+mapa estrutural;
+
+fluxo operacional;
+
+responsabilidades definidas;
+
+inventário funcional;
+
+matriz de dependências.
+
+
+Esses elementos formam a base técnica para iniciar a FASE 07 — Refatoração Controlada, onde as mudanças passarão a ser implementadas no código, uma a uma, sempre preservando a estabilidade da RMI V2 e registrando cada decisão no Documento Mestre 2.
+
+--------------------
+
 
