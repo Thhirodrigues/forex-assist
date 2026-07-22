@@ -520,5 +520,692 @@ Próxima entrega: ENTREGA 02 — Auditoria Completa do Fluxo de Execução da RM
 
 
 ---------
+RMI V2 — FASE 06
 
+ENTREGA 02 — AUDITORIA DO FLUXO DE EXECUÇÃO
+
+Status: CONCLUÍDA
+
+
+---
+
+Objetivo
+
+Reconstruir o fluxo completo da RMI V2 desde o início da varredura até o encerramento da operação, identificando onde cada responsabilidade nasce, é transformada e termina.
+
+Nesta etapa não há alteração de código. O objetivo é entender completamente o comportamento do sistema.
+
+
+---
+
+FLUXO OPERACIONAL DA RMI V2
+
+ETAPA 01 — INICIALIZAÇÃO
+
+Responsável:
+
+GitHub Actions / Scanner Manual
+
+
+Função: Iniciar o ciclo de análise.
+
+Entrada
+
+Lista de pares ativos
+
+Configurações
+
+APIs
+
+
+Saída
+
+Lista de ativos para análise.
+
+
+---
+
+ETAPA 02 — SCANNER
+
+Arquivo
+
+scanner.js
+
+Responsabilidade correta
+
+percorrer pares
+
+chamar Pair Analyzer
+
+registrar resultado
+
+
+Não deve
+
+calcular score
+
+decidir compra
+
+decidir venda
+
+interpretar indicadores
+
+
+Diagnóstico
+
+Arquitetura correta.
+
+Nenhum conflito crítico encontrado nesta camada.
+
+
+---
+
+ETAPA 03 — PAIR ANALYZER
+
+Arquivo
+
+pairAnalyzer.js
+
+
+---
+
+Responsabilidade prevista
+
+Receber um ativo.
+
+Coordenar toda análise.
+
+Enviar resultado.
+
+
+---
+
+Fluxo esperado
+
+Receber par
+
+↓
+
+Buscar candles
+
+↓
+
+Calcular indicadores
+
+↓
+
+Enviar para análise
+
+↓
+
+Receber score
+
+↓
+
+Receber decisão
+
+↓
+
+Registrar operação
+
+
+---
+
+Fluxo observado
+
+Recebe candles.
+
+↓
+
+Calcula indicadores.
+
+↓
+
+Executa parte da lógica.
+
+↓
+
+Consulta outros módulos.
+
+↓
+
+Aplica filtros próprios.
+
+↓
+
+Decide continuar ou parar.
+
+↓
+
+Envia resultado.
+
+
+---
+
+Diagnóstico
+
+Este módulo deixou de ser apenas um orquestrador.
+
+Hoje ele também exerce parte da tomada de decisão.
+
+Isso aumenta o acoplamento do sistema.
+
+Classificação
+
+CRÍTICO
+
+
+---
+
+ETAPA 04 — MARKET DATA
+
+Arquivo
+
+marketData.js
+
+
+---
+
+Responsabilidade
+
+Buscar informações do mercado.
+
+
+---
+
+Entradas
+
+API
+
+
+---
+
+Saída
+
+Candles
+
+Volumes
+
+Preços
+
+
+---
+
+Diagnóstico
+
+Responsabilidade correta.
+
+Nenhum conflito identificado.
+
+
+---
+
+ETAPA 05 — UTILS
+
+Arquivo
+
+utils.js
+
+
+---
+
+Responsabilidade
+
+Indicadores.
+
+Funções matemáticas.
+
+Conversões.
+
+
+---
+
+Diagnóstico
+
+Correto.
+
+
+---
+
+ETAPA 06 — MARKET ANALYZER
+
+Arquivo
+
+marketAnalyzer.js
+
+
+---
+
+Responsabilidade prevista
+
+Interpretar o mercado.
+
+Gerar evidências.
+
+
+---
+
+Fluxo esperado
+
+Recebe indicadores
+
+↓
+
+Calcula tendência
+
+↓
+
+Calcula qualidade
+
+↓
+
+Calcula score técnico
+
+↓
+
+Envia para Decision Engine
+
+
+---
+
+Fluxo observado
+
+Recebe indicadores.
+
+↓
+
+Calcula score.
+
+↓
+
+Calcula tendência.
+
+↓
+
+Classifica qualidade.
+
+↓
+
+Aplica regras.
+
+↓
+
+Devolve resultado.
+
+
+---
+
+Diagnóstico
+
+É hoje o maior produtor de inteligência.
+
+Entretanto ainda concentra regras que deveriam apenas produzir evidências.
+
+Existe mistura entre:
+
+análise
+
+classificação
+
+pré-decisão
+
+
+
+---
+
+Classificação
+
+ALTA PRIORIDADE
+
+
+---
+
+ETAPA 07 — HISTORY ANALYZER
+
+Arquivo
+
+historyAnalyzer.js
+
+
+---
+
+Responsabilidade
+
+Interpretar histórico.
+
+
+---
+
+Entradas
+
+Firestore.
+
+Resultados anteriores.
+
+
+---
+
+Saída
+
+Adaptive Confidence.
+
+Histórico.
+
+Peso estatístico.
+
+
+---
+
+Diagnóstico
+
+Muito bem posicionado.
+
+Aparentemente não invade responsabilidades.
+
+Será auditado profundamente na próxima fase.
+
+
+---
+
+ETAPA 08 — SCORE ENGINE
+
+Arquivo
+
+scoreEngine.js
+
+
+---
+
+Responsabilidade
+
+Calcular score.
+
+
+---
+
+Diagnóstico
+
+Boa separação.
+
+Será necessário confirmar se nenhuma parte do score continua sendo recalculada em outros módulos.
+
+
+---
+
+ETAPA 09 — DECISION ENGINE
+
+Arquivo
+
+decisionEngine.js
+
+
+---
+
+Responsabilidade prevista
+
+Receber todas evidências.
+
+↓
+
+Tomar decisão.
+
+↓
+
+Retornar resultado.
+
+
+---
+
+Fluxo esperado
+
+Entrada
+
+↓
+
+Validação
+
+↓
+
+Decisão
+
+↓
+
+Saída
+
+
+---
+
+Fluxo observado
+
+Recebe parte das informações.
+
+Entretanto outras decisões continuam sendo tomadas antes dele.
+
+
+---
+
+Diagnóstico
+
+O cérebro ainda não possui autoridade completa.
+
+
+---
+
+Classificação
+
+CRÍTICO
+
+
+---
+
+ETAPA 10 — RISK ENGINE
+
+Arquivo
+
+riskEngine.js
+
+
+---
+
+Responsabilidade
+
+Dimensionamento.
+
+Risco.
+
+Lote.
+
+
+---
+
+Diagnóstico
+
+Boa separação.
+
+
+---
+
+ETAPA 11 — MONEY MANAGER
+
+Arquivo
+
+moneyManager.js
+
+
+---
+
+Responsabilidade
+
+Gestão financeira.
+
+
+---
+
+Diagnóstico
+
+Boa separação.
+
+
+---
+
+ETAPA 12 — FIRESTORE
+
+Responsabilidade
+
+Persistência.
+
+
+---
+
+Diagnóstico
+
+Correto.
+
+
+---
+
+ETAPA 13 — RESULT CHECKER
+
+Responsabilidade
+
+Verificar resultado.
+
+Atualizar histórico.
+
+
+---
+
+Diagnóstico
+
+Correto.
+
+
+---
+
+MATRIZ DE RESPONSABILIDADE
+
+Módulo	Situação
+
+Scanner	Correto
+MarketData	Correto
+Utils	Correto
+HistoryAnalyzer	Correto
+ScoreEngine	Correto
+RiskEngine	Correto
+MoneyManager	Correto
+Firestore	Correto
+Result Checker	Correto
+MarketAnalyzer	Atenção
+PairAnalyzer	Crítico
+DecisionEngine	Crítico
+
+
+
+---
+
+MAPA DE DECISÃO
+
+Hoje a decisão percorre aproximadamente este caminho:
+
+Scanner
+
+↓
+
+Pair Analyzer
+
+↓
+
+Market Analyzer
+
+↓
+
+History Analyzer
+
+↓
+
+Score Engine
+
+↓
+
+Pair Analyzer
+
+↓
+
+Decision Engine
+
+↓
+
+Pair Analyzer
+
+↓
+
+Scanner
+
+Percebe-se que o PairAnalyzer participa novamente após outras etapas, o que indica que ele atua além da simples orquestração.
+
+
+---
+
+CONFLITOS IDENTIFICADOS
+
+RMI-001
+
+Gravidade: CRÍTICA
+
+O PairAnalyzer acumula responsabilidades de coordenação e de decisão.
+
+
+---
+
+RMI-002
+
+Gravidade: CRÍTICA
+
+O DecisionEngine ainda não concentra toda a decisão operacional.
+
+
+---
+
+RMI-003
+
+Gravidade: ALTA
+
+O MarketAnalyzer combina produção de evidências com regras que influenciam a decisão final.
+
+
+---
+
+RMI-004
+
+Gravidade: MÉDIA
+
+É necessário confirmar que o cálculo de score ocorre em um único ponto da arquitetura.
+
+
+---
+
+CONCLUSÃO DA ENTREGA 02
+
+A arquitetura modular da RMI V2 permanece sólida.
+
+O problema central não é a quantidade de arquivos nem a divisão por módulos. O principal ponto a ser tratado é a distribuição das responsabilidades entre PairAnalyzer, MarketAnalyzer e DecisionEngine.
+
+Próxima Entrega
+
+ENTREGA 03 — Auditoria de Responsabilidades, na qual será produzido um inventário completo de cada função existente nos módulos centrais, identificando:
+
+quem é o proprietário de cada regra;
+
+quais funções estão sobrepostas;
+
+quais podem ser simplificadas;
+
+quais devem permanecer;
+
+quais devem ser migradas durante a refatoração.
+
+
+Essa entrega servirá como base para as alterações de código da FASE 07, reduzindo o risco de regressões e preservando a arquitetura modular definida para a RMI V2.
+
+-----------------
 
