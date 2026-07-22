@@ -1208,4 +1208,1257 @@ quais devem ser migradas durante a refatoração.
 Essa entrega servirá como base para as alterações de código da FASE 07, reduzindo o risco de regressões e preservando a arquitetura modular definida para a RMI V2.
 
 -----------------
+RMI V2 — FASE 06
+
+ENTREGA 03 — AUDITORIA DE RESPONSABILIDADES
+
+Status: CONCLUÍDA
+
+
+---
+
+Objetivo
+
+Definir, sem ambiguidades, qual é a responsabilidade exclusiva de cada módulo da RMI V2. A partir desta entrega, nenhum comportamento deverá existir em dois módulos diferentes.
+
+
+---
+
+PRINCÍPIO ARQUITETURAL OFICIAL
+
+Cada módulo deve responder a uma única pergunta.
+
+Se um módulo responde a duas perguntas diferentes, ele deverá ser refatorado na FASE 07.
+
+
+---
+
+scanner.js
+
+Missão
+
+Orquestração global.
+
+Deve fazer
+
+iniciar o ciclo;
+
+percorrer pares;
+
+controlar execução;
+
+chamar o Pair Analyzer;
+
+registrar logs globais.
+
+
+Nunca deve
+
+calcular indicadores;
+
+interpretar mercado;
+
+calcular score;
+
+decidir BUY/SELL;
+
+aplicar gerenciamento de risco.
+
+
+Situação: Correto.
+
+
+---
+
+pairAnalyzer.js
+
+Missão
+
+Orquestrar a análise de um único par.
+
+Deve fazer
+
+solicitar candles;
+
+solicitar indicadores;
+
+solicitar análises;
+
+reunir todas as respostas;
+
+chamar o Decision Engine;
+
+encaminhar o resultado.
+
+
+Nunca deve
+
+interpretar RSI;
+
+interpretar EMAs;
+
+interpretar ADX;
+
+recalcular score;
+
+aprovar operação;
+
+rejeitar operação;
+
+definir qualidade.
+
+
+Diagnóstico
+
+Hoje é o módulo com maior acúmulo de responsabilidades.
+
+Classificação: CRÍTICA.
+
+
+---
+
+marketData.js
+
+Missão
+
+Aquisição de dados.
+
+Deve fazer
+
+buscar candles;
+
+buscar preços;
+
+normalizar dados.
+
+
+Nunca deve
+
+interpretar mercado;
+
+calcular score;
+
+decidir operações.
+
+
+Situação: Correto.
+
+
+---
+
+utils.js
+
+Missão
+
+Biblioteca matemática.
+
+Deve fazer
+
+EMA;
+
+RSI;
+
+ADX;
+
+ATR;
+
+cálculos auxiliares.
+
+
+Nunca deve
+
+tomar decisões.
+
+
+Situação: Correto.
+
+
+---
+
+marketAnalyzer.js
+
+Missão
+
+Transformar indicadores em evidências técnicas.
+
+Deve fazer
+
+analisar tendência;
+
+analisar força;
+
+analisar momentum;
+
+analisar alinhamento;
+
+produzir evidências estruturadas.
+
+
+Nunca deve
+
+aprovar operação;
+
+rejeitar operação;
+
+aplicar filtros finais;
+
+decidir BUY/SELL.
+
+
+Saída ideal
+
+{
+ tendência,
+ força,
+ momentum,
+ qualidade,
+ evidências
+}
+
+Diagnóstico
+
+Hoje mistura evidências com regras de decisão.
+
+Classificação: Alta.
+
+
+---
+
+historyAnalyzer.js
+
+Missão
+
+Produzir inteligência baseada no histórico.
+
+Deve fazer
+
+analisar desempenho;
+
+identificar padrões;
+
+medir confiança histórica;
+
+gerar contexto estatístico.
+
+
+Nunca deve
+
+decidir operação.
+
+
+Situação: Correto.
+
+
+---
+
+scoreEngine.js
+
+Missão
+
+Converter evidências em pontuação.
+
+Entrada
+
+Market Analyzer;
+
+History Analyzer.
+
+
+Saída
+
+{
+ score,
+ confiança,
+ justificativas
+}
+
+Nunca deve
+
+interpretar indicadores diretamente;
+
+aprovar operações.
+
+
+Situação: Correto, sujeito à confirmação de duplicidades na FASE 07.
+
+
+---
+
+decisionEngine.js
+
+Missão
+
+Ser o único cérebro decisório da RMI V2.
+
+Deve receber
+
+evidências técnicas;
+
+score;
+
+histórico;
+
+risco;
+
+contexto.
+
+
+Deve devolver
+
+{
+ decisão,
+ direção,
+ confiança,
+ justificativa,
+ motivo
+}
+
+Nunca deve
+
+recalcular indicadores;
+
+buscar candles;
+
+calcular EMAs;
+
+consultar API.
+
+
+Diagnóstico
+
+Hoje ainda não possui autoridade completa sobre a decisão.
+
+Classificação: CRÍTICA.
+
+
+---
+
+riskEngine.js
+
+Missão
+
+Gerenciar risco operacional.
+
+Deve fazer
+
+exposição;
+
+risco máximo;
+
+proteção da banca;
+
+limites.
+
+
+Nunca deve
+
+decidir direção.
+
+
+Situação: Correto.
+
+
+---
+
+moneyManager.js
+
+Missão
+
+Gerenciar capital.
+
+Deve fazer
+
+lote;
+
+exposição;
+
+crescimento;
+
+preservação da banca.
+
+
+Nunca deve
+
+aprovar sinais.
+
+
+Situação: Correto.
+
+
+---
+
+statisticsEngine.js
+
+Missão
+
+Gerar estatísticas do sistema.
+
+Deve fazer
+
+taxa de acerto;
+
+desempenho;
+
+métricas;
+
+indicadores globais.
+
+
+Nunca deve
+
+interferir na decisão.
+
+
+Situação: Correto.
+
+
+---
+
+Result Checker
+
+Missão
+
+Validar operações encerradas.
+
+Deve fazer
+
+consultar preço de fechamento;
+
+definir WIN/LOSS;
+
+atualizar histórico.
+
+
+Nunca deve
+
+gerar novos sinais.
+
+
+Situação: Correto.
+
+
+---
+
+MATRIZ OFICIAL DE RESPONSABILIDADES
+
+Módulo	Única responsabilidade
+
+scanner	Orquestração global
+pairAnalyzer	Orquestração por ativo
+marketData	Aquisição de dados
+utils	Cálculos matemáticos
+marketAnalyzer	Evidências técnicas
+historyAnalyzer	Evidências históricas
+scoreEngine	Pontuação
+decisionEngine	Decisão final
+riskEngine	Gestão de risco
+moneyManager	Gestão financeira
+statisticsEngine	Estatísticas
+Result Checker	Validação de resultados
+
+
+
+---
+
+REGRAS ARQUITETURAIS DA RMI V2
+
+RA-001
+
+Somente o Decision Engine pode aprovar ou rejeitar uma operação.
+
+
+---
+
+RA-002
+
+Nenhum módulo pode recalcular informações produzidas por outro módulo.
+
+
+---
+
+RA-003
+
+Cada indicador técnico deve ser calculado uma única vez durante o ciclo de análise.
+
+
+---
+
+RA-004
+
+O fluxo de dados deve ser unidirecional, sem retornos para reprocessamento.
+
+
+---
+
+RA-005
+
+Todo módulo deve possuir uma única responsabilidade claramente definida.
+
+
+---
+
+RA-006
+
+O PairAnalyzer é um orquestrador, nunca um decisor.
+
+
+---
+
+RA-007
+
+O MarketAnalyzer produz evidências; não decide operações.
+
+
+---
+
+RA-008
+
+O ScoreEngine converte evidências em pontuação; não interpreta mercado.
+
+
+---
+
+RA-009
+
+O DecisionEngine é o único responsável pela decisão operacional.
+
+
+---
+
+RA-010
+
+RiskEngine e MoneyManager atuam apenas após uma decisão aprovada.
+
+
+---
+
+CONCLUSÃO DA ENTREGA 03
+
+A arquitetura proposta para a RMI V2 está consistente e estabelece fronteiras claras entre os módulos. O principal trabalho da FASE 07 será alinhar a implementação a essas responsabilidades, removendo regras duplicadas e centralizando a decisão no DecisionEngine, sem alterar a estrutura modular existente.
+
+Próxima entrega: ENTREGA 04 — Inventário Técnico de Funções, identificando cada função existente nos módulos centrais, sua finalidade, dependências, utilização e destino na futura refatoração.
+
+----------------------
+
+RMI V2 — FASE 06
+
+ENTREGA 04 — INVENTÁRIO TÉCNICO DE FUNÇÕES
+
+Status: CONCLUÍDA
+
+
+---
+
+Objetivo
+
+Catalogar as funções da RMI V2 por responsabilidade arquitetural, identificando sua posição no fluxo de execução, suas dependências e seu papel na futura refatoração.
+
+Esta entrega define quem deve possuir cada função, independentemente do arquivo onde ela esteja hoje.
+
+
+---
+
+CAMADA 01 — ORQUESTRAÇÃO
+
+scanner.js
+
+Grupo de funções
+
+Inicialização
+
+Responsabilidade
+
+iniciar ciclo
+
+carregar configurações
+
+preparar ambiente
+
+
+
+---
+
+Loop de execução
+
+Responsabilidade
+
+percorrer pares
+
+controlar concorrência
+
+controlar intervalo
+
+
+
+---
+
+Registro
+
+Responsabilidade
+
+logs
+
+métricas
+
+tempo de execução
+
+
+
+---
+
+Destino
+
+Permanece no Scanner.
+
+
+---
+
+CAMADA 02 — ORQUESTRAÇÃO DO PAR
+
+pairAnalyzer.js
+
+Grupo 01
+
+Aquisição
+
+Funções
+
+solicitar candles
+
+solicitar indicadores
+
+
+Destino
+
+Permanece.
+
+
+---
+
+Grupo 02
+
+Coordenação
+
+Funções
+
+chamar Market Analyzer
+
+chamar History Analyzer
+
+chamar Score Engine
+
+chamar Decision Engine
+
+chamar Risk Engine
+
+
+Destino
+
+Permanece.
+
+
+---
+
+Grupo 03
+
+Validação
+
+Hoje existem funções que:
+
+filtram sinais
+
+interrompem análise
+
+recusam operações
+
+
+Destino
+
+Migrar para Decision Engine.
+
+
+---
+
+Grupo 04
+
+Registro
+
+Funções
+
+salvar operação
+
+encaminhar resultado
+
+
+Destino
+
+Permanece.
+
+
+---
+
+CAMADA 03 — DADOS
+
+marketData.js
+
+Grupos
+
+Download
+
+candles
+
+preços
+
+histórico
+
+
+
+---
+
+Normalização
+
+organizar dados
+
+validar retorno
+
+
+Destino
+
+Permanece.
+
+
+---
+
+CAMADA 04 — UTILITÁRIOS
+
+utils.js
+
+Grupos
+
+Indicadores
+
+EMA
+
+RSI
+
+ADX
+
+ATR
+
+
+
+---
+
+Matemática
+
+médias
+
+arredondamentos
+
+conversões
+
+
+Destino
+
+Permanece.
+
+
+---
+
+CAMADA 05 — MARKET ANALYZER
+
+Grupos de funções
+
+
+---
+
+Tendência
+
+Produz
+
+tendência
+
+alinhamento
+
+
+
+---
+
+Momentum
+
+Produz
+
+força
+
+velocidade
+
+
+
+---
+
+Força
+
+Produz
+
+ADX
+
+qualidade
+
+
+
+---
+
+Estrutura
+
+Produz
+
+evidências
+
+
+
+---
+
+Observação
+
+Toda função que devolve:
+
+BUY
+SELL
+REJEITAR
+APROVAR
+
+não pertence ao Market Analyzer.
+
+Destino
+
+Decision Engine.
+
+
+---
+
+CAMADA 06 — HISTORY ANALYZER
+
+Grupos
+
+
+---
+
+Histórico
+
+wins
+
+losses
+
+
+
+---
+
+Performance
+
+assertividade
+
+
+
+---
+
+Confiança
+
+adaptive confidence
+
+
+
+---
+
+Estatística
+
+padrões
+
+
+Destino
+
+Permanece.
+
+
+---
+
+CAMADA 07 — SCORE ENGINE
+
+Grupos
+
+
+---
+
+Pontuação
+
+score técnico
+
+
+
+---
+
+Peso
+
+ponderação
+
+
+
+---
+
+Confiança
+
+score final
+
+
+
+---
+
+Observação
+
+Não deve recalcular indicadores.
+
+
+---
+
+Destino
+
+Permanece.
+
+
+---
+
+CAMADA 08 — DECISION ENGINE
+
+Este módulo deverá concentrar cinco grupos de funções.
+
+
+---
+
+Grupo 01
+
+Recepção
+
+Recebe
+
+score
+
+histórico
+
+evidências
+
+risco
+
+
+
+---
+
+Grupo 02
+
+Validação
+
+Verifica
+
+qualidade mínima
+
+confiança mínima
+
+filtros
+
+
+
+---
+
+Grupo 03
+
+Decisão
+
+Executa
+
+BUY
+
+SELL
+
+NO TRADE
+
+
+---
+
+Grupo 04
+
+Justificativa
+
+Produz
+
+motivo
+
+explicação
+
+fatores
+
+
+
+---
+
+Grupo 05
+
+Resposta
+
+Retorna
+
+Direção
+
+Confiança
+
+Justificativa
+
+Status
+
+
+---
+
+CAMADA 09 — RISK ENGINE
+
+Grupos
+
+
+---
+
+Exposição
+
+
+---
+
+Proteção
+
+
+---
+
+Limites
+
+
+---
+
+Dimensionamento
+
+Destino
+
+Permanece.
+
+
+---
+
+CAMADA 10 — MONEY MANAGER
+
+Grupos
+
+
+---
+
+Lote
+
+
+---
+
+Banca
+
+
+---
+
+Exposição
+
+
+---
+
+Crescimento
+
+Destino
+
+Permanece.
+
+
+---
+
+CAMADA 11 — RESULT CHECKER
+
+Grupos
+
+
+---
+
+Consulta
+
+
+---
+
+Comparação
+
+
+---
+
+WIN
+
+
+---
+
+LOSS
+
+
+---
+
+Persistência
+
+Destino
+
+Permanece.
+
+
+---
+
+MATRIZ DE MIGRAÇÃO
+
+Permanecem
+
+Scanner
+
+MarketData
+
+Utils
+
+History Analyzer
+
+Score Engine
+
+Risk Engine
+
+Money Manager
+
+Statistics Engine
+
+Result Checker
+
+
+---
+
+Devem perder responsabilidades
+
+Pair Analyzer
+
+Market Analyzer
+
+
+---
+
+Deve ganhar responsabilidades
+
+Decision Engine
+
+
+---
+
+INVENTÁRIO DE DEPENDÊNCIAS
+
+Scanner
+
+↓
+
+Pair Analyzer
+
+↓
+
+MarketData
+
+↓
+
+Utils
+
+↓
+
+Market Analyzer
+
+↓
+
+History Analyzer
+
+↓
+
+Score Engine
+
+↓
+
+Decision Engine
+
+↓
+
+Risk Engine
+
+↓
+
+Money Manager
+
+↓
+
+Persistência
+
+↓
+
+Result Checker
+
+
+---
+
+INVENTÁRIO DE RISCO
+
+Alto
+
+Pair Analyzer
+
+Acúmulo de regras.
+
+
+---
+
+Decision Engine
+
+Centralização incompleta.
+
+
+---
+
+Market Analyzer
+
+Mistura análise + pré-decisão.
+
+
+---
+
+Médio
+
+Score Engine
+
+Confirmar inexistência de cálculos duplicados.
+
+
+---
+
+Baixo
+
+Todos os demais módulos.
+
+
+---
+
+CONCLUSÃO DA ENTREGA 04
+
+A arquitetura da RMI V2 demonstra uma boa separação estrutural, mas a distribuição das funções ainda reflete a evolução incremental do projeto. O inventário confirma que a maior parte da inteligência operacional está concentrada em três módulos (PairAnalyzer, MarketAnalyzer e DecisionEngine), que serão o foco da FASE 07.
+
+Foi identificado um princípio que passa a ser oficial para a evolução da RMI V2:
+
+> Toda função deve existir em apenas um módulo e possuir um único proprietário. Nenhuma regra de negócio poderá ser duplicada em outro ponto da arquitetura.
+
+
+
+Com essa entrega, temos um mapa de responsabilidades e um inventário funcional suficientes para iniciar a refatoração controlada da arquitetura, preservando a modularidade e reduzindo o acoplamento entre os componentes.
+
+Próxima entrega: ENTREGA 05 — Matriz de Acoplamento e Dependências, identificando, para cada módulo, quais dependências são necessárias, quais são desnecessárias e quais deverão ser eliminadas ou invertidas durante a refatoração da FASE 07.
+
+------------
 
