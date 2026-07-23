@@ -289,49 +289,49 @@ if (
 
 const risco = calcularRisco({
 
-    score: qualidade.score,
+score: qualidade.score,
 
-    historico: estatisticas.resumo,
+historico: estatisticas.resumo,
 
-    atr: atrAtual,
+atr: atrAtual,
 
-    loteBase: financeiro.lote,
+loteBase: financeiro.lote,
 
-    tpBase: financeiro.tpUSD,
+tpBase: financeiro.tpUSD,
 
-    slBase: financeiro.slUSD
+slBase: financeiro.slUSD
 
 });
 
 const operacao = {
 
-    par,
+par,
 
-    direcao,
+direcao: decisao.direcao,
 
-    ema9,
+ema9,
 
-    ema21,
+ema21,
 
-    ema50,
+ema50,
 
-    ema100,
+ema100,
 
-    ema200,
+ema200,
 
-    ema9_15,
+ema9_15,
 
-    ema21_15,
+ema21_15,
 
-    ema50_15,
+ema50_15,
 
-    rsi: rsiAtual,
+rsi: rsiAtual,
 
-    atr: atrAtual,
+atr: atrAtual,
 
-    score: qualidade.score,
+score: qualidade.score,
 
-    scoreTecnico: qualidade.scoreTecnico,
+scoreTecnico: qualidade.scoreTecnico,
 
 emaScore: qualidade.emaScore,
 
@@ -343,61 +343,69 @@ tendenciaScore: qualidade.tendenciaScore,
 
 penalizacao: qualidade.penalizacao,
 
-    tendencia: qualidade.tendencia,
+tendencia: qualidade.tendencia,
 
-    situacaoRSI: qualidade.rsi,
+situacaoRSI: qualidade.rsi,
 
-    qualidade: qualidade.qualidade,
+qualidade: qualidade.qualidade,
 
-    multiTimeframe: qualidade.multi,
+multiTimeframe: qualidade.multi,
 
-    historico: qualidade.historico,
+historico: qualidade.historico,
 
-    confiabilidade: qualidade.confiabilidade,
+confiabilidade: qualidade.confiabilidade,
 
-    pesoHistorico: qualidade.pesoHistorico,
+pesoHistorico: qualidade.pesoHistorico,
 
-    confidenceMultiplier: qualidade.confidenceMultiplier,
+confidenceMultiplier: qualidade.confidenceMultiplier,
 
-    confidenceLevel: qualidade.confidenceLevel,
+confidenceLevel: qualidade.confidenceLevel,
 
-    taxaAcerto: estatisticas.resumo.taxaAcerto,
+taxaAcerto: estatisticas.resumo.taxaAcerto,
 
-    winsHistoricos: estatisticas.wins,
+winsHistoricos: estatisticas.wins,
 
-    lossHistoricos: estatisticas.loss,
+lossHistoricos: estatisticas.loss,
 
-    operacoesHistoricas: estatisticas.operacoes,
+operacoesHistoricas: estatisticas.operacoes,
 
-    lote: risco.lote,
+lote: risco.lote,
 
-    tpUSD: risco.tpUSD,
+tpUSD: risco.tpUSD,
 
-    slUSD: risco.slUSD,
+slUSD: risco.slUSD,
 
-    tpPips: financeiro.tpPips,
+tpPips: financeiro.tpPips,
 
-    slPips: financeiro.slPips,
+slPips: financeiro.slPips,
 
-    rewardRisk: risco.riscoRetorno,
+rewardRisk: risco.riscoRetorno,
 
-    riscoPercentual: risco.riscoPercentual,
+riscoPercentual: risco.riscoPercentual,
 
-    aprovado: risco.aprovado,
+aprovado: risco.aprovado,
 
-    justificativasRisco: risco.justificativas,
+justificativasRisco: risco.justificativas,
 
-    expectativa: financeiro.expectativa,
+decisao: decisao.status,
 
-    configuracaoIdeal: financeiro.configuracaoIdeal,
+motivoDecisao: decisao.motivo,
 
-    recomendacaoFinanceira: financeiro.recomendacao.mensagem,
+justificativasDecisao: decisao.justificativas,
 
-    modo: "REAL",
+confiancaDecisao: decisao.confianca,
 
-    origem: "scanner",
+expectativa: financeiro.expectativa,
 
-    engine: "RMI_V2",
+configuracaoIdeal: financeiro.configuracaoIdeal,
+
+recomendacaoFinanceira: financeiro.recomendacao.mensagem,
+
+modo: "REAL",
+
+origem: "scanner",
+
+engine: "RMI_V2",
 
 precoEntrada: closes[closes.length - 1],
 
