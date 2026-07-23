@@ -21,59 +21,119 @@ function avaliarOperacao(resultado) {
 
     const tendencia = resultado.tendencia;
 
+    const confianca = resultado.confianca ?? score;
+
+    const justificativas = [];
+
     if (score < 45) {
 
-        return {
-            status: "REPROVADO"
-        };
+    justificativas.push("Score insuficiente");
+
+    return {
+        aprovado: false,
+        status: "REPROVADO",
+        direcao: "NONE",
+        motivo: "Score abaixo do mínimo",
+        score,
+        qualidade,
+        tendencia,
+        confianca,
+        justificativas
+    };
 
     }
 
     if (multi === "DIVERGENTE") {
 
-        return {
-            status: "COOLDOWN"
-        };
+    justificativas.push("Multi-timeframe divergente");
+
+    return {
+        aprovado: false,
+        status: "COOLDOWN",
+        direcao: "NONE",
+        motivo: "Conflito entre timeframes",
+        score,
+        qualidade,
+        tendencia,
+        confianca,
+        justificativas
+    };
 
     }
 
     if (
 
-        qualidade === "LATERAL" ||
+    qualidade === "LATERAL" ||
 
-        qualidade === "CONFLITO"
+    qualidade === "CONFLITO"
 
-    ) {
+) {
 
-        return {
-            status: "SEM_SINAL"
-        };
+    justificativas.push("Mercado sem tendência definida");
+
+    return {
+        aprovado: false,
+        status: "SEM_SINAL",
+        direcao: "NONE",
+        motivo: "Qualidade insuficiente",
+        score,
+        qualidade,
+        tendencia,
+        confianca,
+        justificativas
+    };
 
     }
 
     if (tendencia === "ALTA") {
 
-        return {
-            status: "COMPRA"
-        };
+    justificativas.push("Tendência de alta confirmada");
+
+    return {
+        aprovado: true,
+        status: "COMPRA",
+        direcao: "BUY",
+        motivo: "Todos os critérios atendidos",
+        score,
+        qualidade,
+        tendencia,
+        confianca,
+        justificativas
+    };
 
     }
 
     if (tendencia === "BAIXA") {
 
-        return {
-            status: "VENDA"
-        };
+    justificativas.push("Tendência de baixa confirmada");
+
+    return {
+        aprovado: true,
+        status: "VENDA",
+        direcao: "SELL",
+        motivo: "Todos os critérios atendidos",
+        score,
+        qualidade,
+        tendencia,
+        confianca,
+        justificativas
+    };
 
     }
 
     return {
 
-        status: "SEM_SINAL"
+    aprovado: false,
+    status: "SEM_SINAL",
+    direcao: "NONE",
+    motivo: "Nenhuma condição de entrada encontrada",
+    score,
+    qualidade,
+    tendencia,
+    confianca,
+    justificativas
 
-    };
-
-}
+};
 
 module.exports = {
 
