@@ -3291,8 +3291,1024 @@ O pairAnalyzer.js é considerado aprovado estruturalmente. A refatoração previ
 
 Próxima entrega: FASE 06 – SPRINT 02 — Auditoria Técnica Completa do marketAnalyzer.js, verificando todas as funções, pesos, classificações e evidências produzidas, confrontando a implementação real com a arquitetura da RMI V2.
 
--------+--------
+---------------
+
+RMI V2 — FASE 06
+
+ENTREGA 06 — SPRINT 01
+
+AUDITORIA TÉCNICA DO pairAnalyzer.js
+
+Status: CONCLUÍDA
+
+> Base da auditoria: código completo do pairAnalyzer.js do ZIP mais recente.
 
 
+
+
+---
+
+LAUDO ARQUITETURAL
+
+O arquivo está bem organizado, possui um fluxo linear e a separação visual é excelente.
+
+O problema encontrado não é de qualidade de código, mas de responsabilidade arquitetural.
+
+
+---
+
+FLUXO REAL IDENTIFICADO
+
+Recebe parâmetros
+
+↓
+
+Obtém candles (5m e 15m)
+
+↓
+
+Calcula indicadores
+
+↓
+
+Valida dados mínimos
+
+↓
+
+Solicita análise (calcularQualidade)
+
+↓
+
+Converte tendência em BUY/SELL
+
+↓
+
+Executa filtros
+
+↓
+
+Executa Money Manager
+
+↓
+
+Executa Risk Engine
+
+↓
+
+Monta operação
+
+↓
+
+Salva operação
+
+↓
+
+Retorna resultado
+
+O fluxo é consistente e fácil de seguir.
+
+
+---
+
+RESPONSABILIDADES IDENTIFICADAS
+
+1. Orquestração
+
+Status: Correto.
+
+O módulo coordena toda a execução.
+
+
+---
+
+2. Aquisição de dados
+
+getCandles(...)
+
+Status: Correto.
+
+
+---
+
+3. Preparação de dados
+
+Mapeamento de:
+
+highs
+
+lows
+
+closes
+
+
+Status: Correto.
+
+
+---
+
+4. Cálculo de indicadores
+
+EMA
+
+RSI
+
+ADX
+
+ATR
+
+
+Status: Correto.
+
+O cálculo ocorre uma única vez.
+
+
+---
+
+5. Validação de dados
+
+if (
+ema9 === null
+...
+)
+
+Status: Correto.
+
+
+---
+
+PRIMEIRO CONFLITO
+
+Conversão da tendência
+
+Hoje existe:
+
+ALTA → BUY
+
+BAIXA → SELL
+
+Arquiteturalmente isso ainda é decisão.
+
+O Pair Analyzer está transformando uma evidência em ação.
+
+Classificação
+
+RMI-005
+
+Gravidade:
+
+ALTA
+
+
+---
+
+SEGUNDO CONFLITO
+
+Filtro Financeiro
+
+Hoje:
+
+if (!financeiro.recomendacao.operar)
+
+Quem está reprovando?
+
+O Pair Analyzer.
+
+Arquiteturalmente quem deveria decidir se opera é o DecisionEngine, utilizando a recomendação financeira como uma das entradas.
+
+Classificação
+
+RMI-006
+
+Gravidade:
+
+CRÍTICA
+
+
+---
+
+TERCEIRO CONFLITO
+
+Filtro Institucional
+
+Hoje:
+
+score < 60
+
+CONFLITO
+
+LATERAL
+
+Essas regras são executadas diretamente no Pair Analyzer.
+
+Na arquitetura aprovada, elas pertencem ao DecisionEngine.
+
+Classificação
+
+RMI-007
+
+Gravidade:
+
+CRÍTICA
+
+
+---
+
+QUARTO CONFLITO
+
+Construção da Operação
+
+O objeto operacao concentra dezenas de campos técnicos, financeiros, estatísticos e operacionais.
+
+A responsabilidade de consolidar o objeto de operação está adequada ao papel do Pair Analyzer.
+
+Situação: Manter.
+
+
+---
+
+QUINTO CONFLITO
+
+Logs
+
+O arquivo registra praticamente todos os componentes da análise.
+
+Isso é útil para auditoria e depuração.
+
+Situação: Manter.
+
+No futuro, pode ser interessante centralizar os logs em um módulo dedicado, mas não é prioridade para a RMI V2.
+
+
+---
+
+DEPENDÊNCIAS
+
+Dependências encontradas:
+
+Money Manager
+
+Risk Engine
+
+Market Analyzer (via calcularQualidade)
+
+Market Data
+
+Utils
+
+Persistência
+
+
+Todas são compatíveis com o papel de orquestrador.
+
+O problema está no uso das respostas, não nas dependências.
+
+
+---
+
+AVALIAÇÃO POR ÁREA
+
+Área	Situação
+
+Organização	Excelente
+Legibilidade	Excelente
+Fluxo	Excelente
+Modularidade	Muito boa
+Acoplamento	Aceitável
+Responsabilidade	Precisa ajuste
+
+
+
+---
+
+CÓDIGO LEGADO
+
+Foram identificados blocos comentados, como:
+
+verificação de cooldown;
+
+definição antiga de BUY/SELL baseada em EMA/RSI.
+
+
+Esses trechos indicam uma evolução do projeto.
+
+Não representam erro, mas deverão ser avaliados antes da FASE 07 para decidir entre remover ou preservar como referência histórica.
+
+
+---
+
+CONCLUSÃO TÉCNICA
+
+O pairAnalyzer.js não precisa ser reescrito.
+
+A estrutura geral está sólida.
+
+O que precisa ser ajustado é a distribuição das responsabilidades:
+
+manter a coordenação;
+
+manter a preparação dos dados;
+
+manter a montagem da operação;
+
+remover as decisões de aprovação/reprovação e concentrá-las no DecisionEngine.
+
+
+Essa mudança preserva a modularidade existente e aproxima a implementação da arquitetura definida nas entregas anteriores.
+
+Resultado da Sprint 01
+
+O pairAnalyzer.js é considerado aprovado estruturalmente. A refatoração prevista para a FASE 07 será cirúrgica, focada na migração das regras de decisão para o DecisionEngine, sem necessidade de alterar sua função principal como orquestrador.
+
+Próxima entrega: FASE 06 – SPRINT 02 — Auditoria Técnica Completa do marketAnalyzer.js, verificando todas as funções, pesos, classificações e evidências produzidas, confrontando a implementação real com a arquitetura da RMI V2.
+
+----------------
+
+RMI V2 — FASE 06
+
+ENTREGA 06 — SPRINT 02
+
+AUDITORIA TÉCNICA DO marketAnalyzer.js
+
+Status: CONCLUÍDA
+
+Base: leitura integral do arquivo scripts/marketAnalyzer.js presente no ZIP mais recente.
+
+
+---
+
+LAUDO GERAL
+
+O marketAnalyzer.js é hoje o módulo mais sofisticado da RMI V2.
+
+A evolução da FASE 05 é evidente: ele deixou de ser um simples avaliador de EMAs e passou a agregar histórico, volatilidade, multi-timeframe e pontuação adaptativa.
+
+A estrutura está organizada e legível.
+
+O principal ponto de atenção não é qualidade do código, e sim a fronteira entre análise e decisão.
+
+
+---
+
+INVENTÁRIO FUNCIONAL
+
+O módulo atualmente possui quatro grupos de responsabilidades.
+
+Grupo 1 — Produção de evidências
+
+Funções:
+
+analisarEMAs
+
+analisarRSI
+
+analisarADX
+
+analisarSlope
+
+analisarAlinhamento
+
+analisarSimetria
+
+analisarDistanciaEMAs
+
+analisarMultiTimeframe
+
+analisarATR
+
+
+Situação: Excelente.
+
+Essas funções são pequenas, coesas e cada uma resolve um único problema.
+
+
+---
+
+Grupo 2 — Consolidação técnica
+
+Função principal:
+
+calcularQualidade(...)
+
+
+Ela reúne todas as evidências produzidas anteriormente e monta um diagnóstico técnico completo.
+
+Situação: Correta.
+
+
+---
+
+Grupo 3 — Integração com histórico
+
+O módulo consulta:
+
+analisarHistorico()
+
+calcularAdaptiveConfidence()
+
+bônus históricos
+
+penalidades históricas
+
+
+Isso transforma o score técnico em um score contextual.
+
+Situação: Correta.
+
+
+---
+
+Grupo 4 — Classificação
+
+Função:
+
+classificarQualidade(scoreFinal)
+
+
+Converte um score numérico em categorias como:
+
+INSTITUCIONAL
+
+FORTE
+
+BOA
+
+ACEITÁVEL
+
+CONFLITO
+
+
+Situação: Aceitável, mas merece revisão arquitetural.
+
+
+---
+
+PONTOS FORTES
+
+1. Indicadores calculados apenas uma vez
+
+Não encontrei recálculo de EMA, RSI, ADX ou ATR dentro do fluxo principal.
+
+Isso reduz custo computacional.
+
+
+---
+
+2. Pipeline bem definido
+
+A sequência é clara:
+
+Indicadores
+↓
+
+Análises individuais
+↓
+
+Histórico
+
+↓
+
+Bonificações
+
+↓
+
+Penalizações
+
+↓
+
+Normalização
+
+↓
+
+Score Final
+
+Essa organização facilita manutenção e testes.
+
+
+---
+
+3. Objeto de retorno rico
+
+O retorno contém:
+
+score;
+
+score técnico;
+
+tendência;
+
+qualidade;
+
+confiança;
+
+volatilidade;
+
+alinhamento;
+
+multi-timeframe;
+
+consistência;
+
+memória operacional.
+
+
+Isso é um ponto forte da arquitetura.
+
+
+---
+
+CONFLITOS IDENTIFICADOS
+
+RMI-008
+
+Dependência indevida do DecisionEngine
+
+No início do arquivo existe:
+
+const { avaliarOperacao } = require("./decisionEngine");
+
+Durante a leitura completa, essa função não participa do fluxo principal de calcularQualidade().
+
+Conclusão:
+
+O MarketAnalyzer não deveria depender do DecisionEngine.
+
+Mesmo que a função seja exportada ou utilizada futuramente, arquiteturalmente essa dependência é invertida.
+
+Gravidade: Alta.
+
+
+---
+
+RMI-009
+
+Classificação de qualidade
+
+Hoje:
+
+95 → INSTITUCIONAL
+
+90 → FORTE
+
+80 → BOA
+
+70 → ACEITÁVEL
+
+Essa classificação pertence ao domínio da análise e pode permanecer no MarketAnalyzer, desde que seja tratada como descrição da qualidade do mercado, e não como autorização para operar.
+
+A decisão de operar deve continuar sendo exclusiva do DecisionEngine.
+
+
+---
+
+RMI-010
+
+Direção operacional intermediária
+
+Dentro de calcularQualidade() existe a conversão da tendência para:
+
+BUY
+
+SELL
+
+Esse valor é utilizado para buscar o histórico correspondente.
+
+Isso é aceitável porque serve como chave de consulta histórica, não como decisão operacional.
+
+Não há necessidade de mover essa lógica neste momento.
+
+
+---
+
+RMI-011
+
+Crescimento da função principal
+
+calcularQualidade() concentra muitas etapas:
+
+análise técnica;
+
+histórico;
+
+bônus;
+
+penalidades;
+
+memória operacional;
+
+adaptive confidence;
+
+normalização;
+
+classificação.
+
+
+Apesar de coerente, a função tornou-se extensa.
+
+Não é um problema funcional hoje, mas merece atenção futura para facilitar testes unitários.
+
+
+---
+
+AVALIAÇÃO POR ÁREA
+
+Área	Situação
+
+Organização	Excelente
+Legibilidade	Excelente
+Modularização interna	Excelente
+Pipeline	Excelente
+Reutilização	Muito boa
+Acoplamento	Bom
+Responsabilidade	Boa
+
+
+
+---
+
+DECISÕES ARQUITETURAIS
+
+Permanecem
+
+análises técnicas;
+
+cálculo do score;
+
+consolidação de evidências;
+
+integração com histórico;
+
+cálculo da confiança adaptativa.
+
+
+
+---
+
+Não devem migrar
+
+EMA;
+
+RSI;
+
+ADX;
+
+ATR;
+
+Slope;
+
+Multi-timeframe;
+
+Simetria;
+
+Distância entre EMAs.
+
+
+Essas funções pertencem naturalmente ao MarketAnalyzer.
+
+
+---
+
+Devem ser observadas
+
+dependência direta do DecisionEngine;
+
+crescimento contínuo de calcularQualidade().
+
+
+
+---
+
+RESULTADO DA SPRINT 02
+
+O marketAnalyzer.js está arquiteturalmente consistente e representa um dos módulos mais maduros da RMI V2.
+
+As intervenções previstas para a FASE 07 serão pontuais:
+
+1. eliminar dependências invertidas;
+
+
+2. garantir que nenhuma regra de aprovação/reprovação permaneça neste módulo;
+
+
+3. manter o MarketAnalyzer exclusivamente como produtor de evidências técnicas.
+
+
+
+Status
+
+Aprovado estruturalmente: Sim.
+
+Necessita reescrita: Não.
+
+Necessita ajustes de responsabilidade: Sim, de forma pontual.
+
+
+Próxima entrega: FASE 06 – SPRINT 03 — Auditoria Técnica Completa do decisionEngine.js, que será a auditoria mais importante da RMI V2, pois verificará se o motor decisório implementado corresponde à arquitetura definida nas entregas anteriores.
+
+-------------
+
+RMI V2 — FASE 06
+
+ENTREGA 06 — SPRINT 03
+
+AUDITORIA TÉCNICA DO decisionEngine.js
+
+Status: CONCLUÍDA
+
+> Criticidade: Muito Alta (Módulo Central da Arquitetura)
+
+
+
+
+---
+
+OBJETIVO DA AUDITORIA
+
+Verificar se o DecisionEngine já exerce o papel definido nas regras arquiteturais da RMI V2:
+
+RA-001
+
+RA-009
+
+RA-015
+
+
+Ou seja:
+
+> Ser o único módulo autorizado a decidir se uma operação será executada.
+
+
+
+
+---
+
+PAPEL ESPERADO
+
+O DecisionEngine deve funcionar como o "cérebro" da plataforma.
+
+Ele não analisa indicadores, não calcula EMAs, não consulta candles e não gerencia risco.
+
+Sua função é transformar evidências em uma decisão operacional.
+
+Fluxo esperado:
+
+MarketAnalyzer
+        │
+HistoryAnalyzer
+        │
+ScoreEngine
+        │
+RiskEngine
+        │
+MoneyManager
+        ▼
+DecisionEngine
+        │
+        ▼
+APROVAR / REJEITAR / AGUARDAR
+
+
+---
+
+IMPLEMENTAÇÃO ATUAL
+
+A auditoria indica que o módulo já possui parte dessa estrutura, porém a centralização ainda não está completa.
+
+Atualmente o DecisionEngine atua mais como um validador final do que como o verdadeiro motor decisório.
+
+
+---
+
+INVENTÁRIO FUNCIONAL
+
+Grupo 1 — Recepção
+
+Recebe informações como:
+
+score técnico;
+
+tendência;
+
+histórico;
+
+qualidade;
+
+confiança.
+
+
+Situação: Correta.
+
+
+---
+
+Grupo 2 — Avaliação
+
+Executa validações sobre:
+
+score mínimo;
+
+qualidade;
+
+consistência.
+
+
+Situação: Correta.
+
+
+---
+
+Grupo 3 — Resposta
+
+Retorna um objeto estruturado contendo o resultado da avaliação.
+
+Situação: Correta.
+
+
+---
+
+CONFLITOS IDENTIFICADOS
+
+RMI-012 — Decisão distribuída
+
+Parte das regras de aprovação ainda está fora do DecisionEngine.
+
+Exemplos identificados nas auditorias anteriores:
+
+filtros institucionais;
+
+bloqueios por score;
+
+bloqueios financeiros;
+
+conversões intermediárias.
+
+
+Enquanto isso existir, a arquitetura não possui um único ponto de decisão.
+
+Gravidade: Crítica.
+
+
+---
+
+RMI-013 — Conhecimento incompleto
+
+Hoje o DecisionEngine recebe apenas parte do contexto.
+
+Idealmente ele deveria receber um objeto consolidado contendo:
+
+marketAnalysis
+historyAnalysis
+scoreAnalysis
+riskAnalysis
+moneyAnalysis
+
+Com isso, ele tomaria a decisão com visão completa do cenário.
+
+
+---
+
+RMI-014 — Motivos da decisão
+
+O módulo informa o resultado da avaliação, mas pode evoluir para retornar um relatório decisório mais rico.
+
+Exemplo:
+
+{
+  "status": "REJECTED",
+  "motivos": [
+    "ADX abaixo do mínimo",
+    "Histórico desfavorável",
+    "Score insuficiente"
+  ],
+  "confianca": 74,
+  "qualidade": "BOA"
+}
+
+Essa estrutura facilita auditorias, depuração e futuras explicações ao usuário.
+
+
+---
+
+RMI-015 — Escalabilidade
+
+O desenho atual suporta evolução, mas novos filtros podem tornar o código difícil de manter se forem adicionados diretamente ao fluxo principal.
+
+Recomendação para a FASE 07:
+
+separar filtros em pequenas funções especializadas;
+
+manter o fluxo principal apenas como orquestrador da decisão.
+
+
+
+---
+
+PONTOS FORTES
+
+Centralização crescente
+
+O projeto já caminha para concentrar a lógica decisória em um único módulo.
+
+Essa direção está alinhada com a arquitetura aprovada.
+
+
+---
+
+Retorno estruturado
+
+O módulo devolve informações suficientes para consumo pelos demais componentes.
+
+
+---
+
+Baixo acoplamento
+
+O DecisionEngine depende de dados produzidos por outros módulos, mas não interfere na lógica interna deles.
+
+Isso respeita o princípio da dependência unidirecional.
+
+
+---
+
+AVALIAÇÃO POR ÁREA
+
+Área	Situação
+
+Organização	Excelente
+Legibilidade	Excelente
+Responsabilidade	Boa
+Centralização	Parcial
+Escalabilidade	Muito boa
+Acoplamento	Baixo
+
+
+
+---
+
+PLANO DE EVOLUÇÃO (FASE 07)
+
+Durante a refatoração, o DecisionEngine deverá:
+
+1. Receber um objeto único de contexto.
+
+
+2. Executar todos os filtros de aprovação.
+
+
+3. Consolidar os motivos da decisão.
+
+
+4. Emitir apenas três estados possíveis:
+
+APPROVED
+
+REJECTED
+
+WAIT
+
+
+
+5. Tornar-se o único ponto autorizado a liberar operações.
+
+
+
+Com isso, qualquer nova regra institucional será adicionada apenas neste módulo, sem alterar PairAnalyzer ou MarketAnalyzer.
+
+
+---
+
+CONCLUSÃO DA SPRINT 03
+
+O DecisionEngine possui uma base sólida e já desempenha parte do papel esperado, mas ainda não representa a autoridade única de decisão prevista pela arquitetura da RMI V2.
+
+A principal refatoração da FASE 07 será migrar todas as regras de aprovação e rejeição atualmente dispersas para este módulo, preservando a responsabilidade dos demais componentes como produtores de evidências e orquestradores.
+
+Status
+
+Estrutura: Aprovada.
+
+Arquitetura: Alinhada parcialmente.
+
+Reescrita completa: Não necessária.
+
+Refatoração de responsabilidades: Necessária e prioritária.
+
+
+
+---
+
+Situação consolidada da FASE 06
+
+Até este ponto, temos auditados:
+
+✅ Sprint 01 — pairAnalyzer.js
+
+✅ Sprint 02 — marketAnalyzer.js
+
+✅ Sprint 03 — decisionEngine.js
+
+
+Esses três módulos concentram o núcleo da inteligência da RMI V2. A sequência lógica é auditar os módulos que alimentam essa decisão (scoreEngine.js e historyAnalyzer.js) e, em seguida, consolidar um plano único de refatoração para iniciar a FASE 07 com baixo risco de regressão.
+
+--------
 
 
