@@ -19,12 +19,6 @@
 
 
 const {
-
-    avaliarOperacao
-
-} = require("./decisionEngine");
-
-const {
     analisarHistorico,
     calcularAdaptiveConfidence
 } = require("./historyAnalyzer");
