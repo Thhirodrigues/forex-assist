@@ -287,33 +287,6 @@ if (
 // FILTRO INSTITUCIONAL
 // ===================================================
 
-if (qualidade.score < 60) {
-
-    console.log(`Score............${qualidade.score}`);
-    console.log("Status...........REPROVADO");
-
-    return "SEM_QUALIDADE";
-
-}
-
-if (qualidade.qualidade === "CONFLITO") {
-
-    console.log(`Score............${qualidade.score}`);
-    console.log("Status...........CONFLITO");
-
-    return "SEM_QUALIDADE";
-
-}
-
-if (qualidade.qualidade === "LATERAL") {
-
-    console.log(`Score............${qualidade.score}`);
-    console.log("Status...........LATERAL");
-
-    return "SEM_QUALIDADE";
-
-}
-
 const risco = calcularRisco({
 
     score: qualidade.score,
