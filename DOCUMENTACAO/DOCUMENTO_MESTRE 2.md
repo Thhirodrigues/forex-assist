@@ -5501,5 +5501,230 @@ Agora, sim, considero que temos base suficiente para "colocar as mãos na massa"
 
 -----------------------
 
+Perfeito. Eu faria apenas um ajuste na sua proposta para refletir exatamente o que eu posso fazer.
+
+Eu não tenho acesso automático e contínuo ao seu GitHub. Posso consultar o repositório quando isso for possível através da integração e das ferramentas disponíveis, mas não devo assumir que sempre conseguirei ler qualquer arquivo sem uma ação específica.
+
+Então, em vez de escrever "tem total acesso ao repositório", prefiro registrar uma regra operacional precisa, que representa exatamente como vamos trabalhar.
+
+Eu iniciaria a nova conversa com o seguinte texto:
+
+
+---
+
+RMI V2 — FASE 07
+
+IMPLEMENTAÇÃO CONTROLADA V1
+
+STATUS DO PROJETO
+
+Base oficial do projeto:
+
+Último ZIP enviado nesta conversa (baseline oficial).
+
+Documento Mestre 2 totalmente atualizado.
+
+FASE 06 concluída e aprovada.
+
+Auditoria Arquitetural concluída.
+
+Auditoria End-to-End concluída.
+
+Gap Analysis concluída.
+
+
+Toda implementação desta fase deverá considerar esses documentos como fonte oficial.
+
+
+---
+
+MODO DE TRABALHO
+
+Modo: ENGENHEIRO / ARQUITETO
+
+Objetivos obrigatórios:
+
+Preservar a arquitetura aprovada.
+
+Não alterar responsabilidades dos módulos sem justificativa técnica.
+
+Fazer alterações incrementais.
+
+Validar cada Sprint antes de iniciar a próxima.
+
+Não criar código paralelo quando for possível reutilizar o existente.
+
+Toda alteração deve possuir um benefício técnico mensurável.
+
+
+
+---
+
+ACESSO AO PROJETO
+
+O ChatGPT deverá utilizar como referência principal o ZIP mais recente enviado pelo usuário.
+
+Sempre que houver necessidade de confirmar o estado atual do projeto e isso for possível, deverá consultar pontualmente o repositório GitHub conectado, evitando solicitar novamente arquivos que possam ser verificados diretamente.
+
+Somente solicitar um arquivo ao usuário quando:
+
+ele não existir no ZIP;
+
+houver divergência entre o ZIP e o repositório;
+
+ou a consulta direta não for possível.
+
+
+O objetivo é reduzir retrabalho e acelerar as implementações.
+
+
+---
+
+METODOLOGIA DAS SPRINTS
+
+Cada Sprint seguirá obrigatoriamente o fluxo:
+
+1. Objetivo
+
+Definir claramente o objetivo técnico.
+
+
+---
+
+2. Auditoria Pontual
+
+Analisar apenas os arquivos envolvidos na Sprint.
+
+
+---
+
+3. Planejamento
+
+Informar:
+
+arquivos afetados;
+
+impacto esperado;
+
+riscos;
+
+estratégia de implementação.
+
+
+
+---
+
+4. Implementação
+
+Modificar apenas o necessário.
+
+Sem alterar arquitetura aprovada.
+
+
+---
+
+5. Validação
+
+Executar validação lógica da alteração.
+
+Identificar possíveis regressões.
+
+
+---
+
+6. Relatório
+
+Ao final de cada Sprint informar:
+
+Status;
+
+Arquivos alterados;
+
+Resumo das alterações;
+
+Impacto esperado;
+
+Testes necessários;
+
+Próxima Sprint.
+
+
+Formato preparado para copiar diretamente para o Documento Mestre 2.
+
+
+---
+
+REGRAS DE ENGENHARIA
+
+Nunca alterar comportamento sem justificar.
+
+Nunca remover código sem explicar o motivo.
+
+Nunca duplicar regras de negócio.
+
+Nunca quebrar compatibilidade sem autorização.
+
+Sempre preservar modularidade.
+
+Sempre preservar legibilidade.
+
+Sempre pensar na evolução futura da RMI.
+
+
+
+---
+
+OBJETIVO DA FASE 07
+
+Transformar a RMI V2 em uma versão operacional estável, pronta para testes controlados e posterior utilização em ambiente real.
+
+O foco deixa de ser adicionar funcionalidades e passa a ser:
+
+estabilidade;
+
+confiabilidade;
+
+previsibilidade;
+
+qualidade da decisão;
+
+facilidade de manutenção.
+
+
+
+---
+
+SPRINT INICIAL
+
+Sprint 01
+
+Centralizar toda a lógica de decisão no DecisionEngine, conforme definido na FASE 06.
+
+
+---
+
+O que você deve me enviar na nova conversa
+
+Apenas três coisas:
+
+1. O novo ZIP completo do repositório (com o Documento Mestre 2 atualizado).
+
+
+2. Uma mensagem simples como:
+
+> "Iniciar FASE 07 conforme cabeçalho. O ZIP anexado é a nova baseline oficial."
+
+
+
+
+3. Se houver alguma alteração que você tenha feito após gerar o ZIP (se não houver, basta dizer que não houve).
+
+
+
+Com isso, eu farei uma validação rápida para confirmar que o ZIP corresponde à baseline e, em seguida, começaremos imediatamente a Sprint 01, sem repetir auditorias e sem perder tempo retomando contexto.
+
+Na minha opinião, essa será a melhor organização que já tivemos para o projeto até agora. Ela separa claramente a fase de arquitetura da fase de implementação, e deve tornar nosso trabalho muito mais produtivo.
+
+------------
 
 
