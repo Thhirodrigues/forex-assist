@@ -957,6 +957,4 @@ module.exports = {
 
     analisarMultiTimeframe,
 
-    avaliarOperacao,
-
 };
