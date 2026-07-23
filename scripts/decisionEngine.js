@@ -134,6 +134,7 @@ function avaliarOperacao(resultado) {
     justificativas
 
 };
+}
 
 module.exports = {
 
