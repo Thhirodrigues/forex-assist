@@ -42,6 +42,10 @@ const {
     calcularRisco
 } = require("./riskEngine");
 
+const {
+    avaliarOperacao
+} = require("./decisionEngine");
+
 async function analisarPar({
 db,
 par,
@@ -174,18 +178,30 @@ const qualidade = calcularQualidade(
 
 direcao = qualidade.tendencia;
 
-if (direcao === "ALTA") {
-    direcao = "BUY";
+const decisao = avaliarOperacao({
+
+    score: qualidade.score,
+
+    qualidade: qualidade.qualidade,
+
+    tendencia: qualidade.tendencia,
+
+    multi: qualidade.multi,
+
+    confianca: qualidade.confidenceLevel
+
+});
+
+if (!decisao.aprovado) {
+
+    console.log(`Status............${decisao.status}`);
+    console.log(`Motivo............${decisao.motivo}`);
+
+    return decisao.status;
+
 }
 
-else if (direcao === "BAIXA") {
-    direcao = "SELL";
-}
-
-else {
-    console.log("Status.............SEM SINAL");
-    return "SEM_SINAL";
-}
+direcao = decisao.direcao;
         
 // ===================================================
 // FILTRO DE CONFIANÇA
