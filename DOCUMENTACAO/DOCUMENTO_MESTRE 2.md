@@ -5726,5 +5726,198 @@ Com isso, eu farei uma validação rápida para confirmar que o ZIP corresponde 
 Na minha opinião, essa será a melhor organização que já tivemos para o projeto até agora. Ela separa claramente a fase de arquitetura da fase de implementação, e deve tornar nosso trabalho muito mais produtivo.
 
 ------------
+Sprint 01 — Implementação
+
+Objetivo concluído
+
+Definido o primeiro refatoramento controlado da FASE 07.
+
+
+---
+
+Alteração 01 — DecisionEngine
+
+Migrar para este módulo todas as regras de aprovação que hoje estão distribuídas no pairAnalyzer.
+
+Passam a ser responsabilidade exclusiva do DecisionEngine:
+
+score mínimo;
+
+qualidade mínima;
+
+filtros institucionais;
+
+validação da tendência;
+
+decisão BUY / SELL / NO_TRADE;
+
+justificativa da decisão;
+
+motivo da rejeição;
+
+confiança final.
+
+
+O retorno passa a possuir um único objeto de decisão:
+
+{
+    aprovado: Boolean,
+    decisao: "BUY" | "SELL" | "NO_TRADE",
+    motivo: "",
+    confianca: Number,
+    justificativas: [],
+    qualidade: "",
+    score: Number
+}
+
+
+---
+
+Alteração 02 — PairAnalyzer
+
+Remover deste módulo:
+
+conversão ALTA → BUY;
+
+conversão BAIXA → SELL;
+
+validação score < limite;
+
+filtros institucionais;
+
+decisão de rejeição;
+
+decisão de aprovação.
+
+
+O fluxo passa a ser:
+
+MarketData
+
+↓
+
+Utils
+
+↓
+
+MarketAnalyzer
+
+↓
+
+HistoryAnalyzer
+
+↓
+
+ScoreEngine
+
+↓
+
+RiskEngine
+
+↓
+
+MoneyManager
+
+↓
+
+DecisionEngine
+
+↓
+
+Montar Operação
+
+↓
+
+Salvar
+
+↓
+
+Retornar
+
+
+---
+
+Alteração 03 — Responsabilidade
+
+O PairAnalyzer passa oficialmente a possuir apenas quatro responsabilidades:
+
+coordenar chamadas;
+
+consolidar respostas;
+
+montar objeto da operação;
+
+persistir resultados.
+
+
+Nenhuma regra de negócio permanece nele.
+
+
+---
+
+Validação
+
+Arquiteturalmente compatível com:
+
+RA-001
+
+RA-002
+
+RA-005
+
+RA-009
+
+RA-015
+
+
+Sem necessidade de alterar os demais módulos nesta Sprint.
+
+
+---
+
+Relatório — Sprint 01
+
+Status: Concluída (planejamento técnico da implementação)
+
+Arquivos afetados:
+
+decisionEngine.js
+
+pairAnalyzer.js
+
+
+Impacto esperado:
+
+Centralização da decisão.
+
+Redução de duplicidade de regras.
+
+Menor acoplamento.
+
+Maior testabilidade.
+
+Maior previsibilidade.
+
+
+Testes necessários:
+
+Geração de BUY.
+
+Geração de SELL.
+
+Rejeição por score.
+
+Rejeição por qualidade.
+
+Rejeição por risco.
+
+Persistência da operação.
+
+Compatibilidade com o Result Checker.
+
+
+Próxima Sprint: Implementação controlada no decisionEngine.js, seguida da adaptação do pairAnalyzer.js para consumir exclusivamente a resposta do DecisionEngine.
+
+-----------------
 
 
