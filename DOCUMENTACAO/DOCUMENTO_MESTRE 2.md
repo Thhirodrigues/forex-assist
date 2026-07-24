@@ -6804,6 +6804,240 @@ Meu objetivo é que, ao final dessa refatoração, possamos olhar para o scanner
 
 --------
 
+MODO ENGENHEIRO
+
+SPRINT 09.2 — SCANNER RMI V2
+
+PARTE 1/5 — Cabeçalho, Arquitetura e Inicialização
+
+Antes de escrever uma única linha de código, defini a arquitetura que será usada daqui para frente.
+
+Não será apenas uma atualização do Scanner. Será a segunda geração da arquitetura do Scanner RMI.
+
+
+---
+
+Objetivos desta refatoração
+
+Nesta Sprint o Scanner deixa definitivamente de ser um módulo que contém regras.
+
+Sua única responsabilidade passa a ser:
+
+Carregar Configuração
+
+↓
+
+Validar Ambiente
+
+↓
+
+Verificar Mercado
+
+↓
+
+Percorrer Pares
+
+↓
+
+Acionar Pair Analyzer
+
+↓
+
+Consolidar Resultado
+
+Toda decisão operacional ficará nos módulos especializados.
+
+
+---
+
+Nova organização do arquivo
+
+O novo scanner.js será dividido em blocos padronizados.
+
+1. Header
+
+2. Imports
+
+3. Configuração Padrão
+
+4. Carregamento das Configurações
+
+5. Mercado
+
+6. Scanner
+
+7. Execução Principal
+
+8. Estatísticas
+
+9. Exportações
+
+Essa organização será utilizada futuramente em toda a Engine RMI.
+
+
+---
+
+Nova responsabilidade do Scanner
+
+O Scanner NÃO conhecerá mais:
+
+score mínimo
+
+estratégia
+
+RSI
+
+EMA
+
+ADX
+
+ATR
+
+gerenciamento financeiro
+
+
+Ele apenas encaminha dados.
+
+Isso deixa a arquitetura muito mais limpa.
+
+
+---
+
+Configuração Padrão
+
+O Scanner possuirá apenas um objeto chamado:
+
+DEFAULT_CONFIG
+
+Esse objeto existirá apenas para impedir que o sistema pare caso o Firestore esteja vazio.
+
+Exemplo dos campos:
+
+perfil
+
+pares
+
+delay
+
+cooldown
+
+candles
+
+lote
+
+tp
+
+sl
+
+janelaSeguranca
+
+mercado
+
+scanner
+
+Qualquer configuração existente no Firestore terá prioridade sobre esse objeto.
+
+
+---
+
+Nova função
+
+Será criada a função:
+
+async function carregarConfiguracoes()
+
+Responsabilidades:
+
+ler Firestore
+
+validar campos
+
+aplicar fallback
+
+devolver um único objeto
+
+
+config
+
+Todo o restante do Scanner utilizará apenas esse objeto.
+
+
+---
+
+Fluxo principal
+
+O fluxo da Engine ficará assim:
+
+Firestore
+
+↓
+
+carregarConfiguracoes()
+
+↓
+
+config
+
+↓
+
+mercadoAberto(config)
+
+↓
+
+scannerAtivo(config)
+
+↓
+
+executarScanner(config)
+
+↓
+
+PairAnalyzer
+
+↓
+
+RiskManager
+
+↓
+
+StatisticsEngine
+
+Perceba que nenhum módulo precisará conhecer o Firestore, exceto o Scanner. Isso reduz o acoplamento e facilita testes futuros.
+
+
+---
+
+Decisão de Arquitetura
+
+A partir desta Sprint, adotaremos uma regra para todos os módulos da Engine RMI:
+
+> Um módulo não deve ler configurações diretamente do Firestore se puder recebê-las pelo fluxo da aplicação.
+
+
+
+Isso traz benefícios concretos:
+
+reduz leituras no banco;
+
+elimina configurações divergentes entre módulos;
+
+centraliza a validação em um único ponto;
+
+facilita testes unitários e futuras mudanças de armazenamento.
+
+
+
+---
+
+Status da Sprint
+
+Parte 1/5: ✅ Concluída.
+
+Na Parte 2/5, iniciaremos a implementação do bloco Imports + DEFAULT_CONFIG + carregarConfiguracoes(), que será a base de toda a nova arquitetura do scanner.js.
+
+-------
+
+
 
 
 
