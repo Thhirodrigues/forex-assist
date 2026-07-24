@@ -6220,6 +6220,80 @@ validar toda alteração por meio de auditoria e workflow antes da conclusão da
 Próxima etapa: Sprint 05 — Auditoria e consolidação do fluxo de persistência e integração entre os módulos, mantendo o mesmo método de trabalho.
 
 ------------------
+ESSA OARTE AE TRATA DE UM PEQUENO DESVIO DE ROTA LARA MELHLRIA DO APP, POIS E O MOMENTO CERTA DE FAZER PARA NAO FERMOS QUE VOKTAR. APOS ESSAS ETAPAS VOKTAREMOS AO ROADMAP OIFIAL JA DOCUMENTADO.
+
+Perfeito. Concordo com essa decisão. Neste momento, o maior risco para o projeto não é a falta de funcionalidades, e sim perder o foco e começar a abrir novas frentes antes de consolidar a base.
+
+Então vamos congelar novas ideias e seguir esta sequência como um mini-marco de estabilização.
+
+Plano de Consolidação V5 Expert Alpha
+
+Sprint 07A — Refinamento do Histórico
+
+✅ Finalizar todos os ajustes do histórico.
+
+✅ Validar persistência e usabilidade.
+
+
+Sprint 07B — Scanner Seguro
+
+✅ Bloquear geração de sinais aos sábados.
+
+✅ Bloquear geração de sinais aos domingos.
+
+✅ Bloquear fora do horário operacional.
+
+✅ Garantir que nenhum dado inválido seja salvo no Firestore.
+
+
+Sprint 07C — Expansão de Cobertura
+
+✅ Ampliar a lista padrão para aproximadamente 20 pares.
+
+✅ Aproveitar a aba Configurações existente para permitir que o usuário escolha quais pares deseja monitorar (sem criar uma nova tela).
+
+
+Sprint 07D — Configuração de Candles
+
+✅ Tornar a quantidade de candles configurável.
+
+Opções: 10 / 20 / 30 / 50.
+
+20 candles será o padrão inicial.
+
+
+Sprint 07E — Gestão Financeira
+
+✅ Implementar Conta Simulada.
+
+✅ Implementar Conta Real.
+
+✅ Campo operado.
+
+✅ Estatísticas independentes para cada conta.
+
+
+
+---
+
+Encerramento da Consolidação
+
+Após concluir esses cinco sprints:
+
+🚫 Não adicionaremos novas funcionalidades.
+
+🚫 Não alteraremos a arquitetura.
+
+🚫 Não criaremos novos módulos.
+
+
+Retornaremos exatamente ao Roadmap oficial, seguindo o Documento Mestre.
+
+Acho essa uma excelente estratégia porque esses ajustes fortalecem a base do sistema sem desviar do objetivo principal. Quando retomarmos o Roadmap, estaremos trabalhando sobre uma plataforma mais estável, com dados mais confiáveis e uma experiência mais consistente para o usuário.
+
+------------
+
+
 
 
 
