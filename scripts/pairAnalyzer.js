@@ -178,6 +178,24 @@ const qualidade = calcularQualidade(
 
 direcao = qualidade.tendencia;
 
+// ===================================================
+// MONEY MANAGER
+// ===================================================
+
+const financeiro =
+    analisarFinanceiro({
+
+        probabilidade:
+             estatisticas.resumo.taxaAcerto,
+
+        adx:
+            adxAtual,
+
+        atr:
+            atrAtual
+
+    });
+        
 const decisao = avaliarOperacao({
 
     score: qualidade.score,
@@ -188,7 +206,9 @@ const decisao = avaliarOperacao({
 
     multi: qualidade.multi,
 
-    confianca: qualidade.confidenceLevel
+    confianca: qualidade.confidenceLevel,
+
+    recomendacaoFinanceira: financeiro.recomendacao
 
 });
 
@@ -215,24 +235,7 @@ console.log(
     `Confidence.......${qualidade.confidenceLevel}`
 );
         
-// ===================================================
-// MONEY MANAGER
-// ===================================================
 
-const financeiro =
-    analisarFinanceiro({
-
-        probabilidade:
-             estatisticas.resumo.taxaAcerto,
-
-        adx:
-            adxAtual,
-
-        atr:
-            atrAtual
-
-    });
-        
 // ===================================================
 // FILTRO ESTATÍSTICO
 // ===================================================
@@ -242,44 +245,6 @@ if (qualidade.historico === "RUIM") {
     console.log(
         "Histórico.........RUIM (penalizado no score)"
     );
-
-}
-
-// ===================================================
-// FILTRO FINANCEIRO
-// ===================================================
-
-if (
-
-    !financeiro.recomendacao.operar
-
-) {
-
-    console.log(
-
-        "Financeiro.......REPROVADO"
-
-    );
-
-    console.log(
-
-        `Sugestão.........Lote ${financeiro.configuracaoIdeal.lote}`
-
-    );
-
-    console.log(
-
-        `TP...............$${financeiro.configuracaoIdeal.tpUSD}`
-
-    );
-
-    console.log(
-
-        `SL...............$${financeiro.configuracaoIdeal.slUSD}`
-
-    );
-
-    return "SEM_VIABILIDADE";
 
 }
     
