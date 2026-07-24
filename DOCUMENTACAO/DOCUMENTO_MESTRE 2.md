@@ -6508,6 +6508,202 @@ Próxima implementação:
 Construção completa do novo config.js, já preparado para integração com Firestore e consumo pelos módulos do Forex Assist.
 
 ------------------
+Prefiro gerar um relatório para o Documento Mestre 2. Essa conversa consolidou decisões de arquitetura importantes e merece um registro próprio.
+
+
+---
+
+DOCUMENTO MESTRE 2
+
+DECISÃO DE ENGENHARIA
+
+Sprint 09 — Arquitetura da Central de Configurações e Operação Intraday
+
+Data: 11/07/2026
+
+
+---
+
+Objetivo
+
+Consolidar a Central de Configurações como ponto único de controle do Forex Assist e definir oficialmente o comportamento da Engine RMI durante o fechamento e a reabertura do mercado.
+
+
+---
+
+1. Central de Configurações
+
+A aba Config deixa de ser uma tela provisória e passa a ser a interface oficial de configuração do sistema.
+
+Todos os módulos deverão, progressivamente, consumir seus parâmetros a partir desta central.
+
+
+---
+
+2. Perfil Operacional
+
+Foi criado o conceito de Perfil Operacional, substituindo o antigo "Modo Conservador".
+
+Perfis definidos:
+
+🟢 Agressivo
+
+🔵 Balanceado (Padrão)
+
+🟡 Conservador
+
+🟣 Expert RMI
+
+
+No futuro, cada perfil controlará automaticamente critérios como score mínimo, filtros da Engine, gerenciamento de risco e frequência de sinais.
+
+
+---
+
+3. Modo Oficial da Engine
+
+Foi definido que o Forex Assist operará oficialmente em:
+
+Modo INTRADAY
+
+Consequências:
+
+Não serão abertas operações sem tempo suficiente para gerenciamento.
+
+O scanner respeitará rigorosamente o horário operacional do mercado.
+
+
+
+---
+
+4. Mercado Fechado
+
+Quando o mercado fechar:
+
+Scanner interrompido.
+
+Nenhum novo sinal.
+
+Nenhuma nova operação.
+
+Nenhuma consulta desnecessária à TwelveData.
+
+Interface exibirá "Mercado Fechado".
+
+
+As operações pendentes permanecerão registradas, sem encerramento artificial.
+
+
+---
+
+5. Janela de Segurança
+
+Será criada uma configuração denominada:
+
+Janela de Segurança
+
+Valor inicial:
+
+30 minutos
+
+Durante essa janela:
+
+Novos sinais serão bloqueados.
+
+O sistema apenas acompanhará operações já existentes.
+
+
+O valor será configurável futuramente pela Central de Configurações.
+
+
+---
+
+6. Reabertura do Mercado
+
+Na abertura do mercado, a Engine executará obrigatoriamente a seguinte sequência:
+
+1. Atualizar operações pendentes.
+
+
+2. Calcular WIN/LOSS.
+
+
+3. Atualizar movimentação em pips.
+
+
+4. Atualizar resultado financeiro.
+
+
+5. Atualizar saldo.
+
+
+6. Atualizar estatísticas.
+
+
+7. Somente então iniciar novas análises.
+
+
+
+
+---
+
+7. Evolução Futura
+
+A arquitetura permanecerá preparada para um futuro:
+
+Modo SWING
+
+Diferenças previstas:
+
+Permitir operações atravessando o fim de semana.
+
+Regras próprias de encerramento.
+
+Gerenciamento independente do modo Intraday.
+
+
+Nenhuma implementação será realizada neste momento, apenas preparação arquitetural.
+
+
+---
+
+8. Prioridade Atual
+
+Nova ordem oficial de desenvolvimento:
+
+Sprint 09.2
+
+Central de Configurações → integração completa com scripts/scanner.js.
+
+Sprint 09.3
+
+Implementação do Modo Mercado Fechado.
+
+Sprint 09.4
+
+Rotina Atualizar Pendências antes da primeira análise do dia.
+
+Sprint 09.5
+
+Migração completa da Engine RMI para utilizar parâmetros da Central de Configurações.
+
+Sprint 09.6
+
+Retorno ao Roadmap oficial do projeto.
+
+
+---
+
+Status
+
+Decisão aprovada e incorporada à arquitetura do Forex Assist V5 Expert Alpha.
+
+Observação de Engenharia: A partir desta Sprint, a Central de Configurações passa a ser considerada o núcleo de parametrização da Engine RMI, reduzindo dependências de constantes internas e preparando o projeto para evolução futura sem necessidade de refatorações estruturais.
+
+----------
+
+
+
 
 
 
