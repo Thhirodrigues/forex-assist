@@ -132,7 +132,24 @@ async function carregarHistorico() {
               <div>🏠 EMA 200: <b>${sinal.ema200 ? Number(sinal.ema200).toFixed(5) : '-'}</b></div>
               <div>💰 Entrada: <b>${sinal.precoEntrada || '-'}</b></div>
               <div>🏁 Saída: <b>${sinal.precoFechamento || '-'}</b></div>
-            </div>
+             <div style="grid-column:1 / span 2; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.10);">
+    <b>⚙️ Configuração utilizada</b>
+</div>
+
+<div>
+    💰 Lote:
+    <b>${sinal.lote ?? "-"}</b>
+</div>
+
+<div>
+    🎯 TP:
+    <b>$${sinal.tpUSD ?? "-"}</b>
+</div>
+
+<div>
+    🛑 SL:
+    <b>$${sinal.slUSD ?? "-"}</b>
+</div>
             ${sinal.movimentoPips !== undefined ? `
               <div style="margin-top:10px; padding:8px; border-radius:4px; background:rgba(255,255,255,0.05); text-align:center; font-weight:bold;">
                 <div style="color:${sinal.resultado === 'WIN' ? '#00ff88' : (sinal.resultado === 'LOSS' ? '#ff4444' : '#8c95b3')};">
