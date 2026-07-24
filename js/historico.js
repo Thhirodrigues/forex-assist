@@ -184,26 +184,43 @@ async function carregarHistorico() {
       const isHoje = data === hojeStr;
       const label = isHoje ? `HOJE (${data})` : data;
 
-      const temSinalDestacado = app.sinalParaDestacar && gruposPorData[data].includes(`id="sinal-${app.sinalParaDestacar}"`);
-      const mostrarGrupo = isHoje || temSinalDestacado;
+      const temSinalDestacado =
+    app.sinalParaDestacar &&
+    gruposPorData[data].includes(`id="sinal-${app.sinalParaDestacar}"`);
 
+      const mostrarGrupo = temSinalDestacado;
+      
       finalHtml += `
-        <div onclick="const el = document.getElementById('data${idData}'); el.style.display = el.style.display === 'none' ? 'block' : 'none';" 
-             style="margin-top:20px; margin-bottom:10px; font-size:12px; color:#8c95b3; font-weight:bold; cursor:pointer; display:flex; align-items:center;">
-          <span style="margin-right:8px;">${mostrarGrupo ? "▼" : "▶"}</span> ${label}
-        </div>
-        <div id="data${idData}" style="display: ${mostrarGrupo ? 'block' : 'none'};">
-          ${gruposPorData[data]}
-        </div>
+         <div
+onclick="
+const el=document.getElementById('data${idData}');
+const seta=this.querySelector('span');
+
+if(el.style.display==='none'){
+    el.style.display='block';
+    seta.innerHTML='▼';
+}else{
+    el.style.display='none';
+    seta.innerHTML='▶';
+}
+"
+        
+    style="margin-top:20px; margin-bottom:10px; font-size:12px; color:#8c95b3; font-weight:bold; cursor:pointer; display:flex; align-items:center;">
+   <span style="margin-right:8px;">${mostrarGrupo ? "▼" : "▶"}</span> ${label}
+    </div>
+    <div id="data${idData}" style="display: ${mostrarGrupo ? 'block' : 'none'};">
+      ${gruposPorData[data]}
+    </div>
       `;
     });
 
     lista.innerHTML = finalHtml || '<div class="list-item">Nenhum sinal encontrado.</div>';
 
-    // Adicionar listeners de clique APÓS renderizar - BLINDADO
+// Adicionar listeners de clique APÓS renderizar - BLINDADO
     setTimeout(() => {
       document.querySelectorAll('[data-sinal-id]').forEach(el => {
-        // Remover listeners antigos para evitar duplicação
+       
+// Remover listeners antigos para evitar duplicação
         el.onclick = null;
         
         el.addEventListener('click', function(e) {
@@ -255,8 +272,8 @@ async function carregarHistorico() {
 }
 
 // Atualização automática a cada 5 segundos - PRESERVA ESTADO
-setInterval(() => {
-  if (app.currentTab === "historico") {
-    carregarHistorico();
-  }
-}, 5000);
+// setInterval(() => {
+// if (app.currentTab === "historico") {
+//carregarHistorico();
+//  }
+//}, 5000);
