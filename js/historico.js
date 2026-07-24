@@ -150,6 +150,7 @@ async function carregarHistorico() {
     🛑 SL:
     <b>$${sinal.slUSD ?? "-"}</b>
 </div>
+</div>
             ${sinal.movimentoPips !== undefined ? `
               <div style="margin-top:10px; padding:8px; border-radius:4px; background:rgba(255,255,255,0.05); text-align:center; font-weight:bold;">
                 <div style="color:${sinal.resultado === 'WIN' ? '#00ff88' : (sinal.resultado === 'LOSS' ? '#ff4444' : '#8c95b3')};">
