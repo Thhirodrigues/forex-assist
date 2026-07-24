@@ -6701,6 +6701,109 @@ Decisão aprovada e incorporada à arquitetura do Forex Assist V5 Expert Alpha.
 Observação de Engenharia: A partir desta Sprint, a Central de Configurações passa a ser considerada o núcleo de parametrização da Engine RMI, reduzindo dependências de constantes internas e preparando o projeto para evolução futura sem necessidade de refatorações estruturais.
 
 ----------
+Excelente. Eu também fiquei animado porque essa forma de trabalho resolve um problema que estava aparecendo nas últimas Sprints: quanto mais o projeto evolui, mais arriscado fica fazer pequenas alterações isoladas.
+
+A partir de agora, proponho que adotemos este padrão como oficial para o Forex Assist.
+
+
+---
+
+PADRÃO DE ENGENHARIA RMI
+
+Para cada módulo da Engine:
+
+1. Auditoria completa.
+
+
+2. Definição da nova arquitetura.
+
+
+3. Refatoração integral do arquivo.
+
+
+4. Entrega em partes sequenciais.
+
+
+5. Validação.
+
+
+6. Relatório para o Documento Mestre.
+
+
+7. Somente então seguimos para o próximo módulo.
+
+
+
+Assim, cada arquivo passa a ter uma única versão oficial, sem acumular "remendos" ao longo do tempo.
+
+
+---
+
+Ordem da Engine
+
+Seguiremos exatamente nesta sequência:
+
+✅ Config (concluído)
+
+🔄 Scanner (agora)
+
+Pair Analyzer
+
+Market Analyzer
+
+Statistics Engine
+
+Risk Manager
+
+Risk Engine
+
+Result Checker
+
+Dashboard
+
+Histórico Inteligente
+
+
+Cada módulo será tratado como uma Sprint de engenharia completa.
+
+
+---
+
+Sobre o Scanner
+
+Na próxima resposta iniciarei a entrega do novo scanner.js RMI V2.
+
+Ele não será apenas uma atualização do arquivo atual. Será uma versão refatorada, mantendo toda a lógica já validada, mas preparada para os próximos meses de desenvolvimento.
+
+O novo Scanner já nascerá preparado para:
+
+Central de Configurações.
+
+Perfis Operacionais.
+
+Modo Intraday.
+
+Futuro Modo Swing.
+
+Janela de Segurança.
+
+Horário parametrizado.
+
+Pares dinâmicos.
+
+Delay dinâmico.
+
+Cooldown dinâmico.
+
+Arquitetura desacoplada.
+
+Compatibilidade com os módulos atuais.
+
+
+Meu objetivo é que, ao final dessa refatoração, possamos olhar para o scanner.js e considerá-lo um componente praticamente definitivo, exigindo apenas evoluções funcionais nas próximas versões, e não novas reorganizações estruturais. A partir da próxima resposta começaremos a Parte 1 do scanner.js RMI V2, seguindo exatamente o modelo que funcionou tão bem com o config.js.
+
+--------
+
 
 
 
