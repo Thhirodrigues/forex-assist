@@ -46,6 +46,38 @@ function removerSinalAberto(sinalId) {
   }
 }
 
+function obterDatasAbertas() {
+    try {
+        const stored = localStorage.getItem("datasAbertas");
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        console.error("Erro ao obter datas abertas:", e);
+        return [];
+    }
+}
+
+function salvarDataAberta(id) {
+    try {
+        const abertas = obterDatasAbertas();
+
+        if (!abertas.includes(id)) {
+            abertas.push(id);
+            localStorage.setItem("datasAbertas", JSON.stringify(abertas));
+        }
+    } catch (e) {
+        console.error("Erro ao salvar data aberta:", e);
+    }
+}
+
+function removerDataAberta(id) {
+    try {
+        const abertas = obterDatasAbertas().filter(item => item !== id);
+        localStorage.setItem("datasAbertas", JSON.stringify(abertas));
+    } catch (e) {
+        console.error("Erro ao remover data aberta:", e);
+    }
+}
+
 async function carregarHistorico() {
   const lista = document.getElementById("historicoLista");
   const stats = document.getElementById("historicoStats");
