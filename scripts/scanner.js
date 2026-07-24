@@ -115,7 +115,79 @@ async function existeCooldown(par) {
   COOLDOWN_MINUTOS
 );
 }
+
+function mercadoAberto() {
+
+    const agora = new Date();
+
+    const diaSemana = agora.getDay();
+
+    if (diaSemana === 0 || diaSemana === 6) {
+        return false;
+    }
+
+    const horaAtual = agora.toLocaleTimeString(
+        "pt-BR",
+        {
+            timeZone: "America/Sao_Paulo",
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+
+    const [hora, minuto] =
+        horaAtual.split(":").map(Number);
+
+    const minutosAtuais =
+        hora * 60 + minuto;
+
+    const inicio = 7 * 60 + 30;
+
+    const fim = 18 * 60;
+
+    return (
+        minutosAtuais >= inicio &&
+        minutosAtuais <= fim
+    );
+}
+
 async function main() {
+
+if (!mercadoAberto()) {
+
+    console.log("========================================");
+    console.log("MERCADO FECHADO");
+    console.log("Scanner encerrado.");
+    console.log("========================================");
+
+    return;
+}
+
+const scannerStatus = await db
+    .collection("scanner")
+    .doc("status")
+    .get();
+
+if (!scannerStatus.exists || !scannerStatus.data()?.ativo) {
+
+    console.log("========================================");
+    console.log("SCANNER DESATIVADO");
+    console.log("Execução encerrada.");
+    console.log("========================================");
+
+    return;
+}
+
+if (!pares.length) {
+
+    console.log("========================================");
+    console.log("NENHUM PAR CONFIGURADO");
+    console.log("Scanner encerrado.");
+    console.log("========================================");
+
+    return;
+}
 
 console.log("========================================");
 console.log("FOREX ASSIST - REAL MONEY INTELLIGENCE");
