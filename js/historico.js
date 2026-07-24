@@ -64,7 +64,8 @@ async function carregarHistorico() {
 
     const hojeStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
     const sinaisAbertos = obterSinaisAbertos();
-
+    const datasAbertas = obterDatasAbertas();
+    
     snapshot.forEach((doc) => {
       const sinal = doc.data();
       let dataObj = null;
@@ -206,20 +207,24 @@ async function carregarHistorico() {
     app.sinalParaDestacar &&
     gruposPorData[data].includes(`id="sinal-${app.sinalParaDestacar}"`);
 
-      const mostrarGrupo = temSinalDestacado;
+      const mostrarGrupo =
+    datasAbertas.includes(idData) ||
+    temSinalDestacado;
       
       finalHtml += `
          <div
 onclick="
-const el=document.getElementById('data${idData}');
-const seta=this.querySelector('span');
+const el = document.getElementById('data${idData}');
+const seta = this.querySelector('span');
 
-if(el.style.display==='none'){
-    el.style.display='block';
-    seta.innerHTML='▼';
-}else{
-    el.style.display='none';
-    seta.innerHTML='▶';
+if (el.style.display === 'none') {
+    el.style.display = 'block';
+    seta.innerHTML = '▼';
+    salvarDataAberta(idData);
+} else {
+    el.style.display = 'none';
+    seta.innerHTML = '▶';
+    removerDataAberta(idData);
 }
 "
         
