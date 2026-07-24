@@ -35,6 +35,7 @@ const { admin, db } =
   require("./firebase");
 
 const COOLDOWN_MINUTOS = 30;
+const DELAY_ANALISE_MS = 1500;
 
 const {
     analisarPar: analisarParNovo
@@ -68,17 +69,36 @@ const {
     calcularRisco
 } = require("./riskEngine");
 
+// ===================================================
+// LISTA PADRÃO DE PARES
+//
+// Futuramente esta lista será carregada da coleção
+// "configuracoes" do Firestore.
+//
+// Enquanto isso, esta permanece como lista padrão
+// do Scanner RMI.
+// ===================================================
 const pares = [
-  "EUR/USD",
-  "GBP/USD",
-  "USD/JPY",
-  "AUD/USD",
-  "USD/CAD",
-  "USD/CHF",
-  "NZD/USD",
-  "EUR/JPY",
-  "GBP/JPY",
-  "EUR/GBP"
+    "EUR/USD",
+    "GBP/USD",
+    "USD/JPY",
+    "AUD/USD",
+    "USD/CAD",
+    "USD/CHF",
+    "NZD/USD",
+    "EUR/JPY",
+    "GBP/JPY",
+    "EUR/GBP",
+    "EUR/AUD",
+    "EUR/CAD",
+    "EUR/CHF",
+    "GBP/CHF",
+    "GBP/CAD",
+    "AUD/JPY",
+    "CAD/JPY",
+    "CHF/JPY",
+    "AUD/NZD",
+    "NZD/JPY"
 ];
 
 let totalOperacoes = 0;
@@ -319,8 +339,10 @@ case "SEM_QUALIDADE":
 console.log(`${par} finalizado.`);
 
 // Aguarda 1,5 segundo antes de analisar o próximo par
-await new Promise(resolve => setTimeout(resolve, 1500));
 
+    await new Promise(resolve =>
+    setTimeout(resolve, DELAY_ANALISE_MS)
+);
   }
   const tempo =
     ((Date.now() - inicioExecucao) / 1000).toFixed(1);
