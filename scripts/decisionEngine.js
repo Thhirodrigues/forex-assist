@@ -23,6 +23,8 @@ function avaliarOperacao(resultado) {
 
     const confianca = resultado.confianca ?? score;
 
+    const recomendacaoFinanceira = resultado.recomendacaoFinanceira;
+
     const justificativas = [];
 
     if (score < 45) {
@@ -61,6 +63,37 @@ function avaliarOperacao(resultado) {
 
     }
 
+    if (
+    recomendacaoFinanceira &&
+    !recomendacaoFinanceira.operar
+) {
+
+    justificativas.push("Operação reprovada pelo Money Manager");
+
+    return {
+
+        aprovado: false,
+
+        status: "SEM_VIABILIDADE",
+
+        direcao: "NONE",
+
+        motivo: recomendacaoFinanceira.mensagem,
+
+        score,
+
+        qualidade,
+
+        tendencia,
+
+        confianca,
+
+        justificativas
+
+    };
+
+    }
+    
     if (
 
     qualidade === "LATERAL" ||
