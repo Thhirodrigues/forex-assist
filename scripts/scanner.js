@@ -34,8 +34,21 @@
 const { admin, db } =
   require("./firebase");
 
-const COOLDOWN_MINUTOS = 30;
-const DELAY_ANALISE_MS = 1500;
+const CONFIG = {
+
+    COOLDOWN_MINUTOS: 30,
+
+    DELAY_ANALISE_MS: 1500
+
+};
+
+const {
+
+    COOLDOWN_MINUTOS,
+
+    DELAY_ANALISE_MS
+
+} = CONFIG;
 
 const {
     analisarPar: analisarParNovo
