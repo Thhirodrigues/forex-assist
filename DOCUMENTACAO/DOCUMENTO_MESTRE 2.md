@@ -6293,6 +6293,222 @@ Acho essa uma excelente estratégia porque esses ajustes fortalecem a base do si
 
 ------------
 
+DOCUMENTO MESTRE — SPRINT 09
+
+FASE 05 — Central de Configurações RMI
+
+Data: 11/07/2026
+
+
+---
+
+Objetivo
+
+Substituir a tela provisória de Configurações por uma Central de Configuração definitiva do Forex Assist, tornando todos os parâmetros operacionais configuráveis pela interface e eliminando valores fixos espalhados pelo código.
+
+
+---
+
+Decisão de Arquitetura
+
+A aba Config deixa de ser apenas um placeholder e passa a ser o ponto único de gerenciamento das configurações da plataforma.
+
+Todos os módulos deverão futuramente consumir estas configurações diretamente do Firestore, eliminando constantes fixas sempre que possível.
+
+Esta tela será considerada a interface oficial de configuração do sistema.
+
+
+---
+
+Estrutura da Central de Configurações
+
+1. Perfil Operacional
+
+Novo conceito criado nesta Sprint.
+
+Substitui o antigo conceito de apenas "Modo Conservador".
+
+Perfis previstos:
+
+🟢 Agressivo
+
+🔵 Balanceado (Padrão)
+
+🟡 Conservador
+
+🟣 Expert RMI
+
+
+Cada perfil controlará automaticamente:
+
+Score mínimo
+
+Sensibilidade do Scanner
+
+Critérios do Market Analyzer
+
+Gestão de risco
+
+Frequência de sinais
+
+Filtros inteligentes
+
+
+Toda evolução futura da Engine deverá respeitar o Perfil Operacional selecionado.
+
+
+---
+
+2. Scanner
+
+Configurações previstas:
+
+Scanner Ativo
+
+Delay entre análises
+
+Status operacional
+
+
+
+---
+
+3. Mercado
+
+Configurações previstas:
+
+Quantidade de candles
+
+
+Opções:
+
+10
+
+20 (Padrão)
+
+30
+
+50
+
+
+No futuro o Pair Analyzer deverá utilizar este valor automaticamente.
+
+
+---
+
+4. Gerenciamento de Risco
+
+Parâmetros configuráveis:
+
+Lote
+
+Take Profit
+
+Stop Loss
+
+
+Preparação para futuras funções:
+
+Risco Máximo
+
+Percentual da banca
+
+Ajuste Automático de Lote
+
+
+
+---
+
+5. Pares Monitorados
+
+Todos os pares passam a ser configuráveis pela interface.
+
+Inicialmente:
+
+20 pares disponíveis
+
+10 principais marcados por padrão.
+
+10 secundários desmarcados.
+
+No futuro o Scanner deverá carregar esta lista diretamente do Firestore.
+
+
+---
+
+6. API TwelveData
+
+Área destinada à administração das APIs.
+
+Preparada para:
+
+Chave ativa
+
+Rotação automática
+
+Consumo
+
+Limites
+
+
+
+---
+
+7. Conta
+
+Nova área criada.
+
+Configurações:
+
+Saldo Inicial
+
+Conta Simulada
+
+Conta Real
+
+
+Esta estrutura permitirá que o sistema trabalhe futuramente com duas contas independentes utilizando a mesma Engine.
+
+
+---
+
+8. Botão Salvar Configurações
+
+Todas as alterações deverão ser persistidas em uma única operação.
+
+Os módulos deverão consumir estas configurações na inicialização.
+
+
+---
+
+Benefícios
+
+Elimina parâmetros fixos.
+
+Centraliza toda configuração.
+
+Facilita futuras implementações.
+
+Evita retrabalho.
+
+Mantém a arquitetura modular.
+
+Mantém a Engine independente da interface.
+
+
+
+---
+
+Situação da Sprint
+
+🟢 Aprovada.
+
+Próxima implementação:
+
+Construção completa do novo config.js, já preparado para integração com Firestore e consumo pelos módulos do Forex Assist.
+
+------------------
+
 
 
 
