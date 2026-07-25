@@ -76,45 +76,51 @@ function configuracaoPadrao() {
 
     return {
 
-        perfil: "balanceado",
+    perfil: "balanceado",
 
-        scannerAtivo: true,
+    scannerAtivo: true,
 
-        delay: 1500,
+    delay: 1500,
 
-        candles: 20,
+    cooldown: 30,
 
-        lote: 0.04,
+    horarioInicio: "07:30",
 
-        tp: 5,
+    horarioFim: "18:00",
 
-        sl: 5,
+    janelaSeguranca: 30,
 
-        conta: "simulada",
+    candles: 20,
 
-        saldoInicial: 1000,
+    lote: 0.04,
 
-        apiAtiva: 1,
+    tp: 5,
 
-        pares: [
+    sl: 5,
 
-            "EUR/USD",
-            "GBP/USD",
-            "USD/JPY",
-            "AUD/USD",
-            "USD/CAD",
+    conta: "simulada",
 
-            "USD/CHF",
-            "NZD/USD",
-            "EUR/JPY",
-            "GBP/JPY",
-            "EUR/GBP"
+    saldoInicial: 1000,
 
-        ]
+    apiAtiva: 1,
 
-    };
+    pares: [
 
-}
+        "EUR/USD",
+        "GBP/USD",
+        "USD/JPY",
+        "AUD/USD",
+        "USD/CAD",
+
+        "USD/CHF",
+        "NZD/USD",
+        "EUR/JPY",
+        "GBP/JPY",
+        "EUR/GBP"
+
+    ]
+
+};
 
 // ======================================================
 // CARREGAR CONFIGURAÇÕES
@@ -262,6 +268,62 @@ Forex Assist
 
 </div>
 
+<div class="list-item">
+
+Cooldown entre sinais
+
+<br><br>
+
+<input
+    id="cfgCooldown"
+    type="number"
+    value="${config.cooldown}"
+    style="width:100%;">
+
+</div>
+
+<div class="list-item">
+
+Horário Inicial
+
+<br><br>
+
+<input
+    id="cfgInicio"
+    type="time"
+    value="${config.horarioInicio}"
+    style="width:100%;">
+
+</div>
+
+<div class="list-item">
+
+Horário Final
+
+<br><br>
+
+<input
+    id="cfgFim"
+    type="time"
+    value="${config.horarioFim}"
+    style="width:100%;">
+
+</div>
+
+<div class="list-item">
+
+Janela de Segurança (min)
+
+<br><br>
+
+<input
+    id="cfgJanela"
+    type="number"
+    value="${config.janelaSeguranca}"
+    style="width:100%;">
+
+</div>
+        
 <div class="card">
 
 <div class="card-title">
@@ -625,6 +687,20 @@ function obterConfiguracoesTela() {
 
             ),
 
+        cooldown: Number(
+    document.getElementById("cfgCooldown").value
+),
+
+horarioInicio:
+    document.getElementById("cfgInicio").value,
+
+horarioFim:
+    document.getElementById("cfgFim").value,
+
+janelaSeguranca: Number(
+    document.getElementById("cfgJanela").value
+),
+        
         candles:
 
             Number(
