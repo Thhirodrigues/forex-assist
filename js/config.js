@@ -264,8 +264,6 @@ Forex Assist
 
     </div>
 
-</div>
-
 <div class="list-item">
 
 Cooldown entre sinais
@@ -321,9 +319,9 @@ Janela de Segurança (min)
     style="width:100%;">
 
 </div>
-        
-<div class="card">
+</div>
 
+<div class="card">
 <div class="card-title">
 
 📊 Mercado
