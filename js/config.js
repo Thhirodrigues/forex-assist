@@ -262,8 +262,6 @@ Forex Assist
 
             Milissegundos
 
-        </div>
-
     </div>
 
 </div>
