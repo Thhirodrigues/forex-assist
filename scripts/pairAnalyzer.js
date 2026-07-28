@@ -56,16 +56,22 @@ rsi,
 calcularADX,
 calcularATR,
 calcularQualidade,
-verificarCooldown,
+existeCooldown,
 salvarOperacao
 }) {
 
     try {
 
-        // if (await verificarCooldown(par)) {
-//     console.log("Status.............COOLDOWN");
-//     return "COOLDOWN";
-// }
+        if (await existeCooldown(db, par)) {
+
+    console.log("Status............COOLDOWN");
+    console.log("Motivo............Operação recente");
+
+    return {
+        status: "COOLDOWN"
+    };
+
+        }
 
 const candles =
     await getCandles(par,"5min",250
