@@ -1,58 +1,28 @@
 // ===================================================
 // FOREX ASSIST - REAL MONEY INTELLIGENCE
-// SCANNER
-//
-// Responsabilidade:
-// Coordenar todo o processo de varredura do mercado.
-//
-// Fluxo:
-//
-// 1. Percorrer todos os pares configurados.
-//
-// 2. Solicitar ao Pair Analyzer a análise
-//    individual de cada ativo.
-//
-// 3. Registrar estatísticas da execução.
-//
-// 4. Consolidar os resultados do Scanner.
-//
-// O Scanner NÃO possui regras de análise.
-//
-// Toda inteligência de mercado permanece nos
-// módulos especializados:
-//
-// • pairAnalyzer.js
-// • marketAnalyzer.js
-// • statisticsEngine.js
-// • riskManager.js
-// • marketData.js
-//
-// SPRINT 05
-// Arquitetura Modular
+// SCANNER RMI V2
+// ---------------------------------------------------
+// PARTE 01
+// Estrutura Base + Inicialização
 // ===================================================
 
-const { admin, db } =
-  require("./firebase");
+// ===================================================
+// DEPENDÊNCIAS
+// ===================================================
 
-const CONFIG = {
-
-    COOLDOWN_MINUTOS: 30,
-
-    DELAY_ANALISE_MS: 1500
-
-};
+const { db } = require("./firebase");
 
 const {
-
-    COOLDOWN_MINUTOS,
-
-    DELAY_ANALISE_MS
-
-} = CONFIG;
-
-const {
-    analisarPar: analisarParNovo
+    analisarPar
 } = require("./pairAnalyzer");
+
+const {
+    obterEstatisticasPar
+} = require("./statisticsEngine");
+
+const {
+    calcularRisco
+} = require("./riskEngine");
 
 const {
     getCandles
@@ -63,10 +33,6 @@ const {
 } = require("./marketAnalyzer");
 
 const {
-    obterEstatisticasPar
-} = require("./statisticsEngine");
-
-const {
     ema,
     rsi,
     calcularADX,
@@ -74,80 +40,219 @@ const {
 } = require("./utils");
 
 const {
-  existeCooldown: verificarCooldown,
-  salvarOperacao
+    salvarOperacao,
+    existeCooldown
 } = require("./riskManager");
 
-const {
-    calcularRisco
-} = require("./riskEngine");
+// ===================================================
+// CONFIGURAÇÃO PADRÃO
+// (Fallback caso Firestore esteja indisponível)
+// ===================================================
+
+const CONFIG_PADRAO = {
+
+    scannerAtivo: true,
+
+    perfil: "balanceado",
+
+    delay: 1500,
+
+    cooldown: 30,
+
+    horarioInicio: "07:30",
+
+    horarioFim: "18:00",
+
+    janelaSeguranca: 30,
+
+    candles: 20,
+
+    lote: 0.04,
+
+    tp: 5,
+
+    sl: 5,
+
+    conta: "simulada",
+
+    saldoInicial: 1000,
+
+    apiAtiva: 1,
+
+    pares: [
+        "EUR/USD",
+        "GBP/USD",
+        "USD/JPY",
+        "AUD/USD",
+        "USD/CAD",
+        "USD/CHF",
+        "NZD/USD",
+        "EUR/JPY",
+        "GBP/JPY",
+        "EUR/GBP"
+    ]
+};
 
 // ===================================================
-// LISTA PADRÃO DE PARES
-//
-// Futuramente esta lista será carregada da coleção
-// "configuracoes" do Firestore.
-//
-// Enquanto isso, esta permanece como lista padrão
-// do Scanner RMI.
+// ESTADO GLOBAL DO SCANNER
 // ===================================================
-const pares = [
-    "EUR/USD",
-    "GBP/USD",
-    "USD/JPY",
-    "AUD/USD",
-    "USD/CAD",
-    "USD/CHF",
-    "NZD/USD",
-    "EUR/JPY",
-    "GBP/JPY",
-    "EUR/GBP",
-    "EUR/AUD",
-    "EUR/CAD",
-    "EUR/CHF",
-    "GBP/CHF",
-    "GBP/CAD",
-    "AUD/JPY",
-    "CAD/JPY",
-    "CHF/JPY",
-    "AUD/NZD",
-    "NZD/JPY"
-];
 
-let totalOperacoes = 0;
-let totalSemSinal = 0;
-let totalCooldown = 0;
-let totalErros = 0;
+const SCANNER = {
 
-const inicioExecucao = Date.now();
+    iniciadoEm: null,
 
-async function existeCooldown(par) {
+    configuracao: null,
 
-  const limite =
-    Date.now() -
-    COOLDOWN_MINUTOS *
-      60 *
-      1000;
+    pares: [],
 
-  const snap =
-    await db
-      .collection("historico")
-      .where("par", "==", par)
-      .orderBy("timestamp", "desc")
-      .limit(1)
-      .get();
+    estatisticas: {
 
-  if (snap.empty)
-    return false;
+        operacoes: 0,
 
-  const ultimo =
-    snap.docs[0].data();
+        semSinal: 0,
 
-  return verificarCooldown(
-  ultimo.timestamp,
-  COOLDOWN_MINUTOS
-);
+        cooldown: 0,
+
+        erros: 0,
+
+        tempoExecucao: 0
+
+    }
+
+};
+
+// ===================================================
+// CARREGA CONFIGURAÇÃO
+// Firestore → Fallback
+// ===================================================
+
+async function carregarConfiguracao() {
+
+    try {
+
+        const doc = await db
+            .collection("configuracoes")
+            .doc("geral")
+            .get();
+
+        if (!doc.exists) {
+
+            console.log(
+                "Configuração não encontrada. Utilizando padrão."
+            );
+
+            return {
+                ...CONFIG_PADRAO
+            };
+
+        }
+
+        return {
+
+            ...CONFIG_PADRAO,
+
+            ...doc.data()
+
+        };
+
+    }
+
+    catch (erro) {
+
+        console.log(
+            "Erro ao carregar configuração.",
+            erro.message
+        );
+
+        return {
+
+            ...CONFIG_PADRAO
+
+        };
+
+    }
+
 }
+
+// ===================================================
+// INICIALIZA ESTADO
+// ===================================================
+
+async function inicializarScanner() {
+
+    SCANNER.iniciadoEm = Date.now();
+
+    SCANNER.configuracao =
+        await carregarConfiguracao();
+
+    SCANNER.pares =
+        [...SCANNER.configuracao.pares];
+
+    SCANNER.estatisticas = {
+
+        operacoes: 0,
+
+        semSinal: 0,
+
+        cooldown: 0,
+
+        erros: 0,
+
+        tempoExecucao: 0
+
+    };
+
+}
+
+// ===================================================
+// Continua na PARTE 02
+// Validações
+// Mercado
+// Horário
+// Status
+// Logs
+// ===================================================
+
+// ===================================================
+// PARTE 02
+// Validações do Ambiente
+// ===================================================
+
+// ===================================================
+// STATUS DO SCANNER
+// ===================================================
+
+async function scannerAtivo() {
+
+    try {
+
+        const doc = await db
+            .collection("scanner")
+            .doc("status")
+            .get();
+
+        if (!doc.exists)
+            return true;
+
+        return doc.data()?.ativo !== false;
+
+    }
+
+    catch (erro) {
+
+        console.log(
+            "Não foi possível verificar o status do Scanner."
+        );
+
+        return true;
+
+    }
+
+}
+
+// ===================================================
+// MERCADO ABERTO
+// ===================================================
 
 function mercadoAberto() {
 
@@ -155,9 +260,25 @@ function mercadoAberto() {
 
     const diaSemana = agora.getDay();
 
-    if (diaSemana === 0 || diaSemana === 6) {
+    // Domingo
+    if (diaSemana === 0)
         return false;
-    }
+
+    // Sábado
+    if (diaSemana === 6)
+        return false;
+
+    return true;
+
+}
+
+// ===================================================
+// HORÁRIO OPERACIONAL
+// ===================================================
+
+function horarioOperacional() {
+
+    const agora = new Date();
 
     const horaAtual = agora.toLocaleTimeString(
         "pt-BR",
@@ -170,222 +291,637 @@ function mercadoAberto() {
     );
 
     const [hora, minuto] =
-        horaAtual.split(":").map(Number);
+        horaAtual
+            .split(":")
+            .map(Number);
 
-    const minutosAtuais =
+    const minutosAgora =
         hora * 60 + minuto;
 
-    const inicio = 7 * 60 + 30;
+    const [horaInicio, minutoInicio] =
+        SCANNER.configuracao
+            .horarioInicio
+            .split(":")
+            .map(Number);
 
-    const fim = 18 * 60;
+    const [horaFim, minutoFim] =
+        SCANNER.configuracao
+            .horarioFim
+            .split(":")
+            .map(Number);
+
+    const inicio =
+        horaInicio * 60 + minutoInicio;
+
+    const fim =
+        horaFim * 60 + minutoFim;
 
     return (
-        minutosAtuais >= inicio &&
-        minutosAtuais <= fim
-    );
-}
-
-async function main() {
-
-if (!mercadoAberto()) {
-
-    console.log("========================================");
-    console.log("MERCADO FECHADO");
-    console.log("Scanner encerrado.");
-    console.log("========================================");
-
-    return;
-}
-
-const scannerStatus = await db
-    .collection("scanner")
-    .doc("status")
-    .get();
-
-if (!scannerStatus.exists || !scannerStatus.data()?.ativo) {
-
-    console.log("========================================");
-    console.log("SCANNER DESATIVADO");
-    console.log("Execução encerrada.");
-    console.log("========================================");
-
-    return;
-}
-
-if (!pares.length) {
-
-    console.log("========================================");
-    console.log("NENHUM PAR CONFIGURADO");
-    console.log("Scanner encerrado.");
-    console.log("========================================");
-
-    return;
-}
-
-console.log("========================================");
-console.log("FOREX ASSIST - REAL MONEY INTELLIGENCE");
-console.log("Scanner RMI_V2");
-console.log("========================================");
-console.log(`Pares...............${pares.length}`);
-console.log("Timeframe...........5m");
-console.log("Modo................REAL");
-console.log("Engine..............RMI_V2");
-console.log("========================================");
-
-  for (const par of pares) {
-
-console.log("\n========================");
-console.log("\n========================================");
-console.log(`Analisando...........${par}`);
-console.log("========================================");
-
-    const estatisticas =
-    await obterEstatisticasPar(
-        db,
-        par
+        minutosAgora >= inicio &&
+        minutosAgora <= fim
     );
 
-console.log(
-    `Histórico..........${estatisticas.wins}W/${estatisticas.loss}L`
-);
+}
 
-console.log(
-    `Assertividade......${estatisticas.taxaAcerto}%`
-);
+// ===================================================
+// VALIDAÇÕES GERAIS
+// ===================================================
 
-console.log(
-  `Confiabilidade....${estatisticas.status}`
-);
+async function validarExecucao() {
 
-console.log("========================================");
+    if (!await scannerAtivo()) {
 
-    const resultado = await analisarParNovo({
-    
-    db,
+        console.log("\n========================================");
+        console.log("SCANNER DESATIVADO");
+        console.log("========================================");
+
+        return false;
+
+    }
+
+    if (!mercadoAberto()) {
+
+        console.log("\n========================================");
+        console.log("MERCADO FECHADO");
+        console.log("========================================");
+
+        return false;
+
+    }
+
+    if (!horarioOperacional()) {
+
+        console.log("\n========================================");
+        console.log("FORA DO HORÁRIO OPERACIONAL");
+        console.log(
+            `${SCANNER.configuracao.horarioInicio} às ${SCANNER.configuracao.horarioFim}`
+        );
+        console.log("========================================");
+
+        return false;
+
+    }
+
+    if (!SCANNER.pares.length) {
+
+        console.log("\n========================================");
+        console.log("NENHUM PAR CONFIGURADO");
+        console.log("========================================");
+
+        return false;
+
+    }
+
+    return true;
+
+}
+
+// ===================================================
+// LOG DE INICIALIZAÇÃO
+// ===================================================
+
+function imprimirCabecalho() {
+
+    console.clear();
+
+    console.log("========================================");
+    console.log("FOREX ASSIST - REAL MONEY INTELLIGENCE");
+    console.log("SCANNER RMI V2");
+    console.log("========================================");
+
+    console.log(`Perfil..............${SCANNER.configuracao.perfil}`);
+    console.log(`Conta...............${SCANNER.configuracao.conta}`);
+    console.log(`Pares...............${SCANNER.pares.length}`);
+    console.log(`Candles.............${SCANNER.configuracao.candles}`);
+    console.log(`Delay...............${SCANNER.configuracao.delay} ms`);
+    console.log(`Cooldown............${SCANNER.configuracao.cooldown} min`);
+    console.log(`Horário.............${SCANNER.configuracao.horarioInicio} - ${SCANNER.configuracao.horarioFim}`);
+
+    console.log("========================================");
+
+}
+
+// ===================================================
+// LOG POR PAR
+// ===================================================
+
+function iniciarAnalisePar(par, estatisticas) {
+
+    console.log("\n========================================");
+
+    console.log(`Par.................${par}`);
+
+    console.log(
+        `Histórico...........${estatisticas.wins}W/${estatisticas.loss}L`
+    );
+
+    console.log(
+        `Assertividade.......${estatisticas.taxaAcerto}%`
+    );
+
+    console.log(
+        `Confiabilidade......${estatisticas.status}`
+    );
+
+    console.log("========================================");
+
+}
+
+// ===================================================
+// Continua na PARTE 03
+// Núcleo da execução
+// Loop principal
+// PairAnalyzer
+// Risk Engine
+// Tratamento dos resultados
+// ===================================================
+
+// ===================================================
+// PARTE 03
+// Núcleo da Execução
+// ===================================================
+
+// ===================================================
+// EXECUTA A ANÁLISE DE UM PAR
+// ===================================================
+
+async function executarAnalisePar(par) {
+
+    try {
+
+        const estatisticas =
+            await obterEstatisticasPar(
+                db,
+                par
+            );
+
+        iniciarAnalisePar(
+            par,
+            estatisticas
+        );
+
+        const resultado =
+            await analisarPar({
+
+                db,
+
+                par,
+
+                configuracao:
+                    SCANNER.configuracao,
+
+                estatisticas,
+
+                getCandles,
+
+                ema,
+
+                rsi,
+
+                calcularADX,
+
+                calcularATR,
+
+                calcularQualidade,
+
+                existeCooldown,
+
+                salvarOperacao
+
+            });
+
+        await tratarResultado(
+
+            par,
+
+            resultado,
+
+            estatisticas
+
+        );
+
+    }
+
+    catch (erro) {
+
+        SCANNER.estatisticas.erros++;
+
+        console.log("");
+
+        console.log("ERRO");
+
+        console.log(par);
+
+        console.log(erro.message);
+
+    }
+
+}
+
+// ===================================================
+// PROCESSA O RESULTADO
+// ===================================================
+
+async function tratarResultado(
 
     par,
 
-    estatisticas,
+    resultado,
 
-    getCandles,
+    estatisticas
 
-    ema,
-
-    rsi,
-
-    calcularADX,
-
-    calcularATR,
-
-    calcularQualidade,
-
-    verificarCooldown: existeCooldown,
-
-    salvarOperacao
-
-});
-
-    let risco = null;
-
-if (
-    resultado &&
-    typeof resultado === "object" &&
-    resultado.status === "SALVO"
 ) {
 
-    risco = calcularRisco({
+    if (!resultado)
+        return;
 
-        score: resultado.operacao.score,
+    switch (resultado.status) {
 
-        historico: estatisticas,
+        case "SALVO":
 
-        atr: resultado.operacao.atr,
+            await processarOperacaoSalva(
 
-        loteBase: resultado.operacao.lote,
+                resultado,
 
-        tpBase: resultado.operacao.tpUSD,
+                estatisticas
 
-        slBase: resultado.operacao.slUSD
+            );
+
+            SCANNER.estatisticas.operacoes++;
+
+            break;
+
+        case "SEM_SINAL":
+
+            SCANNER.estatisticas.semSinal++;
+
+            console.log("Resultado..........Sem sinal");
+
+            break;
+
+        case "SEM_QUALIDADE":
+
+            SCANNER.estatisticas.semSinal++;
+
+            console.log("Resultado..........Sem qualidade");
+
+            break;
+
+        case "COOLDOWN":
+
+            SCANNER.estatisticas.cooldown++;
+
+            console.log("Resultado..........Cooldown");
+
+            break;
+
+        default:
+
+            SCANNER.estatisticas.erros++;
+
+            console.log("Resultado..........Erro");
+
+            break;
+
+    }
+
+    console.log("");
+
+    console.log(`${par} finalizado.`);
+
+}
+
+// ===================================================
+// PROCESSA OPERAÇÃO SALVA
+// ===================================================
+
+async function processarOperacaoSalva(
+
+    resultado,
+
+    estatisticas
+
+) {
+
+    const risco = calcularRisco({
+
+        score:
+            resultado.operacao.score,
+
+        historico:
+            estatisticas,
+
+        atr:
+            resultado.operacao.atr,
+
+        loteBase:
+            resultado.operacao.lote,
+
+        tpBase:
+            resultado.operacao.tpUSD,
+
+        slBase:
+            resultado.operacao.slUSD
 
     });
-console.log("========== RMI V2 ==========");
-console.log(`Lote..............${resultado.operacao.lote}`);
-console.log(`TP................${resultado.operacao.tpUSD} USD`);
-console.log(`SL................${resultado.operacao.slUSD} USD`);
-console.log(`Risco.............${resultado.operacao.riscoPercentual}%`);
-console.log(`R/R...............${resultado.operacao.rewardRisk}`);
-console.log(`Expectativa.......${resultado.operacao.expectativa}`);
-console.log("============================");
+
+    console.log("");
+
+    console.log("========== OPERAÇÃO ==========");
+
+    console.log(
+        `Par...............${resultado.operacao.par}`
+    );
+
+    console.log(
+        `Direção...........${resultado.operacao.direcao}`
+    );
+
+    console.log(
+        `Score.............${resultado.operacao.score}`
+    );
+
+    console.log(
+        `Lote..............${risco.lote}`
+    );
+
+    console.log(
+        `TP................${risco.tpUSD} USD`
+    );
+
+    console.log(
+        `SL................${risco.slUSD} USD`
+    );
+
+ console.log(
+        `Risco.............${risco.riscoPercentual}%`
+    );
+
+    console.log(
+        `R/R...............${risco.rewardRisk}`
+    );
+
+    console.log(
+        `Expectativa.......${risco.expectativa}`
+    );
+
+    console.log("==============================");
 
 }
 
-switch (
-    typeof resultado === "object"
-        ? resultado.status
-        : resultado
-) {
+// ===================================================
+// LOOP PRINCIPAL
+// ===================================================
 
-case "SALVO":
-    totalOperacoes++;
-    break;
+async function executarScanner() {
 
-case "SEM_SINAL":
-    totalSemSinal++;
-    break;
+    for (const par of SCANNER.pares) {
 
-case "COOLDOWN":
-    totalCooldown++;
-    break;
+        await executarAnalisePar(par);
 
-case "ERRO":
-    totalErros++;
-    break;
+        await aguardarDelay();
 
-case "SEM_QUALIDADE":
-
-    totalSemSinal++;
-
-    break;
-
-}
-    
-console.log(`${par} finalizado.`);
-
-// Aguarda 1,5 segundo antes de analisar o próximo par
-
-    await new Promise(resolve =>
-    setTimeout(resolve, DELAY_ANALISE_MS)
-);
-  }
-  const tempo =
-    ((Date.now() - inicioExecucao) / 1000).toFixed(1);
-
-console.log("\n========================================");
-console.log("SCANNER FINALIZADO");
-console.log("========================================");
-console.log(`Operações..........${totalOperacoes}`);
-console.log(`Sem sinal..........${totalSemSinal}`);
-console.log(`Cooldown...........${totalCooldown}`);
-console.log(`Erros..............${totalErros}`);
-console.log(`Tempo..............${tempo}s`);
-console.log("========================================");
+    }
 
 }
 
-main()
-  .then(() =>
-    process.exit(0)
-  )
-  .catch(err => {
+// ===================================================
+// DELAY ENTRE PARES
+// ===================================================
 
-    console.error(err);
+async function aguardarDelay() {
 
-    process.exit(1);
+    return new Promise(resolve => {
 
-  });
-// Fim do scanner modular.
-// Nesta etapa da migração não há mais código após o main().
+        setTimeout(
+
+            resolve,
+
+            SCANNER.configuracao.delay
+
+        );
+
+    });
+
+}
+
+// ===================================================
+// Continua na PARTE 04
+// Finalização
+// Estatísticas
+// Atualização do status
+// main()
+// module.exports
+// ===================================================
+
+// ===================================================
+// PARTE 04
+// Finalização
+// ===================================================
+
+// ===================================================
+// CALCULA TEMPO TOTAL
+// ===================================================
+
+function finalizarEstatisticas() {
+
+    SCANNER.estatisticas.tempoExecucao = (
+
+        (Date.now() - SCANNER.iniciadoEm)
+
+        / 1000
+
+    ).toFixed(1);
+
+}
+
+// ===================================================
+// RESUMO FINAL
+// ===================================================
+
+function imprimirResumoFinal() {
+
+    console.log("");
+
+    console.log("========================================");
+    console.log("SCANNER FINALIZADO");
+    console.log("========================================");
+
+    console.log(
+        `Operações..........${SCANNER.estatisticas.operacoes}`
+    );
+
+    console.log(
+        `Sem sinal..........${SCANNER.estatisticas.semSinal}`
+    );
+
+    console.log(
+        `Cooldown...........${SCANNER.estatisticas.cooldown}`
+    );
+
+    console.log(
+        `Erros..............${SCANNER.estatisticas.erros}`
+    );
+
+    console.log(
+        `Tempo..............${SCANNER.estatisticas.tempoExecucao}s`
+    );
+
+    console.log("========================================");
+
+}
+
+// ===================================================
+// ATUALIZA STATUS DO SCANNER
+// ===================================================
+
+async function registrarExecucao() {
+
+    try {
+
+        await db
+
+            .collection("scanner")
+
+            .doc("ultimaExecucao")
+
+            .set({
+
+                executadoEm:
+
+                    new Date(),
+
+                tempo:
+
+                    Number(
+                        SCANNER.estatisticas.tempoExecucao
+                    ),
+
+                operacoes:
+
+                    SCANNER.estatisticas.operacoes,
+
+                semSinal:
+
+                    SCANNER.estatisticas.semSinal,
+
+                cooldown:
+
+                    SCANNER.estatisticas.cooldown,
+
+                erros:
+
+                    SCANNER.estatisticas.erros,
+
+                perfil:
+
+                    SCANNER.configuracao.perfil,
+
+                conta:
+
+                    SCANNER.configuracao.conta,
+
+                pares:
+
+                    SCANNER.pares.length,
+
+                candles:
+
+                    SCANNER.configuracao.candles
+
+            });
+
+    }
+
+    catch (erro) {
+
+        console.log(
+
+            "Falha ao registrar execução.",
+
+            erro.message
+
+        );
+
+    }
+
+}
+
+// ===================================================
+// FLUXO PRINCIPAL
+// ===================================================
+
+async function main() {
+
+    try {
+
+        await inicializarScanner();
+
+        const valido =
+
+            await validarExecucao();
+
+        if (!valido)
+
+            return;
+
+        imprimirCabecalho();
+
+        await executarScanner();
+
+        finalizarEstatisticas();
+
+        imprimirResumoFinal();
+
+        await registrarExecucao();
+
+        process.exit(0);
+
+    }
+
+    catch (erro) {
+
+        console.error("");
+
+        console.error("========================================");
+
+        console.error("ERRO FATAL DO SCANNER");
+
+        console.error("========================================");
+
+        console.error(erro);
+
+        process.exit(1);
+
+    }
+
+}
+
+// ===================================================
+// INICIALIZAÇÃO
+// ===================================================
+
+main();
+
+// ===================================================
+// EXPORTAÇÃO
+// ===================================================
 
 module.exports = {
-    main
+
+    main,
+
+    carregarConfiguracao,
+
+    inicializarScanner,
+
+    validarExecucao,
+
+    executarScanner
+
 };
+
+// ===================================================
+// FIM DO SCANNER RMI V2
+// ===================================================
+
