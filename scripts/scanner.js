@@ -120,8 +120,6 @@ async function criarContextoExecucao() {
 
     ultimaExecucao: null
 
-        }
-
         },
 
         estatisticas: {
@@ -139,7 +137,7 @@ async function criarContextoExecucao() {
         }
 
     };
-
+}
 // ===================================================
 // CARREGA CONFIGURAÇÃO
 // Firestore → Fallback
