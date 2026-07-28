@@ -7037,6 +7037,69 @@ Na Parte 2/5, iniciaremos a implementação do bloco Imports + DEFAULT_CONFIG + 
 
 -------
 
+=========================================================
+ATUALIZAÇÃO
+FASE 06
+SPRINT 08
+COOLDOWN E VALIDAÇÃO FINAL
+=========================================================
+
+Durante esta etapa foi concluída a implementação do sistema de proteção contra operações duplicadas através do mecanismo de Cooldown.
+
+Foi criado o módulo responsável pela verificação das operações abertas no Firestore, impedindo novas entradas para o mesmo ativo durante o período configurado.
+
+A consulta passou a considerar exclusivamente operações com status ABERTA, eliminando conflitos com operações já encerradas.
+
+Também foi realizada a criação dos índices compostos necessários no Cloud Firestore para suportar consultas utilizando:
+
+par
+
+status
+
+timestamp
+
+Após a indexação, o Scanner voltou a executar normalmente.
+
+O Workflow do GitHub Actions foi validado sem erros.
+
+As operações passaram a apresentar corretamente os estados:
+
+REPROVADO
+
+COOLDOWN
+
+SALVO
+
+Toda a persistência no Firestore foi validada.
+
+As operações encerradas permanecem disponíveis para estatísticas enquanto apenas operações abertas participam da lógica de bloqueio.
+
+Com isso considera-se encerrada a implementação estrutural do sistema de Cooldown da versão RMI V2.
+
+A arquitetura permanece modular, mantendo responsabilidades distribuídas entre:
+
+scanner.js
+
+pairAnalyzer.js
+
+marketAnalyzer.js
+
+decisionEngine.js
+
+moneyManager.js
+
+riskManager.js
+
+statisticsEngine.js
+
+O projeto encontra-se estável e pronto para iniciar a próxima fase de evolução da inteligência institucional, concentrando os próximos trabalhos no aperfeiçoamento do Decision Engine, Learning Engine e Capital Protection.
+
+STATUS DA FASE
+
+CONCLUÍDA.
+
+----------
+
 
 
 
