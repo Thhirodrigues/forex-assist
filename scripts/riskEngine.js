@@ -109,26 +109,36 @@ if (atr > tpUSD * 2)
     rewardRisk = "1:1";
 
 // =========================
-// EXPECTATIVA
+// EXPECTATIVA OPERACIONAL
 // =========================
 
-let expectativa = "MODERADA";
+let expectativa = "BAIXA";
 
-if (score >= 95 && taxaAcerto >= 80)
+if (score >= 95 && taxaAcerto >= 80) {
+
+    expectativa = "EXCELENTE";
+
+}
+else if (score >= 90 && taxaAcerto >= 75) {
 
     expectativa = "MUITO_ALTA";
 
-else if (score >= 90 && taxaAcerto >= 70)
+}
+else if (score >= 85 && taxaAcerto >= 65) {
 
     expectativa = "ALTA";
 
-else if (score >= 85 && taxaAcerto >= 60)
+}
+else if (score >= 80 && taxaAcerto >= 55) {
 
     expectativa = "BOA";
 
-else if (score >= 80)
+}
+else if (score >= 75) {
 
-    expectativa = "ACEITÁVEL";
+    expectativa = "MODERADA";
+
+}
 
  justificativas.push(
     `Risk/Reward: ${rewardRisk}`
