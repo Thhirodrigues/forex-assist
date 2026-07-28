@@ -74,4 +74,101 @@ Substituir a implementação atual baseada na API `/price` pela leitura do fecha
 
 O projeto encontra-se estável após a refatoração e preparado para a migração da lógica de verificação de resultados.
 
+--------------
 
+=========================================================
+FOREX ASSIST - REAL MONEY INTELLIGENCE
+CHECKPOINT
+FASE 06
+RMI V2
+=========================================================
+
+STATUS GERAL
+
+Projeto estável.
+
+Scanner operacional.
+
+Workflow GitHub executando sem erros.
+
+Firestore integrado.
+
+Histórico operacional funcionando.
+
+Cooldown implementado.
+
+---------------------------------------------------------
+
+OBJETIVO DA FASE
+
+Implementar a arquitetura definitiva do Scanner RMI V2.
+
+Separar completamente as responsabilidades dos módulos.
+
+Preparar a plataforma para evolução da inteligência.
+
+---------------------------------------------------------
+
+CONCLUÍDO
+
+✔ Scanner refatorado
+
+✔ Pair Analyzer integrado
+
+✔ Decision Engine integrado
+
+✔ Money Manager integrado
+
+✔ Risk Manager integrado
+
+✔ Registro completo das operações
+
+✔ Histórico operacional
+
+✔ Atualização automática WIN / LOSS
+
+✔ Gestão financeira
+
+✔ Score Institucional
+
+✔ Confidence Level
+
+✔ Histórico estatístico
+
+✔ Risk / Reward
+
+✔ Operações persistidas no Firestore
+
+✔ Workflow GitHub validado
+
+✔ Cooldown por ativo implementado
+
+✔ Consulta otimizada utilizando operações ABERTAS
+
+✔ Índices compostos criados no Firestore
+
+---------------------------------------------------------
+
+VALIDAÇÃO
+
+Scanner executa normalmente.
+
+Sem erros de Workflow.
+
+Sem erros de Firestore.
+
+Cooldown validado.
+
+Operações registradas corretamente.
+
+Encerramento funcionando.
+
+---------------------------------------------------------
+
+PRÓXIMA ETAPA
+
+Sprint 09
+
+Decision Intelligence
+
+Fim do Checkpoint.
