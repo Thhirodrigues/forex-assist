@@ -5,7 +5,6 @@ async function existeCooldown(db, par) {
     const snapshot = await db
         .collection("historico")
         .where("par", "==", par)
-        .where("status", "==", "ABERTA")
         .orderBy("timestamp", "desc")
         .limit(1)
         .get();
@@ -16,10 +15,9 @@ async function existeCooldown(db, par) {
     const ultima = snapshot.docs[0].data();
 
     const limite =
-        Date.now() -
-        COOLDOWN_MINUTOS * 60 * 1000;
+        Date.now() - COOLDOWN_MINUTOS * 60 * 1000;
 
-    return ultima.timestamp > limite;
+    return Number(ultima.timestamp) > limite;
 
 }
 
