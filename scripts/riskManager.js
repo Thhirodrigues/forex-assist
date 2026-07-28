@@ -1,30 +1,48 @@
-function existeCooldown(ultimoTimestamp, cooldownMinutos) {
+const COOLDOWN_MINUTOS = 30;
 
-  if (!ultimoTimestamp)
-    return false;
+async function existeCooldown(db, par) {
 
-  const limite =
-    Date.now() -
-    cooldownMinutos *
-    60 *
-    1000;
+    const snapshot = await db
+        .collection("historico")
+        .where("par", "==", par)
+        .where("status", "==", "ABERTA")
+        .orderBy("timestamp", "desc")
+        .limit(1)
+        .get();
 
-  return ultimoTimestamp > limite;
+    if (snapshot.empty)
+        return false;
+
+    const ultima = snapshot.docs[0].data();
+
+    const limite =
+        Date.now() -
+        COOLDOWN_MINUTOS * 60 * 1000;
+
+    return ultima.timestamp > limite;
 
 }
 
 async function salvarOperacao(db, dados) {
 
-  await db
-  .collection("historico")
-  .add({
-    ...dados,
-    horario: new Date().toLocaleString("pt-BR"),
-    timestamp: Date.now()
-  });
+    await db
+        .collection("historico")
+        .add({
+
+            ...dados,
+
+            horario: new Date().toLocaleString("pt-BR"),
+
+            timestamp: Date.now()
+
+        });
+
 }
 
 module.exports = {
-  existeCooldown,
-  salvarOperacao
+
+    existeCooldown,
+
+    salvarOperacao
+
 };
