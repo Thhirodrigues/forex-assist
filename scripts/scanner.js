@@ -112,11 +112,15 @@ async function criarContextoExecucao() {
 
         ambiente: {
 
-            scannerAtivo: true,
+    scannerAtivo: null,
 
-            mercadoAberto: true,
+    mercadoAberto: null,
 
-            horarioOperacional: true
+    horarioOperacional: null,
+
+    ultimaExecucao: null
+
+        }
 
         },
 
@@ -263,7 +267,7 @@ function mercadoAberto() {
 // HORÁRIO OPERACIONAL
 // ===================================================
 
-function horarioOperacional() {
+function horarioOperacional(context) {
 
     const agora = new Date();
 
@@ -286,13 +290,13 @@ function horarioOperacional() {
         hora * 60 + minuto;
 
     const [horaInicio, minutoInicio] =
-        SCANNER.configuracao
+        context.configuracao
             .horarioInicio
             .split(":")
             .map(Number);
 
     const [horaFim, minutoFim] =
-        SCANNER.configuracao
+        context.configuracao
             .horarioFim
             .split(":")
             .map(Number);
@@ -336,7 +340,7 @@ async function validarExecucao(context){
 
     }
 
-    if (!horarioOperacional()) {
+    if (!horarioOperacional(context)) {
 
         console.log("\n========================================");
         console.log("FORA DO HORÁRIO OPERACIONAL");
@@ -382,7 +386,7 @@ function imprimirCabecalho(context) {
     console.log(`Candles.............${context.configuracao.candles}`);
     console.log(`Delay...............${context.configuracao.delay} ms`);
     console.log(`Cooldown............${context.configuracao.cooldown} min`);
-    console.log(`Horário.............${context.configuracao.horarioInicio} - ${SCANNER.configuracao.horarioFim}`);
+    console.log(`Horário.............${context.configuracao.horarioInicio} - ${context.configuracao.horarioFim}`);
 
     console.log("========================================");
 
@@ -492,7 +496,7 @@ async function executarAnalisePar(context,par) {
 
     catch (erro) {
 
-        SCANNER.estatisticas.erros++;
+        context.estatisticas.erros++;
 
         console.log("");
 
@@ -866,6 +870,7 @@ finalizarEstatisticas(context);
 imprimirResumoFinal(context);
 
 await registrarExecucao(context);
+process.exit(0);
 
     }
 
@@ -902,8 +907,6 @@ module.exports = {
     main,
 
     carregarConfiguracao,
-
-    inicializarScanner,
 
     validarExecucao,
 
