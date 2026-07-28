@@ -80,21 +80,86 @@ function calcularRisco({
 
     }
 
-    const rewardRisk = riscoRetorno;
+    // =========================
+// RISK / REWARD
+// =========================
 
-let expectativa = "NORMAL";
+let rewardRisk = "1:1";
 
 if (score >= 95)
-    expectativa = "MUITO_ALTA";
+    rewardRisk = "1:2";
 
 else if (score >= 90)
-    expectativa = "ALTA";
+    rewardRisk = "1:1.7";
 
 else if (score >= 85)
+    rewardRisk = "1:1.5";
+
+// Histórico melhora o RR
+
+if (taxaAcerto >= 80 && rewardRisk === "1:1.7")
+    rewardRisk = "1:2";
+
+else if (taxaAcerto >= 70 && rewardRisk === "1:1.5")
+    rewardRisk = "1:1.7";
+
+// ATR alto reduz agressividade
+
+if (atr > tpUSD * 2)
+    rewardRisk = "1:1";
+
+// =========================
+// EXPECTATIVA
+// =========================
+
+let expectativa = "MODERADA";
+
+if (score >= 95 && taxaAcerto >= 80)
+
+    expectativa = "MUITO_ALTA";
+
+else if (score >= 90 && taxaAcerto >= 70)
+
+    expectativa = "ALTA";
+
+else if (score >= 85 && taxaAcerto >= 60)
+
     expectativa = "BOA";
 
-else
-    expectativa = "MODERADA";
+else if (score >= 80)
+
+    expectativa = "ACEITÁVEL";
+
+ justificativas.push(
+    `Risk/Reward: ${rewardRisk}`
+);
+
+justificativas.push(
+    `Expectativa: ${expectativa}`
+);   
+
+switch (rewardRisk) {
+
+    case "1:2":
+
+        tpUSD = slUSD * 2;
+        break;
+
+    case "1:1.7":
+
+        tpUSD = slUSD * 1.7;
+        break;
+
+    case "1:1.5":
+
+        tpUSD = slUSD * 1.5;
+        break;
+
+    default:
+
+        tpUSD = slUSD;
+
+}
 
     return {
 
