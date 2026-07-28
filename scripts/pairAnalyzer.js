@@ -142,7 +142,9 @@ if (
     rsiAtual === null
 ) {
     console.log("Status.............CANDLES INSUFICIENTES");
-return "SEM_DADOS";
+return {
+    status: "SEM_DADOS"
+};
 }
 
 // if (ema9 > ema21 && rsiAtual > 55)
@@ -217,7 +219,10 @@ if (!decisao.aprovado) {
     console.log(`Status............${decisao.status}`);
     console.log(`Motivo............${decisao.motivo}`);
 
-    return decisao.status;
+    return {
+        status: decisao.status,
+        motivo: decisao.motivo
+    };
 
 }
 
@@ -447,7 +452,10 @@ return {
 console.log("Status............ERRO");
 console.log(`Motivo............${e.message}`);
 
-return "ERRO";
+return {
+    status: "ERRO",
+    motivo: e.message
+};
     }
 
 }
