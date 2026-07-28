@@ -97,29 +97,46 @@ const CONFIG_PADRAO = {
 // ESTADO GLOBAL DO SCANNER
 // ===================================================
 
-const SCANNER = {
+async function criarContextoExecucao() {
 
-    iniciadoEm: null,
+    const configuracao =
+        await carregarConfiguracao();
 
-    configuracao: null,
+    return {
 
-    pares: [],
+        iniciadoEm: Date.now(),
 
-    estatisticas: {
+        configuracao,
 
-        operacoes: 0,
+        pares: [...configuracao.pares],
 
-        semSinal: 0,
+        ambiente: {
 
-        cooldown: 0,
+            scannerAtivo: true,
 
-        erros: 0,
+            mercadoAberto: true,
 
-        tempoExecucao: 0
+            horarioOperacional: true
 
-    }
+        },
 
-};
+        estatisticas: {
+
+            operacoes: 0,
+
+            semSinal: 0,
+
+            cooldown: 0,
+
+            erros: 0,
+
+            tempoExecucao: 0
+
+        }
+
+    };
+
+}
 
 // ===================================================
 // CARREGA CONFIGURAÇÃO
@@ -171,36 +188,6 @@ async function carregarConfiguracao() {
         };
 
     }
-
-}
-
-// ===================================================
-// INICIALIZA ESTADO
-// ===================================================
-
-async function inicializarScanner() {
-
-    SCANNER.iniciadoEm = Date.now();
-
-    SCANNER.configuracao =
-        await carregarConfiguracao();
-
-    SCANNER.pares =
-        [...SCANNER.configuracao.pares];
-
-    SCANNER.estatisticas = {
-
-        operacoes: 0,
-
-        semSinal: 0,
-
-        cooldown: 0,
-
-        erros: 0,
-
-        tempoExecucao: 0
-
-    };
 
 }
 
@@ -327,7 +314,7 @@ function horarioOperacional() {
 // VALIDAÇÕES GERAIS
 // ===================================================
 
-async function validarExecucao() {
+async function validarExecucao(context){
 
     if (!await scannerAtivo()) {
 
@@ -354,7 +341,7 @@ async function validarExecucao() {
         console.log("\n========================================");
         console.log("FORA DO HORÁRIO OPERACIONAL");
         console.log(
-            `${SCANNER.configuracao.horarioInicio} às ${SCANNER.configuracao.horarioFim}`
+            `${context.configuracao.horarioInicio} às ${context.configuracao.horarioFim}`
         );
         console.log("========================================");
 
@@ -362,7 +349,7 @@ async function validarExecucao() {
 
     }
 
-    if (!SCANNER.pares.length) {
+       if (!context.pares.length) {
 
         console.log("\n========================================");
         console.log("NENHUM PAR CONFIGURADO");
@@ -380,7 +367,7 @@ async function validarExecucao() {
 // LOG DE INICIALIZAÇÃO
 // ===================================================
 
-function imprimirCabecalho() {
+function imprimirCabecalho(context) {
 
     console.clear();
 
@@ -389,13 +376,13 @@ function imprimirCabecalho() {
     console.log("SCANNER RMI V2");
     console.log("========================================");
 
-    console.log(`Perfil..............${SCANNER.configuracao.perfil}`);
-    console.log(`Conta...............${SCANNER.configuracao.conta}`);
-    console.log(`Pares...............${SCANNER.pares.length}`);
-    console.log(`Candles.............${SCANNER.configuracao.candles}`);
-    console.log(`Delay...............${SCANNER.configuracao.delay} ms`);
-    console.log(`Cooldown............${SCANNER.configuracao.cooldown} min`);
-    console.log(`Horário.............${SCANNER.configuracao.horarioInicio} - ${SCANNER.configuracao.horarioFim}`);
+    console.log(`Perfil..............${context.configuracao.perfil}`);
+    console.log(`Conta...............${context.configuracao.conta}`);
+    console.log(`Pares...............${context.pares.length}`);
+    console.log(`Candles.............${context.configuracao.candles}`);
+    console.log(`Delay...............${context.configuracao.delay} ms`);
+    console.log(`Cooldown............${context.configuracao.cooldown} min`);
+    console.log(`Horário.............${context.configuracao.horarioInicio} - ${SCANNER.configuracao.horarioFim}`);
 
     console.log("========================================");
 
@@ -445,7 +432,7 @@ function iniciarAnalisePar(par, estatisticas) {
 // EXECUTA A ANÁLISE DE UM PAR
 // ===================================================
 
-async function executarAnalisePar(par) {
+async function executarAnalisePar(context,par) {
 
     try {
 
@@ -468,7 +455,7 @@ async function executarAnalisePar(par) {
                 par,
 
                 configuracao:
-                    SCANNER.configuracao,
+                    context.configuracao,
 
                 estatisticas,
 
@@ -491,6 +478,7 @@ async function executarAnalisePar(par) {
             });
 
         await tratarResultado(
+            context,
 
             par,
 
@@ -524,13 +512,15 @@ async function executarAnalisePar(par) {
 
 async function tratarResultado(
 
+    context,
+
     par,
 
     resultado,
 
     estatisticas
 
-) {
+){
 
     if (!resultado)
         return;
@@ -547,13 +537,13 @@ async function tratarResultado(
 
             );
 
-            SCANNER.estatisticas.operacoes++;
+            context.estatisticas.operacoes++;
 
             break;
 
         case "SEM_SINAL":
 
-            SCANNER.estatisticas.semSinal++;
+            context.estatisticas.semSinal++;
 
             console.log("Resultado..........Sem sinal");
 
@@ -561,7 +551,7 @@ async function tratarResultado(
 
         case "SEM_QUALIDADE":
 
-            SCANNER.estatisticas.semSinal++;
+            context.estatisticas.semSinal++;
 
             console.log("Resultado..........Sem qualidade");
 
@@ -569,7 +559,7 @@ async function tratarResultado(
 
         case "COOLDOWN":
 
-            SCANNER.estatisticas.cooldown++;
+            context.estatisticas.cooldown++;
 
             console.log("Resultado..........Cooldown");
 
@@ -577,7 +567,7 @@ async function tratarResultado(
 
         default:
 
-            SCANNER.estatisticas.erros++;
+            context.estatisticas.erros++;
 
             console.log("Resultado..........Erro");
 
@@ -673,13 +663,16 @@ async function processarOperacaoSalva(
 // LOOP PRINCIPAL
 // ===================================================
 
-async function executarScanner() {
+async function executarScanner(context) {
 
-    for (const par of SCANNER.pares) {
+    for (const par of context.pares) {
 
-        await executarAnalisePar(par);
+        await executarAnalisePar(
+    context,
+    par
+);
 
-        await aguardarDelay();
+        await aguardarDelay(context);
 
     }
 
@@ -689,7 +682,7 @@ async function executarScanner() {
 // DELAY ENTRE PARES
 // ===================================================
 
-async function aguardarDelay() {
+async function aguardarDelay(context) {
 
     return new Promise(resolve => {
 
@@ -697,7 +690,7 @@ async function aguardarDelay() {
 
             resolve,
 
-            SCANNER.configuracao.delay
+            context.configuracao.delay
 
         );
 
@@ -723,11 +716,11 @@ async function aguardarDelay() {
 // CALCULA TEMPO TOTAL
 // ===================================================
 
-function finalizarEstatisticas() {
+function finalizarEstatisticas(context) {
 
-    SCANNER.estatisticas.tempoExecucao = (
+    context.estatisticas.tempoExecucao = (
 
-        (Date.now() - SCANNER.iniciadoEm)
+        (Date.now() - context.iniciadoEm)
 
         / 1000
 
@@ -739,7 +732,7 @@ function finalizarEstatisticas() {
 // RESUMO FINAL
 // ===================================================
 
-function imprimirResumoFinal() {
+function imprimirResumoFinal(context) {
 
     console.log("");
 
@@ -748,23 +741,23 @@ function imprimirResumoFinal() {
     console.log("========================================");
 
     console.log(
-        `Operações..........${SCANNER.estatisticas.operacoes}`
+        `Operações..........${context.estatisticas.operacoes}`
     );
 
     console.log(
-        `Sem sinal..........${SCANNER.estatisticas.semSinal}`
+        `Sem sinal..........${context.estatisticas.semSinal}`
     );
 
     console.log(
-        `Cooldown...........${SCANNER.estatisticas.cooldown}`
+        `Cooldown...........${context.estatisticas.cooldown}`
     );
 
     console.log(
-        `Erros..............${SCANNER.estatisticas.erros}`
+        `Erros..............${context.estatisticas.erros}`
     );
 
     console.log(
-        `Tempo..............${SCANNER.estatisticas.tempoExecucao}s`
+        `Tempo..............${context.estatisticas.tempoExecucao}s`
     );
 
     console.log("========================================");
@@ -775,7 +768,7 @@ function imprimirResumoFinal() {
 // ATUALIZA STATUS DO SCANNER
 // ===================================================
 
-async function registrarExecucao() {
+async function registrarExecucao(context) {
 
     try {
 
@@ -794,40 +787,40 @@ async function registrarExecucao() {
                 tempo:
 
                     Number(
-                        SCANNER.estatisticas.tempoExecucao
+                        context.estatisticas.tempoExecucao
                     ),
 
                 operacoes:
 
-                    SCANNER.estatisticas.operacoes,
+                    context.estatisticas.operacoes,
 
                 semSinal:
 
-                    SCANNER.estatisticas.semSinal,
+                    context.estatisticas.semSinal,
 
                 cooldown:
 
-                    SCANNER.estatisticas.cooldown,
+                    context.estatisticas.cooldown,
 
                 erros:
 
-                    SCANNER.estatisticas.erros,
+                    context.estatisticas.erros,
 
                 perfil:
 
-                    SCANNER.configuracao.perfil,
+                    context.configuracao.perfil,
 
                 conta:
 
-                    SCANNER.configuracao.conta,
+                    context.configuracao.conta,
 
                 pares:
 
-                    SCANNER.pares.length,
+                    context.pares.length,
 
                 candles:
 
-                    SCANNER.configuracao.candles
+                    context.configuracao.candles
 
             });
 
@@ -855,27 +848,24 @@ async function main() {
 
     try {
 
-        await inicializarScanner();
+        const context =
+    await criarContextoExecucao();
 
-        const valido =
+const valido =
+    await validarExecucao(context);
 
-            await validarExecucao();
+if (!valido)
+    return;
 
-        if (!valido)
+imprimirCabecalho(context);
 
-            return;
+await executarScanner(context);
 
-        imprimirCabecalho();
+finalizarEstatisticas(context);
 
-        await executarScanner();
+imprimirResumoFinal(context);
 
-        finalizarEstatisticas();
-
-        imprimirResumoFinal();
-
-        await registrarExecucao();
-
-        process.exit(0);
+await registrarExecucao(context);
 
     }
 
