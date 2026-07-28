@@ -140,8 +140,6 @@ async function criarContextoExecucao() {
 
     };
 
-}
-
 // ===================================================
 // CARREGA CONFIGURAÇÃO
 // Firestore → Fallback
