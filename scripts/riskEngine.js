@@ -80,23 +80,43 @@ function calcularRisco({
 
     }
 
+    const rewardRisk = riscoRetorno;
+
+let expectativa = "NORMAL";
+
+if (score >= 95)
+    expectativa = "MUITO_ALTA";
+
+else if (score >= 90)
+    expectativa = "ALTA";
+
+else if (score >= 85)
+    expectativa = "BOA";
+
+else
+    expectativa = "MODERADA";
+
     return {
 
-        aprovado: score >= 80,
+    aprovado: score >= 80,
 
-        lote,
+    lote,
 
-        tpUSD: Number(tpUSD.toFixed(2)),
+    tpUSD: Number(tpUSD.toFixed(2)),
 
-        slUSD: Number(slUSD.toFixed(2)),
+    slUSD: Number(slUSD.toFixed(2)),
 
-        riscoPercentual,
+    riscoPercentual,
 
-        riscoRetorno,
+    riscoRetorno,
 
-        justificativas
+    rewardRisk,
 
-    };
+    expectativa,
+
+    justificativas
+
+};
 
 }
 
