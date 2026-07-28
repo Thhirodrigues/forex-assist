@@ -553,8 +553,7 @@ async function tratarResultado(
 
             context.estatisticas.semSinal++;
 
-            console.log("Resultado..........Sem qualidade");
-
+            console.log("Resultado..........Qualidade insuficiente");
             break;
 
         case "COOLDOWN":
@@ -565,13 +564,22 @@ async function tratarResultado(
 
             break;
 
+
+         case "REPROVADO":
+
+    context.estatisticas.semSinal++;
+
+    console.log("Resultado..........Reprovado");
+
+    break;
+
         default:
 
-            context.estatisticas.erros++;
+    context.estatisticas.erros++;
 
-            console.log("Resultado..........Erro");
+    console.log("Resultado..........Erro interno");
 
-            break;
+    break;
 
     }
 
