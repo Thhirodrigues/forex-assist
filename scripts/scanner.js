@@ -525,6 +525,8 @@ async function tratarResultado(
     if (!resultado)
         return;
 
+    console.log("DEBUG STATUS:", resultado.status);
+
     switch (resultado.status) {
 
         case "SALVO":
