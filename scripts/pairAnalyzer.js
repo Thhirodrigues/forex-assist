@@ -77,7 +77,10 @@ const candles =
     await getCandles(par);
 
 const candles15 =
-    await getCandles(par);
+    await getCandles(
+        par,
+        "15min"
+    );
         
 const highs =
     candles.map(c => Number(c.high));
@@ -125,8 +128,6 @@ const adxAtual = calcularADX(
     closes
 );
 
- let direcao = null;
-
  const atrAtual = calcularATR(
     14,
     highs,
@@ -150,17 +151,6 @@ return {
     status: "SEM_DADOS"
 };
 }
-
-// if (ema9 > ema21 && rsiAtual > 55)
-//     direcao = "BUY";
-
-// if (ema9 < ema21 && rsiAtual < 45)
-//     direcao = "SELL";
-
-// if (!direcao) {
-//     console.log("Status.............SEM SINAL");
-//     return "SEM_SINAL";
-// }
 
 const qualidade = calcularQualidade(
     ema9,
