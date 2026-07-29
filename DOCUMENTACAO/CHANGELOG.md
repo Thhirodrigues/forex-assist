@@ -1566,6 +1566,267 @@ Result Checker.
 Agora vamos evoluí-lo para deixar de apenas registrar WIN/LOSS e passar a calcular o resultado financeiro real da operação, utilizando os dados enriquecidos que começamos a persistir nesta Sprint. Isso será a base para a futura Risk Intelligence Engine e para o aprendizado estatístico da RMI V2.
 
 ------
+RELATÓRIO DE CHECKPOINT – SPRINT 1
+
+Projeto: Forex Assist – Real Money Intelligence (RMI V2)
+
+Objetivo da Sprint
+
+Eliminar configurações espalhadas pelo projeto, reduzir redundâncias, preparar a arquitetura para a evolução da RMI V2 e validar que todas as alterações mantêm o scanner operacional.
+
+
+---
+
+1. config.js
+
+Status
+
+✅ Concluído
+
+Realizado
+
+Auditoria completa.
+
+Confirmado como ponto central de configuração.
+
+Nenhuma alteração estrutural necessária.
+
+
+
+---
+
+2. marketData.js
+
+Status
+
+✅ Concluído
+
+Implementado
+
+Centralização das configurações internas.
+
+Criação do objeto CONFIG.
+
+Criação de configurarMarketData().
+
+Criação de selecionarApi().
+
+getCandles() passou a utilizar:
+
+timeframe configurável;
+
+outputsize configurável;
+
+timeout configurável;
+
+retries configuráveis;
+
+retryDelay configurável.
+
+
+Exportações reorganizadas.
+
+
+Correções realizadas
+
+Durante a implementação foram corrigidos erros de sintaxe:
+
+chave ausente da função;
+
+ponto e vírgula do for;
+
+operador || ausente;
+
+recompilação completa.
+
+
+Resultado:
+
+✅ Workflow GitHub voltou a executar normalmente.
+
+
+---
+
+3. scanner.js
+
+Status
+
+✅ Concluído
+
+Implementado
+
+Integração completa com:
+
+configurarMarketData()
+
+
+Novo carregamento automático das configurações.
+
+CONFIG_PADRAO atualizado para incluir:
+
+timeframe
+
+outputsize
+
+timeout
+
+maxRetries
+
+retryDelay
+
+
+Resultado:
+
+Scanner totalmente compatível com o novo modelo.
+
+
+---
+
+4. pairAnalyzer.js
+
+Status
+
+✅ Concluído
+
+Implementado
+
+utilização correta do timeframe de 15 minutos;
+
+remoção de código legado;
+
+simplificação da variável de direção;
+
+limpeza estrutural.
+
+
+Resultado:
+
+Código mais limpo sem alteração de comportamento.
+
+
+---
+
+5. marketAnalyzer.js
+
+Status
+
+✅ Concluído
+
+Implementado
+
+remoção de import não utilizada;
+
+simplificação do score técnico;
+
+remoção da variável qualidadeFinal;
+
+simplificação da determinação da direção;
+
+padronização do clamp do score.
+
+
+Resultado
+
+Nenhuma alteração funcional.
+
+Somente melhoria arquitetural.
+
+
+---
+
+6. scoreEngine.js
+
+Status
+
+🟡 Em andamento
+
+Implementado
+
+Concluído
+
+simplificação da função calcularScoreBase();
+
+remoção definitiva de aplicarConfidenceLevel();
+
+remoção da exportação correspondente.
+
+
+Resultado
+
+Código menor e eliminação de código morto.  
+
+
+---
+
+Validação Geral
+
+Durante a Sprint ocorreu uma regressão em marketData.js.
+
+Foram identificados e corrigidos:
+
+chave ausente;
+
+erro no for;
+
+operador lógico ausente.
+
+
+Após as correções:
+
+✅ GitHub Actions executando normalmente.
+
+✅ Scanner compilando.
+
+✅ Scanner iniciando corretamente.
+
+Mensagem apresentada:
+
+Configuração não encontrada. Utilizando padrão.
+
+FORA DO HORÁRIO OPERACIONAL
+07:30 às 18:00
+
+Esse comportamento é esperado para execuções fora da janela operacional.
+
+
+---
+
+Situação dos 6 pontos da Sprint
+
+Item	Status
+
+1. config.js	✅ Concluído
+2. marketData.js	✅ Concluído
+3. scanner.js	✅ Concluído
+4. pairAnalyzer.js	✅ Concluído
+5. marketAnalyzer.js	✅ Concluído
+6. scoreEngine.js	🟡 Parcialmente concluído
+
+
+
+---
+
+O que falta para encerrar definitivamente a Sprint 1
+
+Restam apenas pequenas validações no scoreEngine.js:
+
+revisar se há constantes de pesos que possam migrar futuramente para config.js;
+
+padronizar nomenclatura e documentação interna;
+
+validar se o módulo continua sem dependências mortas após a remoção de aplicarConfidenceLevel;
+
+executar a validação final do workflow após essas últimas limpezas.
+
+
+Situação Geral
+
+Progresso estimado da Sprint 1: 95% concluída.
+
+Após finalizar o scoreEngine.js, a Sprint 1 estará encerrada e o projeto estará pronto para iniciar a próxima etapa do roadmap da RMI V2, com uma base de configuração centralizada e mais fácil de evoluir.
+
+--------------
+
 
 
 
