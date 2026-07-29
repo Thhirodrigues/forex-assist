@@ -17,13 +17,10 @@ const ENGINE_WEIGHTS = {
 
 function calcularScoreBase(score) {
 
-    score = Math.round(score);
-
-    if (score > 100) score = 100;
-
-    if (score < 0) score = 0;
-
-    return score;
+    return Math.min(
+        100,
+        Math.max(0, Math.round(score))
+    );
 
 }
 // ======================================================
@@ -82,27 +79,6 @@ function aplicarBonusHistorico(historico) {
 }
 
 // ======================================================
-// FILTRO DE CONFIANÇA
-// ======================================================
-
-function aplicarConfidenceLevel(
-    score,
-    historico
-) {
-
-    if (historico.confiabilidade >= 90) {
-        score += 2;
-    }
-
-    else if (historico.confiabilidade <= 30) {
-        score -= 2;
-    }
-
-    return score;
-
-}
-
-// ======================================================
 // PENALIDADE HISTÓRICA
 // ======================================================
 
@@ -140,8 +116,6 @@ module.exports = {
     aplicarBonusDirecao,
 
     aplicarBonusHistorico,
-
-    aplicarConfidenceLevel,
 
     aplicarPenalidadeHistorico,
 
