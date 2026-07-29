@@ -28,9 +28,20 @@ const apiIndex = {
 //
 // ===================================================
 
-const MAX_RETRIES = 3;
+let CONFIG = {
+    maxRetries: 3,
+    retryDelay: 1000,
+    timeout: 10000,
+    timeframe: "5min",
+    outputsize: 250
+};
 
-const RETRY_DELAY = 1000;
+function configurarMarketData(config = {}) {
+    CONFIG = {
+        ...CONFIG,
+        ...config
+    };
+}
 
 function esperar(ms) {
 
@@ -69,14 +80,11 @@ function deveTentarNovamente(error) {
 }
 
 async function getCandles(
-
     symbol,
-
-    interval = "5min",
-
-    outputsize = 250
-
-) {
+    interval = CONFIG.timeframe,
+    outputsize = CONFIG.outputsize
+)
+{
 const url =
     `https://api.twelvedata.com/time_series` +
     `?symbol=${encodeURIComponent(symbol)}` +
@@ -84,13 +92,13 @@ const url =
     `&outputsize=${outputsize}` +
     `&apikey=${getApiKey(API_KEYS, apiIndex)}`;
   
-for (let tentativa = 1; tentativa <= MAX_RETRIES; tentativa++) {
+for (let tentativa = 1; tentativa <= CONFIG.maxRetries tentativa++) {
 
     try {
 
         const res = await axios.get(url, {
 
-            timeout: 10000
+            timeout: CONFIG.timeout
 
         });
 
@@ -108,7 +116,7 @@ for (let tentativa = 1; tentativa <= MAX_RETRIES; tentativa++) {
 
         if (
 
-            tentativa === MAX_RETRIES ||
+            tentativa === CONFIG.maxRetries
 
             !deveTentarNovamente(error)
 
@@ -120,12 +128,12 @@ for (let tentativa = 1; tentativa <= MAX_RETRIES; tentativa++) {
 
         await esperar(
 
-            RETRY_DELAY * tentativa
-
+            CONFIG.retryDelay * tentativa
         );
     }
 }
 }
 module.exports = {
+    configurarMarketData,
     getCandles
 };
