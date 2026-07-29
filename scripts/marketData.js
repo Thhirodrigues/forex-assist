@@ -94,11 +94,13 @@ function deveTentarNovamente(error) {
 
 async function getCandles(
     symbol,
-    interval = CONFIG.timeframe,
-    outputsize = CONFIG.outputsize
+    interval = null,
+    outputsize = null
 )
-{
 
+interval = interval || CONFIG.timeframe;
+
+outputsize = outputsize || CONFIG.outputsize;
   selecionarApi(CONFIG.apiAtiva);
   
 const url =
