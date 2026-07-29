@@ -198,7 +198,7 @@ if (lucroAtual >= TP_USD) {
     const operacaoFinalizada =
     motivoEncerramento !== null;
             
-            await documento.ref.update({
+    await documento.ref.update({
 
     precoAtual,
 
@@ -211,6 +211,21 @@ if (lucroAtual >= TP_USD) {
     maxPipsContra,
 
     lucroAtual,
+
+    resultadoFinanceiro:
+    lucroAtual >= 0
+        ? `+$${lucroAtual.toFixed(2)}`
+        : `-$${Math.abs(lucroAtual).toFixed(2)}`,
+
+saldoAntes:
+    sinal.saldoDepois ??
+    sinal.saldoInicial ??
+    1000,
+
+saldoDepois:
+    (sinal.saldoDepois ??
+     sinal.saldoInicial ??
+     1000) + lucroAtual,
 
     ...(operacaoFinalizada && {
 
