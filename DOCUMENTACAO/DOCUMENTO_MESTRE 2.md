@@ -7100,6 +7100,43 @@ CONCLUÍDA.
 
 ----------
 
+Pensou por 19s
+
+Perfeito. Já tenho o quadro real.
+
+O que a auditoria mostrou é que o plano está correto, mas ainda não existe centralização completa. Hoje o projeto já tem config.js, porém ainda há hardcodes espalhados em módulos centrais, principalmente em scripts/scanner.js, scripts/moneyManager.js, scripts/riskEngine.js, scripts/marketData.js, scripts/riskManager.js e js/checker.js. A configuração existe, mas ainda não virou a única fonte de verdade.
+
+Os 5 pontos pendentes, com precisão, são estes:
+
+1. Eliminar valores fixos remanescentes e forçar leitura central de CONFIG em todos os módulos.
+Hoje ainda há defaults internos como 0.04, 5, 30, 07:30, 18:00, outputsize=250, COOLDOWN_MINUTOS = 30 e fallback de lote no checker. Isso precisa ser consolidado para não haver comportamento divergente entre UI, scanner e engine.
+
+
+2. Fechar a aba Configuração como fonte operacional real.
+A interface já existe e expõe pares, candles, TP, SL, lote, horários e demais parâmetros, mas ainda falta garantir que tudo isso esteja efetivamente governando os módulos que executam a lógica.
+
+
+3. Corrigir o status inteligente do Scanner.
+Hoje a view ainda mostra apenas “Scanner Online/Parado” e “Próxima análise em até 5 minutos”; falta refletir de verdade “Mercado Fechado”, “Fora do horário operacional” e “Próxima abertura”.
+
+
+4. Implementar Conta Simulada e Conta Real.
+Isso ainda não apareceu como camada completa no código auditado. Sem isso, o histórico financeiro continua incompleto e a evolução para operação real fica quebrada.
+
+
+5. Integrar o Histórico Financeiro ao ciclo operacional.
+O histórico atual ainda precisa registrar saldo antes/depois, resultado financeiro e vínculo com a conta usada. Sem isso, o histórico é operacional, mas não financeiro.
+
+
+
+Conclusão objetiva: vamos tratar o Sprint 1 como “zero hardcode operacional”. Depois dele, seguimos para Configuração, Scanner, Contas e Histórico, nessa ordem. O Roadmap inicial só volta depois que esses cinco pontos estiverem encerrados e documentados.
+
+Se houver qualquer divergência entre documentos e código durante a execução, eu vou priorizar o código atual, a documentação mais recente e o comportamento real do fluxo.
+
+--------
+
+
+
 
 
 
