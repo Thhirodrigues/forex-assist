@@ -25,6 +25,7 @@ const {
 } = require("./riskEngine");
 
 const {
+    configurarMarketData,
     getCandles
 } = require("./marketData");
 
@@ -51,33 +52,43 @@ const {
 
 const CONFIG_PADRAO = {
 
-    scannerAtivo: true,
+scannerAtivo: true,
 
-    perfil: "balanceado",
+perfil: "balanceado",
 
-    delay: 1500,
+delay: 1500,
 
-    cooldown: 30,
+cooldown: 30,
 
-    horarioInicio: "07:30",
+horarioInicio: "07:30",
 
-    horarioFim: "18:00",
+horarioFim: "18:00",
 
-    janelaSeguranca: 30,
+janelaSeguranca: 30,
 
-    candles: 20,
+candles: 20,
 
-    lote: 0.04,
+lote: 0.04,
 
-    tp: 5,
+tp: 5,
 
-    sl: 5,
+sl: 5,
 
-    conta: "simulada",
+conta: "simulada",
 
-    saldoInicial: 1000,
+saldoInicial: 1000,
 
-    apiAtiva: 1,
+apiAtiva: 1,
+
+timeframe: "5min",
+
+outputsize: 250,
+
+timeout: 10000,
+
+maxRetries: 3,
+
+retryDelay: 1000,
 
     pares: [
         "EUR/USD",
@@ -102,15 +113,31 @@ async function criarContextoExecucao() {
     const configuracao =
         await carregarConfiguracao();
 
+    configurarMarketData({
+
+    apiAtiva: configuracao.apiAtiva,
+
+    timeframe: configuracao.timeframe || "5min",
+
+    outputsize: configuracao.outputsize || 250,
+
+    timeout: configuracao.timeout || 10000,
+
+    maxRetries: configuracao.maxRetries || 3,
+
+    retryDelay: configuracao.retryDelay || 1000
+
+});
+    
     return {
 
-        iniciadoEm: Date.now(),
+    iniciadoEm: Date.now(),
 
-        configuracao,
+    configuracao,
 
-        pares: [...configuracao.pares],
+    pares: [...configuracao.pares],
 
-        ambiente: {
+    ambiente: {
 
     scannerAtivo: null,
 
@@ -122,17 +149,17 @@ async function criarContextoExecucao() {
 
         },
 
-        estatisticas: {
+    estatisticas: {
 
-            operacoes: 0,
+    operacoes: 0,
 
-            semSinal: 0,
+    semSinal: 0,
 
-            cooldown: 0,
+    cooldown: 0,
 
-            erros: 0,
+    erros: 0,
 
-            tempoExecucao: 0
+    tempoExecucao: 0
 
         }
 
