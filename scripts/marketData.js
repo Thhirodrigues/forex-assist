@@ -2,14 +2,26 @@ const axios = require("axios");
 const {
   getApiKey,
 } = require("./utils");
+
 const API_KEYS = [
-  process.env.API_KEY_1,
-  process.env.API_KEY_2,
-  process.env.API_KEY_3
+    process.env.API_KEY_1,
+    process.env.API_KEY_2,
+    process.env.API_KEY_3
 ];
+
 const apiIndex = {
-  value: 0
+    value: 0
 };
+
+function selecionarApi(apiAtiva = 1) {
+
+    const indice = Math.max(
+        0,
+        Math.min(API_KEYS.length - 1, Number(apiAtiva) - 1)
+    );
+
+    apiIndex.value = indice;
+}
 
 // ===================================================
 // API RESILIENCE ENGINE
@@ -33,7 +45,8 @@ let CONFIG = {
     retryDelay: 1000,
     timeout: 10000,
     timeframe: "5min",
-    outputsize: 250
+    outputsize: 250,
+    apiAtiva: 1
 };
 
 function configurarMarketData(config = {}) {
@@ -85,6 +98,9 @@ async function getCandles(
     outputsize = CONFIG.outputsize
 )
 {
+
+  selecionarApi(CONFIG.apiAtiva);
+  
 const url =
     `https://api.twelvedata.com/time_series` +
     `?symbol=${encodeURIComponent(symbol)}` +
@@ -135,5 +151,6 @@ for (let tentativa = 1; tentativa <= CONFIG.maxRetries tentativa++) {
 }
 module.exports = {
     configurarMarketData,
+    selecionarApi,
     getCandles
 };
