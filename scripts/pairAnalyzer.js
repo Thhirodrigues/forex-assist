@@ -39,10 +39,6 @@ const {
 } = require("./moneyManager");
 
 const {
-    calcularRisco
-} = require("./riskEngine");
-
-const {
     avaliarOperacao
 } = require("./decisionEngine");
 
@@ -56,8 +52,8 @@ rsi,
 calcularADX,
 calcularATR,
 calcularQualidade,
-existeCooldown,
-salvarOperacao
+existeCooldown
+
 }) {
 
     try {
@@ -251,21 +247,20 @@ if (qualidade.historico === "RUIM") {
 // FILTRO INSTITUCIONAL
 // ===================================================
 
-const risco = calcularRisco({
+        // ===================================================
+// RISCO
+// (temporariamente vindo do Decision Engine)
+// ===================================================
 
-score: qualidade.score,
-
-historico: estatisticas.resumo,
-
-atr: atrAtual,
-
-loteBase: financeiro.lote,
-
-tpBase: financeiro.tpUSD,
-
-slBase: financeiro.slUSD
-
-});
+const risco = decisao.risco || {
+    lote: financeiro.lote,
+    tpUSD: financeiro.tpUSD,
+    slUSD: financeiro.slUSD,
+    riscoRetorno: null,
+    riscoPercentual: null,
+    aprovado: true,
+    justificativas: []
+};
 
 const operacao = {
 
