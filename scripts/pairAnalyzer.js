@@ -74,12 +74,10 @@ salvarOperacao
         }
 
 const candles =
-    await getCandles(par,"5min",250
-    );
+    await getCandles(par);
 
 const candles15 =
-    await getCandles(par,"15min",250
-    );
+    await getCandles(par);
         
 const highs =
     candles.map(c => Number(c.high));
