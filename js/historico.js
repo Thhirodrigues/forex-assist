@@ -163,8 +163,15 @@ async function carregarHistorico() {
               <div>📊 EMA 9: <b>${sinal.ema9 ? Number(sinal.ema9).toFixed(5) : '-'}</b></div>
               <div>📊 EMA 21: <b>${sinal.ema21 ? Number(sinal.ema21).toFixed(5) : '-'}</b></div>
               <div>🏠 EMA 200: <b>${sinal.ema200 ? Number(sinal.ema200).toFixed(5) : '-'}</b></div>
-              <div>💰 Entrada: <b>${sinal.precoEntrada || '-'}</b></div>
-              <div>🏁 Saída: <b>${sinal.precoFechamento || '-'}</b></div>
+              <div>
+    💰 Entrada:
+    <b>${sinal.precoEntrada ?? "-"}</b>
+</div>
+
+<div>
+    🏁 Saída:
+    <b>${sinal.precoSaida ?? sinal.precoFechamento ?? "-"}</b>
+</div>
              <div style="grid-column:1 / span 2; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.10);">
     <b>⚙️ Configuração utilizada</b>
 </div>
@@ -184,6 +191,17 @@ async function carregarHistorico() {
     <b>$${sinal.slUSD ?? "-"}</b>
 </div>
 </div>
+
+<div>
+    💼 Saldo Antes:
+    <b>$${sinal.saldoAntes?.toFixed(2) ?? "-"}</b>
+</div>
+
+<div>
+    💰 Saldo Depois:
+    <b>$${sinal.saldoDepois?.toFixed(2) ?? "-"}</b>
+</div>
+
             ${sinal.movimentoPips !== undefined ? `
               <div style="margin-top:10px; padding:8px; border-radius:4px; background:rgba(255,255,255,0.05); text-align:center; font-weight:bold;">
                 <div style="color:${sinal.resultado === 'WIN' ? '#00ff88' : (sinal.resultado === 'LOSS' ? '#ff4444' : '#8c95b3')};">
@@ -191,7 +209,8 @@ async function carregarHistorico() {
                 </div>
                 ${sinal.lucroEstimado !== undefined ? `
                   <div style="margin-top:5px; font-size:14px; color:${sinal.lucroEstimado >= 0 ? '#00ff88' : '#ff4444'};">
-                    RESULTADO: ${sinal.lucroEstimado >= 0 ? '+' : ''}$${sinal.lucroEstimado.toFixed(2)}
+                    RESULTADO:
+${sinal.resultadoFinanceiro ?? (sinal.lucroEstimado >= 0 ? '+' : '') + '$' + sinal.lucroEstimado.toFixed(2)}
                   </div>
                 ` : ''}
               </div>
