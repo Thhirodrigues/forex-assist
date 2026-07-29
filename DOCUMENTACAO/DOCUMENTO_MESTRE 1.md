@@ -6546,4 +6546,65 @@ o plano de refatoração em ordem de execução.
 Esse documento será a base de todo o restante do trabalho na RMI V2. A partir dele, cada mudança terá um propósito claro e será feita na ordem correta, sem improvisos.
 
 ----------
+Acho que essa é uma evolução importante do projeto e está alinhada com a proposta da Real Money Intelligence.
+
+Mas eu faria um ajuste de arquitetura: o sistema deve recomendar, não alterar automaticamente os parâmetros do usuário. Assim, ele continua sendo um assistente de decisão, e não um executor.
+
+Eu incluiria isso como um novo componente da Engine:
+
+Módulo de Recomendação de Operação
+
+A cada sinal aprovado, além de BUY/SELL, a engine calcularia:
+
+Confiança da operação (Score final)
+
+Lote sugerido
+
+TP sugerido
+
+SL sugerido
+
+Risco da operação
+
+Relação Risco × Retorno
+
+Justificativa da recomendação
+
+
+Por exemplo:
+
+Score	Mercado	Lote	TP	SL
+
+98	Tendência muito forte	0.06	US$ 8	US$ 5
+90	Tendência forte	0.05	US$ 6	US$ 5
+82	Tendência moderada	0.04	US$ 5	US$ 5
+76	Operação aceitável	0.03	US$ 4	US$ 4
+<75	Não operar	—	—	—
+
+
+Mas eu iria além.
+
+O lote não deveria depender apenas do Score. A recomendação deveria considerar também:
+
+volatilidade (ATR);
+
+força da tendência (ADX);
+
+alinhamento entre timeframes;
+
+qualidade do histórico daquele par;
+
+drawdown recente;
+
+saldo da conta (simulada ou real);
+
+percentual máximo de risco por operação.
+
+
+Isso evita situações em que um Score alto ocorre em um mercado extremamente volátil, onde aumentar o lote pode não ser a melhor decisão.
+
+Na minha visão, isso merece um módulo próprio, por exemplo Trade Recommendation Engine, responsável por transformar a análise técnica em uma recomendação operacional completa. Assim, o DecisionEngine decide se vale a pena operar, e o Trade Recommendation Engine define como operar (lote, TP, SL e nível de risco), mantendo responsabilidades bem separadas. Essa abordagem é mais escalável e facilita a evolução da plataforma.
+
+---------
+
 
