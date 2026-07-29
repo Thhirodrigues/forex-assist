@@ -271,7 +271,7 @@ const operacao = {
 
 par,
 
-direcao: decisao.direcao,
+direcao,
 
 ema9,
 
