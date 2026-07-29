@@ -110,7 +110,7 @@ const url =
     `&outputsize=${outputsize}` +
     `&apikey=${getApiKey(API_KEYS, apiIndex)}`;
   
-for (let tentativa = 1; tentativa <= CONFIG.maxRetries tentativa++) {
+for (let tentativa = 1; tentativa <= CONFIG.maxRetries; tentativa++) {
 
     try {
 
