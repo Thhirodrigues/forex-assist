@@ -123,16 +123,27 @@ function avaliarOperacao(resultado) {
     justificativas.push("Tendência de alta confirmada");
 
     return {
+    aprovado: true,
+    status: "COMPRA",
+    direcao: "BUY",
+    motivo: "Todos os critérios atendidos",
+    score,
+    qualidade,
+    tendencia,
+    confianca,
+
+    risco: {
+        lote: resultado.financeiro?.lote,
+        tpUSD: resultado.financeiro?.tpUSD,
+        slUSD: resultado.financeiro?.slUSD,
+        riscoRetorno: null,
+        riscoPercentual: null,
         aprovado: true,
-        status: "COMPRA",
-        direcao: "BUY",
-        motivo: "Todos os critérios atendidos",
-        score,
-        qualidade,
-        tendencia,
-        confianca,
-        justificativas
-    };
+        justificativas: []
+    },
+
+    justificativas
+};
 
     }
 
@@ -141,16 +152,28 @@ function avaliarOperacao(resultado) {
     justificativas.push("Tendência de baixa confirmada");
 
     return {
+    aprovado: true,
+    status: "VENDA",
+    direcao: "SELL",
+    motivo: "Todos os critérios atendidos",
+    score,
+    qualidade,
+    tendencia,
+    confianca,
+
+    risco: {
+        lote: resultado.financeiro?.lote,
+        tpUSD: resultado.financeiro?.tpUSD,
+        slUSD: resultado.financeiro?.slUSD,
+        riscoRetorno: null,
+        riscoPercentual: null,
         aprovado: true,
-        status: "VENDA",
-        direcao: "SELL",
-        motivo: "Todos os critérios atendidos",
-        score,
-        qualidade,
-        tendencia,
-        confianca,
-        justificativas
-    };
+        justificativas: []
+    },
+
+    justificativas
+};
+        
 
     }
 
