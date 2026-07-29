@@ -96,7 +96,7 @@ async function getCandles(
     symbol,
     interval = null,
     outputsize = null
-)
+){
 
 interval = interval || CONFIG.timeframe;
 
