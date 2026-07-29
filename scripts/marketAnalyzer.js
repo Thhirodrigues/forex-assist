@@ -31,8 +31,6 @@ const {
 
     aplicarBonusHistorico,
 
-    aplicarConfidenceLevel,
-
     aplicarPenalidadeHistorico
 
 
@@ -662,10 +660,10 @@ const tendencia = analisarTendencia(
     adxInfo
 );
 
-  score += emas.score;
-  score += rsi.score;
-  score += tendencia.score;
-  score += adxInfo.score;
+    score += emas.score;
+    score += rsi.score;
+    score += tendencia.score;
+    score += adxInfo.score;
 
 const slope = analisarSlope(
     ema9,
@@ -729,19 +727,18 @@ const historicoBUY =
 const historicoSELL =
     estatisticas.SELL || {};
     
-let direcaoAtual = null;
+const direcaoAtual =
 
-if (emas.tendencia === "ALTA") {
+    emas.tendencia === "ALTA"
 
-    direcaoAtual = "BUY";
+        ? "BUY"
 
-}
+        : emas.tendencia === "BAIXA"
 
-else if (emas.tendencia === "BAIXA") {
+            ? "SELL"
 
-    direcaoAtual = "SELL";
-
-}
+            : null;
+    
 let historicoDirecao =
     null;
 
@@ -807,7 +804,7 @@ const volatilidade =
 // ====================================================
 // CÁLCULO DO SCORE
 // ====================================================
-let scoreTecnico = score;
+    
 let scoreFinal = scoreTecnico;
     
 scoreFinal += aplicarBonusHistorico(historico);
@@ -840,13 +837,10 @@ scoreFinal = Math.round(
     scoreFinal * adaptive.confidenceMultiplier
 );
 
-scoreFinal = Math.max(
-    0,
-    Math.min(100, scoreFinal)
+scoreFinal = Math.min(
+    100,
+    Math.max(0, scoreFinal)
 );
-
-const qualidadeFinal =
-    classificarQualidade(scoreFinal);
     
 // ====================================================
 // AJUSTE ADAPTATIVO DO HISTÓRICO
@@ -882,7 +876,7 @@ return {
 
     adx: adxInfo.forca,
 
-    qualidade: qualidadeFinal,
+    qualidade: classificarQualidade(scoreFinal),
     
     slope,
 
@@ -908,12 +902,11 @@ return {
 
     confiabilidade: adaptive.confiabilidade,
 
-confidenceMultiplier: adaptive.confidenceMultiplier,
+    confidenceMultiplier: adaptive.confidenceMultiplier,
 
-pesoHistorico: adaptive.pesoHistorico,
+    pesoHistorico: adaptive.pesoHistorico,
 
-confidenceLevel:
-    adaptive.confiabilidade >= 80
+    confidenceLevel: adaptive.confiabilidade >= 80
         ? "ALTA"
         : adaptive.confiabilidade >= 50
         ? "MEDIA"
