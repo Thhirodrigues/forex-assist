@@ -133,15 +133,10 @@ for (let tentativa = 1; tentativa <= CONFIG.maxRetries; tentativa++) {
     catch (error) {
 
         if (
-
-            tentativa === CONFIG.maxRetries
-
-            !deveTentarNovamente(error)
-
-        ) {
-
-            throw error;
-
+    tentativa === CONFIG.maxRetries ||
+    !deveTentarNovamente(error)
+) {
+    throw error;
         }
 
         await esperar(
