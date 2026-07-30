@@ -204,23 +204,22 @@ async function carregarHistorico() {
 
 <div style="margin-top:10px">
 
-<label style="cursor:pointer">
+<label style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
 
-<input
-    type="checkbox"
-    ${sinal.operacaoReal ? "checked" : ""}
-    ${sinal.status !== "ENCERRADA" ? "disabled" : ""}
-    onchange="alternarOperacaoReal('${sinal.id}', this.checked)"
->
->
+    <span>📈 Operação Real</span>
 
-📈 Operação Real
-
-${sinal.status !== "ENCERRADA"
-    ? '<div style="font-size:11px;color:#999;">Disponível após o encerramento da operação</div>'
-    : ""}
+    <input
+        type="checkbox"
+        ${sinal.operacaoReal ? "checked" : ""}
+        ${sinal.status !== "ENCERRADA" ? "disabled" : ""}
+        onchange="alternarOperacaoReal('${sinal.id}', this.checked)"
+    >
 
 </label>
+
+${sinal.status !== "ENCERRADA"
+    ? '<div style="font-size:11px;color:#999;margin-top:4px;">Disponível após o encerramento da operação</div>'
+    : ""}
 
 </div>
 
