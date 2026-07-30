@@ -209,10 +209,15 @@ lucroAtual >= 0
         ? `+$${lucroAtual.toFixed(2)}`
         : `-$${Math.abs(lucroAtual).toFixed(2)}`,
 
+    await configuracaoRef.get();
+
+const configuracaoAtual =
+    (await configuracaoRef.get()).data();
+
     const saldoAtual =
-    configuracao.tipoConta === "SIMULADA"
-        ? configuracao.saldoSimulado
-        : configuracao.saldoReal;
+    configuracaoAtual.tipoConta === "SIMULADA"
+        ? configuracaoAtual.saldoSimulado
+        : configuracaoAtual.saldoReal;
 
 let novoSaldo = saldoAtual;
             
@@ -222,7 +227,7 @@ let novoSaldo = saldoAtual;
 
     if (
     operacaoFinalizada &&
-    configuracao.tipoConta === "SIMULADA"
+    configuracaoAtual.tipoConta === "SIMULADA"
 ) {
 
     novoSaldo += lucroAtual;
@@ -247,7 +252,7 @@ let novoSaldo = saldoAtual;
         
     saldoAntes: saldoAtual,
 
-    saldoDepois: saldoAtual + lucroAtual,
+saldoDepois: Number(novoSaldo.toFixed(2)),
 
     ...(operacaoFinalizada && {
 
