@@ -206,91 +206,12 @@ if (lucroAtual >= TP_USD) {
 lucroAtual >= 0
         ? `+$${lucroAtual.toFixed(2)}`
         : `-$${Math.abs(lucroAtual).toFixed(2)}`,
-
-    await configuracaoRef.get();
-
-const configuracaoAtual =
-    (await configuracaoRef.get()).data();
-
-    const saldoAtual =
-    configuracaoAtual.tipoConta === "SIMULADA"
-        ? configuracaoAtual.saldoSimulado
-        : configuracaoAtual.saldoReal;
-
-let novoSaldo = saldoAtual;
+ 
             
     const operacaoFinalizada =
     motivoEncerramento !== null &&
     sinal.status !== "ENCERRADA";
 
-    if (
-    operacaoFinalizada &&
-    configuracaoAtual.tipoConta === "SIMULADA"
-) {
-
-    novoSaldo += lucroAtual;
-
-    }
-            
-   await db.runTransaction(async (transaction) => {
-
-    const operacaoRef = documento.ref;
-
-    const operacaoSnap = await transaction.get(operacaoRef);
-
-    if (!operacaoSnap.exists)
-        return;
-
-    const operacaoAtual = operacaoSnap.data();
-
-    // Já foi encerrada por outro processo
-    if (operacaoAtual.status !== "ABERTA")
-        return;
-
-    transaction.update(operacaoRef, {
-
-        precoAtual,
-
-        precoMaximo,
-
-        precoMinimo,
-
-        maxPipsFavor,
-
-        maxPipsContra,
-
-        lucroAtual,
-
-        resultadoFinanceiro: Number(lucroAtual.toFixed(2)),
-
-        saldoAntes: saldoAtual,
-
-        saldoDepois: Number(novoSaldo.toFixed(2)),
-
-        ...(operacaoFinalizada && {
-
-            status: "ENCERRADA",
-
-            resultado:
-                motivoEncerramento === "TP_FINANCEIRO" ||
-                motivoEncerramento === "TP_PIPS"
-                    ? "WIN"
-                    : "LOSS",
-
-            motivoEncerramento,
-
-            precoFechamento: precoAtual,
-
-            fimOperacao: Date.now(),
-
-            tempoOperacao:
-                Date.now() - sinal.inicioOperacao
-
-        })
-
-    });
-
-}); 
             
     if (operacaoFinalizada) {
 
