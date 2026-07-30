@@ -17,12 +17,6 @@ const configuracaoRef = db
     .collection("configuracoes")
     .doc("geral");
 
-const configuracaoSnap =
-    await configuracaoRef.get();
-
-const configuracao =
-    configuracaoSnap.data();
-
 // =====================================================
 // CONFIGURAÇÕES
 // =====================================================
@@ -88,6 +82,10 @@ async function verificarSinais() {
     console.log("Forex Assist Result Checker");
     console.log("====================================");
 
+    const configuracaoSnap = await configuracaoRef.get();
+    
+    const configuracao = configuracaoSnap.data();
+    
     const snapshot = await db
     .collection("historico")
     .where("status", "==", "ABERTA")
