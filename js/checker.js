@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
 const { getCandles } = require("../scripts/marketData");
 
-console.log("KEY 1:", !!process.env.TWELVEDATA_KEY);
+console.log("KEY 1:", !!process.env.TWELVEDATA_KEY_1);
 console.log("KEY 2:", !!process.env.TWELVEDATA_KEY_2);
 console.log("KEY 3:", !!process.env.TWELVEDATA_KEY_3);
 
