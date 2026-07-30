@@ -209,7 +209,9 @@ async function carregarHistorico() {
 <input
     type="checkbox"
     ${sinal.operacaoReal ? "checked" : ""}
+    ${sinal.status !== "ENCERRADA" ? "disabled" : ""}
     onchange="alternarOperacaoReal('${sinal.id}', this.checked)"
+>
 >
 
 📈 Operação Real
@@ -407,8 +409,8 @@ const config = configDoc.data();
 
 let saldoReal = Number(config.saldoReal || 0);
 
-const lucro = Number(sinal.lucroAtual || 0);
-
+const lucro = Number(sinal.resultadoFinanceiro || 0);
+  
 if (marcado && !jaMarcado) {
 
     saldoReal += lucro;
