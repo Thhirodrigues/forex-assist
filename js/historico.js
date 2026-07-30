@@ -214,6 +214,10 @@ async function carregarHistorico() {
 
 📈 Operação Real
 
+${sinal.status !== "ENCERRADA"
+    ? '<div style="font-size:11px;color:#999;">Disponível após o encerramento da operação</div>'
+    : ""}
+
 </label>
 
 </div>
