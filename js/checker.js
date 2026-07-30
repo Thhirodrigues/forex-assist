@@ -232,42 +232,56 @@ let novoSaldo = saldoAtual;
 
     }
             
+    if (operacaoFinalizada) {
+
     await db.runTransaction(async (transaction) => {
 
-    const operacaoRef = documento.ref;
+        const operacaoRef = documento.ref;
 
-    const operacaoSnap = await transaction.get(operacaoRef);
+        const operacaoSnap = await transaction.get(operacaoRef);
 
-    if (!operacaoSnap.exists)
-        return;
+        if (!operacaoSnap.exists)
+            return;
 
-    const operacaoAtual = operacaoSnap.data();
+        const operacao = operacaoSnap.data();
 
-    // Já foi encerrada por outro processo
-    if (operacaoAtual.status !== "ABERTA")
-        return;
+        // Outro processo já encerrou esta operação
+        if (operacao.status !== "ABERTA")
+            return;
 
-    transaction.update(operacaoRef, {
+        const configuracaoSnap = await transaction.get(configuracaoRef);
 
-        precoAtual,
+        const configuracaoTransacao = configuracaoSnap.data();
 
-        precoMaximo,
+        const saldoAntes =
+            configuracaoTransacao.tipoConta === "SIMULADA"
+                ? configuracaoTransacao.saldoSimulado
+                : configuracaoTransacao.saldoReal;
 
-        precoMinimo,
+        const saldoDepois =
+            configuracaoTransacao.tipoConta === "SIMULADA"
+                ? Number((saldoAntes + lucroAtual).toFixed(2))
+                : saldoAntes;
 
-        maxPipsFavor,
+        transaction.update(operacaoRef, {
 
-        maxPipsContra,
+            precoAtual,
 
-        lucroAtual,
+            precoMaximo,
 
-        resultadoFinanceiro: Number(lucroAtual.toFixed(2)),
+            precoMinimo,
 
-        saldoAntes: saldoAtual,
+            maxPipsFavor,
 
-        saldoDepois: Number(novoSaldo.toFixed(2)),
+            maxPipsContra,
 
-        ...(operacaoFinalizada && {
+            lucroAtual,
+
+            resultadoFinanceiro: Number(lucroAtual.toFixed(2)),
+
+            saldoAntes,
+
+            saldoDepois,
 
             status: "ENCERRADA",
 
@@ -286,11 +300,41 @@ let novoSaldo = saldoAtual;
             tempoOperacao:
                 Date.now() - sinal.inicioOperacao
 
-        })
+        });
+
+        if (configuracaoTransacao.tipoConta === "SIMULADA") {
+
+            transaction.update(configuracaoRef, {
+
+                saldoSimulado: saldoDepois
+
+            });
+
+        }
 
     });
 
-});
+} else {
+
+    await documento.ref.update({
+
+        precoAtual,
+
+        precoMaximo,
+
+        precoMinimo,
+
+        maxPipsFavor,
+
+        maxPipsContra,
+
+        lucroAtual,
+
+        resultadoFinanceiro: Number(lucroAtual.toFixed(2))
+
+    });
+
+    }
 
     if (
     operacaoFinalizada &&
