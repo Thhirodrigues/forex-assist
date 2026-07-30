@@ -405,6 +405,25 @@ function imprimirCabecalho(context) {
 
     console.log(`Perfil..............${context.configuracao.perfil}`);
     console.log(`Conta...............${context.configuracao.conta}`);
+
+    if (context.configuracao.tipoConta === "SIMULADA") {
+
+    console.log(
+        `Saldo Simulado.....R$ ${Number(
+            context.configuracao.saldoSimulado || 1000
+        ).toFixed(2)}`
+    );
+
+} else {
+
+    console.log(
+        `Saldo Real.........R$ ${Number(
+            context.configuracao.saldoReal || 0
+        ).toFixed(2)}`
+    );
+
+    }
+    
     console.log(`Pares...............${context.pares.length}`);
     console.log(`Candles.............${context.configuracao.candles}`);
     console.log(`Delay...............${context.configuracao.delay} ms`);
@@ -848,6 +867,16 @@ async function registrarExecucao(context) {
                 conta:
 
                     context.configuracao.conta,
+
+                tipoConta: context.configuracao.tipoConta,
+
+saldoAtual:
+
+    context.configuracao.tipoConta === "SIMULADA"
+
+        ? context.configuracao.saldoSimulado
+
+        : context.configuracao.saldoReal,
 
                 pares:
 
