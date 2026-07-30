@@ -448,9 +448,7 @@ border:1px solid rgba(255,255,255,.08);
 border-radius:8px;
 padding:12px;
 ">
-</div>
-
-    <div style="
+   <div style="
         font-size:11px;
         color:#888;
         letter-spacing:1px;
