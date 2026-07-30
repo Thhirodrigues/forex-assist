@@ -232,49 +232,63 @@ let novoSaldo = saldoAtual;
 
     }
             
-    await documento.ref.update({
+    await db.runTransaction(async (transaction) => {
 
-    precoAtual,
+    const operacaoRef = documento.ref;
 
-    precoMaximo,
+    const operacaoSnap = await transaction.get(operacaoRef);
 
-    precoMinimo,
+    if (!operacaoSnap.exists)
+        return;
 
-    maxPipsFavor,
+    const operacaoAtual = operacaoSnap.data();
 
-    maxPipsContra,
+    // Já foi encerrada por outro processo
+    if (operacaoAtual.status !== "ABERTA")
+        return;
 
-    lucroAtual,
+    transaction.update(operacaoRef, {
 
-    resultadoFinanceiro: Number(lucroAtual.toFixed(2)),
-        
-    saldoAntes: saldoAtual,
+        precoAtual,
 
-saldoDepois: Number(novoSaldo.toFixed(2)),
+        precoMaximo,
 
-    ...(operacaoFinalizada && {
+        precoMinimo,
 
-        status: "ENCERRADA",
+        maxPipsFavor,
 
-        resultado:
+        maxPipsContra,
 
-    motivoEncerramento === "TP_FINANCEIRO" ||
+        lucroAtual,
 
-    motivoEncerramento === "TP_PIPS"
+        resultadoFinanceiro: Number(lucroAtual.toFixed(2)),
 
-        ? "WIN"
+        saldoAntes: saldoAtual,
 
-        : "LOSS",
+        saldoDepois: Number(novoSaldo.toFixed(2)),
 
-        motivoEncerramento,
+        ...(operacaoFinalizada && {
 
-        precoFechamento: precoAtual,
+            status: "ENCERRADA",
 
-        fimOperacao: Date.now(),
+            resultado:
+                motivoEncerramento === "TP_FINANCEIRO" ||
+                motivoEncerramento === "TP_PIPS"
+                    ? "WIN"
+                    : "LOSS",
 
-        tempoOperacao: Date.now() - sinal.inicioOperacao
+            motivoEncerramento,
 
-    })
+            precoFechamento: precoAtual,
+
+            fimOperacao: Date.now(),
+
+            tempoOperacao:
+                Date.now() - sinal.inicioOperacao
+
+        })
+
+    });
 
 });
 
