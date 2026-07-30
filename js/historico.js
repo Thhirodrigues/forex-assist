@@ -172,9 +172,7 @@ async function carregarHistorico() {
     🏁 Saída:
     <b>${sinal.precoSaida ?? sinal.precoFechamento ?? "-"}</b>
 </div>
-             <div style="grid-column:1 / span 2; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.10);">
-    <b>⚙️ Configuração utilizada</b>
-</div>
+            
 
 <div style="margin-top:12px;">
 
@@ -209,36 +207,81 @@ async function carregarHistorico() {
     </div>
 
     <div style="
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-        margin-bottom:14px;
-    ">
+display:flex;
+gap:12px;
+margin-bottom:16px;
+">
 
-        <div style="flex:1;">
+<div style="
+flex:1;
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:8px;
+padding:10px;
+text-align:center;
+">
 
-            🎯 TP:
-            <strong>$${sinal.tpUSD}</strong>
+<div style="
+font-size:11px;
+color:#999;
+">
+🎯 TP
+</div>
 
-        </div>
+<div style="
+font-size:20px;
+font-weight:bold;
+color:#00d26a;
+">
+$${sinal.tpUSD}
+</div>
 
-        <div style="
-            flex:1;
-            text-align:right;
-        ">
+</div>
 
-            🛑 SL:
-            <strong>$${sinal.slUSD}</strong>
+<div style="
+flex:1;
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:8px;
+padding:10px;
+text-align:center;
+">
 
-        </div>
+<div style="
+font-size:11px;
+color:#999;
+">
+🛑 SL
+</div>
+
+<div style="
+font-size:20px;
+font-weight:bold;
+color:#ff5252;
+">
+$${sinal.slUSD}
+</div>
+
+</div>
+
+</div>
 
     </div>
 
     <!-- NÃO ALTERAR -->
 
     <div style="
-    text-align:center;
-    margin-top:12px;
+    display:flex;
+    gap:16px;
+    margin:16px 0;
+">
+    <div style="
+flex:1;
+text-align:center;
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:8px;
+padding:12px;
 ">
 
     <div style="
@@ -262,10 +305,14 @@ async function carregarHistorico() {
 </div>
 
     <div style="
-    text-align:center;
-    margin-top:12px;
-    margin-bottom:14px;
+flex:1;
+text-align:center;
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:8px;
+padding:12px;
 ">
+</div>
 
     <div style="
         font-size:11px;
@@ -297,11 +344,28 @@ async function carregarHistorico() {
 
 </div>
 
-    <!-- Operação Real -->
+    <label style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+cursor:pointer;
+margin-top:16px;
+padding-top:10px;
+border-top:1px solid rgba(255,255,255,.10);
+">
 
-</div>
+<span>💲 Operação Real</span>
+
+<input
+type="checkbox"
+${sinal.operacaoReal ? "checked" : ""}
+${sinal.status !== "ENCERRADA" ? "disabled" : ""}
+onchange="event.stopPropagation(); alternarOperacaoReal('${doc.id}', this.checked);"
+>
 
 </label>
+
+</div>
 
 ${sinal.status !== "ENCERRADA"
     ? '<div style="font-size:11px;color:#999;margin-top:4px;">Disponível após o encerramento da operação</div>'
@@ -315,10 +379,50 @@ ${sinal.status !== "ENCERRADA"
                   VARIAÇÃO: ${sinal.movimentoPips > 0 ? '+' : ''}${sinal.movimentoPips} PIPS
                 </div>
                 ${sinal.lucroEstimado !== undefined ? `
-                  <div style="margin-top:5px; font-size:14px; color:${sinal.lucroEstimado >= 0 ? '#00ff88' : '#ff4444'};">
-                    RESULTADO:
-${sinal.resultadoFinanceiro ?? (sinal.lucroEstimado >= 0 ? '+' : '') + '$' + sinal.lucroEstimado.toFixed(2)}
-                  </div>
+
+               <div style="
+margin-top:12px;
+padding:12px;
+border-radius:8px;
+background:${
+    sinal.resultado === "WIN"
+        ? "rgba(0,210,106,.12)"
+        : sinal.resultado === "LOSS"
+            ? "rgba(255,82,82,.12)"
+            : "rgba(255,255,255,.05)"
+};
+text-align:center;
+">
+
+<div style="
+font-size:11px;
+color:#999;
+letter-spacing:1px;
+">
+
+RESULTADO FINANCEIRO
+
+</div>
+
+<div style="
+font-size:24px;
+font-weight:bold;
+color:${
+    sinal.resultado === "WIN"
+        ? "#00d26a"
+        : sinal.resultado === "LOSS"
+            ? "#ff5252"
+            : "#ffffff"
+};
+">
+
+${sinal.resultadoFinanceiro ??
+(sinal.lucroEstimado >= 0 ? "+" : "") + "$" + sinal.lucroEstimado.toFixed(2)}
+
+</div>
+
+</div>
+                  
                 ` : ''}
               </div>
             ` : ''}
