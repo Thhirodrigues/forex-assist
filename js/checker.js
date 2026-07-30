@@ -13,6 +13,16 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
+const configuracaoRef = db
+    .collection("configuracoes")
+    .doc("geral");
+
+const configuracaoSnap =
+    await configuracaoRef.get();
+
+const configuracao =
+    configuracaoSnap.data();
+
 // =====================================================
 // CONFIGURAÇÕES
 // =====================================================
@@ -195,6 +205,15 @@ if (lucroAtual >= TP_USD) {
 
 }
 
+lucroAtual >= 0
+        ? `+$${lucroAtual.toFixed(2)}`
+        : `-$${Math.abs(lucroAtual).toFixed(2)}`,
+
+const saldoAtual =
+    configuracao.tipoConta === "SIMULADA"
+        ? configuracao.saldoSimulado
+        : configuracao.saldoReal;
+            
     const operacaoFinalizada =
     motivoEncerramento !== null;
             
@@ -217,15 +236,9 @@ if (lucroAtual >= TP_USD) {
         ? `+$${lucroAtual.toFixed(2)}`
         : `-$${Math.abs(lucroAtual).toFixed(2)}`,
 
-saldoAntes:
-    sinal.saldoDepois ??
-    sinal.saldoInicial ??
-    1000,
+saldoAntes: saldoAtual,
 
-saldoDepois:
-    (sinal.saldoDepois ??
-     sinal.saldoInicial ??
-     1000) + lucroAtual,
+saldoDepois: saldoAtual + lucroAtual,
 
     ...(operacaoFinalizada && {
 
