@@ -172,7 +172,7 @@ async function verificarSinais() {
     );
        }
 
-       const movimentoPips = calcularPips(
+const movimentoPips = calcularPips(
     sinal.par,
     sinal.precoEntrada,
     precoAtual
@@ -209,13 +209,25 @@ lucroAtual >= 0
         ? `+$${lucroAtual.toFixed(2)}`
         : `-$${Math.abs(lucroAtual).toFixed(2)}`,
 
-const saldoAtual =
+    const saldoAtual =
     configuracao.tipoConta === "SIMULADA"
         ? configuracao.saldoSimulado
         : configuracao.saldoReal;
+
+let novoSaldo = saldoAtual;
             
     const operacaoFinalizada =
-    motivoEncerramento !== null;
+    motivoEncerramento !== null &&
+    sinal.status !== "ENCERRADA";
+
+    if (
+    operacaoFinalizada &&
+    configuracao.tipoConta === "SIMULADA"
+) {
+
+    novoSaldo += lucroAtual;
+
+    }
             
     await documento.ref.update({
 
@@ -231,14 +243,11 @@ const saldoAtual =
 
     lucroAtual,
 
-    resultadoFinanceiro:
-    lucroAtual >= 0
-        ? `+$${lucroAtual.toFixed(2)}`
-        : `-$${Math.abs(lucroAtual).toFixed(2)}`,
+    resultadoFinanceiro: Number(lucroAtual.toFixed(2)),
+        
+    saldoAntes: saldoAtual,
 
-saldoAntes: saldoAtual,
-
-saldoDepois: saldoAtual + lucroAtual,
+    saldoDepois: saldoAtual + lucroAtual,
 
     ...(operacaoFinalizada && {
 
@@ -260,14 +269,28 @@ saldoDepois: saldoAtual + lucroAtual,
 
         fimOperacao: Date.now(),
 
-        tempoOperacao:
-            Date.now() - sinal.inicioOperacao
+        tempoOperacao: Date.now() - sinal.inicioOperacao
 
     })
 
 });
 
-            if (operacaoFinalizada) {
+    if (
+    operacaoFinalizada &&
+    configuracao.tipoConta === "SIMULADA"
+) {
+
+    await configuracaoRef.update({
+
+        saldoSimulado: Number(
+            novoSaldo.toFixed(2)
+        )
+
+    });
+
+    }
+
+    if (operacaoFinalizada) {
 
     console.log(
         `Operação encerrada: ${sinal.par} -> ${motivoEncerramento}`
@@ -275,7 +298,7 @@ saldoDepois: saldoAtual + lucroAtual,
 
             }
             
-            console.log(
+    console.log(
 `${sinal.par} | ${operacaoFinalizada ? "ENCERRADA" : "ABERTA"} | Atual: ${precoAtual} | Máx: ${precoMaximo} | Mín: ${precoMinimo} | Favor: ${maxPipsFavor} pips | Contra: ${maxPipsContra} pips | USD: ${lucroAtual.toFixed(2)}${operacaoFinalizada ? ` | ${motivoEncerramento}` : ""}`
 );
 
