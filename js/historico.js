@@ -176,44 +176,130 @@ async function carregarHistorico() {
     <b>⚙️ Configuração utilizada</b>
 </div>
 
-<div>
-    💰 Lote:
-    <b>${sinal.lote ?? "-"}</b>
+<div style="margin-top:12px;">
+
+    <div style="
+        font-weight:bold;
+        color:#9aa4b5;
+        margin-bottom:12px;
+    ">
+        ⚙️ Configuração Utilizada
+    </div>
+
+    <div style="
+        text-align:center;
+        margin-bottom:14px;
+    ">
+
+        <div style="
+            font-size:12px;
+            color:#999;
+        ">
+            LOTE
+        </div>
+
+        <div style="
+            font-size:22px;
+            font-weight:bold;
+            color:#fff;
+        ">
+            ${sinal.lote}
+        </div>
+
+    </div>
+
+    <div style="
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        margin-bottom:14px;
+    ">
+
+        <div style="flex:1;">
+
+            🎯 TP:
+            <strong>$${sinal.tpUSD}</strong>
+
+        </div>
+
+        <div style="
+            flex:1;
+            text-align:right;
+        ">
+
+            🛑 SL:
+            <strong>$${sinal.slUSD}</strong>
+
+        </div>
+
+    </div>
+
+    <!-- NÃO ALTERAR -->
+
+    <div style="
+    text-align:center;
+    margin-top:12px;
+">
+
+    <div style="
+        font-size:11px;
+        color:#888;
+        letter-spacing:1px;
+    ">
+        💼 SALDO ANTES
+    </div>
+
+    <div style="
+        font-size:18px;
+        font-weight:bold;
+        color:#b0b0b0;
+    ">
+        ${sinal.saldoAntes == null
+            ? "--"
+            : "$" + Number(sinal.saldoAntes).toFixed(2)}
+    </div>
+
 </div>
 
-<div>
-    🎯 TP:
-    <b>$${sinal.tpUSD ?? "-"}</b>
+    <div style="
+    text-align:center;
+    margin-top:12px;
+    margin-bottom:14px;
+">
+
+    <div style="
+        font-size:11px;
+        color:#888;
+        letter-spacing:1px;
+    ">
+        💰 SALDO DEPOIS
+    </div>
+
+    <div style="
+        font-size:20px;
+        font-weight:bold;
+        color:${
+            sinal.saldoDepois > sinal.saldoAntes
+                ? '#00d26a'
+                : sinal.saldoDepois < sinal.saldoAntes
+                    ? '#ff5252'
+                    : '#ffffff'
+        };
+    ">
+
+        ${
+            sinal.saldoDepois == null
+                ? "--"
+                : "$" + Number(sinal.saldoDepois).toFixed(2)
+        }
+
+    </div>
+
 </div>
 
-<div>
-    🛑 SL:
-    <b>$${sinal.slUSD ?? "-"}</b>
+    <!-- Operação Real -->
+
 </div>
-</div>
-
-<div>
-    💼 Saldo Antes:
-    <b>$${sinal.saldoAntes?.toFixed(2) ?? "-"}</b>
-</div>
-
-<div>
-    💰 Saldo Depois:
-    <b>$${sinal.saldoDepois?.toFixed(2) ?? "-"}</b>
-</div>
-
-<div style="margin-top:10px">
-
-<label style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
-
-    <span>📈 Operação Real</span>
-
-    <input
-        type="checkbox"
-        ${sinal.operacaoReal ? "checked" : ""}
-        ${sinal.status !== "ENCERRADA" ? "disabled" : ""}
-        onchange="alternarOperacaoReal('${sinal.id}', this.checked)"
-    >
 
 </label>
 
