@@ -158,19 +158,155 @@ async function carregarHistorico() {
           ` : ''}
           
           <div id="${detalheId}" style="display: ${estaAberto ? 'block' : 'none'}; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#8c95b3;">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-              <div>📉 RSI: <b>${sinal.rsi ? Number(sinal.rsi).toFixed(2) : '-'}</b></div>
-              <div>📊 EMA 9: <b>${sinal.ema9 ? Number(sinal.ema9).toFixed(5) : '-'}</b></div>
-              <div>📊 EMA 21: <b>${sinal.ema21 ? Number(sinal.ema21).toFixed(5) : '-'}</b></div>
-              <div>🏠 EMA 200: <b>${sinal.ema200 ? Number(sinal.ema200).toFixed(5) : '-'}</b></div>
-              <div>
-    💰 Entrada:
-    <b>${sinal.precoEntrada ?? "-"}</b>
+            <div style="
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px;
+margin-bottom:14px;
+">
+
+<div style="
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:8px;
+padding:10px;
+text-align:center;
+">
+
+<div style="font-size:11px;color:#999;">
+📉 RSI
 </div>
 
-<div>
-    🏁 Saída:
-    <b>${sinal.precoSaida ?? sinal.precoFechamento ?? "-"}</b>
+<div style="
+font-size:20px;
+font-weight:bold;
+color:#4fc3f7;
+">
+${sinal.rsi ? Number(sinal.rsi).toFixed(2) : "--"}
+</div>
+
+</div>
+
+<div style="
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:8px;
+padding:10px;
+text-align:center;
+">
+
+<div style="font-size:11px;color:#999;">
+📈 EMA 9
+</div>
+
+<div style="
+font-size:18px;
+font-weight:bold;
+color:#ffffff;
+">
+${sinal.ema9 ? Number(sinal.ema9).toFixed(5) : "--"}
+</div>
+
+</div>
+
+<div style="
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:8px;
+padding:10px;
+text-align:center;
+">
+
+<div style="font-size:11px;color:#999;">
+📊 EMA 21
+</div>
+
+<div style="
+font-size:18px;
+font-weight:bold;
+color:#ffffff;
+">
+${sinal.ema21 ? Number(sinal.ema21).toFixed(5) : "--"}
+</div>
+
+</div>
+
+<div style="
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:8px;
+padding:10px;
+text-align:center;
+">
+
+<div style="font-size:11px;color:#999;">
+🏠 EMA 200
+</div>
+
+<div style="
+font-size:18px;
+font-weight:bold;
+color:#ffffff;
+">
+${sinal.ema200 ? Number(sinal.ema200).toFixed(5) : "--"}
+</div>
+
+</div>
+
+</div>
+
+<div style="
+display:flex;
+gap:10px;
+margin-bottom:14px;
+">
+
+<div style="
+flex:1;
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:8px;
+padding:10px;
+text-align:center;
+">
+
+<div style="font-size:11px;color:#999;">
+💰 ENTRADA
+</div>
+
+<div style="
+font-size:18px;
+font-weight:bold;
+color:#fff;
+">
+${sinal.precoEntrada ?? "--"}
+</div>
+
+</div>
+
+<div style="
+flex:1;
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:8px;
+padding:10px;
+text-align:center;
+">
+
+<div style="font-size:11px;color:#999;">
+🏁 SAÍDA
+</div>
+
+<div style="
+font-size:18px;
+font-weight:bold;
+color:#fff;
+">
+${sinal.precoSaida ?? sinal.precoFechamento ?? "--"}
+</div>
+
+</div>
+
 </div>
             
 
