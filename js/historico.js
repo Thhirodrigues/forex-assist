@@ -404,71 +404,83 @@ $${sinal.slUSD}
 
     </div>
 
-    <!-- NÃO ALTERAR -->
+    <!-- CONTROLE FINANCEIRO -->
 
-    <div style="
-    display:flex;
-    gap:16px;
-    margin:16px 0;
+<div style="
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:12px;
+margin:18px 0;
 ">
-    <div style="
-flex:1;
-text-align:center;
+
+<div style="
 background:rgba(255,255,255,.04);
 border:1px solid rgba(255,255,255,.08);
-border-radius:8px;
+border-radius:10px;
 padding:12px;
+text-align:center;
 ">
 
-    <div style="
-        font-size:11px;
-        color:#888;
-        letter-spacing:1px;
-    ">
-        💼 SALDO ANTES
-    </div>
+<div style="
+font-size:11px;
+color:#888;
+letter-spacing:1px;
+">
+💼 SALDO ANTES
+</div>
 
-    <div style="
-        font-size:18px;
-        font-weight:bold;
-        color:#b0b0b0;
-    ">
-        ${sinal.saldoAntes == null
-            ? "--"
-            : "$" + Number(sinal.saldoAntes).toFixed(2)}
-    </div>
+<div style="
+margin-top:8px;
+font-size:22px;
+font-weight:bold;
+color:#b0b0b0;
+">
+
+${sinal.saldoAntes == null
+? "--"
+: "$" + Number(sinal.saldoAntes).toFixed(2)}
 
 </div>
 
-    
-   <div style="
-        font-size:11px;
-        color:#888;
-        letter-spacing:1px;
-    ">
-        💰 SALDO DEPOIS
-    </div>
+</div>
 
-    <div style="
-        font-size:20px;
-        font-weight:bold;
-        color:${
-            sinal.saldoDepois > sinal.saldoAntes
-                ? '#00d26a'
-                : sinal.saldoDepois < sinal.saldoAntes
-                    ? '#ff5252'
-                    : '#ffffff'
-        };
-    ">
+<div style="
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+border-radius:10px;
+padding:12px;
+text-align:center;
+">
 
-        ${
-            sinal.saldoDepois == null
-                ? "--"
-                : "$" + Number(sinal.saldoDepois).toFixed(2)
-        }
+<div style="
+font-size:11px;
+color:#888;
+letter-spacing:1px;
+">
+💰 SALDO DEPOIS
+</div>
 
+<div style="
+margin-top:8px;
+font-size:22px;
+font-weight:bold;
+color:${
+sinal.saldoDepois > sinal.saldoAntes
+? "#00d26a"
+: sinal.saldoDepois < sinal.saldoAntes
+? "#ff5252"
+: "#ffffff"
+};
+">
 
- </div>
+${sinal.saldoDepois == null
+? "--"
+: "$" + Number(sinal.saldoDepois).toFixed(2)}
+
+</div>
+
+</div>
+
 </div>
 
     <label style="
