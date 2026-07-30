@@ -202,6 +202,22 @@ async function carregarHistorico() {
     <b>$${sinal.saldoDepois?.toFixed(2) ?? "-"}</b>
 </div>
 
+<div style="margin-top:10px">
+
+<label style="cursor:pointer">
+
+<input
+    type="checkbox"
+    ${sinal.operacaoReal ? "checked" : ""}
+    onchange="alternarOperacaoReal('${sinal.id}', this.checked)"
+>
+
+📈 Operação Real
+
+</label>
+
+</div>
+
             ${sinal.movimentoPips !== undefined ? `
               <div style="margin-top:10px; padding:8px; border-radius:4px; background:rgba(255,255,255,0.05); text-align:center; font-weight:bold;">
                 <div style="color:${sinal.resultado === 'WIN' ? '#00ff88' : (sinal.resultado === 'LOSS' ? '#ff4444' : '#8c95b3')};">
@@ -344,6 +360,72 @@ if (el.style.display === 'none') {
     lista.innerHTML = `<div class="list-item">Erro ao carregar histórico: ${erro.message}</div>`;
   }
 }
+
+window.alternarOperacaoReal = async function (id, marcado) {
+
+    const db = firebase.firestore();
+
+    await db
+        .collection("historico")
+        .doc(id)
+        .update({
+
+            operacaoReal: marcado
+
+        });
+
+     const doc = await db
+    .collection("historico")
+    .doc(id)
+    .get();
+
+const sinal = doc.data();
+
+const jaMarcado = Boolean(sinal.operacaoReal);
+
+if (!sinal || !sinal.resultadoFinanceiro) {
+    carregarHistorico();
+    return;
+}
+
+  const configRef = db
+    .collection("configuracoes")
+    .doc("geral");
+
+const configDoc = await configRef.get();
+
+if (!configDoc.exists) {
+    carregarHistorico();
+    return;
+}
+
+const config = configDoc.data();
+
+let saldoReal = Number(config.saldoReal || 0);
+
+const lucro = Number(sinal.lucroAtual || 0);
+
+if (marcado && !jaMarcado) {
+
+    saldoReal += lucro;
+
+}
+
+if (!marcado && jaMarcado) {
+
+    saldoReal -= lucro;
+
+}
+
+await configRef.update({
+
+    saldoReal
+
+});
+  
+    carregarHistorico();
+
+};
 
 // Atualização automática a cada 5 segundos - PRESERVA ESTADO
 // setInterval(() => {
