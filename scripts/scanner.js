@@ -74,7 +74,7 @@ tp: 5,
 
 sl: 5,
 
-tipoConta: "SIMULADA"
+tipoConta: "SIMULADA",
 
 saldoInicial: 1000,
 
