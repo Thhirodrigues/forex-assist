@@ -73,7 +73,13 @@ async function buscarUltimoCandle(par) {
 
 }
 
-function calcularResultadoOperacao({ sinal, candle }) {
+function calcularResultadoOperacao({
+
+    sinal,
+    candle,
+    configuracao
+
+}) {
 
     const precoAtual = candle.close;
 
@@ -145,6 +151,25 @@ function calcularResultadoOperacao({ sinal, candle }) {
         lote
     );
 
+    const saldoAntes =
+    configuracao.tipoConta === "SIMULADA"
+        ? configuracao.saldoSimulado
+        : configuracao.saldoReal;
+
+const saldoDepois =
+    configuracao.tipoConta === "SIMULADA"
+        ? Number((saldoAntes + lucroAtual).toFixed(2))
+        : saldoAntes;
+
+const resultadoFinanceiro =
+    Number(lucroAtual.toFixed(2));
+
+const agora =
+    Date.now();
+
+const tempoOperacao =
+    agora - sinal.inicioOperacao;
+
     let motivoEncerramento = null;
 
     if (lucroAtual >= TP_USD) {
@@ -169,17 +194,32 @@ function calcularResultadoOperacao({ sinal, candle }) {
         motivoEncerramento !== null &&
         sinal.status !== "ENCERRADA";
 
+    const resultado =
+
+    motivoEncerramento === "TP_FINANCEIRO" ||
+    motivoEncerramento === "TP_PIPS"
+
+        ? "WIN"
+
+        : "LOSS";
+
     return {
 
-        precoAtual,
-        precoMaximo,
-        precoMinimo,
-        movimentoPips,
-        maxPipsFavor,
-        maxPipsContra,
-        lucroAtual,
-        motivoEncerramento,
-        operacaoFinalizada
+precoAtual,
+precoMaximo,
+precoMinimo,
+movimentoPips,
+maxPipsFavor,
+maxPipsContra,
+lucroAtual,
+resultadoFinanceiro,
+motivoEncerramento,
+resultado,
+saldoAntes,
+saldoDepois,
+agora,
+tempoOperacao,
+operacaoFinalizada
 
     };
 
@@ -253,27 +293,27 @@ const {
         if (!operacaoSnap.exists)
             return;
 
-        const operacao = operacaoSnap.data();
+        const configuracaoTransacao =
+    configuracaoSnap.data();
+
+        const {
+    saldoAntes,
+    saldoDepois,
+    resultadoFinanceiro,
+    resultado,
+    agora,
+    tempoOperacao
+} = calcularResultadoOperacao({
+    sinal,
+    candle,
+    configuracao: configuracaoTransacao
+            
+});
 
         // Outro processo já encerrou esta operação
         if (operacao.status !== "ABERTA")
             return;
 
-        const configuracaoSnap = await transaction.get(configuracaoRef);
-
-        const configuracaoTransacao = configuracaoSnap.data();
-
-        const saldoAntes =
-            configuracaoTransacao.tipoConta === "SIMULADA"
-                ? configuracaoTransacao.saldoSimulado
-                : configuracaoTransacao.saldoReal;
-
-        const saldoDepois =
-            configuracaoTransacao.tipoConta === "SIMULADA"
-                ? Number((saldoAntes + lucroAtual).toFixed(2))
-                : saldoAntes;
-        
-        const agora = Date.now();
 
         transaction.update(operacaoRef, {
 
@@ -289,7 +329,7 @@ const {
 
             lucroAtual,
 
-            resultadoFinanceiro: Number(lucroAtual.toFixed(2)),
+            resultadoFinanceiro,
 
             saldoAntes,
 
@@ -297,11 +337,7 @@ const {
 
             status: "ENCERRADA",
 
-            resultado:
-                motivoEncerramento === "TP_FINANCEIRO" ||
-                motivoEncerramento === "TP_PIPS"
-                    ? "WIN"
-                    : "LOSS",
+            resultado,
 
             motivoEncerramento,
 
@@ -309,7 +345,7 @@ const {
 
             fimOperacao: agora,
 
-            tempoOperacao: agora - sinal.inicioOperacao
+            tempoOperacao
             
         });
 
@@ -342,8 +378,7 @@ const {
 
         lucroAtual,
 
-        resultadoFinanceiro: Number(lucroAtual.toFixed(2))
-
+        resultadoFinanceiro,
     });
 
     }
