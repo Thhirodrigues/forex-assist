@@ -83,7 +83,6 @@ async function verificarSinais() {
     console.log("====================================");
     
    const configuracaoSnap = await configuracaoRef.get();
-   const configuracao = configuracaoSnap.data();
     
     const snapshot = await db
     .collection("historico")
@@ -237,6 +236,8 @@ if (lucroAtual >= TP_USD) {
             configuracaoTransacao.tipoConta === "SIMULADA"
                 ? Number((saldoAntes + lucroAtual).toFixed(2))
                 : saldoAntes;
+        
+        const agora = Date.now();
 
         transaction.update(operacaoRef, {
 
@@ -270,11 +271,10 @@ if (lucroAtual >= TP_USD) {
 
             precoFechamento: precoAtual,
 
-            fimOperacao: Date.now(),
+            fimOperacao: agora,
 
-            tempoOperacao:
-                Date.now() - sinal.inicioOperacao
-
+            tempoOperacao: agora - sinal.inicioOperacao
+            
         });
 
         if (configuracaoTransacao.tipoConta === "SIMULADA") {
