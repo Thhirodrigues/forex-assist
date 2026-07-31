@@ -72,6 +72,119 @@ async function buscarUltimoCandle(par) {
     };
 
 }
+
+function calcularResultadoOperacao({ sinal, candle }) {
+
+    const precoAtual = candle.close;
+
+    const precoMaximo = Math.max(
+        sinal.precoMaximo ?? sinal.precoEntrada,
+        candle.high
+    );
+
+    const precoMinimo = Math.min(
+        sinal.precoMinimo ?? sinal.precoEntrada,
+        candle.low
+    );
+
+    let maxPipsFavor = sinal.maxPipsFavor ?? 0;
+    let maxPipsContra = sinal.maxPipsContra ?? 0;
+
+    if (sinal.direcao === "BUY") {
+
+        maxPipsFavor = Math.max(
+            maxPipsFavor,
+            calcularPips(
+                sinal.par,
+                sinal.precoEntrada,
+                precoMaximo
+            )
+        );
+
+        maxPipsContra = Math.min(
+            maxPipsContra,
+            calcularPips(
+                sinal.par,
+                sinal.precoEntrada,
+                precoMinimo
+            )
+        );
+
+    } else {
+
+        maxPipsFavor = Math.max(
+            maxPipsFavor,
+            calcularPips(
+                sinal.par,
+                precoMinimo,
+                sinal.precoEntrada
+            )
+        );
+
+        maxPipsContra = Math.min(
+            maxPipsContra,
+            calcularPips(
+                sinal.par,
+                precoMaximo,
+                sinal.precoEntrada
+            )
+        );
+
+    }
+
+    const movimentoPips = calcularPips(
+        sinal.par,
+        sinal.precoEntrada,
+        precoAtual
+    );
+
+    const lote = sinal.lote ?? 0.01;
+
+    const lucroAtual = calcularLucroUSD(
+        movimentoPips,
+        lote
+    );
+
+    let motivoEncerramento = null;
+
+    if (lucroAtual >= TP_USD) {
+
+        motivoEncerramento = "TP_FINANCEIRO";
+
+    } else if (lucroAtual <= SL_USD) {
+
+        motivoEncerramento = "SL_FINANCEIRO";
+
+    } else if (maxPipsFavor >= TP_PIPS) {
+
+        motivoEncerramento = "TP_PIPS";
+
+    } else if (maxPipsContra <= SL_PIPS) {
+
+        motivoEncerramento = "SL_PIPS";
+
+    }
+
+    const operacaoFinalizada =
+        motivoEncerramento !== null &&
+        sinal.status !== "ENCERRADA";
+
+    return {
+
+        precoAtual,
+        precoMaximo,
+        precoMinimo,
+        movimentoPips,
+        maxPipsFavor,
+        maxPipsContra,
+        lucroAtual,
+        motivoEncerramento,
+        operacaoFinalizada
+
+    };
+
+}
+
 // =====================================================
 // PROCESSAMENTO
 // =====================================================
@@ -106,104 +219,27 @@ async function verificarSinais() {
 
         try {
 
-            const candle =
-                  await buscarUltimoCandle(sinal.par);
+const candle =
+    await buscarUltimoCandle(sinal.par);
 
-           const precoAtual = candle.close;
-            
-            const precoMaximo =
-    Math.max(
-        sinal.precoMaximo ?? sinal.precoEntrada,
-        candle.high
-    );
+const {
 
-            const precoMinimo =
-    Math.min(
-        sinal.precoMinimo ?? sinal.precoEntrada,
-        candle.low
-    );
-    
-            let maxPipsFavor = sinal.maxPipsFavor ?? 0;
-
-            let maxPipsContra = sinal.maxPipsContra ?? 0;
-            
-            if (sinal.direcao === "BUY") {
-
-    maxPipsFavor = Math.max(
-        maxPipsFavor,
-        calcularPips(
-            sinal.par,
-            sinal.precoEntrada,
-            precoMaximo
-        )
-    );
-
-    maxPipsContra = Math.min(
-        maxPipsContra,
-        calcularPips(
-            sinal.par,
-            sinal.precoEntrada,
-            precoMinimo
-        )
-    );
-
-} else {
-
-    maxPipsFavor = Math.max(
-        maxPipsFavor,
-        calcularPips(
-            sinal.par,
-            precoMinimo,
-            sinal.precoEntrada
-        )
-    );
-
-    maxPipsContra = Math.min(
-        maxPipsContra,
-        calcularPips(
-            sinal.par,
-            precoMaximo,
-            sinal.precoEntrada
-        )
-    );
-       }
-
-const movimentoPips = calcularPips(
-    sinal.par,
-    sinal.precoEntrada,
-    precoAtual
-);
-
-const lote = sinal.lote ?? 0.01;
-
-const lucroAtual = calcularLucroUSD(
+    precoAtual,
+    precoMaximo,
+    precoMinimo,
     movimentoPips,
-    lote
-);
+    maxPipsFavor,
+    maxPipsContra,
+    lucroAtual,
+    motivoEncerramento,
+    operacaoFinalizada
 
-let motivoEncerramento = null;
+} = calcularResultadoOperacao({
 
-if (lucroAtual >= TP_USD) {
+    sinal,
+    candle
 
-    motivoEncerramento = "TP_FINANCEIRO";
-
-} else if (lucroAtual <= SL_USD) {
-
-    motivoEncerramento = "SL_FINANCEIRO";
-
-} else if (maxPipsFavor >= TP_PIPS) {
-
-    motivoEncerramento = "TP_PIPS";
-
-} else if (maxPipsContra <= SL_PIPS) {
-
-    motivoEncerramento = "SL_PIPS";
-
-}
-           
-    const operacaoFinalizada =
-    motivoEncerramento !== null &&
-    sinal.status !== "ENCERRADA";
+});
 
             
     if (operacaoFinalizada) {
@@ -289,7 +325,8 @@ if (lucroAtual >= TP_USD) {
 
     });
 
-} else {
+} 
+    else {
 
     await documento.ref.update({
 
