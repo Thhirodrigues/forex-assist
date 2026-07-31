@@ -293,6 +293,8 @@ const {
         if (!operacaoSnap.exists)
             return;
 
+        const operacao = operacaoSnap.data();
+
         const configuracaoTransacao =
     configuracaoSnap.data();
 
