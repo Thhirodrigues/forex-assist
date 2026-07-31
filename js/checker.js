@@ -310,10 +310,6 @@ if (lucroAtual >= TP_USD) {
 
     }
 
-    });
-
-    }
-
     if (operacaoFinalizada) {
 
     console.log(
