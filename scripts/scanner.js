@@ -74,7 +74,7 @@ tp: 5,
 
 sl: 5,
 
-conta: "simulada",
+tipoConta: "SIMULADA"
 
 saldoInicial: 1000,
 
@@ -404,7 +404,7 @@ function imprimirCabecalho(context) {
     console.log("========================================");
 
     console.log(`Perfil..............${context.configuracao.perfil}`);
-    console.log(`Conta...............${context.configuracao.conta}`);
+    console.log(`Conta...............${context.configuracao.tipoConta}`);
 
     if (context.configuracao.tipoConta === "SIMULADA") {
 
@@ -863,10 +863,7 @@ async function registrarExecucao(context) {
                 perfil:
 
                     context.configuracao.perfil,
-
-                conta:
-
-                    context.configuracao.conta,
+                
 
                 tipoConta: context.configuracao.tipoConta,
 
