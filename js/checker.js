@@ -318,10 +318,22 @@ if (lucroAtual >= TP_USD) {
     );
 
             }
-            
-    console.log(
-`${sinal.par} | ${operacaoFinalizada ? "ENCERRADA" : "ABERTA"} | Atual: ${precoAtual} | Máx: ${precoMaximo} | Mín: ${precoMinimo} | Favor: ${maxPipsFavor} pips | Contra: ${maxPipsContra} pips | USD: ${lucroAtual.toFixed(2)}${operacaoFinalizada ? ` | ${motivoEncerramento}` : ""}`
-);
+
+    const resumoOperacao = [
+    sinal.par,
+    operacaoFinalizada ? "ENCERRADA" : "ABERTA",
+    `Atual: ${precoAtual}`,
+    `Máx: ${precoMaximo}`,
+    `Mín: ${precoMinimo}`,
+    `Favor: ${maxPipsFavor} pips`,
+    `Contra: ${maxPipsContra} pips`,
+    `USD: ${lucroAtual.toFixed(2)}`,
+    operacaoFinalizada ? motivoEncerramento : null
+]
+.filter(Boolean)
+.join(" | ");
+
+console.log(resumoOperacao);
 
         } catch (erro) {
 
