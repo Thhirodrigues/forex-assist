@@ -304,12 +304,14 @@ const {
     resultadoFinanceiro,
     resultado,
     agora,
-    tempoOperacao
+    tempoOperacao,
+    precoFechamento,
+    motivoEncerramento,
+    status
 } = calcularResultadoOperacao({
     sinal,
     candle,
     configuracao: configuracaoTransacao
-            
 });
 
         // Outro processo já encerrou esta operação
@@ -337,13 +339,13 @@ const {
 
             saldoDepois,
 
-            status: "ENCERRADA",
+            status,
 
             resultado,
 
             motivoEncerramento,
 
-            precoFechamento: precoAtual,
+            precoFechamento,
 
             fimOperacao: agora,
 
