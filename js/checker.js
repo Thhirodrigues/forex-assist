@@ -82,7 +82,8 @@ async function verificarSinais() {
     console.log("Forex Assist Result Checker");
     console.log("====================================");
     
-    const configuracao = configuracaoSnap.data();
+   const configuracaoSnap = await configuracaoRef.get();
+   const configuracao = configuracaoSnap.data();
     
     const snapshot = await db
     .collection("historico")
