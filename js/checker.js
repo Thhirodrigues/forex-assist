@@ -29,6 +29,13 @@ const SL_PIPS = -50;
 const TP_USD = 5;
 const SL_USD = -5;
 
+const LIMITES = {
+    TP_USD,
+    SL_USD,
+    TP_PIPS,
+    SL_PIPS
+};
+
 // =====================================================
 // UTILITÁRIOS
 // =====================================================
