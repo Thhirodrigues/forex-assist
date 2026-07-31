@@ -276,13 +276,20 @@ const {
     maxPipsFavor,
     maxPipsContra,
     lucroAtual,
+    resultadoFinanceiro,
+    saldoAntes,
+    saldoDepois,
+    resultado,
+    agora,
+    tempoOperacao,
     motivoEncerramento,
     operacaoFinalizada
 
 } = calcularResultadoOperacao({
 
     sinal,
-    candle
+    candle,
+    configuracao: configuracaoSnap.data()
 
 });
 
@@ -344,13 +351,13 @@ const {
 
             saldoDepois,
 
-            status,
-
+            status: "ENCERRADA",
+            
             resultado,
 
             motivoEncerramento,
 
-            precoFechamento,
+            precoFechamento: precoAtual,
 
             fimOperacao: agora,
 
