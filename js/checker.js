@@ -17,24 +17,22 @@ const configuracaoRef = db
     .collection("configuracoes")
     .doc("geral");
 
-// =====================================================
+// ===================================================
 // CONFIGURAÇÕES
-// =====================================================
+// ===================================================
 
-const INTERVALO_MONITORAMENTO_MINUTOS = 5;
+const CONFIG = {
+    INTERVALO_MONITORAMENTO_MINUTOS: 5,
 
-const TP_PIPS = 50;
-const SL_PIPS = -50;
-
-const TP_USD = 5;
-const SL_USD = -5;
-
-const LIMITES = {
-    TP_USD,
-    SL_USD,
-    TP_PIPS,
-    SL_PIPS
+    LIMITES: {
+        TP_USD: 5,
+        SL_USD: -5,
+        TP_PIPS: 50,
+        SL_PIPS: -50
+    }
 };
+
+const LIMITES = CONFIG.LIMITES;
 
 // =====================================================
 // UTILITÁRIOS
@@ -179,19 +177,19 @@ const tempoOperacao =
 
     let motivoEncerramento = null;
 
-    if (lucroAtual >= TP_USD) {
+    if (lucroAtual >= LIMITES.TP_USD) {
 
         motivoEncerramento = "TP_FINANCEIRO";
 
-    } else if (lucroAtual <= SL_USD) {
+    } else if (lucroAtual <= LIMITES.SL_USD) {
 
         motivoEncerramento = "SL_FINANCEIRO";
 
-    } else if (maxPipsFavor >= TP_PIPS) {
+    } else if (maxPipsFavor >= LIMITES.TP_PIPS) {
 
         motivoEncerramento = "TP_PIPS";
 
-    } else if (maxPipsContra <= SL_PIPS) {
+    } else if (maxPipsContra <= LIMITES.SL_PIPS) {
 
         motivoEncerramento = "SL_PIPS";
 
