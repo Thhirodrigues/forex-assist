@@ -177,23 +177,25 @@ const tempoOperacao =
 
     let motivoEncerramento = null;
 
-    if (lucroAtual >= LIMITES.TP_USD) {
+    const limites = configuracao?.limites ?? LIMITES;
+    
+if (lucroAtual >= limites.TP_USD) {
 
-        motivoEncerramento = "TP_FINANCEIRO";
+    motivoEncerramento = "TP_FINANCEIRO";
 
-    } else if (lucroAtual <= LIMITES.SL_USD) {
+} else if (lucroAtual <= limites.SL_USD) {
 
-        motivoEncerramento = "SL_FINANCEIRO";
+    motivoEncerramento = "SL_FINANCEIRO";
 
-    } else if (maxPipsFavor >= LIMITES.TP_PIPS) {
+} else if (maxPipsFavor >= limites.TP_PIPS) {
 
-        motivoEncerramento = "TP_PIPS";
+    motivoEncerramento = "TP_PIPS";
 
-    } else if (maxPipsContra <= LIMITES.SL_PIPS) {
+} else if (maxPipsContra <= limites.SL_PIPS) {
 
-        motivoEncerramento = "SL_PIPS";
+    motivoEncerramento = "SL_PIPS";
 
-    }
+}
 
     const operacaoFinalizada =
         motivoEncerramento !== null &&
