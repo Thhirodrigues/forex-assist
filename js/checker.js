@@ -200,12 +200,7 @@ if (lucroAtual >= TP_USD) {
     motivoEncerramento = "SL_PIPS";
 
 }
-
-lucroAtual >= 0
-        ? `+$${lucroAtual.toFixed(2)}`
-        : `-$${Math.abs(lucroAtual).toFixed(2)}`,
- 
-            
+           
     const operacaoFinalizada =
     motivoEncerramento !== null &&
     sinal.status !== "ENCERRADA";
