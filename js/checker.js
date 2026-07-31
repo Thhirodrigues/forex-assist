@@ -310,21 +310,6 @@ const {
         const configuracaoTransacao =
     configuracaoSnap.data();
 
-        const {
-    saldoAntes,
-    saldoDepois,
-    resultadoFinanceiro,
-    resultado,
-    agora,
-    tempoOperacao,
-    precoFechamento,
-    motivoEncerramento,
-    status
-} = calcularResultadoOperacao({
-    sinal,
-    candle,
-    configuracao: configuracaoTransacao
-});
 
         // Outro processo já encerrou esta operação
         if (operacao.status !== "ABERTA")
