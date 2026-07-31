@@ -1,9 +1,9 @@
 const admin = require("firebase-admin");
 const { getCandles } = require("../scripts/marketData");
 
-console.log("KEY 1:", !!process.env.TWELVEDATA_KEY_1);
-console.log("KEY 2:", !!process.env.TWELVEDATA_KEY_2);
-console.log("KEY 3:", !!process.env.TWELVEDATA_KEY_3);
+console.log("KEY 1:", !!process.env.API_KEY_1);
+console.log("KEY 2:", !!process.env.API_KEY_2);
+console.log("KEY 3:", !!process.env.API_KEY_3);
 
 const serviceAccount = require("../serviceAccount.json");
 
@@ -81,8 +81,6 @@ async function verificarSinais() {
     console.log("====================================");
     console.log("Forex Assist Result Checker");
     console.log("====================================");
-
-    const configuracaoSnap = await configuracaoRef.get();
     
     const configuracao = configuracaoSnap.data();
     
