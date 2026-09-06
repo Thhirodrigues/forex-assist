@@ -101,8 +101,13 @@ async function getCandles(
 interval = interval || CONFIG.timeframe;
 
 outputsize = outputsize || CONFIG.outputsize;
-  selecionarApi(CONFIG.apiAtiva);
-  
+
+// NÃO chamar selecionarApi() aqui: ela reseta apiIndex.value a cada
+// requisição, o que anula a rotação round-robin feita por getApiKey()
+// e faz o Scanner usar sempre a mesma chave (causa 429 em produção).
+// selecionarApi() continua disponível para seleção manual explícita,
+// fora do caminho automático de rotação.
+
 const url =
     `https://api.twelvedata.com/time_series` +
     `?symbol=${encodeURIComponent(symbol)}` +

@@ -665,6 +665,8 @@ const tendencia = analisarTendencia(
     score += tendencia.score;
     score += adxInfo.score;
 
+    const scoreTecnico = score;
+
 const slope = analisarSlope(
     ema9,
     ema21,

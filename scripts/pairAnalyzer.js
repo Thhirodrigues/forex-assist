@@ -330,6 +330,12 @@ const operacao = decisao.operacao || {
 
     ...analise,
 
+    status: "ABERTA",
+
+    precoEntrada: closes[closes.length - 1],
+
+    inicioOperacao: Date.now(),
+
     lote: risco.lote,
 
     tpUSD: risco.tpUSD,
