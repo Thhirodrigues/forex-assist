@@ -609,6 +609,7 @@ ${sinal.resultadoFinanceiro ??
     gruposPorData[data].includes(`id="sinal-${app.sinalParaDestacar}"`);
 
       const mostrarGrupo =
+    isHoje ||
     datasAbertas.includes(idData) ||
     temSinalDestacado;
       
@@ -686,6 +687,7 @@ if (el.style.display === 'none') {
           if (el) el.style.display = "none";
         });
         localStorage.setItem('sinaisAbertos', JSON.stringify([]));
+        localStorage.setItem('datasAbertas', JSON.stringify([]));
       };
     }
 
