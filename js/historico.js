@@ -614,6 +614,7 @@ ${sinal.resultadoFinanceiro ??
     temSinalDestacado;
       
       finalHtml += `
+      <div style="margin-top:16px; border:1px solid rgba(255,255,255,.08); border-radius:10px; overflow:hidden;">
          <div
 onclick="
 const el = document.getElementById('data${idData}');
@@ -629,13 +630,14 @@ if (el.style.display === 'none') {
     removerDataAberta('${idData}');
 }
 "
-        
-    style="margin-top:20px; margin-bottom:10px; font-size:12px; color:#8c95b3; font-weight:bold; cursor:pointer; display:flex; align-items:center;">
+
+    style="padding:10px 12px; font-size:12px; color:#8c95b3; font-weight:bold; cursor:pointer; display:flex; align-items:center; background:rgba(255,255,255,.03);">
    <span style="margin-right:8px;">${mostrarGrupo ? "▼" : "▶"}</span> ${label}
     </div>
-    <div id="data${idData}" style="display: ${mostrarGrupo ? 'block' : 'none'};">
+    <div id="data${idData}" style="display: ${mostrarGrupo ? 'block' : 'none'}; padding:10px;">
       ${gruposPorData[data]}
     </div>
+      </div>
       `;
     });
 
