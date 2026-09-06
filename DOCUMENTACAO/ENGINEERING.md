@@ -5479,3 +5479,96 @@ específica seja finalmente removida — a correção não limpa retroativamente
 estado salvo, só destrava a escrita futura.
 --------
 
+ACHADO OPERACIONAL — cron do GitHub Actions não executa a cada 5 minutos
+
+Não é um bug de código; é uma limitação de infraestrutura que muda a
+premissa de "tempo real" da RMI e motivou o BUG-008 abaixo.
+
+Com o mercado reaberto (domingo, 06/09/2026, após a correção do BUG-005),
+os horários reais de execução do `forex-scanner-real.yml` (cron
+`*/5 * * * *`) no dia foram: 07:19, 11:41 (+4h22), 14:24 (+2h43), 17:11
+(+2h47), 19:10 (+1h59) — e nenhuma execução nas 2h seguintes, checado às
+21:12. `list_workflow_runs` confirmou: workflow `active`, 0 execuções na
+fila (`queued`), repositório público (sem limite de minutos do Actions).
+Ou seja, o agendamento simplesmente não dispara no intervalo configurado —
+comportamento documentado do próprio GitHub para `schedule` de alta
+frequência em contas pessoais, não uma falha nossa.
+
+Efeito real: o Scanner roda ~6-8 vezes por dia, não ~288. O Result Checker
+(mesmo cron) sofre o mesmo problema — o que motivou diretamente o BUG-008.
+
+Três opções foram apresentadas ao usuário (aceitar a cadência real, mover
+o agendamento para um disparador externo confiável, ou tornar o pipeline
+resiliente a execuções irregulares). Escolhida: a terceira.
+
+--------
+
+BUG-007 — js/checker.js (P&L invertido em operações SELL)
+
+Severidade: CRÍTICA (contamina resultadoFinanceiro/saldoDepois/movimentoPips
+de toda operação SELL encerrada — dado que alimenta o aprendizado da RMI)
+
+Descoberto ao escrever o teste isolado do BUG-008 (não em log de produção).
+`movimentoPips` (e por consequência `lucroAtual`/`resultadoFinanceiro`) era
+calculado sempre como `(precoAtual - precoEntrada)`, sem checar
+`sinal.direcao` — correto para BUY, invertido para SELL: uma queda de preço
+(lucro real numa venda) era reportada como prejuízo, e uma alta (prejuízo
+real numa venda) como lucro. As checagens de `maxPipsFavor`/`maxPipsContra`
+já eram corretas (já ramificavam por direção); só o P&L financeiro e o
+`movimentoPips` exibido no frontend estavam errados. Bug pré-existente, não
+introduzido pela correção do BUG-008.
+
+Correção: nova função `calcularMovimentoPips(sinal, preco)`, usada tanto na
+checagem de TP/SL financeiro por candle quanto no cálculo final de
+`movimentoPips`/`lucroAtual` — espelha exatamente a ramificação por direção
+que `maxPipsFavor`/`maxPipsContra` já usavam.
+
+Validado isoladamente (scratchpad, 8 cenários incluindo os dois de
+regressão específicos deste bug: SELL que cai reporta lucro positivo, SELL
+que sobe reporta prejuízo negativo). Não há outro ponto do código que
+recalcule `movimentoPips` de forma independente (`js/historico.js` só
+exibe o valor já gravado no Firestore) — corrigir na fonte basta.
+
+Nota: operações SELL já encerradas em produção *antes* desta correção têm
+`resultadoFinanceiro`/`movimentoPips` com sinal invertido no Firestore. Não
+foi feita limpeza retroativa — decisão pendente do usuário sobre se vale a
+pena corrigir o histórico existente ou tratá-lo como perda aceita.
+
+---
+
+BUG-008 — js/checker.js (Result Checker não sobrevive a gaps de execução)
+
+Severidade: CRÍTICA (classificação WIN/LOSS e extremos de preço podem estar
+errados sempre que o cron atrasar — ver achado operacional acima; com gaps
+reais de 2-4h, isso é a regra, não a exceção)
+
+`buscarUltimoCandle()` buscava só o candle mais recente a cada execução e
+usava seu high/low para atualizar `precoMaximo`/`precoMinimo`. Com o cron
+rodando a cada ~5 min como projetado, isso seria suficiente. Com os gaps
+reais documentados no achado acima, um TP ou SL tocado e revertido dentro
+do intervalo entre duas execuções nunca era visto — a operação era
+classificada pelo estado do mercado no instante da checagem, não pelo que
+de fato aconteceu com o preço enquanto ninguém olhava.
+
+Correção: `buscarCandlesDesde(par, desde)` busca todos os candles de 5min
+desde `sinal.inicioOperacao` (outputsize dinâmico, proporcional ao tempo
+decorrido, limitado a 5000) e `calcularResultadoOperacao()` percorre esses
+candles em ordem cronológica, atualizando extremos e checando as condições
+de saída a cada passo — para no primeiro candle que dispara TP/SL, não no
+último. Isso reconstrói o caminho real do preço independente de quando o
+processo rodou.
+
+Assunção não validada ao vivo: o campo `datetime` da resposta da TwelveData
+é tratado como UTC (comportamento padrão documentado da API para Forex
+quando o parâmetro `timezone` não é enviado, que é o caso aqui). Precisa
+ser confirmado contra uma operação real encerrada por este código antes de
+considerar a correção plenamente validada.
+
+Validado isoladamente (scratchpad, 8 cenários): TP_PIPS e SL_PIPS
+detectados no candle intermediário correto mesmo quando um candle posterior
+já reverteu o preço; extremos persistidos de checagens anteriores
+respeitados; par JPY (fator 100) correto; ambas direções (BUY/SELL)
+corretas. Não validado em execução real de ponta a ponta (depende de uma
+operação real ser aberta e encerrada em produção).
+--------
+

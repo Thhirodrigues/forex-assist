@@ -58,98 +58,137 @@ function calcularLucroUSD(pips, lote) {
 
 }
 
-async function buscarUltimoCandle(par) {
+// BUG-007: o P&L (movimentoPips/lucroAtual) era calculado sempre como
+// (preco - entrada), ignorando a direcao. Numa SELL, queda de preco e lucro
+// real, mas isso aparecia como prejuizo (e vice-versa) - inverte o sinal
+// financeiro de toda operacao SELL encerrada por este checker. As checagens
+// de maxPipsFavor/maxPipsContra ja eram corretas (ja tratavam a direcao);
+// só o P&L financeiro estava errado.
+function calcularMovimentoPips(sinal, preco) {
 
-    const candles = await getCandles(par);
+    return sinal.direcao === "BUY"
+        ? calcularPips(sinal.par, sinal.precoEntrada, preco)
+        : calcularPips(sinal.par, preco, sinal.precoEntrada);
 
-    const candle = candles[candles.length - 1];
+}
 
-    return {
+// O cron do result-checker (5 em 5 min, na teoria) sofre atrasos reais de
+// horas por limitação do próprio agendador do GitHub Actions em contas
+// gratuitas. buscarCandlesDesde() reconstrói TODOS os candles de 5min desde
+// a abertura da operação (ou desde a última checagem persistida), em vez de
+// olhar só o candle mais recente — senão um TP/SL tocado e revertido no
+// meio do intervalo nunca seria visto.
+//
+// Assume-se que "datetime" da TwelveData vem em UTC (comportamento padrão
+// da API para Forex quando o parâmetro "timezone" não é informado, como é
+// o caso aqui). Validar contra um candle real na primeira operação
+// encerrada por este código antes de confiar cegamente no resultado.
+async function buscarCandlesDesde(par, desde) {
 
-        open: Number(candle.open),
+    const agora = Date.now();
 
-        high: Number(candle.high),
+    const minutosDecorridos = Math.max(
+        5,
+        Math.ceil((agora - desde) / (5 * 60 * 1000))
+    );
 
-        low: Number(candle.low),
+    const outputsize = Math.min(5000, minutosDecorridos + 10);
 
-        close: Number(candle.close)
+    const candles = await getCandles(par, "5min", outputsize);
 
-    };
+    return candles
+        .map(c => ({
+            timestamp: new Date(c.datetime.replace(" ", "T") + "Z").getTime(),
+            open: Number(c.open),
+            high: Number(c.high),
+            low: Number(c.low),
+            close: Number(c.close)
+        }))
+        .filter(c => c.timestamp >= desde)
+        .sort((a, b) => a.timestamp - b.timestamp);
 
 }
 
 function calcularResultadoOperacao({
 
     sinal,
-    candle,
+    candles,
     configuracao
 
 }) {
 
-    const precoAtual = candle.close;
+    const limites = configuracao?.limites ?? LIMITES;
+    const lote = sinal.lote ?? 0.01;
 
-    const precoMaximo = Math.max(
-        sinal.precoMaximo ?? sinal.precoEntrada,
-        candle.high
-    );
-
-    const precoMinimo = Math.min(
-        sinal.precoMinimo ?? sinal.precoEntrada,
-        candle.low
-    );
-
+    let precoMaximo = sinal.precoMaximo ?? sinal.precoEntrada;
+    let precoMinimo = sinal.precoMinimo ?? sinal.precoEntrada;
     let maxPipsFavor = sinal.maxPipsFavor ?? 0;
     let maxPipsContra = sinal.maxPipsContra ?? 0;
 
-    if (sinal.direcao === "BUY") {
+    let motivoEncerramento = null;
+    let candleEncerramento = null;
 
-        maxPipsFavor = Math.max(
-            maxPipsFavor,
-            calcularPips(
-                sinal.par,
-                sinal.precoEntrada,
-                precoMaximo
-            )
+    // Percorre os candles em ordem cronológica, atualizando os extremos e
+    // checando as condições de saída a cada passo - assim, um TP/SL tocado
+    // no meio do caminho é detectado mesmo que candles posteriores já
+    // tenham revertido o preço.
+    for (const candle of candles) {
+
+        precoMaximo = Math.max(precoMaximo, candle.high);
+        precoMinimo = Math.min(precoMinimo, candle.low);
+
+        if (sinal.direcao === "BUY") {
+
+            maxPipsFavor = Math.max(
+                maxPipsFavor,
+                calcularPips(sinal.par, sinal.precoEntrada, precoMaximo)
+            );
+
+            maxPipsContra = Math.min(
+                maxPipsContra,
+                calcularPips(sinal.par, sinal.precoEntrada, precoMinimo)
+            );
+
+        } else {
+
+            maxPipsFavor = Math.max(
+                maxPipsFavor,
+                calcularPips(sinal.par, precoMinimo, sinal.precoEntrada)
+            );
+
+            maxPipsContra = Math.min(
+                maxPipsContra,
+                calcularPips(sinal.par, precoMaximo, sinal.precoEntrada)
+            );
+
+        }
+
+        const lucroCandle = calcularLucroUSD(
+            calcularMovimentoPips(sinal, candle.close),
+            lote
         );
 
-        maxPipsContra = Math.min(
-            maxPipsContra,
-            calcularPips(
-                sinal.par,
-                sinal.precoEntrada,
-                precoMinimo
-            )
-        );
+        if (lucroCandle >= limites.TP_USD) {
+            motivoEncerramento = "TP_FINANCEIRO";
+        } else if (lucroCandle <= limites.SL_USD) {
+            motivoEncerramento = "SL_FINANCEIRO";
+        } else if (maxPipsFavor >= limites.TP_PIPS) {
+            motivoEncerramento = "TP_PIPS";
+        } else if (maxPipsContra <= limites.SL_PIPS) {
+            motivoEncerramento = "SL_PIPS";
+        }
 
-    } else {
-
-        maxPipsFavor = Math.max(
-            maxPipsFavor,
-            calcularPips(
-                sinal.par,
-                precoMinimo,
-                sinal.precoEntrada
-            )
-        );
-
-        maxPipsContra = Math.min(
-            maxPipsContra,
-            calcularPips(
-                sinal.par,
-                precoMaximo,
-                sinal.precoEntrada
-            )
-        );
+        if (motivoEncerramento) {
+            candleEncerramento = candle;
+            break;
+        }
 
     }
 
-    const movimentoPips = calcularPips(
-        sinal.par,
-        sinal.precoEntrada,
-        precoAtual
-    );
+    const candleFinal = candleEncerramento ?? candles[candles.length - 1];
+    const precoAtual = candleFinal.close;
 
-    const lote = sinal.lote ?? 0.01;
+    const movimentoPips = calcularMovimentoPips(sinal, precoAtual);
 
     const lucroAtual = calcularLucroUSD(
         movimentoPips,
@@ -170,32 +209,10 @@ const resultadoFinanceiro =
     Number(lucroAtual.toFixed(2));
 
 const agora =
-    Date.now();
+    candleEncerramento ? candleFinal.timestamp : Date.now();
 
 const tempoOperacao =
     agora - sinal.inicioOperacao;
-
-    let motivoEncerramento = null;
-
-    const limites = configuracao?.limites ?? LIMITES;
-    
-if (lucroAtual >= limites.TP_USD) {
-
-    motivoEncerramento = "TP_FINANCEIRO";
-
-} else if (lucroAtual <= limites.SL_USD) {
-
-    motivoEncerramento = "SL_FINANCEIRO";
-
-} else if (maxPipsFavor >= limites.TP_PIPS) {
-
-    motivoEncerramento = "TP_PIPS";
-
-} else if (maxPipsContra <= limites.SL_PIPS) {
-
-    motivoEncerramento = "SL_PIPS";
-
-}
 
     const operacaoFinalizada =
         motivoEncerramento !== null &&
@@ -266,8 +283,20 @@ async function verificarSinais() {
 
         try {
 
-const candle =
-    await buscarUltimoCandle(sinal.par);
+const desde = sinal.inicioOperacao;
+
+const candles =
+    await buscarCandlesDesde(sinal.par, desde);
+
+if (!candles.length) {
+
+    console.log(
+        `${sinal.par}: nenhum candle novo desde a abertura, pulando.`
+    );
+
+    continue;
+
+}
 
 const {
 
@@ -290,12 +319,12 @@ const {
 } = calcularResultadoOperacao({
 
     sinal,
-    candle,
+    candles,
     configuracao: configuracaoSnap.data()
 
 });
 
-            
+
     if (operacaoFinalizada) {
 
     await db.runTransaction(async (transaction) => {
