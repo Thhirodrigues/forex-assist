@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  "forex-assist-v7";
+  "forex-assist-v8";
 
 const ASSETS = [
   "./",
@@ -66,16 +66,20 @@ self.addEventListener(
 
     e.respondWith(
 
-      caches.match(
+      fetch(
         e.request
-      ).then(
+      ).then(res => {
 
-        res =>
-          res ||
-          fetch(
-            e.request
-          )
+        const resClone = res.clone();
 
+        caches.open(CACHE_NAME).then(
+          cache => cache.put(e.request, resClone)
+        );
+
+        return res;
+
+      }).catch(
+        () => caches.match(e.request)
       )
 
     );
