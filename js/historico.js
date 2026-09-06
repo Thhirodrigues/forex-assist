@@ -686,7 +686,11 @@ if (el.style.display === 'none') {
         datasOrdenadas.forEach(data => {
           const idData = data.replaceAll("/", "");
           const el = document.getElementById(`data${idData}`);
-          if (el) el.style.display = "none";
+          if (el) {
+            el.style.display = "none";
+            const seta = el.previousElementSibling?.querySelector('span');
+            if (seta) seta.innerHTML = '▶';
+          }
         });
         localStorage.setItem('sinaisAbertos', JSON.stringify([]));
         localStorage.setItem('datasAbertas', JSON.stringify([]));
