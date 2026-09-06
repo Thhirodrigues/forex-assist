@@ -265,22 +265,57 @@ async function scannerAtivo() {
 }
 
 // ===================================================
+// DATA/HORA EM HORÁRIO DE BRASÍLIA
+// ===================================================
+//
+// mercadoAberto() e horarioOperacional() precisam
+// concordar sobre qual dia da semana e qual hora "é
+// agora". Calculamos os dois SEMPRE a partir do relógio
+// de America/Sao_Paulo (nunca do fuso do runner, que no
+// GitHub Actions é UTC), para não abrir uma janela de
+// horas de diferença entre os dois filtros perto da
+// virada do dia.
+// ===================================================
+
+function obterAgoraBrasil() {
+
+    const agora = new Date();
+
+    const brasiliaStr = agora.toLocaleString(
+        "en-US",
+        { timeZone: "America/Sao_Paulo" }
+    );
+
+    const brasilia = new Date(brasiliaStr);
+
+    return {
+        diaSemana: brasilia.getDay(), // 0=domingo ... 6=sábado
+        minutosDoDia: brasilia.getHours() * 60 + brasilia.getMinutes()
+    };
+
+}
+
+// ===================================================
 // MERCADO ABERTO
+// ===================================================
+//
+// O Forex fecha na sexta à noite e reabre no domingo às
+// 18h (horário de Brasília), quando a sessão de Sydney
+// começa. Sábado é sempre fechado. Domingo só é
+// considerado aberto a partir das 18h.
 // ===================================================
 
 function mercadoAberto() {
 
-    const agora = new Date();
+    const { diaSemana, minutosDoDia } = obterAgoraBrasil();
 
-    const diaSemana = agora.getDay();
-
-    // Domingo
-    if (diaSemana === 0)
-        return false;
-
-    // Sábado
+    // Sábado: sempre fechado
     if (diaSemana === 6)
         return false;
+
+    // Domingo: fechado até 18h, quando o mercado reabre
+    if (diaSemana === 0)
+        return minutosDoDia >= (18 * 60);
 
     return true;
 
@@ -289,28 +324,26 @@ function mercadoAberto() {
 // ===================================================
 // HORÁRIO OPERACIONAL
 // ===================================================
+//
+// Segunda a sábado: janela configurável (padrão 07:30–18:00).
+// Domingo: sessão de reabertura, 18:00–23:59. É uma janela
+// diferente da semanal porque o pregão só existe a partir
+// das 18h nesse dia — não faz sentido aplicar o mesmo
+// horarioInicio/horarioFim configurado para os outros dias.
+// ===================================================
 
 function horarioOperacional(context) {
 
-    const agora = new Date();
+    const { diaSemana, minutosDoDia } = obterAgoraBrasil();
 
-    const horaAtual = agora.toLocaleTimeString(
-        "pt-BR",
-        {
-            timeZone: "America/Sao_Paulo",
-            hour12: false,
-            hour: "2-digit",
-            minute: "2-digit"
-        }
-    );
+    // Sábado: nunca há janela operacional
+    if (diaSemana === 6) {
+        return false;
+    }
 
-    const [hora, minuto] =
-        horaAtual
-            .split(":")
-            .map(Number);
-
-    const minutosAgora =
-        hora * 60 + minuto;
+    if (diaSemana === 0) {
+        return minutosDoDia >= (18 * 60);
+    }
 
     const [horaInicio, minutoInicio] =
         context.configuracao
@@ -331,8 +364,8 @@ function horarioOperacional(context) {
         horaFim * 60 + minutoFim;
 
     return (
-        minutosAgora >= inicio &&
-        minutosAgora <= fim
+        minutosDoDia >= inicio &&
+        minutosDoDia <= fim
     );
 
 }

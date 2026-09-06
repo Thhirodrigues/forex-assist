@@ -5404,8 +5404,48 @@ disparo manual do workflow (`run 34007409592`, 06/09/2026) encerrou em 3s com
 `MERCADO FECHADO`, comportamento esperado do `mercadoAberto()`.
 
 Próximo passo formalmente pendente: acompanhar manualmente o primeiro ciclo
-real do Scanner após a reabertura do mercado (segunda-feira, janela
-operacional configurada 07:30–18:00 América/São_Paulo) antes de considerar
-esta correção encerrada.
+real do Scanner após a reabertura do mercado antes de considerar esta
+correção encerrada (ver BUG-005, que muda quando isso acontece).
+--------
+
+BUG-005 — scripts/scanner.js (mercadoAberto / horarioOperacional)
+
+Severidade: MÉDIA (o Scanner perdia toda a sessão de reabertura de domingo)
+
+Descoberto na conversa, não em log de produção: o usuário apontou que o Forex
+reabre domingo às 18h (horário de Brasília), mas o Scanner só voltaria a
+analisar segunda-feira 07:30. Duas causas, sobrepostas:
+
+1. `mercadoAberto()` calculava `diaSemana` via `new Date().getDay()` sem
+   fuso horário explícito — no runner do GitHub Actions (UTC), isso não
+   corresponde ao dia da semana em Brasília perto da virada da meia-noite,
+   diferente de `horarioOperacional()`, que já convertia corretamente para
+   `America/Sao_Paulo`. As duas funções podiam discordar sobre "que dia é
+   hoje" por até 3 horas.
+
+2. Mesmo corrigindo o fuso, `horarioOperacional()` aplicava a mesma janela
+   07:30–18:00 configurada para dias úteis também ao domingo — um dia em
+   que o pregão só existe a partir das 18h. Resultado: entre domingo 18h
+   (reabertura real) e segunda 07:30, o Scanner ficava parado por um
+   filtro de janela que nunca previu esse caso.
+
+Correção: criada `obterAgoraBrasil()`, usada por ambas as funções, que
+converte o horário atual para `America/Sao_Paulo` uma única vez (via
+`toLocaleString` + reparse, sem dependência nova). `mercadoAberto()` agora
+trata domingo como aberto a partir das 18h. `horarioOperacional()` aplica
+uma janela especial (18:00–23:59) só no domingo, e a janela configurada
+normalmente nos demais dias — incluindo sábado, que precisou de checagem
+explícita (achado pelo teste abaixo: sem ela, `horarioOperacional()`
+sozinha diria "dentro do horário" num sábado às 12h, mascarado em produção
+apenas porque `validarExecucao()` já barra em `mercadoAberto()` antes).
+
+Validado com 7 casos cobrindo sexta/sábado/domingo antes e depois das 18h
+(inclusive o instante em que o UTC já virou segunda mas ainda é domingo à
+noite em Brasília) e segunda antes/depois das 07:30 — todos corretos após a
+correção do caso de sábado.
+
+Segunda-feira 07:30–18:00 continua sendo a janela normal de dias úteis; a
+janela de domingo é estritamente 18:00–23:59, por pedido explícito do
+usuário — não foi estendida para cobrir a madrugada de segunda.
 --------
 
