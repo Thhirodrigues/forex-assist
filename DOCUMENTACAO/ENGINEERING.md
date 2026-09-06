@@ -5292,3 +5292,120 @@ package.json
 No próximo passo eu vou gerar o conteúdo completo desse arquivo, já preparado para o Forex Assist, incluindo as dependências necessárias e compatível com a arquitetura atual. Isso permitirá integrar a biblioteca de indicadores sem quebrar o projeto.
 --------
 
+AUDITORIA DE CORREÇÃO — RESTABELECIMENTO DA RMI V2
+
+Data: 06/09/2026
+
+Status: CONCLUÍDA (correção de código); VALIDAÇÃO END-TO-END PENDENTE (mercado fechado no momento da correção)
+
+---
+
+CONTEXTO
+
+Esta auditoria não partiu de leitura de código isolada. Partiu de evidência de
+produção: logs reais do GitHub Actions (execução `run 32988076944`, 26/08/2026)
+mostraram `Erros: 10` de 10 pares, com a mensagem `scoreTecnico is not defined`
+repetida em todo par analisado, e `Operações: 0`. Uma consulta direta ao
+Firestore de produção (coleção `historico`, 450 documentos) confirmou que o
+último documento gravado era de 28/07/2026 — a véspera exata da regressão.
+
+Isso invalida a conclusão de laudos anteriores deste documento (nº 001 a 024,
+Fases 01–04, e as Entregas da FASE 06 no DOCUMENTO_MESTRE 2) sobre o estado
+"aprovado" / "workflow GREEN" desses módulos: workflow verde no GitHub Actions
+não implica que a Engine produziu resultado válido, porque os scripts deste
+projeto capturam exceção e retornam `status: "ERRO"` sem derrubar o processo.
+Esta é agora uma regra permanente registrada em `CLAUDE.md`.
+
+---
+
+BUG-001 — scripts/marketAnalyzer.js
+
+Severidade: CRÍTICA (bloqueava 100% da geração de sinais)
+
+`calcularQualidade()` referenciava a variável `scoreTecnico` em `let scoreFinal
+= scoreTecnico;` (e no objeto de retorno) sem que ela jamais tivesse sido
+declarada na função. `ReferenceError` em toda chamada.
+
+Introduzido no commit `198e55e` (29/07/2026, "Refactor risk calculation logic
+in pairAnalyzer.js"), nunca corrigido nos commits seguintes (30–31/07, todos
+em `checker.js`).
+
+Correção: `const scoreTecnico = score;` logo após a soma de
+`emaScore + rsiScore + tendenciaScore + adxScore`. Validado isoladamente
+(chamada direta de `calcularQualidade()` com dados de mercado simulados —
+não lança mais exceção, `scoreTecnico` presente e correto na saída).
+
+---
+
+BUG-002 — scripts/marketData.js
+
+Severidade: ALTA (limitava drasticamente o tempo de operação do Scanner)
+
+`getCandles()` chamava `selecionarApi(CONFIG.apiAtiva)` a cada requisição,
+resetando `apiIndex.value` para um valor fixo. Isso anulava o incremento
+round-robin feito por `getApiKey()` (utils.js) — das 3 chaves TwelveData
+configuradas, apenas 1 era efetivamente usada. Confirmado no mesmo log de
+produção: 7 dos 10 pares falhavam com HTTP 429 (limite de requisições).
+
+Correção: removida a chamada de `selecionarApi()` de dentro de `getCandles()`.
+A função permanece exportada para eventual seleção manual explícita (ex.:
+futura Central de Configurações), mas não é chamada em nenhum outro ponto do
+código atual (confirmado por busca em todo o repositório). Validado
+isoladamente: sequência de chamadas a `getApiKey()` agora cicla
+corretamente entre as 3 chaves.
+
+---
+
+BUG-003 — scripts/pairAnalyzer.js
+
+Severidade: CRÍTICA (quebra de contrato entre produtor e consumidor de dados)
+
+O objeto `operacao` salvo no Firestore nunca definia `status`, `precoEntrada`
+ou `inicioOperacao`. `js/checker.js` exige exatamente esses três campos
+(consulta `where("status", "==", "ABERTA")`, e usa `precoEntrada`/
+`inicioOperacao` para calcular resultado) — sem eles, uma operação nunca é
+encontrada pelo Result Checker e permanece "⏳ PENDENTE" para sempre no
+frontend, mesmo com o Scanner funcionando.
+
+Correção: adicionados `status: "ABERTA"`, `precoEntrada: closes[closes.length
+- 1]` e `inicioOperacao: Date.now()` na construção do objeto `operacao`.
+
+Confirmado por consulta direta ao Firestore: nenhuma operação está presa
+(`status == "ABERTA"`: 0 resultados) — o histórico existente (até 28/07) foi
+gravado por uma versão do código compatível com o `checker.js` e foi resolvido
+corretamente. O problema afeta apenas operações que seriam salvas *depois*
+desta correção, por isso não havia nada para limpar.
+
+---
+
+BUG-004 — js/historico.js (frontend, não relacionado ao pipeline da RMI)
+
+Severidade: BAIXA (UX)
+
+`mostrarGrupo` (lógica de abrir/fechar grupos de data no Histórico) nunca
+considerava `isHoje` — o grupo do dia atual iniciava fechado como qualquer
+outro dia, contrariando o comportamento documentado desde a Fase 2.2. O botão
+"Minimizar Tudo" limpava `sinaisAbertos` do localStorage mas não
+`datasAbertas`, então dias previamente abertos voltavam a abrir sozinhos ao
+recarregar a página.
+
+Correção: `mostrarGrupo` agora inclui `isHoje` no OR; "Minimizar Tudo" agora
+limpa também `datasAbertas`.
+
+---
+
+VALIDAÇÃO PENDENTE
+
+Os BUG-001 a BUG-003 foram validados unitariamente (funções chamadas
+isoladamente com dados simulados) e por leitura de código, mas **não** foram
+validados em execução real de ponta a ponta contra o mercado — o mercado
+estava fechado (fim de semana) no momento da correção. Uma tentativa de
+disparo manual do workflow (`run 34007409592`, 06/09/2026) encerrou em 3s com
+`MERCADO FECHADO`, comportamento esperado do `mercadoAberto()`.
+
+Próximo passo formalmente pendente: acompanhar manualmente o primeiro ciclo
+real do Scanner após a reabertura do mercado (segunda-feira, janela
+operacional configurada 07:30–18:00 América/São_Paulo) antes de considerar
+esta correção encerrada.
+--------
+
