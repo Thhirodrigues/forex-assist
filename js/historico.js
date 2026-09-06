@@ -622,11 +622,11 @@ const seta = this.querySelector('span');
 if (el.style.display === 'none') {
     el.style.display = 'block';
     seta.innerHTML = '▼';
-    salvarDataAberta(idData);
+    salvarDataAberta('${idData}');
 } else {
     el.style.display = 'none';
     seta.innerHTML = '▶';
-    removerDataAberta(idData);
+    removerDataAberta('${idData}');
 }
 "
         

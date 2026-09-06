@@ -5449,3 +5449,33 @@ janela de domingo é estritamente 18:00–23:59, por pedido explícito do
 usuário — não foi estendida para cobrir a madrugada de segunda.
 --------
 
+BUG-006 — js/historico.js (onclick de abrir/fechar grupo de data)
+
+Severidade: MÉDIA (UX) — pré-existente, não introduzido pela correção do
+BUG-004
+
+Descoberto ao vivo pelo usuário: console do navegador mostrou
+`Uncaught ReferenceError: idData is not defined` ao clicar no cabeçalho de
+um grupo de data no Histórico.
+
+Causa: o `onclick` é montado dentro de um template string. A primeira linha
+interpola corretamente (`` `data${idData}` ``), mas as chamadas
+`salvarDataAberta(idData)` e `removerDataAberta(idData)` esqueceram o
+`${}` — o HTML gerado continha o texto literal `idData`, uma variável
+inexistente no escopo do atributo inline. O clique abria/fechava o grupo
+visualmente (isso executa antes do erro), mas travava exatamente antes de
+persistir no `localStorage`. Na prática, nenhum clique em nenhum grupo de
+data jamais foi salvo desde que este código existe — o que o usuário via
+como "dia aberto" era sempre um estado antigo, congelado, que nenhuma
+interação subsequente conseguia alterar.
+
+Correção: `salvarDataAberta('${idData}')` e `removerDataAberta('${idData}')`,
+interpolando e citando a string como a linha acima já fazia.
+
+Nota: usuários que já tinham uma data presa em `datasAbertas` no
+`localStorage` antes desta correção (ex.: uma data antiga aberta que nunca
+fechava) precisam clicar nela uma vez após a correção para que essa entrada
+específica seja finalmente removida — a correção não limpa retroativamente o
+estado salvo, só destrava a escrita futura.
+--------
+
