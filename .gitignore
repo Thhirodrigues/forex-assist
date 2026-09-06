@@ -1,0 +1,13 @@
+# Credenciais - NUNCA commitar
+serviceAccount.json
+firebase-key.json
+*.pem
+.env
+.env.*
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
