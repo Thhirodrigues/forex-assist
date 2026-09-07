@@ -5558,12 +5558,30 @@ documento (correção auditável e reversível). Reauditoria pós-correção
 (`audit-historico.js`) confirmou **0 documentos divergentes** — todos os
 65 corrigidos corretamente, nenhum efeito colateral detectado.
 
-Pendência explicitamente NÃO resolvida por esta correção: `saldoAntes`/
-`saldoDepois` de todas as operações (SELL e as que vieram depois delas)
-não foram tocados. Esses campos formam uma cadeia cronológica de saldo
-simulado/real; corrigir os 65 documentos sem recalcular a cadeia inteira
-deixaria o ledger de saldo inconsistente. Decisão sobre recalcular essa
-cadeia completa ainda pendente do usuário.
+CORREÇÃO — pendência de saldoAntes/saldoDepois não existe (07/09/2026)
+
+Registrado acima, ao concluir a correção do BUG-007, que `saldoAntes`/
+`saldoDepois` formariam uma cadeia cronológica pendente de recálculo.
+Auditoria dedicada (`audit-saldo.js`, somente leitura) mostrou que isso
+estava errado: **nenhum dos 137 documentos `ENCERRADA` tem `saldoAntes`/
+`saldoDepois` preenchidos**, em nenhuma era do schema. `configuracoes/
+geral.saldoSimulado` está no valor padrão (1000), nunca incrementado por
+nenhuma operação histórica; `saldoReal` em 0. Não há ledger a reconstruir
+porque nunca houve ledger persistido nesse período. Pendência encerrada
+sem ação — não por decisão do usuário, mas porque o problema não existe.
+
+Achado colateral dessa investigação: o schema anterior a 28/07/2026 usava
+um campo `lucroAtual` (não `resultadoFinanceiro`, que ficava `null`) para
+registrar o P&L. A correção do BUG-007 atualizou `resultado`,
+`motivoEncerramento` e `resultadoFinanceiro`, mas não tocou `lucroAtual`
+— os 65 documentos corrigidos ficaram com `lucroAtual` no valor antigo
+(sinal errado), inconsistente com o `resultado` já corrigido. Confirmado
+que isso é inofensivo no estado atual: o frontend (`js/historico.js`) só
+renderiza a seção de resultado financeiro quando o documento tem o campo
+`movimentoPips`, ausente em todo esse período histórico; nenhum outro
+código lê `lucroAtual` de documentos já encerrados. É sujeira de dado,
+não um bug ativo — correção de baixa prioridade, opcional, ainda não
+solicitada pelo usuário.
 
 ---
 
