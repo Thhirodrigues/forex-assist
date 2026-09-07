@@ -54,6 +54,15 @@ function configurarMarketData(config = {}) {
         ...CONFIG,
         ...config
     };
+
+    // Chamado UMA vez por execução do Scanner (não a cada getCandles()
+    // - ver comentário dentro de getCandles() sobre por que isso
+    // importa). Define apenas o PONTO DE PARTIDA do rodízio round-robin
+    // desta execução; getApiKey() continua girando normalmente a cada
+    // requisição a partir daí.
+    if (config.apiAtiva !== undefined) {
+        selecionarApi(config.apiAtiva);
+    }
 }
 
 function esperar(ms) {

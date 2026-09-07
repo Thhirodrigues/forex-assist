@@ -5809,3 +5809,102 @@ perfis funcionais) são o que deve construir confiança real daqui para
 frente.
 --------
 
+BUG-010 — 4 campos da tela de Configurações gravavam no Firestore mas
+nunca eram lidos pelo Scanner (delay/pares já funcionavam; cooldown,
+candles, apiAtiva e janelaSeguranca não)
+
+Severidade: ALTA para `candles` (risco de regressão grave se corrigido
+sem cuidado — ver abaixo), MÉDIA para os outros três (o Scanner sempre
+rodou com comportamento hardcoded, mas dentro de valores seguros).
+
+Descoberto ao auditar, a pedido do usuário, cada campo de
+`configuracoes/geral` contra o uso real em `scripts/scanner.js` após o
+BUG-009. Diferente do BUG-009 (nada era gravado), aqui a gravação
+funcionava — o valor chegava ao Firestore, mas o Scanner nunca lia de
+volta, ou lia só para imprimir no console.
+
+1. **`cooldown`** — `scripts/riskManager.js`'s `existeCooldown(db, par)`
+   usava uma constante interna fixa (`COOLDOWN_MINUTOS = 30`), ignorando
+   por completo `configuracao.cooldown`. O valor digitado na tela só
+   aparecia em um `console.log` de resumo em `scanner.js`.
+
+2. **`candles`** — existe desde sempre um campo separado, `outputsize`
+   (nunca exposto na UI, default 250 hardcoded), que é o que de fato
+   controla quantos candles a API retorna
+   (`marketData.js`/`getCandles()`). O campo `candles` da tela (dropdown
+   10/20/30/50) só era ecoado em log e no resumo salvo — nunca chegava
+   perto de `outputsize`.
+
+   **Achado crítico ao investigar o conserto**: `pairAnalyzer.js` calcula
+   `ema200 = ema(200, closes)` sobre o array `closes` INTEIRO, sem
+   `.slice()`. A função `ema()` retorna `null` sempre que
+   `valores.length < periodo`. Ou seja, **qualquer outputsize abaixo de
+   200 faz `ema200` retornar `null` sempre**, o que por sua vez faz
+   `pairAnalyzer.js` abortar a análise do par com `status: "SEM_DADOS"`
+   ("CANDLES INSUFICIENTES") — para TODO par, TODA execução. As 4
+   opções que a tela de Config oferecia (10/20/30/50) estavam TODAS
+   abaixo desse piso. Se o campo tivesse sido ligado diretamente ao
+   `outputsize` sem correção adicional, o efeito seria pior que o bug
+   original: o Scanner pararia de gerar qualquer sinal, silenciosamente,
+   assim que alguém salvasse a tela de Config com qualquer uma das
+   opções disponíveis.
+
+3. **`apiAtiva`** — `selecionarApi(apiAtiva)` existe em `marketData.js`
+   desde o BUG-002, mas o próprio comentário no código diz para nunca
+   chamá-la dentro de `getCandles()` (resetaria o rodízio round-robin a
+   cada requisição, recriando o bug de 429 que o BUG-002 corrigiu). Como
+   não havia nenhum outro lugar que a chamasse, `apiAtiva` não tinha
+   nenhum efeito — a rotação sempre come do índice 0 a cada
+   reinicialização do processo do Scanner (execução do cron), nunca
+   respeitando a preferência do usuário.
+
+4. **`janelaSeguranca`** — declarada com default (30) em
+   `CONFIG_PADRAO`, gravada pela tela de Config, mas nunca lida em
+   nenhuma outra parte de `scanner.js`. Não gatilha nada.
+
+Correção aplicada:
+
+- `scripts/riskManager.js`: `existeCooldown(db, par, minutos)` agora
+  aceita o cooldown como parâmetro (fallback `COOLDOWN_MINUTOS_PADRAO =
+  30` se omitido). `scripts/pairAnalyzer.js` passa
+  `configuracao?.cooldown`.
+- `scripts/scanner.js`: `criarContextoExecucao()` agora calcula
+  `outputsize = Math.max(configuracao.candles || configuracao.outputsize
+  || 250, CANDLES_MINIMO_SEGURO)`, com `CANDLES_MINIMO_SEGURO = 200`
+  como piso de segurança (protege inclusive documentos antigos do
+  Firestore que ainda tenham um valor de `candles` abaixo do mínimo). O
+  valor efetivo (já com o piso aplicado) é regravado em
+  `configuracao.candles` para que logs e o resumo salvo reflitam o que
+  realmente foi usado. `CONFIG_PADRAO.candles` também foi corrigido de
+  20 para 250.
+- `js/config.js`: dropdown de "Quantidade de Candles" trocado de
+  10/20/30/50 (todos inseguros) para 200 (mínimo)/250
+  (recomendado)/350/500, com texto explicando o porquê do piso. Default
+  local também corrigido de 20 para 250. Campo "Janela de Segurança"
+  ganhou uma frase explicando o que ele faz (antes era um número solto
+  sem contexto).
+- `scripts/marketData.js`: `configurarMarketData()` agora chama
+  `selecionarApi(config.apiAtiva)` uma única vez por execução do
+  Scanner (não a cada `getCandles()`) — define só o ponto de partida do
+  rodízio round-robin daquela execução, sem reintroduzir o bug do
+  BUG-002.
+- `scripts/scanner.js`: `horarioOperacional()` agora subtrai
+  `janelaSeguranca` (minutos) do `horarioFim` antes de comparar —
+  deixa de abrir novas operações nos últimos N minutos antes do fim da
+  janela operacional configurada. Com `janelaSeguranca = 0`, o
+  comportamento é idêntico ao anterior (corte exatamente no
+  `horarioFim`).
+
+Validado via `scripts/riskManager.js` (mock de `db`, sem Firebase real)
+e replicando a fórmula exata de `outputsize`/`horarioOperacional` em um
+script isolado — 11 cenários, todos passando. Suite de perfis
+(`validate-perfis.js`, 13 cenários) revalidada sem regressão.
+
+Não validado ainda: comportamento ao vivo em produção (próxima execução
+real do cron após o merge). Como de praxe neste projeto, os primeiros
+ciclos após esta mudança devem ser acompanhados manualmente antes de
+considerar "funcionando" — em especial confirmar que o outputsize
+efetivo aparece corretamente no log e que nenhum par cai em
+"CANDLES INSUFICIENTES" por causa desta mudança.
+--------
+

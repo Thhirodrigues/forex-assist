@@ -85,7 +85,11 @@ function configuracaoPadrao() {
 
     janelaSeguranca: 30,
 
-    candles: 20,
+    // Minimo real exigido pela analise (EMA200 usa o array
+    // inteiro de closes - abaixo de 200 velas o indicador
+    // sempre retorna null e o par cai em CANDLES INSUFICIENTES).
+    // Ver CANDLES_MINIMO_SEGURO em scripts/scanner.js.
+    candles: 250,
 
     lote: 0.04,
 
@@ -305,6 +309,8 @@ Horário Final
 
 Janela de Segurança (min)
 
+<br>
+<small style="opacity:.7;">Nao abre operacao nos ultimos X minutos antes do horario de fim</small>
 <br><br>
 
 <input
@@ -327,6 +333,8 @@ Janela de Segurança (min)
 
 Quantidade de Candles
 
+<br>
+<small style="opacity:.7;">Minimo 200 - abaixo disso a analise (EMA200) nao roda</small>
 <br><br>
 
 <select
@@ -334,27 +342,27 @@ id="cfgCandles"
 style="width:100%;">
 
 <option
-value="10"
-${config.candles==10?"selected":""}>
-10
+value="200"
+${config.candles==200?"selected":""}>
+200 (minimo)
 </option>
 
 <option
-value="20"
-${config.candles==20?"selected":""}>
-20
+value="250"
+${config.candles==250?"selected":""}>
+250 (recomendado)
 </option>
 
 <option
-value="30"
-${config.candles==30?"selected":""}>
-30
+value="350"
+${config.candles==350?"selected":""}>
+350
 </option>
 
 <option
-value="50"
-${config.candles==50?"selected":""}>
-50
+value="500"
+${config.candles==500?"selected":""}>
+500
 </option>
 
 </select>

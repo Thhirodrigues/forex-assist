@@ -66,7 +66,8 @@ horarioFim: "18:00",
 
 janelaSeguranca: 30,
 
-candles: 20,
+// Minimo real exigido pela analise (ver CANDLES_MINIMO_SEGURO abaixo).
+candles: 250,
 
 lote: 0.04,
 
@@ -105,13 +106,34 @@ retryDelay: 1000,
 };
 
 // ===================================================
-// ESTADO GLOBAL DO SCANNER
+// PISO DE SEGURANÇA - QUANTIDADE DE CANDLES
+// ---------------------------------------------------
+// pairAnalyzer.js calcula ema200 sobre o array INTEIRO
+// de closes (sem slice). Com menos de 200 candles, ema200
+// sempre retorna null e o par cai em "CANDLES INSUFICIENTES"
+// (SEM_DADOS) - ou seja, zero sinal, sempre, para qualquer par.
+// Este piso protege o Scanner mesmo se `configuracoes/geral`
+// tiver um valor antigo/inválido gravado (ex.: antes desta
+// correção, a tela de Config oferecia 10/20/30/50, todos
+// abaixo do mínimo real).
 // ===================================================
+
+const CANDLES_MINIMO_SEGURO = 200;
 
 async function criarContextoExecucao() {
 
     const configuracao =
         await carregarConfiguracao();
+
+    const outputsize = Math.max(
+        Number(configuracao.candles) || configuracao.outputsize || 250,
+        CANDLES_MINIMO_SEGURO
+    );
+
+    // Reflete o valor EFETIVO (já com o piso aplicado) de volta em
+    // configuracao, para que logs e o resumo salvo no Firestore
+    // mostrem o que realmente foi usado, não o valor bruto configurado.
+    configuracao.candles = outputsize;
 
     configurarMarketData({
 
@@ -119,7 +141,7 @@ async function criarContextoExecucao() {
 
     timeframe: configuracao.timeframe || "5min",
 
-    outputsize: configuracao.outputsize || 250,
+    outputsize,
 
     timeout: configuracao.timeout || 10000,
 
@@ -363,9 +385,18 @@ function horarioOperacional(context) {
     const fim =
         horaFim * 60 + minutoFim;
 
+    // Janela de segurança: para de abrir operações X minutos
+    // antes do horário de fim configurado, para não iniciar uma
+    // operação sem tempo de desenvolver antes do encerramento.
+    const janelaSeguranca =
+        Number(context.configuracao.janelaSeguranca) || 0;
+
+    const fimComSeguranca =
+        fim - janelaSeguranca;
+
     return (
         minutosDoDia >= inicio &&
-        minutosDoDia <= fim
+        minutosDoDia <= fimComSeguranca
     );
 
 }

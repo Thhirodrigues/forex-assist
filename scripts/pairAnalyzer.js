@@ -59,7 +59,7 @@ existeCooldown
 
     try {
 
-        if (await existeCooldown(db, par)) {
+        if (await existeCooldown(db, par, configuracao?.cooldown)) {
 
     console.log("Status............COOLDOWN");
     console.log("Motivo............Operação recente");
