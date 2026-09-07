@@ -5621,3 +5621,101 @@ corretas. Não validado em execução real de ponta a ponta (depende de uma
 operação real ser aberta e encerrada em produção).
 --------
 
+BUG-009 — Tela de Configurações RMI nunca teve efeito em produção
+
+Severidade: CRÍTICA (todo o motor de risco/análise sempre rodou com
+parâmetros fixos no código, ignorando qualquer configuração feita pelo
+usuário, desde a criação da tela)
+
+Descoberto ao vivo pelo usuário: mudou o Perfil Operacional para
+"Agressivo" na tela de Config, clicou em "Salvar Configurações", e nada
+aconteceu — nem feedback visual, nem entrada no console do DevTools.
+Investigação encontrou uma cadeia de três desconexões independentes,
+todas presentes desde a criação da tela:
+
+1. **`js/app.js` nunca religava o clique do botão.** `js/config.js`
+   chama `bindConfigEvents()` uma única vez, 100ms após o carregamento
+   da página — quando a aba ativa por padrão (Dashboard) está visível, não
+   a de Config. `app.js` re-renderiza o HTML inteiro a cada troca de aba
+   (`app.innerHTML = ...`), mas só chamava um hook de pós-renderização
+   para a aba Histórico (`carregarHistorico()`), nunca para Config. O
+   botão `#btnSalvarConfig` existia visualmente mas nunca teve
+   `onclick` atribuído depois da primeira renderização da página.
+   Resultado: o clique nunca fazia absolutamente nada, nem localStorage
+   nem Firestore — consistente com o teste do usuário.
+
+2. **Mesmo com o clique funcionando, os nomes de campo não batem com o
+   que o backend lê.** O `<select>` de tipo de conta grava
+   `conta: "simulada"/"real"` (minúsculo), mas `scripts/scanner.js` e
+   `scripts/checker.js` esperam `tipoConta: "SIMULADA"/"REAL"`
+   (maiúsculo, chave diferente) em `configuracoes/geral`. A escrita
+   original também sobrescreveria `saldoSimulado`/`saldoReal` (o saldo
+   CORRENTE, mutado pelo checker a cada operação) com `saldoInicial` a
+   cada clique em Salvar — resetaria o saldo em uso toda vez que o
+   usuário salvasse qualquer configuração, mesmo sem intenção de reiniciar
+   a simulação.
+
+3. **`scripts/pairAnalyzer.js` recebia `configuracao` mas descartava.**
+   `scripts/scanner.js` já passava `configuracao: context.configuracao`
+   para `analisarPar()` — mas a assinatura da função em
+   `pairAnalyzer.js` não incluía `configuracao` nos parâmetros
+   desestruturados, então o objeto era silenciosamente ignorado.
+   `analisarFinanceiro()` (em `scripts/moneyManager.js`) era chamada sem
+   `perfil`, `banca`, `lote`, `tpUSD`, `slUSD` — caindo sempre nos
+   valores padrão internos (`perfil = "CONSERVADOR"`, lote/TP/SL fixos),
+   que por coincidência numérica batiam com os valores exibidos na tela
+   (lote 0,04, TP/SL $5, saldo 1000), mascarando o problema.
+
+   Confirmado por auditoria direta do Firestore: `configuracoes/geral`
+   tinha apenas 4 campos (`tipoConta`, `saldoSimulado`,
+   `saldoInicialReal`, `saldoReal`) — nenhum `perfil`, `lote`, `tp`, `sl`,
+   `pares`, `horarioInicio`/`horarioFim`, `candles`, `scannerAtivo` jamais
+   chegou a ser gravado.
+
+Correção:
+
+- `js/app.js`: adicionado o mesmo hook de pós-renderização usado pelo
+  Histórico, agora também para a aba `"config"`, chamando
+  `bindConfigEvents()` depois de renderizar a view.
+- `js/config.js`: o payload gravado no Firestore agora traduz
+  `conta` → `tipoConta` (maiúsculo) e nunca sobrescreve
+  `saldoSimulado`/`saldoReal` — só grava `saldoInicial` como campo
+  informativo separado. O feedback do botão agora reflete o resultado
+  real da escrita (`"✅ Configurações Salvas"` só se a gravação no
+  Firestore realmente aconteceu; caso contrário, avisa que só salvou
+  localmente).
+- `scripts/pairAnalyzer.js`: `configuracao` agora está nos parâmetros
+  desestruturados de `analisarPar()`; `perfil` (normalizado em
+  maiúsculas), `banca` (saldo corrente, não o inicial), `lote`, `tpUSD`
+  e `slUSD` agora são repassados de verdade para `analisarFinanceiro()`
+  e `avaliarOperacao()`.
+
+Além de destravar a cadeia, o usuário pediu que o rigor da própria
+análise (não só a gestão de risco) variasse por perfil — Expert RMI
+sendo o mais seletivo (usa toda a inteligência do RMI antes de aprovar),
+Agressivo o mais permissivo, mantendo a mesma engine de análise completa
+para todos os perfis (a diferença é a barra de aprovação, não a
+qualidade do trabalho de análise):
+
+- `scripts/decisionEngine.js`: nova tabela `PERFIL_ANALISE` com score
+  mínimo (35/45/55/70 para Agressivo/Balanceado/Conservador/Expert),
+  exigência de confirmação multi-timeframe (dispensada só para
+  Agressivo) e histórico mínimo de operações (10, exigido só para
+  Conservador e Expert). Perfil ausente ou desconhecido cai no
+  comportamento antigo (BALANCEADO, score mínimo 45) — compatibilidade
+  preservada para qualquer chamador que não passe `perfil`.
+- `scripts/moneyManager.js`: adicionado o perfil `EXPERT` a
+  `PERFIL_FINANCEIRO` (risco por operação 1%, R:R mínimo 1.2,
+  expectativa mínima 0.5) — antes inexistente, cairia silenciosamente no
+  fallback CONSERVADOR de `obterPerfilFinanceiro()`.
+
+Validado isoladamente (scratchpad, 14 cenários): score mínimo correto
+por perfil nos limiares exatos; perfil ausente/desconhecido preserva o
+comportamento antigo; histórico mínimo bloqueia Conservador/Expert com
+poucas operações mas não Agressivo; multi-timeframe divergente é
+ignorado só por Agressivo; perfil EXPERT resolve em `moneyManager.js`
+sem exceção. Não validado ao vivo (depende do usuário salvar uma
+configuração real na tela e confirmar, via log do scanner, que o perfil
+correto chega em `context.configuracao.perfil`).
+--------
+

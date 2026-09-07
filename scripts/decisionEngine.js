@@ -11,10 +11,56 @@
 // SPRINT 07
 // ===================================================
 
+// ===================================================
+// PERFIL DE ANÁLISE
+//
+// Cada perfil operacional exige um rigor diferente da
+// mesma engine de análise (RMI) antes de aprovar um
+// sinal - a análise em si é sempre completa e correta
+// para todos os perfis; o que muda é a barra de
+// aprovação. Expert RMI é o mais seletivo (poucos sinais,
+// os mais confiáveis); Agressivo é o mais permissivo
+// (mais sinais, aceita mais risco).
+// ===================================================
+
+const PERFIL_ANALISE = {
+
+    AGRESSIVO: {
+        scoreMinimo: 35,
+        exigirMultiTimeframe: false,
+        operacoesMinimas: 0
+    },
+
+    BALANCEADO: {
+        scoreMinimo: 45,
+        exigirMultiTimeframe: true,
+        operacoesMinimas: 0
+    },
+
+    CONSERVADOR: {
+        scoreMinimo: 55,
+        exigirMultiTimeframe: true,
+        operacoesMinimas: 10
+    },
+
+    EXPERT: {
+        scoreMinimo: 70,
+        exigirMultiTimeframe: true,
+        operacoesMinimas: 10
+    }
+
+};
+
+function obterPerfilAnalise(perfil) {
+
+    return PERFIL_ANALISE[perfil] || PERFIL_ANALISE.BALANCEADO;
+
+}
+
 function avaliarOperacao(resultado) {
 
     const score = resultado.scoreFinal ?? resultado.score;
-    
+
     const multi = resultado.multi;
 
     const qualidade = resultado.qualidade;
@@ -25,9 +71,11 @@ function avaliarOperacao(resultado) {
 
     const recomendacaoFinanceira = resultado.recomendacaoFinanceira;
 
+    const perfilAnalise = obterPerfilAnalise(resultado.perfil);
+
     const justificativas = [];
 
-    if (score < 45) {
+    if (score < perfilAnalise.scoreMinimo) {
 
     justificativas.push("Score insuficiente");
 
@@ -35,7 +83,7 @@ function avaliarOperacao(resultado) {
         aprovado: false,
         status: "REPROVADO",
         direcao: "NONE",
-        motivo: "Score abaixo do mínimo",
+        motivo: `Score abaixo do mínimo (${perfilAnalise.scoreMinimo}, perfil ${resultado.perfil || "BALANCEADO"})`,
         score,
         qualidade,
         tendencia,
@@ -45,7 +93,28 @@ function avaliarOperacao(resultado) {
 
     }
 
-    if (multi === "DIVERGENTE") {
+    if (
+        perfilAnalise.operacoesMinimas > 0 &&
+        (resultado.operacoesHistoricas ?? 0) < perfilAnalise.operacoesMinimas
+    ) {
+
+    justificativas.push("Histórico insuficiente para o perfil");
+
+    return {
+        aprovado: false,
+        status: "SEM_VIABILIDADE",
+        direcao: "NONE",
+        motivo: `Histórico insuficiente para o perfil ${resultado.perfil} (mínimo ${perfilAnalise.operacoesMinimas} operações)`,
+        score,
+        qualidade,
+        tendencia,
+        confianca,
+        justificativas
+    };
+
+    }
+
+    if (multi === "DIVERGENTE" && perfilAnalise.exigirMultiTimeframe) {
 
     justificativas.push("Multi-timeframe divergente");
 
@@ -194,6 +263,8 @@ function avaliarOperacao(resultado) {
 
 module.exports = {
 
-    avaliarOperacao
+    avaliarOperacao,
+
+    obterPerfilAnalise
 
 };

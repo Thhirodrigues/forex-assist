@@ -45,6 +45,7 @@ const {
 async function analisarPar({
 db,
 par,
+configuracao,
 estatisticas,
 getCandles,
 ema,
@@ -171,6 +172,21 @@ const qualidade = calcularQualidade(
 direcao = qualidade.tendencia;
 
 // ===================================================
+// PERFIL OPERACIONAL
+//
+// configuracao vem do Firestore (configuracoes/geral,
+// gravado pela tela de Config); perfil normalizado em
+// maiúsculas para casar com as tabelas de moneyManager.js
+// e decisionEngine.js.
+// ===================================================
+
+const perfil = (configuracao?.perfil || "balanceado").toUpperCase();
+
+const banca = configuracao?.tipoConta === "SIMULADA"
+    ? (configuracao.saldoSimulado ?? configuracao.saldoInicial)
+    : (configuracao?.saldoReal ?? configuracao?.saldoInicial);
+
+// ===================================================
 // MONEY MANAGER
 // ===================================================
 
@@ -184,10 +200,20 @@ const financeiro =
             adxAtual,
 
         atr:
-            atrAtual
+            atrAtual,
+
+        banca,
+
+        lote: configuracao?.lote,
+
+        tpUSD: configuracao?.tp,
+
+        slUSD: configuracao?.sl,
+
+        perfil
 
     });
-        
+
 const decisao = avaliarOperacao({
 
     score: qualidade.score,
@@ -200,7 +226,11 @@ const decisao = avaliarOperacao({
 
     confianca: qualidade.confidenceLevel,
 
-    recomendacaoFinanceira: financeiro.recomendacao
+    recomendacaoFinanceira: financeiro.recomendacao,
+
+    perfil,
+
+    operacoesHistoricas: estatisticas.operacoes
 
 });
 

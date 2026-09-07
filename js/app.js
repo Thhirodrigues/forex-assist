@@ -108,6 +108,18 @@ localStorage.getItem("ultimaAba")
     }, 100);
 
         }
+
+        if (this.currentTab === "config") {
+
+    setTimeout(() => {
+
+        if (typeof bindConfigEvents === "function") {
+            bindConfigEvents();
+        }
+
+    }, 100);
+
+        }
     }
 
 };

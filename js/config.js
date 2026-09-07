@@ -819,8 +819,20 @@ function bindConfigEvents() {
 
         // ------------------------------------------
         // Firestore
-        // (Preparado para integração)
+        //
+        // Nomes traduzidos para o que scripts/scanner.js
+        // e scripts/checker.js realmente leem de
+        // configuracoes/geral. tipoConta é MAIÚSCULO lá
+        // ("SIMULADA"/"REAL"), diferente do valor do
+        // <select> ("simulada"/"real"). saldoSimulado e
+        // saldoReal (o saldo corrente, usado pelo checker)
+        // NUNCA são sobrescritos aqui - só saldoInicial,
+        // que é informativo; resetar o saldo em uso é uma
+        // ação separada, não uma consequência de salvar
+        // configuração.
         // ------------------------------------------
+
+        let salvouNaNuvem = false;
 
         try {
 
@@ -829,9 +841,29 @@ function bindConfigEvents() {
                 await db
                     .collection("configuracoes")
                     .doc("geral")
-                    .set(config, {
+                    .set({
+
+                        perfil: config.perfil,
+                        scannerAtivo: config.scannerAtivo,
+                        delay: config.delay,
+                        cooldown: config.cooldown,
+                        horarioInicio: config.horarioInicio,
+                        horarioFim: config.horarioFim,
+                        janelaSeguranca: config.janelaSeguranca,
+                        candles: config.candles,
+                        lote: config.lote,
+                        tp: config.tp,
+                        sl: config.sl,
+                        apiAtiva: config.apiAtiva,
+                        pares: config.pares,
+                        tipoConta: config.conta === "real" ? "REAL" : "SIMULADA",
+                        saldoInicial: config.saldoInicial
+
+                    }, {
                         merge: true
                     });
+
+                salvouNaNuvem = true;
 
             }
 
@@ -845,17 +877,19 @@ function bindConfigEvents() {
         }
 
         // ------------------------------------------
-        // Feedback
+        // Feedback (reflete o que realmente aconteceu)
         // ------------------------------------------
 
-        btn.innerHTML = "✅ Configurações Salvas";
+        btn.innerHTML = salvouNaNuvem
+            ? "✅ Configurações Salvas"
+            : "⚠️ Salvo só neste aparelho (sem conexão com o servidor)";
 
         setTimeout(() => {
 
             btn.innerHTML =
                 "💾 Salvar Configurações";
 
-        }, 1800);
+        }, salvouNaNuvem ? 1800 : 3500);
 
     };
 
@@ -872,26 +906,19 @@ setTimeout(() => {
 }, 100);
 
 // ======================================================
-// PRÓXIMA ETAPA DA ARQUITETURA
+// INTEGRAÇÃO COM O SCANNER (concluída em 07/09/2026)
 // ======================================================
 //
-// scanner.js
+// scripts/scanner.js já lê configuracoes/geral e mescla
+// sobre CONFIG_PADRAO (delay, candles, lote, tp, sl, pares,
+// perfil incluídos). O elo que faltava era só este botão:
+// o clique nunca era religado ao trocar de aba (corrigido
+// em js/app.js, chamando bindConfigEvents() após renderizar
+// a view de Config) e o payload gravado aqui usava nomes
+// diferentes dos que o backend lê (conta/tipoConta).
 //
-// Ler:
-//
-// configuracoes/geral
-//
-// Substituir:
-//
-// delay
-// candles
-// lote
-// tp
-// sl
-// pares
-// perfil
-//
-// por valores vindos do Firestore.
-//
+// perfil chega em scripts/pairAnalyzer.js e é repassado,
+// já em maiúsculas, para moneyManager.js (gestão de risco)
+// e decisionEngine.js (rigor de aprovação por perfil).
 // ======================================================
 

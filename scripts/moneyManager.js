@@ -70,6 +70,20 @@ const PERFIL_FINANCEIRO = {
 
         expectativaMinima: -1
 
+    },
+
+    EXPERT: {
+
+        riscoPorOperacao: 1,
+
+        riscoDiario: 3,
+
+        perdasConsecutivas: 3,
+
+        rrMinimo: 1.2,
+
+        expectativaMinima: 0.5
+
     }
 
 };
