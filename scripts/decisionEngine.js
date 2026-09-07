@@ -40,7 +40,10 @@ const PERFIL_ANALISE = {
     CONSERVADOR: {
         scoreMinimo: 55,
         exigirMultiTimeframe: true,
-        operacoesMinimas: 10
+        // Mantido igual a OPERACOES_MINIMAS_HISTORICO em statisticsEngine.js
+        // (elevado de 10 para 30 em 07/09/2026 - amostra pequena demais
+        // pra ser tratada como base de conhecimento confiável).
+        operacoesMinimas: 30
     }
 
 };

@@ -9,6 +9,13 @@
 // SPRINT 05
 // ===================================================
 
+// Amostra mínima para o histórico influenciar o score com confiança.
+// Elevado de 10 para 30 em 07/09/2026: auditoria do histórico de julho
+// mostrou pares com 1-5 operações recebendo peso significativo no score
+// (bônus/penalidade de até 15 pontos) com base estatisticamente
+// insignificante. Ver BUG-007/achado de saldo em DOCUMENTACAO/ENGINEERING.md.
+const OPERACOES_MINIMAS_HISTORICO = 30;
+
 async function obterEstatisticasPar(
     db,
     par
@@ -146,7 +153,7 @@ const taxaSELL =
 // ===================================================
 
 const historicoSuficiente =
-    operacoes >= 10;
+    operacoes >= OPERACOES_MINIMAS_HISTORICO;
     
     const taxaAcerto =
         operacoes === 0
@@ -211,7 +218,7 @@ pesoEstatistico =
 
 let status = "SEM_DADOS";
 
-if (operacoes >= 10) {
+if (operacoes >= OPERACOES_MINIMAS_HISTORICO) {
 
     if (taxaAcerto >= 80) {
 

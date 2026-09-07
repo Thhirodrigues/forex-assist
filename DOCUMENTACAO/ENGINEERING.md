@@ -5723,3 +5723,89 @@ falta confirmar, via log do scanner, que o perfil escolhido chega em
 `context.configuracao.perfil` e influencia de fato um ciclo real.
 --------
 
+REVISÃO DA QUALIDADE ANALÍTICA DA RMI (07/09/2026)
+
+A pedido do usuário, revisão do modelo de análise/score em si (não só
+correção de bugs de integração), com a pergunta explícita: dá pra
+confiar no histórico atual como base de conhecimento? Achados:
+
+1. **`calcularQualidade()` (marketAnalyzer.js) é uma soma de heurísticas
+   com pesos escolhidos manualmente, sem evidência de backtesting** —
+   cerca de 12 parcelas somadas (EMA, RSI, ADX, tendência, slope,
+   alinhamento, simetria, distância, multi-timeframe, peso histórico,
+   bônus de direção, memória operacional, volatilidade). Nenhum teste no
+   repositório valida que um score mais alto historicamente correlaciona
+   com taxa de acerto real.
+
+2. **Amostra histórica pequena tinha peso desproporcional.** Com só 10
+   operações, `historyAnalyzer.js` já aplicava bônus/penalidade de até
+   15 pontos no score. Auditoria do histórico de julho (ver correção do
+   BUG-007 acima) mostrou pares com 1-5 operações influenciando o score
+   com a mesma confiança que pares com 80+ operações.
+
+3. **Multi-timeframe é raso** — só compara alinhamento de EMA entre
+   5min e 15min; não considera timeframe maior, sessão de mercado
+   (Londres/NY/Tóquio) nem eventos macro.
+
+4. **Nenhuma checagem de correlação entre pares** abertos
+   simultaneamente (ex.: EUR/USD e GBP/USD são altamente
+   correlacionados via força do dólar; o sistema os trata como apostas
+   independentes).
+
+5. **`scripts/riskEngine.js` é um sistema de risco redundante e
+   desconectado**, com bug próprio. `calcularRisco()` roda em
+   `processarOperacaoSalva()` (scanner.js) só para o log de console,
+   *depois* que `moneyManager.js`/`positionSizing.js` já decidiram
+   lote/TP/SL de verdade — usa limiares de score completamente
+   diferentes (80/85/90/95) dos de `decisionEngine.js`, e recebe
+   `atr: resultado.operacao.atr`, campo que não existe no objeto salvo
+   (o ATR real fica em `operacao.indicadores.atr`) — então o parâmetro
+   ATR desse módulo é sempre 0, silenciosamente, e todo ramo que
+   depende dele (`atr > tpUSD * 2`) nunca dispara. Não corrigido ainda
+   — registrado para decisão futura (corrigir, integrar de verdade, ou
+   remover).
+
+6. **`qualidade === "LATERAL"` em `decisionEngine.js` é código morto.**
+   `classificarQualidade()` (marketAnalyzer.js) só retorna
+   `INSTITUCIONAL`/`FORTE`/`BOA`/`ACEITAVEL`/`CONFLITO` — nunca
+   `"LATERAL"` — então esse branch da condição nunca é alcançado.
+
+7. **Nenhuma justificativa gerada chega ao usuário.** `justificativas`
+   (motivo do score, do risco, da decisão) são computadas e salvas no
+   Firestore em vários pontos (`decisionEngine.js`, `riskEngine.js`,
+   `moneyManager.js`), mas busca em todo `js/` (frontend) não encontra
+   nenhuma ocorrência de "justificativa" — o app nunca exibe o "porquê"
+   de uma aprovação/reprovação, apesar do dado já existir.
+
+Correção aplicada nesta revisão (a mais barata e consensuada com o
+usuário; as demais ficam registradas como recomendação, não decisão
+ainda tomada):
+
+- `scripts/statisticsEngine.js`: nova constante
+  `OPERACOES_MINIMAS_HISTORICO = 30` (era 10 implícito, repetido em dois
+  lugares) — usada tanto em `historicoSuficiente` quanto na
+  classificação EXCELENTE/BOM/NEUTRO/RUIM do histórico. Abaixo de 30
+  operações, o par permanece `SEM_DADOS` em vez de ser classificado com
+  confiança que a amostra não sustenta.
+- `scripts/decisionEngine.js`: `PERFIL_ANALISE.CONSERVADOR.operacoesMinimas`
+  elevado de 10 para 30, mantido em paridade com o valor acima (módulos
+  não compartilham import por design — comentário cruzado nos dois
+  arquivos para quem for alterar um dos dois no futuro).
+
+Recomendações não implementadas ainda, em ordem de prioridade sugerida
+pelo autor desta revisão: (1) exibir as justificativas já geradas no
+frontend; (2) separar o ajuste por histórico do score técnico de forma
+mais explícita; (3) decidir o destino de `riskEngine.js` (corrigir,
+integrar, ou remover); (4) filtro de correlação entre pares
+simultâneos; (5) validação do modelo de score contra backtesting real.
+
+Consenso com o usuário sobre o histórico de julho: ele deve ser tratado
+como "contexto, não autoridade" — direcionalmente informativo para os
+pares com volume real de operações (GBP/JPY e EUR/JPY, ambos com taxa
+de acerto real abaixo de 50% após a correção do BUG-007), mas não como
+base estatisticamente sólida para os demais pares. Dados gerados a
+partir de 07/09/2026 em diante (pipeline corrigido, cron restaurado,
+perfis funcionais) são o que deve construir confiança real daqui para
+frente.
+--------
+
