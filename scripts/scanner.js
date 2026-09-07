@@ -435,11 +435,17 @@ function dentroJanelaPadrao(context) {
 // rarefeito e ruidoso fora do horário de Londres, então incluí-lo
 // aqui pioraria a qualidade, não melhoraria.
 //
-// Só entram os pares com lastro real na sessão asiática (moeda base
-// ou cotada é JPY, AUD ou NZD). GBP/JPY fica de fora por precaução:
-// é o cruzamento historicamente mais volátil da lista monitorada
-// ("the beast") - até termos dados reais mostrando que compensa,
-// menos volatilidade pesa mais que mais sinais.
+// A elegibilidade é pela MOEDA (base ou cotada é JPY, AUD ou NZD),
+// não por uma lista fixa de pares - a tela de Config permite ao
+// usuário escolher entre 20 pares (`TODOS_PARES` em js/config.js),
+// bem além dos 10 monitorados por padrão. Se a regra fosse uma lista
+// fixa de strings, ligar um par fora dessa lista (ex.: AUD/JPY,
+// AUD/NZD, NZD/JPY - todos com lastro asiático tão forte quanto ou
+// mais que os 4 pares padrão) cairia sempre na janela comum sem
+// ninguém perceber. GBP/JPY é a ÚNICA exceção explícita: é o
+// cruzamento historicamente mais volátil ("the beast") - até termos
+// dados reais mostrando que compensa, menos volatilidade pesa mais
+// que mais sinais.
 //
 // Janela simplificada de propósito: 19:00–23:59, sem virar a
 // meia-noite (evita bug de rollover de dia) e só de segunda a
@@ -449,15 +455,28 @@ function dentroJanelaPadrao(context) {
 // os dados mostrarem que vale a pena.
 // ===================================================
 
-const PARES_JANELA_ASIA = new Set([
-    "USD/JPY",
-    "EUR/JPY",
-    "AUD/USD",
-    "NZD/USD"
-]);
+const MOEDAS_JANELA_ASIA = new Set(["JPY", "AUD", "NZD"]);
+
+// Único par explicitamente excluído da janela asiática, mesmo tendo
+// moeda elegível - ver justificativa acima.
+const PARES_JANELA_ASIA_EXCLUIDOS = new Set(["GBP/JPY"]);
 
 const JANELA_ASIA_INICIO = 19 * 60;
 const JANELA_ASIA_FIM = 23 * 60 + 59;
+
+function parElegivelJanelaAsia(par) {
+
+    if (PARES_JANELA_ASIA_EXCLUIDOS.has(par))
+        return false;
+
+    const [moedaBase, moedaCotada] = par.split("/");
+
+    return (
+        MOEDAS_JANELA_ASIA.has(moedaBase) ||
+        MOEDAS_JANELA_ASIA.has(moedaCotada)
+    );
+
+}
 
 function parNaJanelaOperacional(par, context) {
 
@@ -467,7 +486,7 @@ function parNaJanelaOperacional(par, context) {
     const { diaSemana, minutosDoDia } = obterAgoraBrasil();
 
     const elegivelJanelaAsia =
-        PARES_JANELA_ASIA.has(par) &&
+        parElegivelJanelaAsia(par) &&
         diaSemana >= 1 &&
         diaSemana <= 4;
 

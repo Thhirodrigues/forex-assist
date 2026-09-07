@@ -5985,5 +5985,31 @@ janela asiática realmente melhora a assertividade desses pares,
 considerar estender pra 00h-04h (cobertura completa da sessão) e
 reavaliar a inclusão de GBP/JPY com um critério de risco mais
 conservador (ex.: score mínimo mais alto só pra ele nesse horário).
+
+CORREÇÃO (mesmo dia): a versão acima usava `PARES_JANELA_ASIA` como
+uma lista fixa de 4 strings. O usuário apontou o furo: a tela de
+Config permite escolher entre 20 pares (`TODOS_PARES` em
+`js/config.js`), não só os 10 monitorados por padrão — e pelo menos
+6 dos outros 10 (`AUD/JPY`, `CAD/JPY`, `CHF/JPY`, `AUD/NZD`, `NZD/JPY`,
+`EUR/AUD`) têm lastro asiático tão forte quanto ou mais forte que os 4
+da lista fixa, mas cairiam sempre na janela comum se o usuário os
+ativasse — a regra quebraria silenciosamente, sem log de erro nenhum,
+o mesmo padrão de falha silenciosa do BUG-009/BUG-010.
+
+Corrigido: `PARES_JANELA_ASIA` (lista de pares) virou
+`MOEDAS_JANELA_ASIA = {JPY, AUD, NZD}` (conjunto de moedas) mais
+`PARES_JANELA_ASIA_EXCLUIDOS = {GBP/JPY}` (única exceção nomeada).
+Nova função `parElegivelJanelaAsia(par)` faz `par.split("/")` e checa
+se a moeda base OU a cotada está no conjunto elegível, excluindo
+GBP/JPY explicitamente. Isso vale automaticamente pra qualquer um dos
+20 pares de `TODOS_PARES`, hoje ou se a lista crescer no futuro — não
+depende mais de alguém lembrar de atualizar uma lista fixa toda vez
+que um par novo for adicionado à tela de Config.
+
+Revalidado com o mesmo script isolado, agora com 24 cenários
+(8 novos cobrindo especificamente pares fora da lista fixa antiga:
+AUD/JPY, AUD/NZD, NZD/JPY, CAD/JPY, CHF/JPY, EUR/AUD elegíveis;
+EUR/CAD, GBP/CHF não-elegíveis) — todos passando, sem regressão nas
+demais suítes.
 --------
 
