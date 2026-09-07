@@ -60,10 +60,23 @@ delay: 1500,
 
 cooldown: 30,
 
+// Janela padrão 07:30-18:00 (Brasília) não é arbitrária: é uma
+// regra de negócio do RMI, não só um parâmetro operacional.
+// 18:00 Brasília ≈ 16h EST = fechamento de Nova York (sem DST no
+// Brasil desde 2019); operar depois disso significa entrar bem na
+// virada de liquidez NY -> Sydney, com volatilidade mais errática.
+// A intenção da RMI é buscar os "melhores mercados" (maior liquidez,
+// menor volatilidade), não operar 24h só porque o mercado está aberto.
+// Ver janelaSeguranca abaixo, que reforça essa mesma lógica.
 horarioInicio: "07:30",
 
 horarioFim: "18:00",
 
+// Minutos antes de horarioFim em que o Scanner para de ABRIR novas
+// operações (a janela operacional efetiva termina em
+// horarioFim - janelaSeguranca). Existe pelo mesmo motivo do
+// horarioFim: evitar abrir posição perto demais do fechamento de NY,
+// sem tempo de desenvolver antes da liquidez cair.
 janelaSeguranca: 30,
 
 // Minimo real exigido pela analise (ver CANDLES_MINIMO_SEGURO abaixo).
@@ -347,7 +360,11 @@ function mercadoAberto() {
 // HORÁRIO OPERACIONAL
 // ===================================================
 //
-// Segunda a sábado: janela configurável (padrão 07:30–18:00).
+// Segunda a sábado: janela configurável (padrão 07:30–18:00, com
+// mais janelaSeguranca minutos de corte antes do fim - ver
+// CONFIG_PADRAO acima para a razão de negócio desses dois valores:
+// não é um horário arbitrário, é a janela de liquidez/volatilidade
+// que a RMI busca, encerrando perto do fechamento de Nova York).
 // Domingo: sessão de reabertura, 18:00–23:59. É uma janela
 // diferente da semanal porque o pregão só existe a partir
 // das 18h nesse dia — não faz sentido aplicar o mesmo
