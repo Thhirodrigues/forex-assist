@@ -5529,10 +5529,41 @@ que sobe reporta prejuízo negativo). Não há outro ponto do código que
 recalcule `movimentoPips` de forma independente (`js/historico.js` só
 exibe o valor já gravado no Firestore) — corrigir na fonte basta.
 
-Nota: operações SELL já encerradas em produção *antes* desta correção têm
-`resultadoFinanceiro`/`movimentoPips` com sinal invertido no Firestore. Não
-foi feita limpeza retroativa — decisão pendente do usuário sobre se vale a
-pena corrigir o histórico existente ou tratá-lo como perda aceita.
+CORREÇÃO RETROATIVA APLICADA (06/09/2026)
+
+Auditoria via script somente-leitura (`audit-historico.js`, rodado com a
+Service Account de produção) confirmou o alcance real: dos 450 documentos
+em `historico`, 137 estavam `ENCERRADA` (72 BUY, 65 SELL). **100% das 65
+operações SELL encerradas** fecharam por `TP_FINANCEIRO`/`SL_FINANCEIRO`
+(nenhuma por `TP_PIPS`/`SL_PIPS`) — ou seja, 100% delas tinham o rótulo
+WIN/LOSS invertido, não uma amostra. Isso é 47% de todo o histórico de
+operações fechadas do projeto.
+
+Impacto medido por par (taxa de acerto original vs. corrigida):
+GBP/JPY 53%→34%, EUR/JPY 54%→44%, EUR/GBP 20%→60%, USD/CHF 100%→0%,
+AUD/USD 100%→0%, GBP/USD 100%→0%. GBP/JPY é o par mais negociado do
+histórico (85 operações) e era, no dia da descoberta, classificado como
+"BOM" pelo `statisticsEngine.js`/`historyAnalyzer.js` — ou seja, o bug
+estava ativamente distorcendo a pontuação de pares em uso corrente, não
+só o registro histórico.
+
+Correção aplicada em produção pelo usuário (script `corrigir-bug007.js`,
+rodado localmente com a Service Account, fora do sandbox do Claude Code —
+a escrita em produção foi bloqueada pelo classificador de auto mode do
+Claude Code e não pôde ser executada a partir da sessão). Escopo: os 65
+documentos SELL afetados tiveram `resultado`, `motivoEncerramento` e
+`resultadoFinanceiro` recalculados com `calcularMovimentoPips()`; os
+valores originais foram preservados em `auditoriaBug007` em cada
+documento (correção auditável e reversível). Reauditoria pós-correção
+(`audit-historico.js`) confirmou **0 documentos divergentes** — todos os
+65 corrigidos corretamente, nenhum efeito colateral detectado.
+
+Pendência explicitamente NÃO resolvida por esta correção: `saldoAntes`/
+`saldoDepois` de todas as operações (SELL e as que vieram depois delas)
+não foram tocados. Esses campos formam uma cadeia cronológica de saldo
+simulado/real; corrigir os 65 documentos sem recalcular a cadeia inteira
+deixaria o ledger de saldo inconsistente. Decisão sobre recalcular essa
+cadeia completa ainda pendente do usuário.
 
 ---
 
