@@ -5908,3 +5908,82 @@ efetivo aparece corretamente no log e que nenhum par cai em
 "CANDLES INSUFICIENTES" por causa desta mudança.
 --------
 
+BUG-011 — Janela operacional era global e igual pra todos os pares,
+ignorando que cada moeda tem sua própria sessão de maior liquidez
+
+Severidade: MÉDIA/OPORTUNIDADE (não era um bug de correção incorreta,
+era uma simplificação que deixava a RMI cega pra sessão asiática por
+completo, mesmo pra pares com lastro real nela).
+
+Origem: o usuário lembrou de uma regra de negócio da RMI ("buscar
+oportunidades nos melhores mercados e com menos volatilidade") ao ver,
+num log real de produção, o scanner saindo com "FORA DO HORÁRIO
+OPERACIONAL / 07:30 às 18:00" às 20h. Isso levantou a pergunta: por que
+não considerar também a sessão asiática, já que "ser inteligente"
+significa procurar o momento certo de cada mercado, não um único
+horário fixo pra todo mundo?
+
+Análise (mapa de sessão por moeda, horário de Brasília, sem DST desde
+2019 no Brasil):
+
+- JPY → sessão de Tóquio; AUD/NZD → sessão de Sydney/Tóquio.
+- EUR/GBP/CHF → sessão de Londres; USD/CAD → sessão de Nova York.
+- Dos 10 pares monitorados, aplicar a MESMA janela extra a todos seria
+  contraproducente: EUR/GBP, por exemplo, é um cruzamento puramente
+  europeu — fica com liquidez pior e mais ruidoso fora do horário de
+  Londres. Adicionar uma janela asiática pra ele iria CONTRA a regra
+  de "menor volatilidade", não a favor.
+
+Correção/melhoria aplicada em `scripts/scanner.js`:
+
+- `horarioOperacional(context)` renomeada para `dentroJanelaPadrao(context)`
+  (mesma lógica de antes, sem mudança de comportamento) — deixou de
+  ser chamada como gate único em `validarExecucao()`.
+- Nova função `parNaJanelaOperacional(par, context)`: primeiro tenta a
+  janela padrão (07:30–18:00 com `janelaSeguranca`); se o par estiver
+  fora dela, checa se é um dos 4 pares com lastro real na sessão
+  asiática (`PARES_JANELA_ASIA = USD/JPY, EUR/JPY, AUD/USD, NZD/USD`)
+  e se está dentro da janela extra (19:00–23:59, segunda a quinta).
+  GBP/JPY foi deliberadamente deixado de fora da janela asiática — é
+  o cruzamento historicamente mais volátil da lista ("the beast"); a
+  decisão foi priorizar "menor volatilidade" sobre "mais sinais" até
+  haver dados reais mostrando que compensa incluí-lo.
+- Simplificações deliberadas, documentadas no código pra não virarem
+  mistério depois: a janela asiática não atravessa a meia-noite (evita
+  bug de rollover de data, à custa de não cobrir a madrugada 00h-04h,
+  que também tem alguma liquidez de Tóquio) e não inclui sexta à noite
+  (o fechamento semanal real do mercado acontece por volta das 19h de
+  Brasília na sexta, perto demais da janela extra pra arriscar).
+- `validarExecucao()` não aborta mais a execução inteira quando o
+  horário padrão fechou — cada par é avaliado individualmente dentro
+  do loop (`executarAnalisePar()`), antes de qualquer chamada à API ou
+  ao Firestore, pra não gastar cota com pares fora da janela.
+- Novo contador `estatisticas.foraDaJanela`, impresso no resumo final,
+  pra diferenciar "par fora da janela agora" de erro/sem sinal.
+
+Decisão de arquitetura tomada (autorização direta do usuário: "vamos
+seguir com o que for melhor pro app"): a tabela de pares/sessão é regra
+fixa da RMI (hardcoded), não configurável na tela — é inteligência de
+mercado, não preferência de usuário, consistente com a definição do
+próprio usuário de que "RMI é toda a inteligência gerada pelo app".
+
+Validado com script isolado replicando a fórmula exata das duas
+funções (16 cenários: janela padrão, janela asiática por par elegível,
+limites exatos de início/fim, exclusão de sexta e sábado, exclusão
+deliberada de GBP/JPY, reabertura de domingo valendo pra todo par) —
+todos passando. Suites `validate-perfis.js` e `validate-4-fixes.js`
+revalidadas sem regressão.
+
+Não validado ainda: comportamento ao vivo às 19h+ de um dia útil
+(segunda a quinta), quando a janela asiática de fato entra em vigor
+pela primeira vez em produção. Verificar no log que USD/JPY, EUR/JPY,
+AUD/USD e NZD/USD são analisados nesse horário e que os demais pares
+continuam corretamente fora ("fora da janela operacional deste par").
+
+Recomendação registrada, não implementada: se os dados mostrarem que a
+janela asiática realmente melhora a assertividade desses pares,
+considerar estender pra 00h-04h (cobertura completa da sessão) e
+reavaliar a inclusão de GBP/JPY com um critério de risco mais
+conservador (ex.: score mínimo mais alto só pra ele nesse horário).
+--------
+

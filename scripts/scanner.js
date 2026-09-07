@@ -192,6 +192,8 @@ async function criarContextoExecucao() {
 
     cooldown: 0,
 
+    foraDaJanela: 0,
+
     erros: 0,
 
     tempoExecucao: 0
@@ -357,7 +359,7 @@ function mercadoAberto() {
 }
 
 // ===================================================
-// HORÁRIO OPERACIONAL
+// HORÁRIO OPERACIONAL — JANELA PADRÃO
 // ===================================================
 //
 // Segunda a sábado: janela configurável (padrão 07:30–18:00, com
@@ -369,9 +371,14 @@ function mercadoAberto() {
 // diferente da semanal porque o pregão só existe a partir
 // das 18h nesse dia — não faz sentido aplicar o mesmo
 // horarioInicio/horarioFim configurado para os outros dias.
+//
+// Esta é a janela PADRÃO, aplicada a todos os pares. Alguns pares
+// específicos têm uma janela ADICIONAL (sessão asiática) - ver
+// parNaJanelaOperacional() logo abaixo, que é quem de fato decide
+// se um par pode operar agora.
 // ===================================================
 
-function horarioOperacional(context) {
+function dentroJanelaPadrao(context) {
 
     const { diaSemana, minutosDoDia } = obterAgoraBrasil();
 
@@ -419,6 +426,62 @@ function horarioOperacional(context) {
 }
 
 // ===================================================
+// JANELA ADICIONAL — SESSÃO ASIÁTICA (TÓQUIO/SYDNEY)
+// ---------------------------------------------------
+// Regra de negócio da RMI (07/09/2026): "buscar o melhor mercado,
+// com menor volatilidade" não é uniforme entre os pares - cada
+// moeda tem sua sessão de maior liquidez. Dar a MESMA janela extra
+// pra todo mundo seria o oposto disso: EUR/GBP, por exemplo, fica
+// rarefeito e ruidoso fora do horário de Londres, então incluí-lo
+// aqui pioraria a qualidade, não melhoraria.
+//
+// Só entram os pares com lastro real na sessão asiática (moeda base
+// ou cotada é JPY, AUD ou NZD). GBP/JPY fica de fora por precaução:
+// é o cruzamento historicamente mais volátil da lista monitorada
+// ("the beast") - até termos dados reais mostrando que compensa,
+// menos volatilidade pesa mais que mais sinais.
+//
+// Janela simplificada de propósito: 19:00–23:59, sem virar a
+// meia-noite (evita bug de rollover de dia) e só de segunda a
+// quinta (sexta à noite já está perto demais do fechamento semanal
+// real do mercado, por volta das 19h de Brasília, pra arriscar abrir
+// operação nova). Pode ser estendida depois (madrugada, 00h-04h) se
+// os dados mostrarem que vale a pena.
+// ===================================================
+
+const PARES_JANELA_ASIA = new Set([
+    "USD/JPY",
+    "EUR/JPY",
+    "AUD/USD",
+    "NZD/USD"
+]);
+
+const JANELA_ASIA_INICIO = 19 * 60;
+const JANELA_ASIA_FIM = 23 * 60 + 59;
+
+function parNaJanelaOperacional(par, context) {
+
+    if (dentroJanelaPadrao(context))
+        return true;
+
+    const { diaSemana, minutosDoDia } = obterAgoraBrasil();
+
+    const elegivelJanelaAsia =
+        PARES_JANELA_ASIA.has(par) &&
+        diaSemana >= 1 &&
+        diaSemana <= 4;
+
+    if (!elegivelJanelaAsia)
+        return false;
+
+    return (
+        minutosDoDia >= JANELA_ASIA_INICIO &&
+        minutosDoDia <= JANELA_ASIA_FIM
+    );
+
+}
+
+// ===================================================
 // VALIDAÇÕES GERAIS
 // ===================================================
 
@@ -444,18 +507,11 @@ async function validarExecucao(context){
 
     }
 
-    if (!horarioOperacional(context)) {
-
-        console.log("\n========================================");
-        console.log("FORA DO HORÁRIO OPERACIONAL");
-        console.log(
-            `${context.configuracao.horarioInicio} às ${context.configuracao.horarioFim}`
-        );
-        console.log("========================================");
-
-        return false;
-
-    }
+    // Não há mais um gate único de horário aqui: cada par pode ter
+    // sua própria janela (ver parNaJanelaOperacional()). A checagem
+    // acontece por par, dentro do loop principal, para não abortar a
+    // execução inteira quando só os pares "padrão" estão fora do
+    // horário mas algum par com janela asiática ainda está dentro.
 
        if (!context.pares.length) {
 
@@ -562,6 +618,16 @@ function iniciarAnalisePar(par, estatisticas) {
 async function executarAnalisePar(context,par) {
 
     try {
+
+        if (!parNaJanelaOperacional(par, context)) {
+
+            context.estatisticas.foraDaJanela++;
+
+            console.log(`\n${par}: fora da janela operacional deste par no momento.`);
+
+            return;
+
+        }
 
         const estatisticas =
             await obterEstatisticasPar(
@@ -885,6 +951,10 @@ function imprimirResumoFinal(context) {
 
     console.log(
         `Cooldown...........${context.estatisticas.cooldown}`
+    );
+
+    console.log(
+        `Fora da janela.....${context.estatisticas.foraDaJanela}`
     );
 
     console.log(
