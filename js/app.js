@@ -97,6 +97,18 @@ localStorage.getItem("ultimaAba")
 
         </div>
         `;
+        if (this.currentTab === "dashboard") {
+
+    setTimeout(() => {
+
+        if (typeof renderSugestaoAgora === "function") {
+            renderSugestaoAgora();
+        }
+
+    }, 100);
+
+        }
+
         if (this.currentTab === "historico") {
 
     setTimeout(() => {

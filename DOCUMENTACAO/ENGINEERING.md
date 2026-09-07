@@ -6025,3 +6025,73 @@ que não correspondem a nenhuma sessão ativa. Corrigido pra
 cenários, ajustados pro novo horário) — sem regressão.
 --------
 
+FEATURE-001 — "Sugestão de Agora" no Dashboard (js/pairInsights.js)
+
+Origem: usuário propôs um "detalhamento sobre cada par" que virasse
+sugestão de quando operar. Discussão explícita sobre limites: nem
+usuário nem Claude são analistas profissionais de mercado — a saída
+adotada foi rotular claramente DUAS camadas separadas, nunca
+apresentadas como uma coisa só:
+
+1. **Estrutura de mercado** — fatos públicos (sessão de maior liquidez,
+   classificação major/cross, tier de volatilidade histórica: BAIXA/
+   MÉDIA/ALTA, nunca pip exato porque o número varia por fonte e fica
+   desatualizado). Fontes citadas ao usuário no momento da proposta:
+   Babypips (Forex Trading Sessions), Dukascopy (Forex Market Hours e
+   10 Most Volatile Forex Pairs), offbeatforex.com (Average Daily
+   Range table), PriceActionNinja (Forex Pair Volatility Cheatsheet).
+   Tabela completa dos 20 pares revisada e aprovada pelo usuário antes
+   de virar código.
+2. **Desempenho real do RMI no par** — taxa de acerto e tamanho de
+   amostra calculados a partir do histórico real de operações do
+   próprio usuário (Firestore), reaproveitando os MESMOS limiares de
+   `scripts/statisticsEngine.js` (`OPERACOES_MINIMAS_HISTORICO = 30`
+   pra virar EXCELENTE/BOM/NEUTRO/RUIM; abaixo disso, SEM_DADOS).
+
+Implementação: `js/pairInsights.js` (novo arquivo, carregado antes de
+`js/app.js` em `index.html`), com um card "Sugestão de Agora" no
+Dashboard (`js/expert.js`) e o hook de pós-renderização em `js/app.js`
+(mesmo padrão usado pra Histórico/Config desde o BUG-009 - sem esse
+hook o card ficaria travado em "Carregando...").
+
+Achado durante a pesquisa de fontes: a janela asiática de BUG-011
+estava calibrada errada (19h em vez de 21h) — corrigido junto, ver
+entrada de BUG-011 acima.
+
+Duplicação deliberada e documentada: a lógica de janela
+(`dentroJanelaPadrao`/`parNaJanelaOperacional`/`parElegivelJanelaAsia`)
+é uma cópia manual da mesma lógica em `scripts/scanner.js` — o
+frontend roda no navegador e não pode fazer `require()` de um módulo
+Node. Qualquer mudança futura na regra de janela em `scanner.js`
+precisa ser replicada aqui manualmente, ou o Dashboard passa a sugerir
+algo diferente do que o Scanner realmente decide. Mesmo risco existe
+pro limiar `OPERACOES_MINIMAS_HISTORICO`, duplicado de
+`statisticsEngine.js`.
+
+Validado:
+- Lógica de janela: 14 cenários, executados de verdade num sandbox
+  Node (`vm.runInContext`) contra o código real de `pairInsights.js`,
+  todos batendo com o comportamento do backend.
+- `PERFIL_PARES` cobre exatamente os 20 pares de `TODOS_PARES`
+  (`js/config.js`) — nem faltando, nem sobrando nenhum.
+- `classificarDesempenho()`: 5 cenários (EXCELENTE/BOM/NEUTRO/RUIM/
+  SEM_DADOS), todos corretos.
+- Testado no navegador de verdade (Playwright, Chromium headless)
+  servindo o app localmente: confirmado que o card aparece na posição
+  certa, que erro de rede (Firestore/CDN bloqueados neste sandbox) cai
+  no fallback gracioso sem quebrar o resto da página, e — com um "db"
+  simulado injetado via `page.evaluate` — que o conteúdo real (duas
+  camadas combinadas, rótulo de confiabilidade reagindo ao tamanho da
+  amostra) renderiza corretamente.
+
+Não validado: comportamento com o Firestore real do projeto (rede
+deste ambiente bloqueia o CDN do Firebase - ver seção "Ambiente" no
+início deste documento). Usuário precisa confirmar visualmente no app
+publicado que o card aparece e faz sentido com os pares reais
+monitorados.
+
+Recomendação registrada, não implementada: reaproveitar `PERFIL_PARES`
+pra um card por par na tela de Config (ideia mencionada pelo usuário,
+não descartada, só não é o escopo desta primeira versão).
+--------
+

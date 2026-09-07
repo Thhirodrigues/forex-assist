@@ -9,6 +9,13 @@ function dashboardView() {
     </div>
 
     <div class="card">
+        <div class="card-title">Sugestão de Agora</div>
+        <div id="sugestaoAgora">
+            Carregando...
+        </div>
+    </div>
+
+    <div class="card">
         <div class="card-title">Modo Atual</div>
         <div class="big-number">Expert</div>
     </div>
