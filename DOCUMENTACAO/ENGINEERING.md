@@ -6011,5 +6011,17 @@ Revalidado com o mesmo script isolado, agora com 24 cenários
 AUD/JPY, AUD/NZD, NZD/JPY, CAD/JPY, CHF/JPY, EUR/AUD elegíveis;
 EUR/CAD, GBP/CHF não-elegíveis) — todos passando, sem regressão nas
 demais suítes.
+
+CORREÇÃO (mesmo dia, ao pesquisar fontes pra uma feature nova de
+"sugestão por par"): `JANELA_ASIA_INICIO` estava em 19:00, mas a
+sessão de Tóquio abre de fato às 00:00 GMT = 21:00 de Brasília
+(GMT-3, sem DST) — confirmado via [Babypips - Forex Trading
+Sessions](https://www.babypips.com/learn/forex/forex-trading-sessions)
+e [Dukascopy - Forex Market Hours](https://www.dukascopy.com/swiss/english/fx-market-tools/forex-market-hours/).
+As 19:00–21:00 eram, na prática, um vácuo de liquidez entre o fim de
+Nova York e a abertura real de Tóquio - a janela original cobria 2h
+que não correspondem a nenhuma sessão ativa. Corrigido pra
+`JANELA_ASIA_INICIO = 21 * 60`. Revalidado com o mesmo script (24
+cenários, ajustados pro novo horário) — sem regressão.
 --------
 

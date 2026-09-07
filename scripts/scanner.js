@@ -447,12 +447,21 @@ function dentroJanelaPadrao(context) {
 // dados reais mostrando que compensa, menos volatilidade pesa mais
 // que mais sinais.
 //
-// Janela simplificada de propósito: 19:00–23:59, sem virar a
+// Horário de início corrigido em 07/09/2026 após checar fonte externa
+// (Babypips/Dukascopy, sessão de Tóquio = 00:00-09:00 GMT): Tóquio
+// abre às 21:00 de Brasília (GMT-3, sem DST), não às 19:00 como na
+// primeira versão. As 19:00-21:00 são, na real, um vácuo de liquidez
+// entre o fim de Nova York e a abertura de Tóquio - mantê-las na
+// janela era otimismo sem base, não achado de mercado.
+//
+// Janela ainda simplificada de propósito: 21:00–23:59, sem virar a
 // meia-noite (evita bug de rollover de dia) e só de segunda a
 // quinta (sexta à noite já está perto demais do fechamento semanal
 // real do mercado, por volta das 19h de Brasília, pra arriscar abrir
-// operação nova). Pode ser estendida depois (madrugada, 00h-04h) se
-// os dados mostrarem que vale a pena.
+// operação nova). O overlap real Sydney/Tóquio vai até por volta de
+// 04:00 de Brasília - essa madrugada fica de fora por enquanto (seria
+// preciso tratar virada de dia/semana com cuidado). Ver recomendação
+// registrada em DOCUMENTACAO/ENGINEERING.md (BUG-011).
 // ===================================================
 
 const MOEDAS_JANELA_ASIA = new Set(["JPY", "AUD", "NZD"]);
@@ -461,7 +470,7 @@ const MOEDAS_JANELA_ASIA = new Set(["JPY", "AUD", "NZD"]);
 // moeda elegível - ver justificativa acima.
 const PARES_JANELA_ASIA_EXCLUIDOS = new Set(["GBP/JPY"]);
 
-const JANELA_ASIA_INICIO = 19 * 60;
+const JANELA_ASIA_INICIO = 21 * 60;
 const JANELA_ASIA_FIM = 23 * 60 + 59;
 
 function parElegivelJanelaAsia(par) {
