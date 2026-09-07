@@ -46,38 +46,6 @@ function removerSinalAberto(sinalId) {
   }
 }
 
-function obterDatasAbertas() {
-    try {
-        const stored = localStorage.getItem("datasAbertas");
-        return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-        console.error("Erro ao obter datas abertas:", e);
-        return [];
-    }
-}
-
-function salvarDataAberta(id) {
-    try {
-        const abertas = obterDatasAbertas();
-
-        if (!abertas.includes(id)) {
-            abertas.push(id);
-            localStorage.setItem("datasAbertas", JSON.stringify(abertas));
-        }
-    } catch (e) {
-        console.error("Erro ao salvar data aberta:", e);
-    }
-}
-
-function removerDataAberta(id) {
-    try {
-        const abertas = obterDatasAbertas().filter(item => item !== id);
-        localStorage.setItem("datasAbertas", JSON.stringify(abertas));
-    } catch (e) {
-        console.error("Erro ao remover data aberta:", e);
-    }
-}
-
 async function carregarHistorico() {
   const lista = document.getElementById("historicoLista");
   const stats = document.getElementById("historicoStats");
@@ -96,8 +64,7 @@ async function carregarHistorico() {
 
     const hojeStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
     const sinaisAbertos = obterSinaisAbertos();
-    const datasAbertas = obterDatasAbertas();
-    
+
     snapshot.forEach((doc) => {
       const sinal = doc.data();
       let dataObj = null;
@@ -610,9 +577,8 @@ ${sinal.resultadoFinanceiro ??
 
       const mostrarGrupo =
     isHoje ||
-    datasAbertas.includes(idData) ||
     temSinalDestacado;
-      
+
       finalHtml += `
       <div style="margin-top:16px; border:1px solid rgba(255,255,255,.08); border-radius:10px; overflow:hidden;">
          <div
@@ -623,11 +589,9 @@ const seta = this.querySelector('span');
 if (el.style.display === 'none') {
     el.style.display = 'block';
     seta.innerHTML = '▼';
-    salvarDataAberta('${idData}');
 } else {
     el.style.display = 'none';
     seta.innerHTML = '▶';
-    removerDataAberta('${idData}');
 }
 "
 
@@ -693,7 +657,6 @@ if (el.style.display === 'none') {
           }
         });
         localStorage.setItem('sinaisAbertos', JSON.stringify([]));
-        localStorage.setItem('datasAbertas', JSON.stringify([]));
       };
     }
 
