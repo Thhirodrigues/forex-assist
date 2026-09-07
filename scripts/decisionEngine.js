@@ -18,7 +18,7 @@
 // mesma engine de análise (RMI) antes de aprovar um
 // sinal - a análise em si é sempre completa e correta
 // para todos os perfis; o que muda é a barra de
-// aprovação. Expert RMI é o mais seletivo (poucos sinais,
+// aprovação. Conservador é o mais seletivo (poucos sinais,
 // os mais confiáveis); Agressivo é o mais permissivo
 // (mais sinais, aceita mais risco).
 // ===================================================
@@ -39,12 +39,6 @@ const PERFIL_ANALISE = {
 
     CONSERVADOR: {
         scoreMinimo: 55,
-        exigirMultiTimeframe: true,
-        operacoesMinimas: 10
-    },
-
-    EXPERT: {
-        scoreMinimo: 70,
         exigirMultiTimeframe: true,
         operacoesMinimas: 10
     }

@@ -27,11 +27,6 @@ const PERFIS_OPERACIONAIS = [
     {
         id: "conservador",
         nome: "🟡 Conservador"
-    },
-
-    {
-        id: "expert",
-        nome: "🟣 Expert RMI"
     }
 
 ];

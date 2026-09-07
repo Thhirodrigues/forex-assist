@@ -5691,31 +5691,35 @@ Correção:
   e `avaliarOperacao()`.
 
 Além de destravar a cadeia, o usuário pediu que o rigor da própria
-análise (não só a gestão de risco) variasse por perfil — Expert RMI
-sendo o mais seletivo (usa toda a inteligência do RMI antes de aprovar),
-Agressivo o mais permissivo, mantendo a mesma engine de análise completa
-para todos os perfis (a diferença é a barra de aprovação, não a
-qualidade do trabalho de análise):
+análise (não só a gestão de risco) variasse por perfil — Conservador
+sendo o mais seletivo, Agressivo o mais permissivo, mantendo a mesma
+engine de análise completa para todos os perfis (a diferença é a barra
+de aprovação, não a qualidade do trabalho de análise):
 
 - `scripts/decisionEngine.js`: nova tabela `PERFIL_ANALISE` com score
-  mínimo (35/45/55/70 para Agressivo/Balanceado/Conservador/Expert),
-  exigência de confirmação multi-timeframe (dispensada só para
-  Agressivo) e histórico mínimo de operações (10, exigido só para
-  Conservador e Expert). Perfil ausente ou desconhecido cai no
-  comportamento antigo (BALANCEADO, score mínimo 45) — compatibilidade
-  preservada para qualquer chamador que não passe `perfil`.
-- `scripts/moneyManager.js`: adicionado o perfil `EXPERT` a
-  `PERFIL_FINANCEIRO` (risco por operação 1%, R:R mínimo 1.2,
-  expectativa mínima 0.5) — antes inexistente, cairia silenciosamente no
-  fallback CONSERVADOR de `obterPerfilFinanceiro()`.
+  mínimo (35/45/55 para Agressivo/Balanceado/Conservador), exigência de
+  confirmação multi-timeframe (dispensada só para Agressivo) e histórico
+  mínimo de operações (10, exigido só para Conservador). Perfil ausente
+  ou desconhecido cai no comportamento antigo (BALANCEADO, score mínimo
+  45) — compatibilidade preservada para qualquer chamador que não passe
+  `perfil`.
 
-Validado isoladamente (scratchpad, 14 cenários): score mínimo correto
+Nota: um 4º perfil "Expert RMI" foi cogitado e chegou a ser implementado
+(score mínimo 70 em `decisionEngine.js`, entrada própria em
+`PERFIL_FINANCEIRO`) antes de o usuário esclarecer que esse conceito foi
+descontinuado quando a decisão de criar a própria RMI foi tomada — o RMI
+já É o motor de inteligência completo, não um 4º nível dentre os
+perfis operacionais. Revertido no mesmo commit: `js/config.js` mantém
+só 3 perfis (`agressivo`/`balanceado`/`conservador`), sem entrada
+`EXPERT` em `PERFIL_ANALISE` nem em `PERFIL_FINANCEIRO`.
+
+Validado isoladamente (scratchpad, 11 cenários): score mínimo correto
 por perfil nos limiares exatos; perfil ausente/desconhecido preserva o
-comportamento antigo; histórico mínimo bloqueia Conservador/Expert com
-poucas operações mas não Agressivo; multi-timeframe divergente é
-ignorado só por Agressivo; perfil EXPERT resolve em `moneyManager.js`
-sem exceção. Não validado ao vivo (depende do usuário salvar uma
-configuração real na tela e confirmar, via log do scanner, que o perfil
-correto chega em `context.configuracao.perfil`).
+comportamento antigo; histórico mínimo bloqueia Conservador com poucas
+operações mas não Agressivo; multi-timeframe divergente é ignorado só
+por Agressivo. Não validado ao vivo além do clique salvar corretamente
+(confirmado pelo usuário: "✅ Configurações Salvas" aparece agora) —
+falta confirmar, via log do scanner, que o perfil escolhido chega em
+`context.configuracao.perfil` e influencia de fato um ciclo real.
 --------
 
