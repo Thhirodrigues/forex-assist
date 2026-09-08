@@ -100,9 +100,18 @@ async function renderModoAtual() {
 // polling sozinho podia consumir dezenas de milhares de leituras do
 // Firestore por dia enquanto a aba Dashboard ficasse aberta,
 // contribuindo pra estourar a cota gratuita e derrubar o Scanner real
-// com RESOURCE_EXHAUSTED. Um status que humano só olha de vez em
-// quando não precisa de atualização a cada 2 segundos.
+// com RESOURCE_EXHAUSTED (confirmado no console do Firebase: 55 mil
+// leituras/dia contra um teto gratuito de 50 mil). Um status que
+// humano só olha de vez em quando não precisa de atualização a cada 2
+// segundos.
+//
+// Reforço adicional (mesmo dia): parar de consultar completamente
+// quando a aba não está em primeiro plano (tela apagada, outro app
+// na frente, outra aba ativa) - celular com o app aberto em segundo
+// plano por horas era o cenário real que mais pesava na cota.
 setInterval(async () => {
+
+    if (document.hidden) return;
 
     const status =
         document.getElementById(

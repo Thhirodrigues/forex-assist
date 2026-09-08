@@ -83,8 +83,15 @@ function scannerView() {
 // Intervalo 2000ms -> 15000ms (07/09/2026, mesma razão documentada em
 // js/expert.js): reduz o consumo de leituras do Firestore desse
 // polling, que rodava a cada 2s sempre que a aba Scanner estava
-// aberta.
+// aberta. Confirmado no console do Firebase: 55 mil leituras/dia
+// contra um teto gratuito de 50 mil - estourou a cota do projeto.
+//
+// Reforço adicional (mesmo dia): parar de consultar completamente
+// quando a aba não está em primeiro plano - ver mesma lógica em
+// js/expert.js.
 setInterval(async () => {
+
+  if (document.hidden) return;
 
   const statusEl =
     document.getElementById(

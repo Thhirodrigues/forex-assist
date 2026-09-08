@@ -6589,3 +6589,40 @@ risco conscientemente. O cache do candle de 15min (BUG-015) continua
 como a correção estrutural pendente, não implementada.
 --------
 
+CONFIRMAÇÃO BUG-014 + reforço adicional - cota do Firestore confirmada
+estourada no console real; polling pausado em segundo plano
+
+Usuário testou de novo mais tarde no mesmo dia (celular, horário
+personalizado até meia-noite, menos pares) e viu o mesmo log de
+`RESOURCE_EXHAUSTED`, com a configuração ainda caindo no
+`CONFIG_PADRAO` (Horário 07:30-18:00, Pares 10 - não os valores que
+ele tinha acabado de salvar). Confirmado: enquanto a leitura da
+configuração falhar por causa da cota, o Scanner nunca chega a ver as
+mudanças salvas - qualquer teste de configuração nesse estado é
+inconclusivo, não reflete o que foi configurado.
+
+Usuário então abriu o console do Firebase (Firestore → Uso) e
+confirmou visualmente a causa raiz do BUG-014: aviso "Seu projeto
+ultrapassou os limites sem custo financeiro", gráfico mostrando ~55
+mil leituras no dia contra o teto gratuito de 50 mil, subindo forte a
+partir de ~8h da manhã - consistente com os dois `setInterval` de 2
+segundos identificados no BUG-014.
+
+Reforço adicional aplicado no mesmo lote (`js/expert.js` e
+`js/scanner.js`): os dois pollings agora checam `document.hidden` logo
+no início de cada tick e retornam sem consultar o Firestore se a aba
+não estiver em primeiro plano (tela apagada no celular, outro app ou
+outra aba em foco). O intervalo de 15s sozinho ainda dependia de
+quanto tempo a aba ficava aberta, mesmo em segundo plano - esse é o
+cenário real mais provável de pesar na cota (celular com o app aberto
+por horas). Com a cota diária do Firestore já estourada no momento
+desta correção, o Scanner só volta a funcionar quando a cota resetar
+(reset diário automático da Google, horário exato não verificável
+daqui) - a correção evita repetição, não desfaz o consumo já feito.
+
+Validado com Playwright: zero leituras simuladas durante 16 segundos
+com `document.hidden = true` (mais que um ciclo inteiro de 15s);
+volta a ler normalmente ao voltar pro primeiro plano. Suites de
+regressão anteriores revalidadas sem falha.
+--------
+
