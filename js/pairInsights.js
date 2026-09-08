@@ -102,7 +102,18 @@ function dentroJanelaPadrao(diaSemana, minutosDoDia, configuracao) {
     const janelaSeguranca = Number(configuracao.janelaSeguranca) || 0;
     const fimComSeguranca = fim - janelaSeguranca;
 
-    return minutosDoDia >= inicio && minutosDoDia <= fimComSeguranca;
+    // Janela normal (não atravessa a meia-noite).
+    if (fim >= inicio) {
+        return minutosDoDia >= inicio && minutosDoDia <= fimComSeguranca;
+    }
+
+    // Janela atravessa a meia-noite (preset "Ásia + madrugada") - ver
+    // a mesma lógica, com a mesma justificativa, em
+    // scripts/scanner.js's dentroJanelaPadrao().
+    const comecaANoite = minutosDoDia >= inicio && diaSemana !== 5;
+    const continuaNaMadrugada = minutosDoDia <= fimComSeguranca;
+
+    return comecaANoite || continuaNaMadrugada;
 
 }
 

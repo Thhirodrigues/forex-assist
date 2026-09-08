@@ -52,8 +52,6 @@ const {
 
 const CONFIG_PADRAO = {
 
-scannerAtivo: true,
-
 perfil: "balanceado",
 
 delay: 1500,
@@ -418,10 +416,35 @@ function dentroJanelaPadrao(context) {
     const fimComSeguranca =
         fim - janelaSeguranca;
 
-    return (
-        minutosDoDia >= inicio &&
-        minutosDoDia <= fimComSeguranca
-    );
+    // Janela normal (não atravessa a meia-noite): mesma lógica de
+    // sempre.
+    if (fim >= inicio) {
+
+        return (
+            minutosDoDia >= inicio &&
+            minutosDoDia <= fimComSeguranca
+        );
+
+    }
+
+    // Janela atravessa a meia-noite (ex.: preset "Ásia + madrugada",
+    // 21:00-04:00 do dia seguinte). "Começa" a noite (inicio) OU
+    // "continua" na madrugada (até o fim com segurança).
+    //
+    // Sexta à noite nunca INICIA uma janela nova: o pregão real fecha
+    // por volta das 19h de Brasília nesse dia, o que mercadoAberto()
+    // não modela (só exclui sábado inteiro) - abrir uma janela nova
+    // logo depois disso seria operar num vácuo de liquidez que nossa
+    // checagem de mercado aberto não detecta. A CONTINUAÇÃO de uma
+    // janela que já começou na noite de quinta (madrugada de sexta)
+    // continua permitida normalmente.
+    const comecaANoite =
+        minutosDoDia >= inicio && diaSemana !== 5;
+
+    const continuaNaMadrugada =
+        minutosDoDia <= fimComSeguranca;
+
+    return comecaANoite || continuaNaMadrugada;
 
 }
 

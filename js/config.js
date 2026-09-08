@@ -73,11 +73,20 @@ function configuracaoPadrao() {
 
     perfil: "balanceado",
 
-    scannerAtivo: true,
-
     delay: 1500,
 
     cooldown: 30,
+
+    // "personalizado" (padrão) mantém horarioInicio/horarioFim como
+    // campos livres, exatamente como sempre foi. Os outros 3 valores
+    // são atalhos que preenchem esses dois campos automaticamente -
+    // ver PRESETS_HORARIO/horarioDoPreset() mais abaixo.
+    presetHorario: "personalizado",
+
+    // Só tem efeito quando presetHorario === "asia": estende o fim da
+    // janela pra 04:00 do dia seguinte (atravessa a meia-noite - ver
+    // suporte a isso em scripts/scanner.js's dentroJanelaPadrao()).
+    asiaMadrugada: false,
 
     horarioInicio: "07:30",
 
@@ -260,24 +269,6 @@ Forex Assist
 
     <div class="list-item">
 
-        <label>
-
-            <input
-                type="checkbox"
-                id="cfgScanner"
-
-                ${config.scannerAtivo ? "checked" : ""}
-
-            >
-
-            Scanner Ativo
-
-        </label>
-
-    </div>
-
-    <div class="list-item">
-
         Delay entre análises
 
         <br><br>
@@ -319,17 +310,22 @@ Cooldown entre sinais
 
 </div>
 
+${renderizarPresetHorario(config)}
+
 <div class="list-item">
 
 Horário Inicial
 
+<br>
+<small style="opacity:.7;">Preenchido automaticamente se um mercado acima estiver selecionado</small>
 <br><br>
 
 <input
     id="cfgInicio"
     type="time"
     value="${config.horarioInicio}"
-    style="width:100%;">
+    style="width:100%;"
+    ${config.presetHorario !== "personalizado" ? "disabled" : ""}>
 
 </div>
 
@@ -343,6 +339,7 @@ Horário Final
     id="cfgFim"
     type="time"
     value="${config.horarioFim}"
+    ${config.presetHorario !== "personalizado" ? "disabled" : ""}
     style="width:100%;">
 
 </div>
@@ -706,6 +703,90 @@ function avisoSugestaoAplicada() {
 }
 
 // ======================================================
+// PRESETS DE JANELA HORÁRIA (mercados)
+// ---------------------------------------------------
+// Horários de Brasília (GMT-3, sem DST desde 2019). Cada preset só
+// preenche horarioInicio/horarioFim - o backend (scripts/scanner.js)
+// nunca lê presetHorario, só os dois campos resultantes. Fontes:
+// Babypips/Dukascopy (ver FEATURE-001 em ENGINEERING.md).
+// ======================================================
+
+const PRESETS_HORARIO = {
+
+    londres: { horarioInicio: "04:00", horarioFim: "13:00" },
+
+    novaYork: { horarioInicio: "10:00", horarioFim: "19:00" },
+
+    // "Ásia" sem madrugada fica só na sessão da noite (21h-23h59,
+    // mesmo horário da janela adicional automática por par do
+    // BUG-011 - aqui é a janela PADRÃO, vale pra TODOS os pares
+    // monitorados, não só JPY/AUD/NZD).
+    asia: { horarioInicio: "21:00", horarioFim: "23:59" },
+
+    // Com madrugada: atravessa a meia-noite, cobre o resto do overlap
+    // Sydney/Tóquio (até por volta das 04:00 de Brasília).
+    asiaMadrugada: { horarioInicio: "21:00", horarioFim: "04:00" }
+
+};
+
+function horarioDoPreset(preset, madrugada) {
+
+    if (preset === "asia" && madrugada)
+        return PRESETS_HORARIO.asiaMadrugada;
+
+    return PRESETS_HORARIO[preset] || null;
+
+}
+
+function renderizarPresetHorario(config) {
+
+    const opcoes = [
+        { id: "londres", label: "🇬🇧 Mercado de Londres (04:00–13:00)" },
+        { id: "novaYork", label: "🇺🇸 Mercado de Nova York (10:00–19:00)" },
+        { id: "asia", label: "🌏 Mercado Asiático (21:00–23:59)" },
+        { id: "personalizado", label: "⚙️ Personalizado (definir manualmente abaixo)" }
+    ];
+
+    return `
+        <div class="list-item">
+
+            Janela de Horário
+
+            <br><br>
+
+            ${opcoes.map(opcao => `
+                <label style="display:block; margin-bottom:8px;">
+                    <input
+                        type="radio"
+                        name="presetHorario"
+                        class="cfgPresetHorario"
+                        value="${opcao.id}"
+                        ${config.presetHorario === opcao.id ? "checked" : ""}
+                    >
+                    ${opcao.label}
+                </label>
+            `).join("")}
+
+            <div
+                id="cfgAsiaMadrugadaWrapper"
+                style="margin:4px 0 4px 24px; ${config.presetHorario === "asia" ? "" : "display:none;"}"
+            >
+                <label>
+                    <input
+                        type="checkbox"
+                        id="cfgAsiaMadrugada"
+                        ${config.asiaMadrugada ? "checked" : ""}
+                    >
+                    Operar também de madrugada (00:00–04:00 de Brasília)
+                </label>
+            </div>
+
+        </div>
+    `;
+
+}
+
+// ======================================================
 // RENDERIZA PARES
 // ======================================================
 
@@ -759,13 +840,23 @@ function obterConfiguracoesTela() {
 
             "balanceado",
 
-        scannerAtivo:
+        presetHorario:
+
+            document.querySelector(
+
+                '.cfgPresetHorario:checked'
+
+            )?.value ||
+
+            "personalizado",
+
+        asiaMadrugada:
 
             document.getElementById(
 
-                "cfgScanner"
+                "cfgAsiaMadrugada"
 
-            ).checked,
+            )?.checked || false,
 
         delay:
 
@@ -899,6 +990,60 @@ janelaSeguranca: Number(
 
 function bindConfigEvents() {
 
+    // ------------------------------------------
+    // Preset de janela horária - atualiza os campos
+    // Horário Inicial/Final ao vivo, antes de salvar
+    // (nada disso grava no Firestore por si só).
+    // ------------------------------------------
+
+    function aplicarPresetNaTela() {
+
+        const presetSelecionado =
+            document.querySelector('.cfgPresetHorario:checked')?.value ||
+            "personalizado";
+
+        const madrugadaEl = document.getElementById("cfgAsiaMadrugada");
+        const wrapperMadrugada = document.getElementById("cfgAsiaMadrugadaWrapper");
+        const inicioEl = document.getElementById("cfgInicio");
+        const fimEl = document.getElementById("cfgFim");
+
+        if (wrapperMadrugada) {
+            wrapperMadrugada.style.display =
+                presetSelecionado === "asia" ? "block" : "none";
+        }
+
+        if (presetSelecionado === "personalizado") {
+            if (inicioEl) inicioEl.disabled = false;
+            if (fimEl) fimEl.disabled = false;
+            return;
+        }
+
+        const horario = horarioDoPreset(presetSelecionado, madrugadaEl?.checked);
+
+        if (!horario) return;
+
+        if (inicioEl) {
+            inicioEl.value = horario.horarioInicio;
+            inicioEl.disabled = true;
+        }
+
+        if (fimEl) {
+            fimEl.value = horario.horarioFim;
+            fimEl.disabled = true;
+        }
+
+    }
+
+    document.querySelectorAll(".cfgPresetHorario").forEach((radio) => {
+        radio.onchange = aplicarPresetNaTela;
+    });
+
+    const madrugadaEl = document.getElementById("cfgAsiaMadrugada");
+
+    if (madrugadaEl) {
+        madrugadaEl.onchange = aplicarPresetNaTela;
+    }
+
     const btn = document.getElementById("btnSalvarConfig");
 
     if (!btn) return;
@@ -940,9 +1085,10 @@ function bindConfigEvents() {
                     .set({
 
                         perfil: config.perfil,
-                        scannerAtivo: config.scannerAtivo,
                         delay: config.delay,
                         cooldown: config.cooldown,
+                        presetHorario: config.presetHorario,
+                        asiaMadrugada: config.asiaMadrugada,
                         horarioInicio: config.horarioInicio,
                         horarioFim: config.horarioFim,
                         janelaSeguranca: config.janelaSeguranca,

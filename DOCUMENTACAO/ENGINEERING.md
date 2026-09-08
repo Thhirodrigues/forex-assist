@@ -6358,3 +6358,77 @@ estava no Firestore simulado, incluindo a tradução `tipoConta` →
 `conta`. Suites de regressão anteriores revalidadas sem falha.
 --------
 
+FEATURE-004 — Presets de janela horária (Londres/Nova York/Ásia) +
+remoção do checkbox morto "Scanner Ativo"
+
+Origem: usuário pediu revisão completa da aba Config e propôs presets
+de mercado pra não precisar digitar horário manualmente. Antes de
+implementar, análise crítica levantou 3 pontos, todos incorporados na
+decisão final:
+
+1. **Nova York estava faltando da lista original** (usuário só citou
+   Londres/Ásia/Ambos) - o horário padrão histórico (07:30-18:00) é,
+   na prática, Londres+NY, não Londres+Ásia. Resolvido tratando Nova
+   York como um preset próprio, não escondido dentro de "Ambos".
+2. **Preset "Ásia" precisa atravessar a meia-noite** pra cobrir a
+   madrugada (overlap Sydney/Tóquio até ~04:00 de Brasília) - a
+   função de janela padrão não suportava isso (limitação conhecida,
+   já documentada como recomendação futura no BUG-011).
+3. **Risco de colisão com a janela adicional automática do BUG-011**:
+   se o preset "Ásia" mudasse a janela PADRÃO global, isso faria a
+   RMI escanear TODOS os pares (inclusive os ruins fora de Londres,
+   tipo EUR/GBP) de madrugada. Decisão: o preset só mexe na janela
+   padrão global (`horarioInicio`/`horarioFim`); a lógica de
+   `parElegivelJanelaAsia()` por moeda continua intocada, agindo por
+   cima, independente do preset escolhido.
+
+Implementação:
+
+- `scripts/scanner.js` e `js/pairInsights.js` (cópia documentada):
+  `dentroJanelaPadrao()` agora suporta `horarioFim < horarioInicio`
+  (janela atravessando a meia-noite). Segurança adicional: uma janela
+  que atravessa a meia-noite nunca INICIA na sexta à noite (o pregão
+  real fecha por volta das 19h de Brasília nesse dia, o que
+  `mercadoAberto()` não modela - só exclui sábado inteiro); a
+  CONTINUAÇÃO de uma janela que já começou na noite de quinta (viraria
+  madrugada de sexta) continua permitida normalmente. Sábado continua
+  sempre fechado, sem exceção.
+- `js/config.js`: novos campos `presetHorario`
+  ("personalizado"/"londres"/"novaYork"/"asia") e `asiaMadrugada`
+  (boolean). `PRESETS_HORARIO` mapeia cada preset pros valores reais
+  de `horarioInicio`/`horarioFim` - o backend nunca lê `presetHorario`
+  diretamente, só os dois campos resultantes, então presets são pura
+  conveniência de UI, sem exigir que o Scanner saiba que eles existem.
+  Selecionar um preset preenche e desabilita os campos de horário
+  manual (ficam somente leitura, visíveis pra transparência); voltar
+  pra "Personalizado" reabilita a edição manual. Checkbox extra
+  "Operar também de madrugada" só aparece com "Ásia" selecionado.
+- Removido o checkbox "Scanner Ativo" da tela (não gravava mais no
+  payload, não lia mais do DOM, campo removido de
+  `configuracaoPadrao()`). Também removido `scannerAtivo: true` de
+  `CONFIG_PADRAO` em `scripts/scanner.js` - nada no backend lia esse
+  campo (confirmado por auditoria: o gate real é a função separada
+  `scannerAtivo()`, que consulta `scanner/status.ativo`, controlado
+  pelos botões Start/Stop da aba Scanner). Documentos antigos no
+  Firestore que ainda tenham esse campo ficam com um valor morto
+  inofensivo, sem necessidade de migração.
+
+Validado:
+- Lógica de virada de meia-noite: 13 cenários isolados (início da
+  noite, continuação na madrugada, limite exato do fim com e sem
+  `janelaSeguranca`, exclusão de sexta à noite pra iniciar janela nova
+  mas permitindo a continuação de quinta, sábado sempre fechado mesmo
+  como "continuação", regressão da janela sem virada) - todos
+  passando.
+- UI testada com Playwright (Chromium headless): checkbox "Scanner
+  Ativo" confirmado ausente da tela; estado inicial correto
+  (Personalizado, campos habilitados); selecionar Londres preenche e
+  desabilita os campos corretamente; selecionar Ásia mostra o
+  checkbox de madrugada; marcar madrugada estende o horário final pra
+  04:00; voltar a Personalizado reabilita os campos; salvar com Nova
+  York selecionado grava exatamente os campos esperados no Firestore
+  simulado, sem nenhum resquício de `scannerAtivo` no payload.
+- Suites de regressão anteriores (perfis, janela asiática por moeda,
+  4 campos do BUG-010, checker, schedule) revalidadas sem falha.
+--------
+
