@@ -6130,3 +6130,39 @@ de documento inexistente — os 4 cenários retornaram o rótulo correto
 "🔵 Balanceado" quando não há config salva).
 --------
 
+LIMPEZA-001 — Textos de frontend ainda referenciavam "Expert" (sobra
+de antes da RMI existir como conceito)
+
+Usuário notou que, por ter focado a atenção na RMI e não no frontend
+em períodos anteriores, vários textos visíveis ficaram para trás
+referenciando "Expert" (nome de uma versão/tier anterior do app),
+enquanto o nome atual do produto é "Forex Assist — Real Money
+Intelligence".
+
+**Convenção de nome definida pelo usuário (08/09/2026): FARMI** —
+abreviação de Forex Assist + RMI, para uso em texto de UI/branding
+voltado ao usuário daqui em diante. Distinção importante: **FARMI é o
+nome de marca (UI-facing)**; **RMI continua sendo o termo técnico
+interno** (arquitetura, pipeline de análise, comentários de código,
+esta documentação) — não é uma substituição de RMI, é o nome comercial
+que aparece pra quem usa o app.
+
+Trocado:
+- `index.html`: `<title>` de "Forex Assist V5 Expert Alpha" para
+  "Forex Assist - FARMI".
+- `js/app.js`: subtítulo no cabeçalho do app, de "V5 Expert Alpha"
+  para "FARMI".
+- `js/scanner.js`: título do card na aba Scanner, de "Scanner Expert"
+  para "Scanner FARMI".
+
+Não alterado (não era "Expert" perdido, já estava correto):
+`manifest.json` (nome ao instalar como PWA: "Forex Assist - Real
+Money"). Não alterado por ser nome de arquivo interno, não texto de
+UI: `js/expert.js` (mantém o nome do arquivo; o conteúdo já foi
+corrigido no BUG-012).
+
+Daqui pra frente: ao criar ou revisar qualquer texto voltado ao
+usuário (telas, notificações, títulos), usar "FARMI" em vez de
+"Expert" ou variações antigas.
+--------
+

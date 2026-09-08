@@ -66,7 +66,7 @@ localStorage.getItem("ultimaAba")
         
         <div class="header">
             <div class="logo">Forex Assist</div>
-            <div class="subtitle">V5 Expert Alpha</div>
+            <div class="subtitle">FARMI</div>
         </div>
 
         <div class="container">

@@ -33,7 +33,7 @@ function scannerView() {
     <div class="card">
 
       <div class="card-title">
-        Scanner Expert
+        Scanner FARMI
       </div>
 
       <div id="scannerViewStatus" class="signal wait">
