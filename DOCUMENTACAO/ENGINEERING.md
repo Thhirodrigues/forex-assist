@@ -6533,3 +6533,59 @@ condicionado à aprovação do usuário antes de mexer em
 `scripts/marketData.js`/`scripts/pairAnalyzer.js`.
 --------
 
+FEATURE-005 — Medidor ao vivo de consumo estimado de API na tela de
+Config (guarda-corpo pro orçamento do BUG-015)
+
+Origem: usuário decidiu manter a folga negativa atual (não implementar
+o cache de candle de 15min agora) mas pediu uma "trava": quantos pares
+a mais dá pra analisar sem estourar as 2.400 consultas/dia, e que a
+tela avise quando o limite for excedido - assim, se faltar sinal de
+novo, dá pra saber na hora se é questão de orçamento de API ou outra
+causa, sem precisar reabrir o log do GitHub Actions.
+
+Implementação (`js/config.js`):
+- `calcularConsumoEstimadoTwelveData(config)`: reaplica a mesma
+  fórmula usada pra chegar em "~2688/dia" no BUG-015 (120 ciclos ×
+  pares × 2 chamadas na janela padrão + ciclos da janela asiática
+  automática × pares elegíveis × 2), agora calculada a partir do que
+  está de fato marcado na tela, com suporte a janela atravessando
+  meia-noite (reaproveita a mesma lógica de `dentroJanelaPadrao()`).
+  Retorna também o custo marginal de UM par adicional, separado em
+  "sem lastro asiático" e "com lastro asiático" (que entra também na
+  janela automática do BUG-011, custando mais) - resposta direta a
+  "quantos pares a mais".
+- `parElegivelJanelaAsiaCfg()`: 3ª cópia documentada da mesma regra de
+  `scripts/scanner.js`/`js/pairInsights.js` (BUG-011) - deliberada,
+  pra esta tela não depender da ordem de carregamento de outro
+  `<script>`.
+- Novo card "📡 Consumo estimado de API" acima de "Pares Monitorados":
+  mostra o total estimado contra o orçamento de 2.400, com aviso
+  vermelho explícito ("Limite de pares excedido") quando ultrapassa,
+  ou confirmação verde com a folga restante quando está dentro.
+  Recalcula AO VIVO (antes de salvar) a cada mudança que afeta a
+  conta: marcar/desmarcar par, trocar preset de horário, marcar
+  "madrugada", editar horário manual ou janela de segurança - tudo via
+  `atualizarConsumoApi()`, chamada nos mesmos handlers já existentes
+  em `bindConfigEvents()`.
+- Constante `MINUTOS_POR_CICLO_SCANNER = 5` documentada como
+  suposição: o intervalo real do cron é definido externamente
+  (cron-job.org), fora do alcance deste app - se mudar lá, esta conta
+  precisa ser atualizada aqui manualmente.
+
+Validado:
+- `calcularConsumoEstimadoTwelveData()`: 13 cenários isolados (10
+  pares padrão batendo exatamente com os ~2688/dia do BUG-015; 8 pares
+  voltando pra dentro do orçamento; zero pares; janela atravessando
+  meia-noite calculada corretamente; custos marginais corretos).
+- UI testada com Playwright: estado inicial mostra 2688/2400 com aviso
+  de excesso; desmarcar os 2 pares JPY mais caros (EUR/JPY, GBP/JPY)
+  traz de volta pra dentro do orçamento ao vivo, sem precisar salvar;
+  remarcar volta a mostrar o aviso.
+- Suites de regressão anteriores revalidadas sem falha.
+
+Isso é só o AVISO (visibilidade), não um bloqueio - o usuário ainda
+pode salvar uma configuração acima do orçamento se quiser assumir o
+risco conscientemente. O cache do candle de 15min (BUG-015) continua
+como a correção estrutural pendente, não implementada.
+--------
+

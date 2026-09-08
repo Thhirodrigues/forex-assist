@@ -490,6 +490,8 @@ style="width:100%;">
 
 ${avisoSugestaoAplicada()}
 
+<div id="cfgConsumoApi">${renderizarConsumoApi(config)}</div>
+
 ${renderizarPares(config)}
 
 </div>
@@ -787,6 +789,164 @@ function renderizarPresetHorario(config) {
 }
 
 // ======================================================
+// ORÇAMENTO DE CONSULTAS - TWELVEDATA
+// ---------------------------------------------------
+// Orçamento real medido pelo usuário com rotação de 3 chaves:
+// 2.400 consultas/dia. Cada par consultado custa 2 chamadas por
+// ciclo do Scanner (candle de 5min + candle de 15min).
+//
+// O ciclo do Scanner (5 minutos) é definido pelo pinger externo
+// (cron-job.org), fora do alcance deste app - não configurável na
+// tela, então é uma CONSTANTE ASSUMIDA aqui. Se o intervalo do cron
+// mudar, esta conta precisa ser atualizada manualmente.
+//
+// MOEDAS_JANELA_ASIA/PARES_JANELA_ASIA_EXCLUIDOS/
+// parElegivelJanelaAsia() são uma 3ª cópia da mesma regra de
+// scripts/scanner.js e js/pairInsights.js (ver BUG-011) - mesma
+// duplicação deliberada e documentada, pra esta tela não depender da
+// ordem de carregamento de outro <script>.
+// ======================================================
+
+const MINUTOS_POR_CICLO_SCANNER = 5;
+
+const CHAMADAS_POR_PAR_POR_CICLO = 2;
+
+const ORCAMENTO_DIARIO_TWELVEDATA = 2400;
+
+const MOEDAS_JANELA_ASIA_CFG = new Set(["JPY", "AUD", "NZD"]);
+
+const PARES_JANELA_ASIA_EXCLUIDOS_CFG = new Set(["GBP/JPY"]);
+
+const JANELA_ASIA_INICIO_MIN = 21 * 60;
+
+const JANELA_ASIA_FIM_MIN = 23 * 60 + 59;
+
+function parElegivelJanelaAsiaCfg(par) {
+
+    if (PARES_JANELA_ASIA_EXCLUIDOS_CFG.has(par))
+        return false;
+
+    const [moedaBase, moedaCotada] = par.split("/");
+
+    return (
+        MOEDAS_JANELA_ASIA_CFG.has(moedaBase) ||
+        MOEDAS_JANELA_ASIA_CFG.has(moedaCotada)
+    );
+
+}
+
+function duracaoJanelaPadraoMinutos(horarioInicio, horarioFim, janelaSeguranca) {
+
+    const [horaInicio, minutoInicio] = horarioInicio.split(":").map(Number);
+    const [horaFim, minutoFim] = horarioFim.split(":").map(Number);
+
+    const inicio = horaInicio * 60 + minutoInicio;
+    const fimBruto = horaFim * 60 + minutoFim;
+    const fim = fimBruto - (Number(janelaSeguranca) || 0);
+
+    if (fim >= inicio)
+        return Math.max(0, fim - inicio);
+
+    // Atravessa a meia-noite (ex.: preset Ásia + madrugada).
+    return Math.max(0, (24 * 60 - inicio) + fim);
+
+}
+
+function calcularConsumoEstimadoTwelveData(config) {
+
+    const pares = config.pares || [];
+
+    const duracaoPadrao = duracaoJanelaPadraoMinutos(
+        config.horarioInicio,
+        config.horarioFim,
+        config.janelaSeguranca
+    );
+
+    const ciclosPadrao = Math.floor(duracaoPadrao / MINUTOS_POR_CICLO_SCANNER);
+
+    const chamadasPadrao = ciclosPadrao * pares.length * CHAMADAS_POR_PAR_POR_CICLO;
+
+    const duracaoAsia = (JANELA_ASIA_FIM_MIN - JANELA_ASIA_INICIO_MIN) + 1;
+
+    const ciclosAsiaPorDia = Math.floor(duracaoAsia / MINUTOS_POR_CICLO_SCANNER);
+
+    const paresElegiveisAsia = pares.filter(parElegivelJanelaAsiaCfg);
+
+    // Estimativa por um dia útil "típico" (segunda a quinta, quando a
+    // janela adicional automática por moeda do BUG-011 também está
+    // ativa - sexta não tem essa janela extra, ver BUG-011). É o
+    // cenário de maior consumo, por isso o mais relevante pra um
+    // aviso de segurança - não é uma média semanal.
+    //
+    // A janela adicional é sempre somada por cima, mesmo que o preset
+    // padrão já seja "Ásia" - isso superestima levemente nesse caso
+    // específico, de propósito (fica do lado seguro, nunca subestima
+    // o consumo real).
+    const chamadasAsiaPorDia =
+        ciclosAsiaPorDia * paresElegiveisAsia.length * CHAMADAS_POR_PAR_POR_CICLO;
+
+    const totalEstimado = Math.round(chamadasPadrao + chamadasAsiaPorDia);
+
+    // Custo marginal de UM par adicional de cada tipo - resposta
+    // direta a "quantos pares a mais dá pra analisar".
+    const custoParSemLastroAsia = ciclosPadrao * CHAMADAS_POR_PAR_POR_CICLO;
+
+    const custoParComLastroAsia =
+        custoParSemLastroAsia +
+        (ciclosAsiaPorDia * CHAMADAS_POR_PAR_POR_CICLO);
+
+    return {
+        totalEstimado,
+        chamadasPadrao: Math.round(chamadasPadrao),
+        chamadasAsiaPorDia: Math.round(chamadasAsiaPorDia),
+        paresElegiveisAsia: paresElegiveisAsia.length,
+        custoParSemLastroAsia,
+        custoParComLastroAsia,
+        excedeOrcamento: totalEstimado > ORCAMENTO_DIARIO_TWELVEDATA,
+        margem: ORCAMENTO_DIARIO_TWELVEDATA - totalEstimado
+    };
+
+}
+
+function renderizarConsumoApi(config) {
+
+    const consumo = calcularConsumoEstimadoTwelveData(config);
+
+    const corFundo = consumo.excedeOrcamento
+        ? "rgba(255,82,82,.12)"
+        : "rgba(0,210,106,.12)";
+
+    const corBorda = consumo.excedeOrcamento
+        ? "rgba(255,82,82,.35)"
+        : "rgba(0,210,106,.3)";
+
+    const linhaMargem = consumo.excedeOrcamento
+        ? `⚠️ Limite de pares excedido: ${Math.abs(consumo.margem)} consultas/dia acima do orçamento da TwelveData (${ORCAMENTO_DIARIO_TWELVEDATA}). Alguns ciclos podem falhar com "Quota exceeded" e nenhum par ser analisado nesse ciclo - remova pares ou reduza a janela de horário.`
+        : `✅ Dentro do orçamento - ${consumo.margem} consultas/dia de folga.`;
+
+    return `
+        <div style="
+            background:${corFundo};
+            border:1px solid ${corBorda};
+            border-radius:8px;
+            padding:10px 12px;
+            margin-bottom:12px;
+            font-size:12px;
+        ">
+            <div style="font-weight:bold; margin-bottom:4px;">
+                📡 Consumo estimado de API: ${consumo.totalEstimado} / ${ORCAMENTO_DIARIO_TWELVEDATA} consultas/dia
+            </div>
+            <div>${linhaMargem}</div>
+            <div style="margin-top:6px; opacity:.75;">
+                Custo por par adicional: ~${consumo.custoParSemLastroAsia}/dia (sem lastro asiático) ou
+                ~${consumo.custoParComLastroAsia}/dia (JPY/AUD/NZD, entra também na janela adicional automática).
+            </div>
+        </div>
+    `;
+
+}
+
+// ======================================================
 // RENDERIZA PARES
 // ======================================================
 
@@ -1034,14 +1194,61 @@ function bindConfigEvents() {
 
     }
 
+    // ------------------------------------------
+    // Consumo estimado de API - recalcula ao vivo sempre que algo
+    // que afeta a conta muda (pares marcados, preset de horário,
+    // horário manual, janela de segurança). Puramente leitura da
+    // tela + Math - nada disso grava em lugar nenhum.
+    // ------------------------------------------
+
+    function atualizarConsumoApi() {
+
+        const elConsumo = document.getElementById("cfgConsumoApi");
+
+        if (!elConsumo) return;
+
+        const configAtual = obterConfiguracoesTela();
+
+        elConsumo.innerHTML = renderizarConsumoApi(configAtual);
+
+    }
+
     document.querySelectorAll(".cfgPresetHorario").forEach((radio) => {
-        radio.onchange = aplicarPresetNaTela;
+        radio.onchange = () => {
+            aplicarPresetNaTela();
+            atualizarConsumoApi();
+        };
     });
 
     const madrugadaEl = document.getElementById("cfgAsiaMadrugada");
 
     if (madrugadaEl) {
-        madrugadaEl.onchange = aplicarPresetNaTela;
+        madrugadaEl.onchange = () => {
+            aplicarPresetNaTela();
+            atualizarConsumoApi();
+        };
+    }
+
+    document.querySelectorAll(".cfgPar").forEach((checkbox) => {
+        checkbox.onchange = atualizarConsumoApi;
+    });
+
+    const janelaEl = document.getElementById("cfgJanela");
+
+    if (janelaEl) {
+        janelaEl.oninput = atualizarConsumoApi;
+    }
+
+    const inicioManualEl = document.getElementById("cfgInicio");
+
+    if (inicioManualEl) {
+        inicioManualEl.onchange = atualizarConsumoApi;
+    }
+
+    const fimManualEl = document.getElementById("cfgFim");
+
+    if (fimManualEl) {
+        fimManualEl.onchange = atualizarConsumoApi;
     }
 
     const btn = document.getElementById("btnSalvarConfig");
