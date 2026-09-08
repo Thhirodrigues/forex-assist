@@ -6315,3 +6315,46 @@ desaparece nas seguintes. Suites de regressão anteriores revalidadas
 sem falha.
 --------
 
+FEATURE-003 — Botão "Voltar para a Última Configuração Salva" na tela
+de Config
+
+Origem: contrapartida natural do FEATURE-002 - depois de existir um
+jeito de pré-preencher a tela sem salvar (botão "Aplicar esses
+pares"), fazia falta um jeito de descartar essa edição não salva (ou
+qualquer edição manual) e voltar pro que está de fato gravado no
+Firestore.
+
+Achado ao implementar: `configView()` nunca lia o Firestore
+diretamente - `carregarConfiguracoes()` sempre lia só o rascunho local
+(`localStorage.forexConfig`), preenchido pela última vez que a tela
+foi salva OU editada localmente (ex.: pelo botão do FEATURE-002).
+Ou seja, a tela de Config nunca teve, até agora, um caminho pra
+re-sincronizar com o que está realmente salvo no banco depois de uma
+edição não confirmada.
+
+Implementação (`js/config.js`):
+- Nova `restaurarConfiguracaoSalva()`: busca `configuracoes/geral` no
+  Firestore, mescla com `configuracaoPadrao()` (garante todos os
+  campos, mesmo que o documento não tenha sido migrado com algum
+  campo novo), traduz `tipoConta` (maiúsculo, formato do Firestore)
+  de volta pra `conta` (minúsculo, formato da tela) - o inverso exato
+  da tradução feita ao salvar - e grava o resultado como o novo
+  rascunho local via `salvarConfiguracoes()`.
+- Novo botão `#btnRestaurarConfig`, abaixo de "Salvar Configurações".
+  Ao clicar, chama `restaurarConfiguracaoSalva()` e depois `app.render()`
+  pra redesenhar a tela com os valores restaurados (o hook de
+  pós-renderização da aba "config" em `js/app.js`, já existente desde
+  o BUG-009, re-liga os eventos automaticamente). Se não houver
+  documento salvo ou a leitura falhar, mostra aviso temporário em vez
+  de travar.
+
+Validado com Playwright (Chromium headless): simulado um rascunho
+local não salvo (perfil "agressivo", 3 pares diferentes) enquanto o
+Firestore simulado tinha outro conjunto salvo (perfil "conservador",
+2 pares, conta REAL, horários diferentes). Antes de clicar, a tela
+mostrava o rascunho não salvo; depois de clicar em "Voltar para a
+Última Configuração Salva", a tela passou a refletir exatamente o que
+estava no Firestore simulado, incluindo a tradução `tipoConta` →
+`conta`. Suites de regressão anteriores revalidadas sem falha.
+--------
+

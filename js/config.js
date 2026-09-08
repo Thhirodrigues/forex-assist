@@ -170,6 +170,48 @@ function salvarConfiguracoes(config) {
 }
 
 // ======================================================
+// RESTAURAR ÚLTIMA CONFIGURAÇÃO SALVA
+// ---------------------------------------------------
+// Descarta qualquer edição não salva na tela (manual ou vinda do
+// botão "Aplicar esses pares" da Sugestão de Agora) e volta pro que
+// está de fato gravado em configuracoes/geral no Firestore - a tela
+// nunca lia isso automaticamente antes (carregarConfiguracoes() só
+// lia o rascunho local), então esta é a primeira vez que a tela pode
+// re-sincronizar com o que está realmente salvo.
+// ======================================================
+
+async function restaurarConfiguracaoSalva() {
+
+    if (typeof db === "undefined") return null;
+
+    const doc = await db
+        .collection("configuracoes")
+        .doc("geral")
+        .get();
+
+    if (!doc.exists) return null;
+
+    const dados = doc.data();
+
+    const configRestaurado = {
+
+        ...configuracaoPadrao(),
+
+        ...dados,
+
+        // tipoConta no Firestore é MAIÚSCULO ("SIMULADA"/"REAL"); a
+        // tela usa conta minúsculo - mesma tradução inversa do save.
+        conta: dados.tipoConta === "REAL" ? "real" : "simulada"
+
+    };
+
+    salvarConfiguracoes(configRestaurado);
+
+    return configRestaurado;
+
+}
+
+// ======================================================
 // VIEW
 // ======================================================
 
@@ -576,6 +618,18 @@ style="margin-top:20px;">
 
 </button>
 
+<button
+
+id="btnRestaurarConfig"
+
+class="button"
+
+style="margin-top:10px; width:100%; padding:10px; border:none; border-radius:8px; background:#132852; color:white; font-size:13px; cursor:pointer;">
+
+↩️ Voltar para a Última Configuração Salva
+
+</button>
+
 `;
 
 }
@@ -934,6 +988,38 @@ function bindConfigEvents() {
         }, salvouNaNuvem ? 1800 : 3500);
 
     };
+
+    const btnRestaurar = document.getElementById("btnRestaurarConfig");
+
+    if (btnRestaurar) {
+
+        btnRestaurar.onclick = async () => {
+
+            btnRestaurar.innerHTML = "Carregando...";
+
+            const restaurado = await restaurarConfiguracaoSalva();
+
+            if (restaurado) {
+
+                app.render();
+
+            } else {
+
+                btnRestaurar.innerHTML =
+                    "⚠️ Não foi possível carregar a configuração salva";
+
+                setTimeout(() => {
+
+                    btnRestaurar.innerHTML =
+                        "↩️ Voltar para a Última Configuração Salva";
+
+                }, 3000);
+
+            }
+
+        };
+
+    }
 
 }
 
