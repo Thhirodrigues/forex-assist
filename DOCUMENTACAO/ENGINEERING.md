@@ -6164,6 +6164,19 @@ corrigido no BUG-012).
 Daqui pra frente: ao criar ou revisar qualquer texto voltado ao
 usuário (telas, notificações, títulos), usar "FARMI" em vez de
 "Expert" ou variações antigas.
+
+**REVERTIDO (mesmo dia)**: usuário decidiu não usar a abreviação
+"FARMI" no texto de UI, preferindo o nome por extenso "Real Money
+Intelligence". Os 3 mesmos locais trocados de volta:
+- `index.html`: `<title>` → "Forex Assist - Real Money Intelligence".
+- `js/app.js`: subtítulo do cabeçalho → "Real Money Intelligence".
+- `js/scanner.js`: título do card do Scanner → "Scanner Real Money
+  Intelligence".
+
+Convenção atualizada: usar "Real Money Intelligence" (por extenso) em
+texto de UI voltado ao usuário; "RMI" continua sendo a sigla usada
+internamente (código, documentação). "FARMI" não está mais em uso em
+nenhum lugar do app.
 --------
 
 BUG-013 — js/historico.js: duas tags `</div>` sobrando no card
