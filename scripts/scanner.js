@@ -1069,13 +1069,21 @@ async function registrarExecucao(context) {
 
                 tipoConta: context.configuracao.tipoConta,
 
+// Fallback pro saldoInicial (nunca undefined - CONFIG_PADRAO sempre
+// tem esse campo) se saldoSimulado/saldoReal não existirem ainda,
+// ex.: quando configuracao veio do fallback de erro em
+// carregarConfiguracao(). Firestore rejeita undefined.
 saldoAtual:
 
-    context.configuracao.tipoConta === "SIMULADA"
+    (context.configuracao.tipoConta === "SIMULADA"
 
         ? context.configuracao.saldoSimulado
 
-        : context.configuracao.saldoReal,
+        : context.configuracao.saldoReal)
+
+    ?? context.configuracao.saldoInicial
+
+    ?? 0,
 
                 pares:
 

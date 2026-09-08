@@ -80,6 +80,10 @@ function scannerView() {
   `;
 }
 
+// Intervalo 2000ms -> 15000ms (07/09/2026, mesma razão documentada em
+// js/expert.js): reduz o consumo de leituras do Firestore desse
+// polling, que rodava a cada 2s sempre que a aba Scanner estava
+// aberta.
 setInterval(async () => {
 
   const statusEl =
@@ -189,7 +193,7 @@ setInterval(async () => {
 
   }
 
-}, 2000);
+}, 15000);
 
 async function verificarResetDiario() {
 

@@ -96,6 +96,12 @@ async function renderModoAtual() {
 
 }
 
+// Intervalo 2000ms -> 15000ms (07/09/2026): rodando a cada 2s, esse
+// polling sozinho podia consumir dezenas de milhares de leituras do
+// Firestore por dia enquanto a aba Dashboard ficasse aberta,
+// contribuindo pra estourar a cota gratuita e derrubar o Scanner real
+// com RESOURCE_EXHAUSTED. Um status que humano só olha de vez em
+// quando não precisa de atualização a cada 2 segundos.
 setInterval(async () => {
 
     const status =
@@ -178,4 +184,4 @@ document.getElementById(
 
     }
 
-}, 2000);
+}, 15000);

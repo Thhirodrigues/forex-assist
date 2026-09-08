@@ -6432,3 +6432,104 @@ Validado:
   4 campos do BUG-010, checker, schedule) revalidadas sem falha.
 --------
 
+BUG-014 — Zero sinais num dia inteiro: RESOURCE_EXHAUSTED do Firestore
+bloqueou até o carregamento da configuração
+
+Severidade: CRÍTICA (não era regra de análise rigorosa nem "dia
+fraco" - o Scanner não conseguiu nem ler a configuração nem os
+candles em nenhum dos 10 pares, o dia inteiro).
+
+Descoberto ao vivo: usuário perguntou por que nenhum sinal saiu no
+dia, achando que fosse rigor demais do perfil ou fraqueza do mercado.
+Log real do "Forex Scanner Real" mostrou, pra TODOS os 10 pares:
+`ERRO ... 8 RESOURCE_EXHAUSTED: Quota exceeded`, e a mesma mensagem
+já no carregamento da configuração, antes de qualquer par ser
+analisado. O código `8`/`RESOURCE_EXHAUSTED` é formato de status gRPC
+- assinatura do SDK do Firestore, não da API de candles (TwelveData
+usa REST simples, erro em outro formato). Ou seja: a cota do
+Firestore (não a de dados de mercado) estourou, e isso derrubou o
+Scanner inteiro antes de qualquer análise real acontecer.
+
+Causa raiz identificada: `js/expert.js` e `js/scanner.js` cada um tem
+um `setInterval` independente, rodando a cada **2 segundos**, lendo o
+mesmo documento (`scanner/status`), enquanto a aba correspondente do
+app estiver aberta no navegador (o guard `if (!el) return` evita o
+fetch quando a aba não está visível, mas ainda assim: com a aba
+Dashboard ou Scanner aberta por algumas horas, esse polling sozinho
+soma milhares de leituras/dia). Cota do Firestore é do PROJETO
+inteiro, compartilhada entre o app no navegador (SDK client) e o
+Scanner rodando no GitHub Actions (SDK admin) - estourar de um lado
+derruba o outro, mesmo sendo processos totalmente separados.
+
+Achado no mesmo log: depois dos erros de cota, `registrarExecucao()`
+também falhava (`Cannot use "undefined" as a Firestore value (found
+in field "saldoAtual")`) - quando `carregarConfiguracao()` cai no
+fallback `CONFIG_PADRAO` (que não tem `saldoSimulado`/`saldoReal`,
+só `saldoInicial`), o cálculo de `saldoAtual` resultava `undefined`,
+e o Firestore rejeita isso na escrita.
+
+Correção aplicada:
+
+- `js/expert.js` e `js/scanner.js`: intervalo de polling elevado de
+  2000ms pra 15000ms (7,5x menos leituras enquanto a aba estiver
+  aberta).
+- `scripts/scanner.js`: `saldoAtual` agora cai em
+  `configuracao.saldoInicial` (e por fim `0`) se
+  `saldoSimulado`/`saldoReal` estiverem `undefined`, em vez de tentar
+  gravar `undefined` no Firestore. Validado que `saldoSimulado/saldoReal
+  = 0` (saldo genuinamente zerado) continua sendo respeitado como 0,
+  não confundido com "não definido" (usa `??`, não `||`).
+
+Validado: cálculo de `saldoAtual` testado isoladamente em 5 cenários
+(fallback sem saldo, saldo simulado normal, saldo real normal, pior
+caso sem nenhum saldo, saldo genuinamente zero) - todos corretos.
+Suites de regressão anteriores revalidadas sem falha.
+
+Achado adicional, não implementado ainda nesta correção - ver
+BUG-015: ao recalcular o orçamento de consultas da TwelveData (2400/dia
+via rotação de 3 chaves) à luz da janela asiática adicionada no
+BUG-011, o consumo estimado ultrapassa o orçamento.
+--------
+
+BUG-015 — Janela asiática do BUG-011 estoura o orçamento diário da
+TwelveData (não corrigido ainda - proposta registrada)
+
+Origem: ao investigar o BUG-014, usuário lembrou que o orçamento real
+da TwelveData (com rotação de 3 chaves) é de ~2400 consultas/dia -
+número calculado numa sessão anterior com outra IA, não documentado
+até agora neste arquivo.
+
+Cálculo (cron a cada 5 minutos, 2 chamadas por par por ciclo - candle
+de 5min + candle de 15min):
+
+- Janela padrão (07:30 até 17:30 com `janelaSeguranca`, 10h = 120
+  ciclos) × 10 pares × 2 chamadas = **2.400 chamadas** - já bate o
+  teto exato, sozinha.
+- Janela asiática adicional do BUG-011 (21:00-23:59, ~36 ciclos) ×
+  pares elegíveis (ex.: 4 de 10, JPY/AUD/NZD) × 2 chamadas =
+  **+288 chamadas**.
+- Total estimado: **~2.688/dia contra um orçamento de 2.400** (~12%
+  acima).
+
+A janela asiática foi desenhada e validada olhando só a correção
+analítica (sessão de mercado certa por par) - o custo em chamadas de
+API não foi calculado na hora, ficando descoberto só agora. Falha do
+autor da mudança, registrada aqui sem retoque.
+
+Proposta (não implementada ainda, pendente de validação cuidadosa por
+mexer direto no pipeline de busca de candle): cachear o candle de
+15min entre ciclos - hoje ele é buscado de novo a cada 5 minutos
+mesmo só mudando a cada 15, ou seja, 2 em cada 3 buscas trazem
+exatamente o mesmo dado. Como cada execução do Scanner é um processo
+novo do GitHub Actions (sem memória entre execuções), o cache
+precisaria ser persistido no Firestore (ex.: `cache/candles15min/{par}`
+com o candle e o horário da última busca), lido a cada ciclo pra
+decidir se uma busca nova é necessária. Estimativa com o cache: janela
+padrão cai pra ~1.600 chamadas, janela asiática pra ~192 - total
+~1.792/dia, ~25% de folga sobre o orçamento de 2.400.
+
+Não implementado nesta sessão - fica registrado como próximo passo,
+condicionado à aprovação do usuário antes de mexer em
+`scripts/marketData.js`/`scripts/pairAnalyzer.js`.
+--------
+
