@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  "forex-assist-v8";
+  "forex-assist-v9";
 
 const ASSETS = [
   "./",
@@ -67,7 +67,8 @@ self.addEventListener(
     e.respondWith(
 
       fetch(
-        e.request
+        e.request,
+        { cache: "no-store" }
       ).then(res => {
 
         const resClone = res.clone();

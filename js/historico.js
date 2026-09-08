@@ -471,13 +471,9 @@ onchange="event.stopPropagation(); alternarOperacaoReal('${doc.id}', this.checke
 
 </label>
 
-</div>
-
 ${sinal.status !== "ENCERRADA"
     ? '<div style="font-size:11px;color:#999;margin-top:4px;">Disponível após o encerramento da operação</div>'
     : ""}
-
-</div>
 
             ${sinal.movimentoPips !== undefined ? `
               <div style="margin-top:10px; padding:8px; border-radius:4px; background:rgba(255,255,255,0.05); text-align:center; font-weight:bold;">

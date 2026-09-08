@@ -6166,3 +6166,83 @@ usuário (telas, notificações, títulos), usar "FARMI" em vez de
 "Expert" ou variações antigas.
 --------
 
+BUG-013 — js/historico.js: duas tags `</div>` sobrando no card
+corrompiam o agrupamento por data quando havia mais de um sinal no
+mesmo dia
+
+Severidade: ALTA (bug estrutural pré-existente, não introduzido nesta
+sessão, mas que anulava na prática a correção de agrupamento por data
+feita mais cedo - o usuário reportou "histórico não está agrupando
+por data minimizadas, nem o botão minimizar tudo" com prints mostrando
+comportamento inconsistente).
+
+Investigação inicial suspeitou de cache do Service Worker (ver
+LIMPEZA-002 abaixo, problema real e corrigido em paralelo), mas ao
+testar a lógica isoladamente com Playwright + Firestore simulado,
+usando um cenário com 3 sinais no MESMO dia (28/07/2026, reproduzindo
+o histórico real do usuário), o bug apareceu de forma reprodutível
+mesmo sem cache nenhum: só o PRIMEIRO sinal do dia aparecia dentro da
+`<div id="dataXXXXXXXX">` do grupo; os outros dois apareciam soltos no
+HTML final, fora da div do grupo.
+
+Causa raiz: o template do card (dentro de `carregarHistorico()`) tinha
+duas tags `</div>` sem abertura correspondente, logo após o `<label>`
+de "Operação Real" - contagem de `<div`/`</div>` no card renderizado
+mostrava sistematicamente 2 fechamentos a mais que aberturas, em
+QUALQUER combinação de campos (com/sem `movimentoPips`, com/sem
+`status`). Como cada card é uma string HTML concatenada
+(`gruposPorData[data] += card`) e inserida via `innerHTML`, esses 2
+fechamentos extras "vazavam" e fechavam prematuramente a `div` do
+grupo de data e a `div` externa do próprio grupo (bordered container),
+corrompendo a estrutura de TODOS os elementos seguintes no HTML - não
+só o segundo sinal do mesmo dia, mas potencialmente o agrupamento dos
+dias seguintes também, dependendo de quantos sinais cada dia tivesse.
+
+Corrigido: removidas as duas tags `</div>` órfãs (logo após
+`</label>` e logo após o bloco condicional "Disponível após o
+encerramento da operação"). Verificado que o card agora fecha
+exatamente o que abre (`opens === closes`) em 3 combinações de campos
+testadas (sem pips; com pips+financeiro+ENCERRADA; com pips+ABERTA).
+
+Validado com Playwright (Chromium headless), Firestore simulado com 5
+sinais em 3 datas diferentes (3 no mesmo dia, replicando o cenário
+real): antes da correção, o grupo com 3 sinais só continha 1 no DOM;
+depois da correção, contém os 3, e o toggle de expandir/colapsar
+funciona corretamente pros 3 grupos. Suite anterior (cenário com
+"hoje") revalidada sem regressão.
+
+Nota: este bug é anterior a esta sessão - não foi introduzido pelas
+mudanças de `datasAbertas`/bordered-container feitas mais cedo. Só
+ficou mascarado porque a maioria dos testes anteriores usava datas com
+apenas 1 sinal cada.
+--------
+
+LIMPEZA-002 — Service Worker podia servir arquivo desatualizado do
+cache HTTP do navegador mesmo em modo "network-first"
+
+Origem: usuário notou, em prints, que o `<title>` da aba já mostrava
+"Forex Assist - FARMI" (deploy novo) mas o corpo da página ainda
+mostrava "V5 Expert Alpha" (deploy antigo) - ou seja, `index.html`
+atualizou mas `js/app.js` não, na mesma visita.
+
+Causa: `sw.js`'s handler de "fetch" já era "network-first" (tenta
+`fetch()` antes de cache), mas chamava `fetch(e.request)` sem forçar
+bypass do cache HTTP do próprio navegador (camada abaixo do Service
+Worker) - dependendo dos headers de cache que o GitHub Pages manda pra
+cada arquivo, o `fetch()` podia ser silenciosamente respondido pelo
+cache do navegador, sem round-trip de rede nenhum, mesmo com a
+estratégia "network-first" do SW.
+
+Corrigido: `fetch(e.request, { cache: "no-store" })` - força ignorar o
+cache HTTP do navegador em toda requisição, indo sempre à rede de
+verdade (o fallback pra `caches.match()` no `.catch()` continua
+existindo pra funcionar offline). `CACHE_NAME` elevado de v8 pra v9
+pra forçar um ciclo novo de instalação/ativação do Service Worker.
+
+Não elimina 100% a necessidade de um usuário eventualmente limpar
+cache manualmente após um deploy problemático anterior a esta
+correção (o Service Worker antigo, já instalado no navegador, pode
+levar um ciclo de reload pra ativar o novo) - mas previne que o mesmo
+problema se repita em deploys futuros.
+--------
+
