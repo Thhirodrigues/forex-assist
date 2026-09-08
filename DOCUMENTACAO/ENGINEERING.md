@@ -6095,3 +6095,38 @@ pra um card por par na tela de Config (ideia mencionada pelo usuário,
 não descartada, só não é o escopo desta primeira versão).
 --------
 
+BUG-012 — Dashboard mostrava "Modo Atual: Expert" fixo, sempre, pra
+qualquer perfil configurado
+
+Severidade: MÉDIA (informação exibida ao usuário estava
+sistematicamente errada, contradizendo a própria decisão de reverter
+o perfil "Expert RMI" tomada mais cedo nesta mesma sessão).
+
+Descoberto pelo usuário ao vivo, olhando o Dashboard publicado logo
+após validar o FEATURE-001 (print mostrando "Modo Atual: Expert" às
+20:57 de 07/09/2026). `js/expert.js`'s `dashboardView()` tinha
+`<div class="big-number">Expert</div>` como texto literal, sem `id`,
+nunca atualizado por nenhum script — sobra de antes da reversão do
+perfil "Expert RMI" (ou de uma versão ainda mais antiga do app).
+Resultado: o Dashboard sempre exibia "Expert" independente do que
+estivesse de fato salvo em `configuracoes/geral.perfil`
+(agressivo/balanceado/conservador).
+
+Corrigido: `div` ganhou `id="modoAtual"`; nova função
+`renderModoAtual()` em `js/expert.js` lê `configuracoes/geral.perfil`
+de verdade e mapeia pro rótulo correspondente (rótulos duplicados de
+`PERFIS_OPERACIONAIS` em `js/config.js` de propósito, pra este arquivo
+não depender da ordem de carregamento dos `<script>` em `index.html`
+- mesmo padrão de duplicação documentada do FEATURE-001). Fallback pra
+"Balanceado" se o documento não existir ou o campo estiver vazio,
+consistente com o fallback já usado em `scanner.js`/`decisionEngine.js`.
+Hook de pós-renderização da aba "dashboard" em `js/app.js` atualizado
+pra chamar também `renderModoAtual()`.
+
+Validado com Playwright (Chromium headless) e um `db` simulado
+injetado via `page.evaluate`, testando os 3 perfis reais mais o caso
+de documento inexistente — os 4 cenários retornaram o rótulo correto
+("🟢 Agressivo", "🟡 Conservador", "🔵 Balanceado" e o fallback
+"🔵 Balanceado" quando não há config salva).
+--------
+

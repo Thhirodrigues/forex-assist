@@ -105,6 +105,10 @@ localStorage.getItem("ultimaAba")
             renderSugestaoAgora();
         }
 
+        if (typeof renderModoAtual === "function") {
+            renderModoAtual();
+        }
+
     }, 100);
 
         }

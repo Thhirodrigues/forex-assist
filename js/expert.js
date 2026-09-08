@@ -17,7 +17,7 @@ function dashboardView() {
 
     <div class="card">
         <div class="card-title">Modo Atual</div>
-        <div class="big-number">Expert</div>
+        <div id="modoAtual" class="big-number">Carregando...</div>
     </div>
 
     <div class="card">
@@ -51,6 +51,49 @@ function dashboardView() {
         </div>
     </div>
     `;
+}
+
+// ===================================================
+// MODO ATUAL (perfil operacional real, lido de configuracoes/geral)
+// ---------------------------------------------------
+// Antes deste conserto, o card mostrava sempre o texto fixo "Expert" -
+// sobra de antes da reversão do perfil "Expert RMI" (ver
+// DOCUMENTACAO/ENGINEERING.md). Rótulos duplicados de
+// PERFIS_OPERACIONAIS em js/config.js de propósito, pra este arquivo
+// não depender da ordem de carregamento dos <script> em index.html.
+// ===================================================
+
+const ROTULOS_PERFIL = {
+    agressivo: "🟢 Agressivo",
+    balanceado: "🔵 Balanceado",
+    conservador: "🟡 Conservador"
+};
+
+async function renderModoAtual() {
+
+    const el = document.getElementById("modoAtual");
+
+    if (!el) return;
+
+    try {
+
+        const doc = await db
+            .collection("configuracoes")
+            .doc("geral")
+            .get();
+
+        const perfil = (doc.exists ? doc.data().perfil : null) || "balanceado";
+
+        el.innerHTML = ROTULOS_PERFIL[perfil] || perfil;
+
+    } catch (erro) {
+
+        console.error("Erro ao carregar modo atual:", erro);
+
+        el.innerHTML = "Balanceado";
+
+    }
+
 }
 
 setInterval(async () => {
