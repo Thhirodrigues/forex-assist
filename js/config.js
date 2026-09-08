@@ -449,6 +449,8 @@ style="width:100%;">
 
 </div>
 
+${avisoSugestaoAplicada()}
+
 ${renderizarPares(config)}
 
 </div>
@@ -609,6 +611,43 @@ function renderizarPerfil(config) {
         </div>
 
     `).join("");
+
+}
+
+// ======================================================
+// AVISO - PARES PRÉ-SELECIONADOS PELA "SUGESTÃO DE AGORA"
+// ---------------------------------------------------
+// Setado por js/pairInsights.js (botão "Aplicar esses pares") antes
+// de trocar pra esta aba. Lido e apagado aqui na primeira renderização
+// - aparece só uma vez, não persiste em visitas futuras da tela.
+// Os pares em si já foram gravados no rascunho local (localStorage)
+// pelo botão; nada foi enviado ao Firestore ainda - só o clique em
+// "Salvar Configurações" confirma a mudança de verdade.
+// ======================================================
+
+function avisoSugestaoAplicada() {
+
+    const veioDaSugestao =
+        sessionStorage.getItem("sugestaoAplicada");
+
+    if (!veioDaSugestao) return "";
+
+    sessionStorage.removeItem("sugestaoAplicada");
+
+    return `
+        <div style="
+            background:rgba(0,210,106,.12);
+            border:1px solid rgba(0,210,106,.3);
+            border-radius:8px;
+            padding:10px 12px;
+            margin-bottom:12px;
+            font-size:12px;
+        ">
+            ☝️ Pares pré-selecionados a partir da "Sugestão de Agora"
+            do Dashboard. Nada foi salvo ainda - revise abaixo e clique
+            em "Salvar Configurações" pra confirmar.
+        </div>
+    `;
 
 }
 

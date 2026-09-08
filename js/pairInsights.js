@@ -293,7 +293,43 @@ async function renderSugestaoAgora() {
                 real: calculado a partir do seu próprio histórico de
                 operações salvas.
             </div>
+            <button
+                id="btnAplicarSugestao"
+                data-tab="config"
+                style="margin-top:10px; width:100%; padding:8px; border:none; border-radius:8px; background:#132852; color:white; font-size:13px; cursor:pointer;"
+            >
+                Aplicar esses pares na Configuração
+            </button>
         `;
+
+        // O clique também tem data-tab="config" (o listener global de
+        // navegação em app.js troca de aba ao ver esse atributo) - aqui
+        // só preparamos o rascunho ANTES da troca de aba. Nada é
+        // gravado no Firestore: só localStorage (rascunho da tela de
+        // Config), que exige um clique explícito em "Salvar
+        // Configurações" pra virar mudança real - de propósito, pra
+        // não sobrescrever um parâmetro de produção com um clique só.
+        const btnAplicar = document.getElementById("btnAplicarSugestao");
+
+        if (btnAplicar) {
+
+            btnAplicar.onclick = () => {
+
+                if (typeof carregarConfiguracoes !== "function" || typeof salvarConfiguracoes !== "function") {
+                    return;
+                }
+
+                const configRascunho = carregarConfiguracoes();
+
+                configRascunho.pares = [...paresNaJanela];
+
+                salvarConfiguracoes(configRascunho);
+
+                sessionStorage.setItem("sugestaoAplicada", "1");
+
+            };
+
+        }
 
     } catch (erro) {
 

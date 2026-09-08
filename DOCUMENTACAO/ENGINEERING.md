@@ -6259,3 +6259,59 @@ levar um ciclo de reload pra ativar o novo) - mas previne que o mesmo
 problema se repita em deploys futuros.
 --------
 
+FEATURE-002 — Botão "Aplicar esses pares na Configuração" na Sugestão
+de Agora
+
+Origem: usuário propôs um botão que, ao clicar, "marcasse" os pares
+sugeridos como os pares monitorados, e ao desmarcar voltasse ao padrão
+da configuração.
+
+Objeção levantada antes de implementar: o Scanner já filtra por par
+dinamicamente a cada ciclo (`parNaJanelaOperacional`, ver BUG-011) -
+pares fora da janela são pulados automaticamente, sem custo. Se o
+botão sobrescrevesse `configuracoes/geral.pares` direto no Firestore
+com só os pares sugeridos NO MOMENTO DO CLIQUE, o risco real era o
+usuário esquecer de reverter - o Scanner ficaria cego pros outros
+pares mesmo quando entrassem na janela deles depois (ex.: aplicar às
+21h vendo USD/JPY, esquecer, e o Scanner não tentar mais EUR/USD às 8h
+da manhã porque nem está mais na lista). Isso iria contra a própria
+razão de existir do BUG-011 (buscar o melhor mercado a cada momento,
+não travar num instantâneo).
+
+Usuário escolheu a alternativa mais segura proposta: o botão NÃO grava
+nada no Firestore diretamente. Ele prepara um RASCUNHO local
+(localStorage, o mesmo mecanismo que a tela de Config já usa antes de
+"Salvar Configurações") com `pares` substituído pelos pares
+atualmente sugeridos, e leva o usuário pra aba Config pra revisar e
+confirmar manualmente. Nada de produção muda até o clique explícito em
+"Salvar Configurações".
+
+Implementação:
+- `js/pairInsights.js`: botão `#btnAplicarSugestao` (com
+  `data-tab="config"`, reaproveitando o listener de navegação global
+  já existente em `js/app.js`) aparece só quando há pelo menos 1 par
+  sugerido no momento (nunca aparece com a lista vazia - evitaria
+  aplicar uma configuração com ZERO pares, que faria o Scanner parar
+  de rodar por completo). Onclick lê o rascunho local via
+  `carregarConfiguracoes()`, substitui `pares` pelos sugeridos, salva
+  via `salvarConfiguracoes()` (ambas funções de `js/config.js`,
+  reaproveitadas diretamente - diferente da duplicação deliberada da
+  lógica de janela, aqui os dois arquivos rodam no mesmo runtime de
+  navegador, então é reuso normal, não duplicação) e marca
+  `sessionStorage.sugestaoAplicada`.
+- `js/config.js`: nova `avisoSugestaoAplicada()`, chamada no topo da
+  seção "Pares Monitorados" - lê e apaga a flag da sessionStorage,
+  mostrando um aviso ("pares pré-selecionados... nada foi salvo ainda")
+  só na primeira renderização após o clique, nunca em visitas
+  seguintes.
+
+Validado com Playwright (Chromium headless), Firestore simulado com 6
+pares monitorados (2 elegíveis pra janela agora): confirmado que (1)
+o botão só aparece com sugestão não-vazia, (2) o clique troca pra
+Config, grava exatamente os pares sugeridos no rascunho local (não no
+Firestore), marca certo/errado os 20 checkboxes de `TODOS_PARES`, e
+mostra o aviso; (3) o aviso aparece na primeira visita à Config e
+desaparece nas seguintes. Suites de regressão anteriores revalidadas
+sem falha.
+--------
+
