@@ -1,26 +1,31 @@
 // ===================================================
 // FOREX ASSIST - REAL MONEY INTELLIGENCE
-// CÁLCULO (SOMENTE LEITURA) DO SALDO SIMULADO RETROATIVO
+// CÁLCULO DO SALDO SIMULADO RETROATIVO
 //
 // Responsabilidade:
 // Somar o resultadoFinanceiro de TODOS os sinais já
-// fechados no histórico, pra o usuário decidir se
-// aplica esse total como saldo inicial da Conta
-// Simulada (configuracoes/geral.saldoSimulado) ou se
-// prefere começar a contabilizar do zero a partir de
-// agora.
+// fechados no histórico, pra saber quanto a Conta
+// Simulada valeria se recalculada agora.
 //
-// NÃO grava nada no Firestore - só lê e imprime.
+// Por padrão é SOMENTE LEITURA (não grava nada) - só
+// com a flag --aplicar (depois de já ter visto o
+// número e decidido) é que grava o total em
+// configuracoes/geral.saldoSimulado, com confirmação
+// explícita antes de escrever.
+//
 // Precisa ser rodado localmente, com a Service Account
 // de produção (mesmo padrão de corrigir-bug007.js e
 // audit-historico.js, rodados pelo usuário fora do
 // sandbox do Claude Code, que não tem essas
 // credenciais).
 //
-// Uso: node calcular-saldo-simulado-historico.js
+// Uso:
+//   node calcular-saldo-simulado-historico.js            (só calcula e mostra)
+//   node calcular-saldo-simulado-historico.js --aplicar   (calcula, pede confirmação, grava)
 // ===================================================
 
 const admin = require("firebase-admin");
+const readline = require("readline");
 const serviceAccount = require("./serviceAccount.json");
 
 admin.initializeApp({
@@ -28,6 +33,18 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+
+const aplicar = process.argv.includes("--aplicar");
+
+function perguntar(pergunta) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    return new Promise((resolve) => {
+        rl.question(pergunta, (resposta) => {
+            rl.close();
+            resolve(resposta);
+        });
+    });
+}
 
 async function calcular() {
 
@@ -98,9 +115,34 @@ async function calcular() {
         console.log(`  ${par}: $${porPar[par].toFixed(2)}`);
     });
 
+    if (!aplicar) {
+
+        console.log("\n====================================");
+        console.log("Nada foi gravado no Firestore (modo somente leitura).");
+        console.log("Pra gravar esse total como saldoSimulado, rode de novo com --aplicar");
+        console.log("====================================");
+
+        return;
+
+    }
+
     console.log("\n====================================");
-    console.log("Nada foi gravado no Firestore. Este script é somente leitura.");
+    console.log(`Você pediu pra APLICAR: configuracoes/geral.saldoSimulado vai virar $${somaTotal.toFixed(2)}`);
+    console.log("Isso SUBSTITUI o valor atual (não soma) - qualquer coisa que já estivesse ali se perde.");
     console.log("====================================");
+
+    const resposta = await perguntar('Digite "sim" pra confirmar: ');
+
+    if (resposta.trim().toLowerCase() !== "sim") {
+        console.log("Cancelado - nada foi gravado.");
+        return;
+    }
+
+    await db.collection("configuracoes").doc("geral").set({
+        saldoSimulado: Number(somaTotal.toFixed(2))
+    }, { merge: true });
+
+    console.log(`\nGravado: configuracoes/geral.saldoSimulado = $${somaTotal.toFixed(2)}`);
 
 }
 

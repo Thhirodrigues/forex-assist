@@ -7287,32 +7287,42 @@ revisar o Histórico e o Config ao vivo
   explicativo abaixo.
 --------
 
-FERRAMENTA — calcular-saldo-simulado-historico.js (raiz do repo,
-somente leitura)
+FERRAMENTA — calcular-saldo-simulado-historico.js (raiz do repo)
 
 Origem: usuário pediu o cálculo de quanto a Conta Simulada valeria se
 recalculada com TODOS os sinais já fechados no histórico, pra decidir
 entre aplicar esse total como saldo inicial ou começar a contabilizar
 do zero a partir de agora - motivado pela preocupação (ver LIMPEZA-004
 acima, esclarecida como não sendo o problema real) de sinais antigos
-não terem sido analisados do mesmo jeito que os de hoje.
+não terem sido analisados do mesmo jeito que os de hoje. Confirmado
+depois: aplicar o recálculo.
 
-Script novo, só leitura (não grava nada no Firestore, mesmo padrão de
-cautela de `corrigir-bug007.js`/`audit-historico.js`, que também nunca
-existiram versionados neste repositório - rodados localmente pelo
-usuário, com a Service Account, fora do sandbox do Claude Code, que
-não tem essas credenciais). Soma `resultadoFinanceiro` de todo sinal
-`ENCERRADA` com `resultado` WIN/LOSS; sinais sem `resultadoFinanceiro`
-numérico (schema anterior a 28/07/2026) são contados separadamente e
-EXCLUÍDOS da soma - não tem como saber quanto teriam valido com o
-padrão de análise atual. Imprime o total geral, quebrado por mês e por
-par, pra dar visibilidade de onde vem o resultado antes da decisão.
+Soma `resultadoFinanceiro` de todo sinal `ENCERRADA` com `resultado`
+WIN/LOSS; sinais sem `resultadoFinanceiro` numérico (schema anterior a
+28/07/2026 - ver BUG-007) são contados separadamente e EXCLUÍDOS da
+soma - não tem como saber quanto teriam valido com o padrão de análise
+atual. Imprime o total geral, quebrado por mês e por par.
 
-Uso: `node calcular-saldo-simulado-historico.js`, localmente, com
-`serviceAccount.json` presente na raiz do projeto.
+Por padrão é somente leitura (mesmo cuidado de `corrigir-bug007.js`/
+`audit-historico.js`, que também nunca existiram versionados neste
+repositório - rodados localmente pelo usuário, com a Service Account,
+fora do sandbox do Claude Code, que não tem essas credenciais). Com a
+flag `--aplicar`, depois de mostrar o total, pede confirmação
+digitada ("sim") e só então grava em `configuracoes/geral.
+saldoSimulado` (substitui o valor atual, não soma).
 
-Decisão de aplicar o resultado (sobrescrever `configuracoes/geral.
-saldoSimulado`) ou começar do zero a partir de agora fica pro usuário,
-depois de ver o número - não implementado neste script de propósito.
+Uso:
+  `node calcular-saldo-simulado-historico.js` (só calcula e mostra)
+  `node calcular-saldo-simulado-historico.js --aplicar` (calcula, confirma, grava)
+
+Rodar localmente, com `serviceAccount.json` presente na raiz do
+projeto.
+
+Validado isoladamente (scratchpad, 6 cenários, carregando o arquivo
+real via `require()` com `readline`/`firebase-admin`/
+`serviceAccount.json` mockados): sem `--aplicar` nunca escreve, mesmo
+confirmando; com `--aplicar` + "sim" grava a soma exata; com
+`--aplicar` + qualquer outra resposta cancela sem gravar; sinais sem
+`resultadoFinanceiro` continuam excluídos da soma em ambos os modos.
 --------
 
