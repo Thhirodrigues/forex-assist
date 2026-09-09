@@ -186,8 +186,11 @@ async function renderDesempenho() {
         <div class="list-item">
             Conta Real
             <br>
-            <span style="font-size:11px; color:#8c95b3;">Saldo verdadeiro - só se move pelas operações marcadas em Histórico</span>
+            <span style="font-size:11px; color:#8c95b3;">Saldo verdadeiro - se move pelas operações marcadas em Histórico e por aportes</span>
             <div class="big-number">${formatarUSD(resumo.saldoReal)}</div>
+            <button id="btnRegistrarAporte" style="margin-top:8px; width:100%; padding:8px; border:none; border-radius:8px; background:#132852; color:white; font-size:12px; cursor:pointer;">
+                ➕ Registrar Aporte
+            </button>
         </div>
 
         <div class="list-item">
@@ -216,6 +219,41 @@ async function renderDesempenho() {
         inputData.onchange = () => renderizarDesempenhoDiario(inputData.value);
     }
 
+    const btnAporte = document.getElementById("btnRegistrarAporte");
+
+    if (btnAporte) {
+        btnAporte.onclick = () => registrarAporte();
+    }
+
     await renderizarDesempenhoDiario(dataHoje);
+
+}
+
+// FEATURE-006: soma (nunca substitui) um valor ao saldoReal atual -
+// para quando o usuário deposita mais dinheiro na corretora depois do
+// saldo inicial já ter sido definido no Config. Diferente do botão de
+// Config (que SUBSTITUI o valor, ação única de setup).
+async function registrarAporte() {
+
+    const valorTexto = prompt("Quanto você está aportando na Conta Real? (use valor negativo para registrar uma retirada)");
+
+    if (valorTexto === null) return;
+
+    const valor = Number(valorTexto.replace(",", "."));
+
+    if (!Number.isFinite(valor) || valor === 0) {
+        alert("Valor inválido.");
+        return;
+    }
+
+    const configRef = db.collection("configuracoes").doc("geral");
+    const configSnap = await configRef.get();
+    const saldoAtual = Number((configSnap.exists ? configSnap.data() : {}).saldoReal || 0);
+
+    await configRef.set({
+        saldoReal: Number((saldoAtual + valor).toFixed(2))
+    }, { merge: true });
+
+    await renderDesempenho();
 
 }

@@ -46,6 +46,25 @@ function removerSinalAberto(sinalId) {
   }
 }
 
+const NOMES_MES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+
+// "DD/MM/YYYY" -> "MM/YYYY" (chave de ordenação/agrupamento por mês).
+// "Data Indefinida" fica isolada no próprio grupo, no fim da lista.
+function mesChaveDe(dataStr) {
+  if (dataStr === "Data Indefinida") return "0000/00";
+  const [, mm, aaaa] = dataStr.split("/");
+  return `${aaaa}/${mm}`;
+}
+
+function mesLabelDe(dataStr) {
+  if (dataStr === "Data Indefinida") return "Data Indefinida";
+  const [, mm, aaaa] = dataStr.split("/");
+  return `${NOMES_MES[Number(mm) - 1]} ${aaaa}`;
+}
+
 async function carregarHistorico() {
   const lista = document.getElementById("historicoLista");
   const stats = document.getElementById("historicoStats");
@@ -62,7 +81,13 @@ async function carregarHistorico() {
     let losses = 0;
     const gruposPorData = {};
 
+    // FEATURE-007 (09/09/2026): estatística por dia/mês, além do total
+    // global dos últimos 300 - antes só existia um total único
+    // misturando tudo.
+    const statsPorData = {};
+
     const hojeStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    const mesAtualStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", month: "2-digit", year: "numeric" });
     const sinaisAbertos = obterSinaisAbertos();
 
     snapshot.forEach((doc) => {
@@ -89,9 +114,13 @@ async function carregarHistorico() {
       if (sinal.resultado === "WIN") wins++;
       if (sinal.resultado === "LOSS") losses++;
 
-      const dataSinal = dataObj 
-          ? dataObj.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) 
+      const dataSinal = dataObj
+          ? dataObj.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
           : "Data Indefinida";
+
+      if (!statsPorData[dataSinal]) statsPorData[dataSinal] = { wins: 0, losses: 0 };
+      if (sinal.resultado === "WIN") statsPorData[dataSinal].wins++;
+      if (sinal.resultado === "LOSS") statsPorData[dataSinal].losses++;
 
       const isCooldown = sinal.status === "COOLDOWN" || sinal.origem === "cooldown";
 
@@ -536,14 +565,29 @@ ${sinal.resultadoFinanceiro ??
       gruposPorData[dataSinal] += card;
     });
 
-    // Estatísticas
-    const total = wins + losses;
-    const taxa = total > 0 ? ((wins / total) * 100).toFixed(1) : "0";
+    // Estatísticas do topo: mês corrente, não mais o total misturado
+    // dos últimos 300 (FEATURE-007) - calculado sobre a mesma amostra
+    // já buscada (sem consulta extra), somando as datas cujo mês/ano
+    // batem com hoje.
+    let winsMes = 0;
+    let lossesMes = 0;
+    Object.keys(statsPorData).forEach((data) => {
+      if (mesChaveDe(data) === mesChaveDe(hojeStr)) {
+        winsMes += statsPorData[data].wins;
+        lossesMes += statsPorData[data].losses;
+      }
+    });
+    const totalMes = winsMes + lossesMes;
+    const taxaMes = totalMes > 0 ? ((winsMes / totalMes) * 100).toFixed(1) : "0";
+
     if (stats) {
       stats.innerHTML = `
         <div class="card" style="padding:10px;">
+          <div style="font-size:11px; color:#8c95b3; text-align:center; margin-bottom:4px;">
+            ${mesLabelDe(hojeStr)}
+          </div>
           <div style="text-align:center; font-size:17px; font-weight:bold;">
-            ✅ ${wins} &nbsp;&nbsp;&nbsp; ❌ ${losses} &nbsp;&nbsp;&nbsp; 🎯 ${taxa}%
+            ✅ ${winsMes} &nbsp;&nbsp;&nbsp; ❌ ${lossesMes} &nbsp;&nbsp;&nbsp; 🎯 ${taxaMes}%
           </div>
           <button id="btnMinimizarTudo" style="margin-top:10px; width:100%; padding:8px; border:none; border-radius:8px; background:#132852; color:white; font-size:13px; cursor:pointer;">
             Minimizar Tudo
@@ -552,8 +596,12 @@ ${sinal.resultadoFinanceiro ??
       `;
     }
 
-    // Renderização dos Grupos
+    // Renderização dos Grupos: mês -> dia, cada um com seu próprio
+    // placar (FEATURE-007). A lista de sinais em si continua limitada
+    // aos últimos 300 (mesma consulta de sempre) - meses mais antigos
+    // que essa janela simplesmente não aparecem aqui.
     let finalHtml = "";
+
     const datasOrdenadas = Object.keys(gruposPorData).sort((a, b) => {
       if (a === "Data Indefinida") return 1;
       if (b === "Data Indefinida") return -1;
@@ -562,25 +610,78 @@ ${sinal.resultadoFinanceiro ??
       return new Date(ab, mb - 1, db) - new Date(aa, ma - 1, da);
     });
 
+    const mesesOrdenados = [];
     datasOrdenadas.forEach((data) => {
-      const idData = data.replaceAll("/", "");
-      const isHoje = data === hojeStr;
-      const label = isHoje ? `HOJE (${data})` : data;
+      const chave = mesChaveDe(data);
+      if (!mesesOrdenados.includes(chave)) mesesOrdenados.push(chave);
+    });
 
-      const temSinalDestacado =
-    app.sinalParaDestacar &&
-    gruposPorData[data].includes(`id="sinal-${app.sinalParaDestacar}"`);
+    mesesOrdenados.forEach((chaveMes) => {
 
-      const mostrarGrupo =
-    isHoje ||
-    temSinalDestacado;
+      const datasDoMes = datasOrdenadas.filter((data) => mesChaveDe(data) === chaveMes);
+      const labelMes = mesLabelDe(datasDoMes[0]);
+      const idMes = chaveMes.replaceAll("/", "");
+
+      const winsDoMes = datasDoMes.reduce((soma, data) => soma + statsPorData[data].wins, 0);
+      const lossesDoMes = datasDoMes.reduce((soma, data) => soma + statsPorData[data].losses, 0);
+      const totalDoMes = winsDoMes + lossesDoMes;
+      const taxaDoMes = totalDoMes > 0 ? ((winsDoMes / totalDoMes) * 100).toFixed(1) : "0";
+
+      const mesContemHoje = chaveMes === mesChaveDe(hojeStr);
+      const mesContemDestaque =
+        app.sinalParaDestacar &&
+        datasDoMes.some((data) => gruposPorData[data].includes(`id="sinal-${app.sinalParaDestacar}"`));
+      const mostrarMes = mesContemHoje || mesContemDestaque;
+
+      let diasHtml = "";
+
+      datasDoMes.forEach((data) => {
+        const idData = data.replaceAll("/", "");
+        const isHoje = data === hojeStr;
+        const label = isHoje ? `HOJE (${data})` : data;
+        const placarDia = statsPorData[data];
+        const totalDia = placarDia.wins + placarDia.losses;
+        const taxaDia = totalDia > 0 ? ((placarDia.wins / totalDia) * 100).toFixed(1) : "0";
+
+        const temSinalDestacado =
+          app.sinalParaDestacar &&
+          gruposPorData[data].includes(`id="sinal-${app.sinalParaDestacar}"`);
+
+        const mostrarDia = isHoje || temSinalDestacado;
+
+        diasHtml += `
+        <div style="margin-top:10px; border:1px solid rgba(255,255,255,.08); border-radius:10px; overflow:hidden;">
+           <div
+  onclick="
+  const el = document.getElementById('data${idData}');
+  const seta = this.querySelector('.seta-grupo');
+
+  if (el.style.display === 'none') {
+      el.style.display = 'block';
+      seta.innerHTML = '▼';
+  } else {
+      el.style.display = 'none';
+      seta.innerHTML = '▶';
+  }
+  "
+
+      style="padding:10px 12px; font-size:12px; color:#8c95b3; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.03);">
+     <span><span class="seta-grupo" style="margin-right:8px;">${mostrarDia ? "▼" : "▶"}</span>${label}</span>
+     <span style="font-weight:normal;">✅ ${placarDia.wins} ❌ ${placarDia.losses} 🎯 ${taxaDia}%</span>
+      </div>
+      <div id="data${idData}" style="display: ${mostrarDia ? 'block' : 'none'}; padding:10px;">
+        ${gruposPorData[data]}
+      </div>
+        </div>
+        `;
+      });
 
       finalHtml += `
-      <div style="margin-top:16px; border:1px solid rgba(255,255,255,.08); border-radius:10px; overflow:hidden;">
+      <div style="margin-top:16px; border:1px solid rgba(255,255,255,.12); border-radius:10px; overflow:hidden;">
          <div
 onclick="
-const el = document.getElementById('data${idData}');
-const seta = this.querySelector('span');
+const el = document.getElementById('mes${idMes}');
+const seta = this.querySelector('.seta-grupo');
 
 if (el.style.display === 'none') {
     el.style.display = 'block';
@@ -591,11 +692,12 @@ if (el.style.display === 'none') {
 }
 "
 
-    style="padding:10px 12px; font-size:12px; color:#8c95b3; font-weight:bold; cursor:pointer; display:flex; align-items:center; background:rgba(255,255,255,.03);">
-   <span style="margin-right:8px;">${mostrarGrupo ? "▼" : "▶"}</span> ${label}
+    style="padding:12px; font-size:13px; color:#e0e6f5; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.06);">
+   <span><span class="seta-grupo" style="margin-right:8px;">${mostrarMes ? "▼" : "▶"}</span>${labelMes}</span>
+   <span style="font-weight:normal; font-size:12px;">✅ ${winsDoMes} ❌ ${lossesDoMes} 🎯 ${taxaDoMes}%</span>
     </div>
-    <div id="data${idData}" style="display: ${mostrarGrupo ? 'block' : 'none'}; padding:10px;">
-      ${gruposPorData[data]}
+    <div id="mes${idMes}" style="display: ${mostrarMes ? 'block' : 'none'}; padding:8px;">
+      ${diasHtml}
     </div>
       </div>
       `;
@@ -643,12 +745,21 @@ if (el.style.display === 'none') {
     const btnMinimizar = document.getElementById("btnMinimizarTudo");
     if (btnMinimizar) {
       btnMinimizar.onclick = () => {
+        mesesOrdenados.forEach(chaveMes => {
+          const idMes = chaveMes.replaceAll("/", "");
+          const el = document.getElementById(`mes${idMes}`);
+          if (el) {
+            el.style.display = "none";
+            const seta = el.previousElementSibling?.querySelector('.seta-grupo');
+            if (seta) seta.innerHTML = '▶';
+          }
+        });
         datasOrdenadas.forEach(data => {
           const idData = data.replaceAll("/", "");
           const el = document.getElementById(`data${idData}`);
           if (el) {
             el.style.display = "none";
-            const seta = el.previousElementSibling?.querySelector('span');
+            const seta = el.previousElementSibling?.querySelector('.seta-grupo');
             if (seta) seta.innerHTML = '▶';
           }
         });

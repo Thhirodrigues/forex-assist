@@ -7156,3 +7156,71 @@ aprovados estão sendo salvos, com lote/TP/SL variando quando as
 condições de mercado justificarem.
 --------
 
+FEATURE-007 — Histórico agrupado por mês/dia com placar próprio por
+grupo (js/historico.js)
+
+Origem: usuário confirmou o desenho - lista continua limitada aos
+últimos 300 sinais (mesma consulta de sempre), mas agora agrupada
+mês → dia, cada grupo (dia e mês) com seu próprio ✅/❌/🎯, em vez de
+um total único misturando os 300. O resumo fixo no topo da tela passa
+a mostrar o MÊS CORRENTE, não mais o total dos 300 - calculado sobre a
+mesma amostra já buscada (sem consulta extra ao Firestore).
+
+Implementação: `statsPorData` acumula wins/losses por dia junto com
+`gruposPorData` (que já existia, guardando o HTML dos cards). Meses
+agrupados a partir das datas já ordenadas (`mesChaveDe`/`mesLabelDe`,
+novas funções). Mês que contém "hoje" (ou o sinal em destaque) vem
+expandido; dentro dele, o dia de hoje também. "Minimizar Tudo" agora
+colapsa mês E dia.
+
+**Bug pego durante a implementação, antes de subir**: o cabeçalho de
+cada grupo (dia e mês) precisou de dois `<span>` lado a lado (rótulo +
+placar, com `justify-content:space-between`) - isso quebrou o padrão
+antigo de `this.querySelector('span')` pra achar a seta ▼/▶ (com dois
+spans no cabeçalho, ele pegava o span ERRADO - o externo, que envolve
+rótulo inteiro - e sobrescrevia o texto todo do rótulo ao
+expandir/colapsar). Corrigido dando à seta uma classe própria
+(`.seta-grupo`) e trocando todos os `querySelector('span')` relevantes
+(clique no dia, clique no mês, "Minimizar Tudo") por
+`querySelector('.seta-grupo')`.
+
+Validado isoladamente (scratchpad, 13 cenários, simulando 4 dias reais
+distribuídos em 2 meses): HTML balanceado (mesma checagem preventiva
+do BUG-013, com o cenário de múltiplos sinais por dia que expôs aquele
+bug originalmente); resumo do topo mostra o mês corrente com WIN/LOSS
+corretos; cada grupo de mês mostra placar próprio, diferente do total
+geral; "HOJE" aparece e vem expandido; `mesChaveDe`/`mesLabelDe`
+tratam "Data Indefinida" sem quebrar.
+--------
+
+FEATURE-008 — Definir/aportar saldo da Conta Real (js/config.js,
+js/desempenho.js)
+
+Origem: usuário confirmou que vai depositar dinheiro real na
+corretora pra começar a operar - precisa de um jeito de registrar esse
+saldo inicial, e depois só ele deve mudar por WIN/LOSS (já corrigido
+no BUG-019) ou por aporte manual futuro.
+
+Dois mecanismos, propositalmente separados (semânticas diferentes):
+
+1. **Config → "💰 Definir Saldo Inicial da Conta Real Agora"**: ação
+   única de setup, separada do "Salvar Configurações" - usa o valor do
+   campo "Saldo Inicial" e SUBSTITUI `configuracoes/geral.saldoReal`.
+   `confirm()` obrigatório antes de gravar (é destrutivo se usado por
+   engano depois da primeira vez - sobrescreve qualquer WIN/LOSS/aporte
+   já acumulado). Valor precisa ser um número ≥ 0.
+
+2. **Dashboard (card Desempenho) → "➕ Registrar Aporte"**: `prompt()`
+   pede um valor (aceita vírgula decimal BR, aceita negativo pra
+   registrar retirada) e SOMA ao `saldoReal` atual, nunca substitui -
+   uso recorrente, não só a primeira vez.
+
+Validado isoladamente (scratchpad): handler de Config - 6 cenários
+(valor válido grava, confirm cancelado não grava, texto inválido não
+grava e alerta, negativo rejeitado, zero é válido); handler de aporte
+- 9 cenários (soma corretamente, retirada com valor negativo, vírgula
+decimal BR, texto inválido não altera saldo, zero rejeitado, prompt
+cancelado não faz nada, ausência de `configuracoes/geral` prévia trata
+como 0).
+--------
+

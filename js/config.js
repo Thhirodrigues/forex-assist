@@ -518,6 +518,26 @@ value="${config.saldoInicial}"
 
 style="width:100%;">
 
+<br><br>
+
+<button
+
+id="btnDefinirSaldoReal"
+
+class="button"
+
+style="width:100%; padding:8px; border:none; border-radius:8px; background:#8a1f1f; color:white; font-size:12px; cursor:pointer;">
+
+💰 Definir Saldo Inicial da Conta Real Agora
+
+</button>
+
+<div style="font-size:11px; color:#8c95b3; margin-top:4px;">
+
+Usa o valor acima como saldo atual da Conta Real (o que você tem depositado na corretora hoje). Ação única - use só na primeira vez, ou você vai sobrescrever o saldo já acumulado por WIN/LOSS/aportes. Depois disso, registre aportes futuros pelo Dashboard.
+
+</div>
+
 </div>
 
 <div class="list-item">
@@ -1301,6 +1321,56 @@ function bindConfigEvents() {
                 }, 3000);
 
             }
+
+        };
+
+    }
+
+    // FEATURE-006 (09/09/2026): ação única e separada do "Salvar
+    // Configurações" de propósito - grava saldoReal diretamente,
+    // sobrescrevendo o que já estiver acumulado. Confirmação explícita
+    // porque é destrutivo se usado por engano depois da primeira vez.
+    const btnDefinirSaldoReal = document.getElementById("btnDefinirSaldoReal");
+
+    if (btnDefinirSaldoReal) {
+
+        btnDefinirSaldoReal.onclick = async () => {
+
+            const valor = Number(document.getElementById("cfgSaldo")?.value);
+
+            if (!Number.isFinite(valor) || valor < 0) {
+                alert("Informe um valor de Saldo Inicial válido antes de definir a Conta Real.");
+                return;
+            }
+
+            const confirmado = confirm(
+                `Isso vai definir o saldo da Conta Real como $${valor.toFixed(2)}, ` +
+                `substituindo o que estiver lá agora (incluindo qualquer WIN/LOSS/aporte já ` +
+                `acumulado). Use só na primeira vez. Confirma?`
+            );
+
+            if (!confirmado) return;
+
+            btnDefinirSaldoReal.innerHTML = "Salvando...";
+
+            try {
+
+                await db.collection("configuracoes").doc("geral").set({
+                    saldoReal: valor
+                }, { merge: true });
+
+                btnDefinirSaldoReal.innerHTML = "✅ Saldo da Conta Real definido";
+
+            } catch (erro) {
+
+                btnDefinirSaldoReal.innerHTML = "⚠️ Erro ao salvar";
+                console.error("Erro ao definir saldo da Conta Real:", erro);
+
+            }
+
+            setTimeout(() => {
+                btnDefinirSaldoReal.innerHTML = "💰 Definir Saldo Inicial da Conta Real Agora";
+            }, 3000);
 
         };
 
