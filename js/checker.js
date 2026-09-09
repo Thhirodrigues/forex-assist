@@ -195,15 +195,24 @@ function calcularResultadoOperacao({
         lote
     );
 
+    // BUG-020 (09/09/2026): saldoAntes/saldoDepois só eram calculados
+    // (e configuracoes/geral.saldoSimulado só era incrementado, mais
+    // abaixo) quando tipoConta === "SIMULADA" - um switch global único,
+    // mutuamente exclusivo com o fluxo de marcação manual da Conta Real
+    // (js/historico.js). Isso significava que a Conta Simulada - pensada
+    // pra somar TODOS os sinais fechados, sempre, servindo de
+    // comparação "quanto eu teria ganho seguindo tudo" - parava de ser
+    // atualizada assim que o usuário mudasse pra modo Real (justamente
+    // o modo necessário pra usar a marcação manual da Conta Real).
+    // Agora ela sempre acompanha todo sinal fechado, independente do
+    // tipoConta ativo. Conta Real continua responsabilidade exclusiva
+    // da marcação manual em js/historico.js (alternarOperacaoReal),
+    // nunca tocada por aqui.
     const saldoAntes =
-    configuracao.tipoConta === "SIMULADA"
-        ? configuracao.saldoSimulado
-        : configuracao.saldoReal;
+        configuracao.saldoSimulado ?? configuracao.saldoInicial ?? 0;
 
-const saldoDepois =
-    configuracao.tipoConta === "SIMULADA"
-        ? Number((saldoAntes + lucroAtual).toFixed(2))
-        : saldoAntes;
+    const saldoDepois =
+        Number((saldoAntes + lucroAtual).toFixed(2));
 
 const resultadoFinanceiro =
     Number(lucroAtual.toFixed(2));
@@ -364,10 +373,6 @@ const {
 
         const operacao = operacaoSnap.data();
 
-        const configuracaoTransacao =
-    configuracaoSnap.data();
-
-
         // Outro processo já encerrou esta operação
         if (operacao.status !== "ABERTA")
             return;
@@ -407,15 +412,11 @@ const {
             
         });
 
-        if (configuracaoTransacao.tipoConta === "SIMULADA") {
+        transaction.update(configuracaoRef, {
 
-            transaction.update(configuracaoRef, {
+            saldoSimulado: saldoDepois
 
-                saldoSimulado: saldoDepois
-
-            });
-
-        }
+        });
 
     });
 

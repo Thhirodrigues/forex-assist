@@ -23,6 +23,25 @@ function selecionarApi(apiAtiva = 1) {
     apiIndex.value = indice;
 }
 
+// LIMPEZA (09/09/2026): antes disto, o ponto de partida do rodízio vinha
+// do campo "API Ativa" no Config (configuracao.apiAtiva), quase sempre
+// deixado no valor padrão (1) - getApiKey() já gira sozinho a cada
+// chamada dentro de uma mesma execução, então o campo só decidia quem
+// pegava a chamada "extra" quando o total de chamadas do ciclo não é
+// múltiplo de 3. Deixado fixo em 1, a Chave 1 acumulava essa sobra em
+// TODO ciclo, para sempre - um desbalanceamento pequeno por ciclo, mas
+// somado ao longo de meses. Substituído por um ponto de partida que
+// gira sozinho a cada janela de 5 minutos (mesmo intervalo do cron do
+// Scanner), sem precisar de nenhum campo manual no Config.
+function indiceInicialRotativo() {
+
+    const cicloDeCincoMinutos =
+        Math.floor(Date.now() / (5 * 60 * 1000));
+
+    return cicloDeCincoMinutos % API_KEYS.length;
+
+}
+
 // ===================================================
 // API RESILIENCE ENGINE
 // ===================================================
@@ -45,8 +64,7 @@ let CONFIG = {
     retryDelay: 1000,
     timeout: 10000,
     timeframe: "5min",
-    outputsize: 250,
-    apiAtiva: 1
+    outputsize: 250
 };
 
 function configurarMarketData(config = {}) {
@@ -58,11 +76,10 @@ function configurarMarketData(config = {}) {
     // Chamado UMA vez por execução do Scanner (não a cada getCandles()
     // - ver comentário dentro de getCandles() sobre por que isso
     // importa). Define apenas o PONTO DE PARTIDA do rodízio round-robin
-    // desta execução; getApiKey() continua girando normalmente a cada
-    // requisição a partir daí.
-    if (config.apiAtiva !== undefined) {
-        selecionarApi(config.apiAtiva);
-    }
+    // desta execução (agora automático - ver indiceInicialRotativo());
+    // getApiKey() continua girando normalmente a cada requisição a
+    // partir daí.
+    apiIndex.value = indiceInicialRotativo();
 }
 
 function esperar(ms) {

@@ -6847,3 +6847,170 @@ perfil ativo está considerando. Correção pendente de decisão do
 usuário sobre se vale a pena replicar a mesma hierarquia ali.
 --------
 
+LIMPEZA-003 — remoção do campo "API Ativa" do Config + rotação
+automática do ponto de partida (scripts/marketData.js, scripts/
+scanner.js, js/config.js)
+
+Origem: usuário notou que `scripts/utils.js`'s `getApiKey()` já faz
+round-robin de verdade nas 3 chaves da TwelveData a cada chamada,
+tornando o campo "API Ativa" do Config redundante - o campo só definia
+o PONTO DE PARTIDA desse rodízio a cada execução do Scanner, não se a
+rotação acontecia.
+
+Confirmado no código antes de remover: `apiAtiva` fixo em 1 (padrão,
+nunca alterado na prática) fazia a Chave 1 sistematicamente pegar a
+chamada "extra" em todo ciclo em que o total de chamadas não fosse
+múltiplo de 3 - desbalanceamento pequeno por ciclo, mas cumulativo ao
+longo de meses.
+
+Correção: campo removido do Config (`js/config.js` - `<select>
+#cfgApi`, `configuracaoPadrao()`, `obterConfiguracoesTela()`, payload
+de salvamento) e de `CONFIG_PADRAO`/chamada a `configurarMarketData()`
+em `scripts/scanner.js`. Nova função `indiceInicialRotativo()` em
+`scripts/marketData.js`: ponto de partida passa a girar sozinho a cada
+janela de 5 minutos (`Math.floor(Date.now()/(5*60*1000)) %
+API_KEYS.length`), sem depender de nenhum campo manual.
+
+Validado isoladamente (scratchpad): `configurarMarketData()` sem
+`apiAtiva` não lança erro; índice calculado sempre no intervalo válido
+[0,2]; 3 janelas de 5 min consecutivas cobrem as 3 chaves sem repetir.
+--------
+
+BUG-019 — js/historico.js (alternarOperacaoReal nunca movia saldoReal)
+
+Severidade: CRÍTICA (a Conta Real - o saldo verdadeiro do usuário -
+nunca refletia nenhuma operação marcada/desmarcada como real, desde
+que essa função existe).
+
+Origem: usuário descreveu o desenho original da Conta Real (marcar
+manualmente quais sinais operou de verdade na corretora; WIN soma,
+LOSS subtrai) e pediu avaliação de se isso estava funcionando.
+
+Achado: a função primeiro ATUALIZAVA o documento com
+`operacaoReal: marcado` (o novo estado) e só DEPOIS relia o mesmo
+documento pra descobrir `jaMarcado` (se já estava marcado antes) -
+nesse ponto o documento já tinha o valor novo, então `jaMarcado` saía
+sempre igual a `marcado`. As duas condições que movem `saldoReal`
+(`marcado && !jaMarcado` / `!marcado && jaMarcado`) exigem
+`jaMarcado !== marcado` - logicamente impossíveis do jeito que
+estavam. `saldoReal` nunca mudava, reescrito com o mesmo valor a cada
+clique no checkbox, não importa quantas operações fossem marcadas.
+
+Correção: lê o estado ANTERIOR (`jaMarcado`) antes de escrever o novo
+valor, não depois.
+
+Validado isoladamente (scratchpad, 10 cenários): marcar operação WIN
+pela 1ª vez soma o lucro; desmarcar operação já marcada subtrai de
+volta; marcar de novo uma operação já marcada não soma duas vezes;
+sequência de múltiplas marcações/desmarcações resulta no saldo líquido
+correto; operação sem `resultadoFinanceiro` (ainda ABERTA) só marca o
+campo, não mexe no saldo nem quebra por falta de
+`configuracoes/geral`.
+--------
+
+BUG-020 — js/checker.js (Conta Simulada só atualizava no modo
+Simulada, mutuamente exclusiva com a Conta Real)
+
+Severidade: CRÍTICA (o desenho original da Conta Simulada - somar
+TODOS os sinais fechados, sempre, servindo de comparação "quanto eu
+teria ganho seguindo tudo" - não existia; ela só rodava enquanto o
+modo global não fosse o mesmo necessário pra Conta Real funcionar).
+
+Origem: mesma conversa do BUG-019 - usuário descreveu que a Conta
+Simulada deveria somar/subtrair automaticamente com TODO sinal que o
+aplicativo buscar, independente de qualquer outra coisa, e começar
+zerada (depois ajustado: sem reset, acumulado desde sempre, com filtro
+diário separado no Dashboard - ver FEATURE-006).
+
+Achado: `saldoAntes`/`saldoDepois` só eram calculados, e
+`configuracoes/geral.saldoSimulado` só era incrementado na transação
+de fechamento, quando `configuracao.tipoConta === "SIMULADA"`.
+`tipoConta` é um switch global único (`<select>` "Conta" no Config:
+Simulada OU Real) - no modo Real (o modo necessário pra usar a
+marcação manual da Conta Real, ver BUG-019), a Conta Simulada
+simplesmente parava de ser atualizada.
+
+Correção: `saldoAntes`/`saldoDepois` agora vêm sempre de
+`configuracao.saldoSimulado` (fallback `saldoInicial`, depois 0),
+independente de `tipoConta`; a transação em
+`db.runTransaction()` atualiza `configuracoes/geral.saldoSimulado`
+incondicionalmente a cada operação fechada. `saldoReal` nunca é tocado
+por este arquivo - continua responsabilidade exclusiva da marcação
+manual em `js/historico.js`. Variável `configuracaoTransacao`, que só
+existia pra alimentar o `if` removido, também removida (órfã).
+
+Validado isoladamente (scratchpad, 7 cenários, extraindo as funções
+puras do arquivo sem tocar no `firebase-admin`/`serviceAccount.json`
+do topo): modo REAL agora calcula saldoAntes/saldoDepois normalmente
+(antes ficava `undefined`/travado); modo SIMULADA sem regressão;
+`saldoSimulado` ausente cai pro `saldoInicial`, não `NaN`; `saldoReal`
+da configuração nunca influencia o cálculo.
+--------
+
+FEATURE-006 — Card "Desempenho" no Dashboard (js/desempenho.js)
+
+Origem: consequência direta dos BUG-019/BUG-020 - corrigido o backend,
+faltava onde o usuário pudesse efetivamente ver Conta Real, Conta
+Simulada e a contagem de sinais. Também consolida, no Dashboard, uma
+visão "desde sempre" mais confiável que o card equivalente já
+existente em `js/historico.js` (`#historicoStats`, o card "Histórico
+de Sinais" com ✅/❌/🎯) - que conta só os últimos 300 sinais (
+`orderBy("timestamp","desc").limit(300)`), não o total real. As duas
+telas agora podem, de propósito, mostrar números diferentes
+(Dashboard = total verdadeiro; Histórico = janela dos últimos 300) -
+documentado aqui pra não parecer inconsistência não-intencional se
+alguém comparar os dois no futuro.
+
+Decisões de design (confirmadas com o usuário antes de implementar):
+- Card fica no Dashboard, não no Config.
+- Conta Simulada mostra o acumulado desde sempre, sem reset automático.
+- Filtro por dia é uma seção separada abaixo do acumulado (não
+substitui o total, complementa).
+- Conta Real permanece como está (BUG-019 já corrigiu o mecanismo).
+
+Implementação (`js/desempenho.js`, novo arquivo):
+- `hojeBrasilStr()`/`limitesDoDiaBrasil()`: usam o offset fixo
+-03:00 de America/Sao_Paulo (Brasil não tem horário de verão desde
+2019, confirmado via WebSearch nesta sessão) - evita depender de
+conversão de fuso horário do navegador.
+- `contarPorResultado()`: usa `.count()` (agregação nativa do
+Firestore - conta sem baixar os documentos, custo irrelevante mesmo
+com milhares de sinais; confirmado disponível no SDK Admin instalado,
+`node_modules/@google-cloud/firestore@6.8.0`) com fallback pra leitura
+normal em `catch` - **não foi possível confirmar `.count()` no SDK do
+navegador** (`firebase-firestore-compat.js@10.12.2`) porque a política
+de rede deste ambiente bloqueia `gstatic.com` (confirmado via
+`/__agentproxy/status` - `connect_rejected`/403 pra esse host); o
+fallback existe justamente pra cobrir essa incerteza sem arriscar
+quebrar a tela em produção. Validar no primeiro uso real.
+- `obterDesempenhoDoDia()`: consulta só com `where("timestamp",">=",
+inicio).where("timestamp","<",fim)` - intervalo no MESMO campo não
+exige índice composto novo (usa o índice automático de campo único);
+`resultado`/soma de `resultadoFinanceiro` filtrados em memória, mesmo
+padrão já usado em `js/historico.js`/`js/checker.js`. Mesma cautela do
+BUG-018 (evitar `where` composto que dependa de índice não
+provisionado).
+
+Wiring: `js/expert.js` (`dashboardView()`, novo `#desempenhoCard`
+entre "Modo Atual" e "Sinais Hoje"), `js/app.js` (hook de pós-render
+do Dashboard, mesmo padrão `typeof === "function"` + `setTimeout` já
+usado por `renderSugestaoAgora`/`renderModoAtual`), `index.html`
+(`<script src="js/desempenho.js">` antes de `js/app.js`).
+
+Validado isoladamente (scratchpad, 15 cenários): limites de dia
+corretos (24h exatas); formatação de USD (positivo/negativo/
+undefined); contagem via `.count()` e via fallback dão o mesmo
+resultado; consulta diária separa corretamente o dia filtrado de dias
+adjacentes e ignora operações ainda `ABERTA`; `obterResumoGeral()` lê
+saldoReal/saldoSimulado corretos, cai pro `saldoInicial` quando
+`saldoSimulado` está ausente, e não quebra se `configuracoes/geral`
+não existir. HTML gerado renderizado e checado (balanceamento de tags
+`<div>`) - mesma classe de bug do BUG-013 (HTML corrompido) verificada
+preventivamente aqui.
+
+Pendente, fora de escopo desta correção: `#historicoStats` (o card de
+Histórico) roda sua própria consulta de 300 documentos toda vez que a
+aba abre - migrar pra `.count()` também é uma melhoria futura possível,
+não feita agora por não ter sido pedida.
+--------
+

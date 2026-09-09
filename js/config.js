@@ -110,8 +110,6 @@ function configuracaoPadrao() {
 
     saldoInicial: 1000,
 
-    apiAtiva: 1,
-
     pares: [
 
         "EUR/USD",
@@ -493,59 +491,6 @@ ${avisoSugestaoAplicada()}
 <div id="cfgConsumoApi">${renderizarConsumoApi(config)}</div>
 
 ${renderizarPares(config)}
-
-</div>
-
-<div class="card">
-
-<div class="card-title">
-
-🔑 API TwelveData
-
-</div>
-
-<div class="list-item">
-
-API Ativa
-
-<br><br>
-
-<select
-id="cfgApi"
-style="width:100%;">
-
-<option
-value="1"
-${config.apiAtiva==1?"selected":""}>
-API 1
-</option>
-
-<option
-value="2"
-${config.apiAtiva==2?"selected":""}>
-API 2
-</option>
-
-<option
-value="3"
-${config.apiAtiva==3?"selected":""}>
-API 3
-</option>
-
-</select>
-
-</div>
-
-<div
-class="list-item"
-style="
-font-size:12px;
-color:#8c95b3;
-">
-
-Rotação automática preparada para integração.
-
-</div>
 
 </div>
 
@@ -1092,18 +1037,6 @@ janelaSeguranca: Number(
 
             ),
 
-        apiAtiva:
-
-            Number(
-
-                document.getElementById(
-
-                    "cfgApi"
-
-                ).value
-
-            ),
-
         conta:
 
             document.getElementById(
@@ -1303,7 +1236,6 @@ function bindConfigEvents() {
                         lote: config.lote,
                         tp: config.tp,
                         sl: config.sl,
-                        apiAtiva: config.apiAtiva,
                         pares: config.pares,
                         tipoConta: config.conta === "real" ? "REAL" : "SIMULADA",
                         saldoInicial: config.saldoInicial

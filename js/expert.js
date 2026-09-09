@@ -21,6 +21,10 @@ function dashboardView() {
     </div>
 
     <div class="card">
+        <div id="desempenhoCard">Carregando...</div>
+    </div>
+
+    <div class="card">
         <div class="card-title">Sinais Hoje</div>
         <div id="sinaisHoje" class="big-number">0</div>
     </div>

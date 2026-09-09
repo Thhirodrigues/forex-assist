@@ -666,28 +666,39 @@ window.alternarOperacaoReal = async function (id, marcado) {
 
     const db = firebase.firestore();
 
-    await db
+    const docRef = db
         .collection("historico")
-        .doc(id)
-        .update({
+        .doc(id);
 
+    // BUG-019 (09/09/2026): antes disto, o doc era ATUALIZADO com o
+    // novo valor de operacaoReal e só DEPOIS relido pra saber "se já
+    // estava marcado antes" - nesse ponto o documento já tinha o valor
+    // novo, então jaMarcado sempre saía igual a marcado, e nenhuma das
+    // duas condições abaixo (marcado && !jaMarcado / !marcado &&
+    // jaMarcado) conseguia ser verdadeira. saldoReal nunca se movia,
+    // não importa quantas operações fossem marcadas/desmarcadas. Agora
+    // o estado ANTERIOR é lido antes de escrever o novo.
+    const doc = await docRef.get();
+
+    const sinal = doc.data();
+
+    if (!sinal || !sinal.resultadoFinanceiro) {
+
+        await docRef.update({
             operacaoReal: marcado
-
         });
 
-     const doc = await db
-    .collection("historico")
-    .doc(id)
-    .get();
+        carregarHistorico();
+        return;
+    }
 
-const sinal = doc.data();
+    const jaMarcado = Boolean(sinal.operacaoReal);
 
-const jaMarcado = Boolean(sinal.operacaoReal);
+    await docRef.update({
 
-if (!sinal || !sinal.resultadoFinanceiro) {
-    carregarHistorico();
-    return;
-}
+        operacaoReal: marcado
+
+    });
 
   const configRef = db
     .collection("configuracoes")

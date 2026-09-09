@@ -1,0 +1,221 @@
+// ===================================================
+// FOREX ASSIST - REAL MONEY INTELLIGENCE
+// DESEMPENHO (Dashboard)
+//
+// Responsabilidade:
+// Mostrar no Dashboard a Conta Real (saldoReal - só se
+// move pela marcação manual em Histórico, ver
+// js/historico.js) e a Conta Simulada (saldoSimulado -
+// acumulado desde sempre, somado automaticamente em
+// TODO sinal fechado independente do tipoConta ativo,
+// ver BUG-020 em js/checker.js), além da contagem de
+// WIN/LOSS (desde sempre e num dia filtrável).
+//
+// FEATURE-006
+// ===================================================
+
+// Brasil não tem horário de verão desde 2019 (confirmado via WebSearch
+// nesta sessão, DOCUMENTACAO/ENGINEERING.md) - o offset de
+// America/Sao_Paulo é sempre -03:00, fixo. Isso permite calcular os
+// limites de um dia sem depender de conversão de fuso horário do
+// navegador (evita erro de "meio-dia deslocado" perto de virada de
+// mês/ano em cálculos ingênuos com Date).
+function hojeBrasilStr() {
+
+    return new Date().toLocaleDateString(
+        "sv-SE",
+        { timeZone: "America/Sao_Paulo" }
+    );
+
+}
+
+function limitesDoDiaBrasil(dataStr) {
+
+    const inicio =
+        new Date(`${dataStr}T00:00:00-03:00`).getTime();
+
+    const fim =
+        inicio + 24 * 60 * 60 * 1000;
+
+    return { inicio, fim };
+
+}
+
+function formatarUSD(valor) {
+
+    const numero = Number(valor) || 0;
+    const sinal = numero < 0 ? "-" : "";
+
+    return `${sinal}$${Math.abs(numero).toFixed(2)}`;
+
+}
+
+async function contarPorResultado(resultado) {
+
+    const query =
+        db.collection("historico").where("resultado", "==", resultado);
+
+    try {
+
+        // .count() é uma agregação nativa do Firestore - conta sem
+        // baixar o conteúdo dos documentos, custo praticamente
+        // irrelevante mesmo com milhares de sinais (confirmado
+        // disponível no SDK Admin usado no backend, node_modules/
+        // @google-cloud/firestore@6.8.0; NÃO foi possível confirmar
+        // diretamente no SDK do navegador porque a política de rede
+        // deste ambiente bloqueia gstatic.com - o fallback abaixo
+        // cobre esse caso).
+        const snap = await query.count().get();
+        return snap.data().count;
+
+    } catch (erro) {
+
+        // SDK sem suporte a .count() (ou qualquer outra falha na
+        // agregação) - cai pra leitura normal. Mais caro (lê os
+        // documentos inteiros), mas nunca quebra a tela.
+        const snap2 = await query.get();
+        return snap2.size;
+
+    }
+
+}
+
+async function obterDesempenhoDoDia(dataStr) {
+
+    const { inicio, fim } = limitesDoDiaBrasil(dataStr);
+
+    // Filtro por intervalo no MESMO campo (timestamp) usa só o índice
+    // automático de campo único do Firestore - não exige nenhum índice
+    // composto novo. status/resultado são filtrados em memória, mesmo
+    // padrão já usado em js/historico.js e js/checker.js. limit(1000)
+    // é rede de segurança (um dia real não deve nem chegar perto
+    // disso), não uma amostragem.
+    const snapshot = await db.collection("historico")
+        .where("timestamp", ">=", inicio)
+        .where("timestamp", "<", fim)
+        .limit(1000)
+        .get();
+
+    let wins = 0;
+    let losses = 0;
+    let somaSimulada = 0;
+
+    snapshot.forEach(doc => {
+
+        const dados = doc.data();
+
+        if (dados.resultado === "WIN" || dados.resultado === "LOSS") {
+
+            if (dados.resultado === "WIN") wins++;
+            else losses++;
+
+            somaSimulada += Number(dados.resultadoFinanceiro || 0);
+
+        }
+
+    });
+
+    return {
+        wins,
+        losses,
+        total: wins + losses,
+        somaSimulada: Number(somaSimulada.toFixed(2))
+    };
+
+}
+
+async function obterResumoGeral() {
+
+    const configSnap =
+        await db.collection("configuracoes").doc("geral").get();
+
+    const config =
+        configSnap.exists ? configSnap.data() : {};
+
+    const [winsTotal, lossesTotal] = await Promise.all([
+        contarPorResultado("WIN"),
+        contarPorResultado("LOSS")
+    ]);
+
+    return {
+        saldoReal: Number(config.saldoReal || 0),
+        saldoSimulado: Number(config.saldoSimulado ?? config.saldoInicial ?? 0),
+        winsTotal,
+        lossesTotal,
+        totalSinais: winsTotal + lossesTotal
+    };
+
+}
+
+async function renderizarDesempenhoDiario(dataStr) {
+
+    const alvo = document.getElementById("desempenhoDiario");
+    if (!alvo) return;
+
+    alvo.innerHTML = "Carregando...";
+
+    const dia = await obterDesempenhoDoDia(dataStr);
+
+    const taxa =
+        dia.total === 0
+            ? 0
+            : Number((dia.wins * 100 / dia.total).toFixed(1));
+
+    alvo.innerHTML = `
+        <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:14px;">
+            <span>✅ ${dia.wins}</span>
+            <span>❌ ${dia.losses}</span>
+            <span>🎯 ${taxa}%</span>
+            <span>Simulado no dia: ${formatarUSD(dia.somaSimulada)}</span>
+        </div>
+    `;
+
+}
+
+async function renderDesempenho() {
+
+    const alvo = document.getElementById("desempenhoCard");
+    if (!alvo) return;
+
+    const resumo = await obterResumoGeral();
+    const dataHoje = hojeBrasilStr();
+
+    alvo.innerHTML = `
+        <div class="card-title">💰 Desempenho</div>
+
+        <div class="list-item">
+            Conta Real
+            <br>
+            <span style="font-size:11px; color:#8c95b3;">Saldo verdadeiro - só se move pelas operações marcadas em Histórico</span>
+            <div class="big-number">${formatarUSD(resumo.saldoReal)}</div>
+        </div>
+
+        <div class="list-item">
+            Conta Simulada
+            <br>
+            <span style="font-size:11px; color:#8c95b3;">Acumulado desde sempre, somando todo sinal (não reseta)</span>
+            <div class="big-number">${formatarUSD(resumo.saldoSimulado)}</div>
+        </div>
+
+        <div class="list-item">
+            Sinais desde sempre: ✅ ${resumo.winsTotal} · ❌ ${resumo.lossesTotal} · Total ${resumo.totalSinais}
+        </div>
+
+        <div class="list-item">
+            Filtrar por dia
+            <br><br>
+            <input type="date" id="desempenhoDataFiltro" value="${dataHoje}" style="width:100%;">
+        </div>
+
+        <div id="desempenhoDiario">Carregando...</div>
+    `;
+
+    const inputData = document.getElementById("desempenhoDataFiltro");
+
+    if (inputData) {
+        inputData.onchange = () => renderizarDesempenhoDiario(inputData.value);
+    }
+
+    await renderizarDesempenhoDiario(dataHoje);
+
+}

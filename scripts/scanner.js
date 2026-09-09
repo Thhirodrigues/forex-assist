@@ -90,8 +90,6 @@ tipoConta: "SIMULADA",
 
 saldoInicial: 1000,
 
-apiAtiva: 1,
-
 timeframe: "5min",
 
 outputsize: 250,
@@ -147,8 +145,6 @@ async function criarContextoExecucao() {
     configuracao.candles = outputsize;
 
     configurarMarketData({
-
-    apiAtiva: configuracao.apiAtiva,
 
     timeframe: configuracao.timeframe || "5min",
 
