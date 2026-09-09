@@ -258,14 +258,40 @@ async function verificarSinais() {
     console.log("====================================");
     console.log("Forex Assist Result Checker");
     console.log("====================================");
-    
-   const configuracaoSnap = await configuracaoRef.get();
-    
-    const snapshot = await db
-    .collection("historico")
-    .where("status", "==", "ABERTA")
-    .get();
-    
+
+    // BUG-014: estas duas leituras (config + operações pendentes)
+    // nunca tiveram proteção contra erro - diferente de
+    // scripts/scanner.js, que sempre isolou a leitura de config e
+    // cada par num try/catch próprio. Quando a cota do Firestore
+    // estoura, essas duas leituras falham e, sem captura, o processo
+    // quebra sem tratamento - o GitHub Actions marca a execução
+    // inteira como "failed" (diferente do Scanner, que sempre
+    // aparece verde mesmo com o mesmo erro, porque ele já se
+    // protegia). Isso gerava uma enchente de e-mails de "Run failed"
+    // a cada 5 minutos.
+    let configuracaoSnap;
+    let snapshot;
+
+    try {
+
+        configuracaoSnap = await configuracaoRef.get();
+
+        snapshot = await db
+            .collection("historico")
+            .where("status", "==", "ABERTA")
+            .get();
+
+    } catch (erro) {
+
+        console.log(
+            `Erro ao ler Firestore (configuração/operações pendentes): ${erro.message}`
+        );
+        console.log("Abortando esta execução do Result Checker.");
+
+        return;
+
+    }
+
     console.log(`Pendentes: ${snapshot.size}`);
 
 
@@ -453,4 +479,14 @@ console.log(resumoOperacao);
 
 }
 
-verificarSinais();
+verificarSinais().catch((erro) => {
+
+    // Rede de segurança final: qualquer erro que escape dos
+    // try/catch internos (ex.: bug novo, não a cota já tratada acima)
+    // ainda derruba a execução com sinal de erro real - não queremos
+    // mascarar um bug genuíno, só parar a enchente de "Run failed"
+    // causada especificamente pela cota do Firestore.
+    console.log(`Erro fatal no Result Checker: ${erro.message}`);
+    process.exit(1);
+
+});

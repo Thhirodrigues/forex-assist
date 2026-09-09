@@ -6626,3 +6626,52 @@ volta a ler normalmente ao voltar pro primeiro plano. Suites de
 regressão anteriores revalidadas sem falha.
 --------
 
+BUG-016 — js/checker.js (Result Checker) quebrava sem tratamento com
+a cota do Firestore estourada, gerando enchente de "Run failed"
+
+Severidade: MÉDIA (mesma causa raiz do BUG-014, mas com sintoma
+diferente e mais visível - alarme falso repetido, não perda de
+funcionalidade nova).
+
+Origem: usuário reportou centenas de e-mails do GitHub
+("[Thhirodrigues/forex-assist] Run failed: Result Check"), um a cada
+~5 minutos desde as 15:51, e perguntou se tinha relação com a cota do
+Firestore (BUG-014/015).
+
+Confirmado: sim, mesma causa, sintoma diferente. `scripts/scanner.js`
+sempre isolou a leitura de configuração e a análise de cada par em
+`try/catch` próprios - por isso aparece ✅ verde no GitHub Actions
+mesmo com `RESOURCE_EXHAUSTED` acontecendo o tempo todo (loga o erro,
+degrada pro fallback, continua). `js/checker.js` nunca teve essa
+proteção nas duas primeiras leituras da função `verificarSinais()`
+(buscar `configuracoes/geral` e buscar operações com `status ==
+"ABERTA"`, linhas 262-267) - só o processamento de cada operação
+pendente, individualmente, tinha `try/catch`. Com a cota estourada,
+essas duas leituras iniciais lançavam exceção sem nenhuma captura,
+virando uma promise rejeitada sem tratamento - o processo Node
+encerrava com erro, e o GitHub Actions marcava a execução inteira como
+"failed", gerando um e-mail a cada ciclo do cron (5 em 5 minutos).
+
+Corrigido: as duas leituras iniciais agora estão dentro de um
+`try/catch` que loga a mensagem de erro real e retorna (sem lançar),
+mesmo padrão de degradação graciosa já usado em
+`scripts/scanner.js`. Mantida uma rede de segurança final
+(`verificarSinais().catch(...)`) que ainda derruba a execução
+(`process.exit(1)`) para qualquer erro genuinamente inesperado que
+escape dos `try/catch` internos - a intenção é parar o alarme falso
+específico da cota, não mascarar um bug novo e real.
+
+Validado: função extraída e testada isoladamente (sem depender das
+credenciais reais do Firebase Admin, indisponíveis neste ambiente) com
+Firestore simulado - 6 cenários (cota estourada na leitura de
+configuração, cota estourada na leitura do histórico, cenário normal
+sem pendências) - todos corretos: a função retorna normalmente e loga
+a causa em vez de lançar exceção, tanto na config quanto no histórico;
+o fluxo normal continua funcionando sem regressão. Suites de
+regressão anteriores revalidadas sem falha.
+
+Não validado: comportamento real no GitHub Actions (só pode ser
+confirmado depois do deploy, na próxima execução real do
+`result-checker.yml`).
+--------
+
