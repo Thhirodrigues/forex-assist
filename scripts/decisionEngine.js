@@ -198,16 +198,17 @@ function avaliarOperacao(resultado) {
     tendencia,
     confianca,
 
-    risco: {
-        lote: resultado.financeiro?.lote,
-        tpUSD: resultado.financeiro?.tpUSD,
-        slUSD: resultado.financeiro?.slUSD,
-        riscoRetorno: null,
-        riscoPercentual: null,
-        aprovado: true,
-        justificativas: []
-    },
-
+    // BUG-021 (09/09/2026): este objeto `risco` era montado com
+    // resultado.financeiro?.lote/tpUSD/slUSD, mas pairAnalyzer.js
+    // nunca passa `financeiro` pra avaliarOperacao() - resultado.
+    // financeiro sempre foi undefined aqui, e riscoRetorno/
+    // riscoPercentual já vinham hardcoded null mesmo quando
+    // funcionasse. O resultado prático: pairAnalyzer.js's `const risco
+    // = decisao.risco || {...}` sempre pegava ESTE objeto quebrado (é
+    // truthy, então o fallback correto - que já usa o financeiro real,
+    // no escopo certo - nunca era alcançado). Removido: sem `.risco`
+    // aqui, pairAnalyzer.js cai no próprio fallback, que já tem acesso
+    // direto ao `financeiro` calculado corretamente por moneyManager.js.
     justificativas
 };
 
@@ -227,19 +228,9 @@ function avaliarOperacao(resultado) {
     tendencia,
     confianca,
 
-    risco: {
-        lote: resultado.financeiro?.lote,
-        tpUSD: resultado.financeiro?.tpUSD,
-        slUSD: resultado.financeiro?.slUSD,
-        riscoRetorno: null,
-        riscoPercentual: null,
-        aprovado: true,
-        justificativas: []
-    },
-
     justificativas
 };
-        
+
 
     }
 

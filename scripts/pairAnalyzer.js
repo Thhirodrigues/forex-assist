@@ -53,7 +53,8 @@ rsi,
 calcularADX,
 calcularATR,
 calcularQualidade,
-existeCooldown
+existeCooldown,
+salvarOperacao
 
 }) {
 
@@ -279,15 +280,24 @@ if (qualidade.historico === "RUIM") {
 
         // ===================================================
 // RISCO
-// (temporariamente vindo do Decision Engine)
 // ===================================================
-
+//
+// BUG-021 (09/09/2026): o comentário original dizia "temporariamente
+// vindo do Decision Engine", mas decisionEngine.js's avaliarOperacao()
+// nunca chegou a devolver um campo `.risco` - decisao.risco sempre foi
+// undefined, então este fallback SEMPRE era o valor usado, com
+// riscoRetorno/riscoPercentual fixos em null. financeiro.rewardRisk/
+// riscoPercentual (calculados corretamente por moneyManager.js) nunca
+// chegavam ao documento salvo - só ficavam acessíveis via o campo
+// aninhado operacao.financeiro.rewardRisk, não no nível esperado por
+// quem lesse operacao.rewardRisk diretamente. Corrigido: usa os
+// valores já calculados por financeiro em vez de null fixo.
 const risco = decisao.risco || {
     lote: financeiro.lote,
     tpUSD: financeiro.tpUSD,
     slUSD: financeiro.slUSD,
-    riscoRetorno: null,
-    riscoPercentual: null,
+    riscoRetorno: financeiro.rewardRisk,
+    riscoPercentual: financeiro.riscoPercentual,
     aprovado: true,
     justificativas: []
 };
@@ -375,6 +385,8 @@ const operacao = decisao.operacao || {
     rewardRisk: risco.riscoRetorno,
 
     riscoPercentual: risco.riscoPercentual,
+
+    expectativa: financeiro.expectativa,
 
     aprovado: risco.aprovado,
 

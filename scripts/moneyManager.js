@@ -307,9 +307,20 @@ function calcularRiscoPercentual(
 // AVALIAÇÃO DA CONFIGURAÇÃO
 // ===================================================
 
+// BUG-021 (09/09/2026): usava DEFAULT_CONFIG.riscoMaximo (1.0% fixo) e
+// rewardRisk < 1 fixo, ignorando o perfil (CONSERVADOR/BALANCEADO/
+// AGRESSIVO) - PERFIL_FINANCEIRO define riscoPorOperacao/rrMinimo
+// diferentes por perfil (1%/2%/3%), mas essa função, que é a que
+// REALMENTE bloqueia o sinal (via financeiro.recomendacao ->
+// decisionEngine.js's avaliarOperacao), sempre aplicava o teto do
+// Conservador pra qualquer perfil. validarPerfilFinanceiro() já fazia
+// a conta certa, por perfil, mas nunca era lida por ninguém (campo
+// morto). Agora as duas usam a mesma fonte de regras.
 function avaliarConfiguracao(
 
-    configuracao
+    configuracao,
+
+    perfil = "CONSERVADOR"
 
 ) {
 
@@ -321,11 +332,13 @@ function avaliarConfiguracao(
 
     } = configuracao;
 
+    const regras = obterPerfilFinanceiro(perfil);
+
     let aprovada = true;
 
     let motivo = "APROVADA";
 
-    if (rewardRisk < 1) {
+    if (rewardRisk < regras.rrMinimo) {
 
         aprovada = false;
 
@@ -333,7 +346,7 @@ function avaliarConfiguracao(
 
     }
 
-    if (riscoPercentual > DEFAULT_CONFIG.riscoMaximo) {
+    if (riscoPercentual > regras.riscoPorOperacao) {
 
         aprovada = false;
 
@@ -359,7 +372,9 @@ function avaliarConfiguracao(
 
 function sugerirConfiguracao(
 
-    configuracao
+    configuracao,
+
+    perfil = "CONSERVADOR"
 
 ) {
 
@@ -369,11 +384,13 @@ function sugerirConfiguracao(
 
     };
 
+    const regras = obterPerfilFinanceiro(perfil);
+
     if (
 
         sugestao.riscoPercentual >
 
-        DEFAULT_CONFIG.riscoMaximo
+        regras.riscoPorOperacao
 
     ) {
 
@@ -390,14 +407,14 @@ function sugerirConfiguracao(
 
     if (
 
-        sugestao.rewardRisk < 1
+        sugestao.rewardRisk < regras.rrMinimo
 
     ) {
 
         sugestao.tpUSD =
             Number(
 
-                (sugestao.slUSD * 1.2)
+                (sugestao.slUSD * Math.max(regras.rrMinimo, 1.2))
 
                 .toFixed(2)
 
@@ -510,13 +527,26 @@ function decidirConfiguracaoMercado({
 
     };
 
+    // BUG-021 (09/09/2026): "score" aqui recebe estatisticas.resumo.
+    // taxaAcerto (taxa de acerto HISTÓRICA do par, 0-100), não a
+    // qualidade de mercado do sinal atual - nome enganoso herdado de
+    // quando as funções deste arquivo foram separadas. Taxa de acerto
+    // real em Forex bater 80% é raríssimo (pares reais ficam na faixa
+    // de 30-50%), então "if (score < 80) return" disparava quase
+    // sempre e ISSO SAÍA ANTES de qualquer ajuste por ADX/ATR/
+    // expectativa abaixo - lote/TP/SL saíam sempre iguais ao valor
+    // bruto do Config, nunca ajustados. E o motivo dessa saída
+    // (decisao/risco aqui) nunca era lido por ninguém pra bloquear o
+    // sinal de verdade (quem bloqueia é avaliarConfiguracao(), já
+    // corrigida acima pra usar o perfil certo) - ou seja, essa saída
+    // antecipada não protegia nada, só desligava o próprio ajuste que
+    // deveria fazer. Removida: os ajustes abaixo agora sempre rodam,
+    // baseados nas condições reais do mercado no momento do sinal.
+    // Taxa de acerto baixa continua registrada, só que como aviso
+    // informativo, não mais como bloqueio da lógica de ajuste.
     if (score < 80) {
 
-        configuracao.decisao = "NAO_OPERAR";
-
-        configuracao.risco = "ALTO";
-
-        return configuracao;
+        configuracao.risco = "HISTORICO_FRACO";
 
     }
 
@@ -559,18 +589,22 @@ function decidirConfiguracaoMercado({
 
 function simularOperacao(
 
-    configuracao
+    configuracao,
+
+    perfil = "CONSERVADOR"
 
 ) {
 
     const avaliacao =
         avaliarConfiguracao(
-            configuracao
+            configuracao,
+            perfil
         );
 
     const sugestao =
         sugerirConfiguracao(
-            configuracao
+            configuracao,
+            perfil
         );
 
     return {
@@ -747,7 +781,8 @@ const decisaoMercado =
     
     const simulacao =
         simularOperacao(
-            configuracao
+            configuracao,
+            perfil
         );
 
     const recomendacao =

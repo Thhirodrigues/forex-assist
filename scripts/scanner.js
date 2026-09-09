@@ -21,10 +21,6 @@ const {
 } = require("./statisticsEngine");
 
 const {
-    calcularRisco
-} = require("./riskEngine");
-
-const {
     configurarMarketData,
     getCandles
 } = require("./marketData");
@@ -842,27 +838,31 @@ async function processarOperacaoSalva(
 
 ) {
 
-    const risco = calcularRisco({
+    // BUG-021 (09/09/2026): este resumo chamava riskEngine.js's
+    // calcularRisco() pra recalcular lote/TP/SL/risco só pra este log -
+    // um SEGUNDO motor de risco, nunca gravado no Firestore, calculando
+    // com premissas diferentes do moneyManager.js (que é quem de fato
+    // decide o que é salvo). Na prática o log mostrava números que não
+    // batiam com a operação real, silenciosamente. Removido o
+    // recálculo paralelo: agora imprime os valores REAIS que foram
+    // salvos em resultado.operacao (já corretamente ajustados por
+    // scripts/moneyManager.js). riskEngine.js continua no repositório,
+    // sem uso ativo - ver ENGINEERING.md sobre seu destino em aberto.
+    const risco = {
 
-        score:
-            resultado.operacao.score,
+        lote: resultado.operacao.lote,
 
-        historico:
-            estatisticas,
+        tpUSD: resultado.operacao.tpUSD,
 
-        atr:
-            resultado.operacao.atr,
+        slUSD: resultado.operacao.slUSD,
 
-        loteBase:
-            resultado.operacao.lote,
+        riscoPercentual: resultado.operacao.riscoPercentual,
 
-        tpBase:
-            resultado.operacao.tpUSD,
+        rewardRisk: resultado.operacao.rewardRisk,
 
-        slBase:
-            resultado.operacao.slUSD
+        expectativa: resultado.operacao.expectativa
 
-    });
+    };
 
     console.log("");
 

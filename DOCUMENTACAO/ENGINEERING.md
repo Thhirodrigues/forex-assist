@@ -7014,3 +7014,145 @@ aba abre - migrar pra `.count()` também é uma melhoria futura possível,
 não feita agora por não ter sido pedida.
 --------
 
+BUG-021 — sinal aprovado nunca era salvo de verdade + lote/TP/SL
+adaptativo desligado desde a separação em arquivos (scripts/
+pairAnalyzer.js, scripts/decisionEngine.js, scripts/moneyManager.js)
+
+Severidade: MÁXIMA (nenhum sinal aprovado consegue ser salvo desde
+29/07/2026; quando consegue, o ajuste de lote/TP/SL por condição de
+mercado nunca roda).
+
+Origem: usuário relatou que o app costumava sugerir lote/TP/SL
+diferentes conforme a análise de mercado (tinha prints antigos
+mostrando isso), mas hoje só vê o valor fixo do Config (lote 0,04,
+TP/SL $5). Disse acreditar que a quebra veio "da separação das funções
+de cada arquivo" e que foi provavelmente o ponto em que parou de mexer
+no app com a IA anterior.
+
+**Achado 1 (o mais grave, não é o que o usuário reportou - achado
+durante a investigação) - scripts/pairAnalyzer.js nunca salva um sinal
+aprovado**: `analisarPar()` chama `await salvarOperacao(db, operacao)`
+na linha 405, mas `salvarOperacao` NUNCA fez parte dos parâmetros
+desestruturados da função - `scripts/scanner.js` sempre passou
+`salvarOperacao` corretamente na chamada, mas `pairAnalyzer.js` nunca
+recebia. Confirmado via `git log -L` que isso existe desde a criação
+do arquivo (commit `198e55e`, "Refactor risk calculation logic in
+pairAnalyzer.js", **29/07/2026**) - nunca foi corrigido depois.
+Confirmado empiricamente (scratchpad, chamando `analisarPar()` de
+verdade com um cenário que aprova o sinal): lança
+`ReferenceError: salvarOperacao is not defined`, capturado pelo
+`try/catch` da própria função (linha 446), que devolve
+`{status:"ERRO", motivo: e.message}` - **nenhuma operação aprovada é
+persistida no Firestore**, e aparece só como "erro interno" genérico
+nas estatísticas do Scanner (`context.estatisticas.erros++`), sem
+nenhum sinal visível de que o problema é justamente não conseguir
+salvar. Esse bug nunca foi percebido porque, no período analisado
+nesta sessão, os pares ativos estavam todos REPROVADO (score abaixo do
+mínimo do perfil) - o código nunca chegava a tentar salvar. No momento
+em que qualquer sinal passar a ser aprovado (por exemplo, testando o
+perfil Agressivo, ou por mudança real de mercado), ele vai falhar
+silenciosamente. Isso bate com a suspeita do usuário: a "separação das
+funções de cada arquivo" (o refactor de 29/07) é literalmente onde e
+quando isso quebrou, e coincide com a época em que ele relata ter
+parado de mexer no projeto com a IA anterior.
+
+Correção: `salvarOperacao` adicionado de volta aos parâmetros
+desestruturados de `analisarPar()`.
+
+**Achado 2 - scripts/moneyManager.js's decidirConfiguracaoMercado()
+nunca chegava a ajustar lote/TP/SL**: recebe `score: probabilidade`,
+onde `probabilidade` é, na verdade, `estatisticas.resumo.taxaAcerto` -
+a taxa de acerto HISTÓRICA do par (0-100), não a qualidade do sinal
+atual (nome herdado da separação em arquivos). A primeira linha da
+função era `if (score < 80) { decisao: "NAO_OPERAR"; risco: "ALTO";
+return; }` - taxa de acerto real em Forex bater 80% é raríssima (os 5
+pares ativos hoje estão entre 29-45%), então essa condição disparava
+quase sempre e SAÍA ANTES de qualquer ajuste por ADX (mercado fraco),
+ATR (mercado lento) ou expectativa matemática negativa - lote/TP/SL
+saíam sempre iguais ao valor bruto do Config. Esse "NAO_OPERAR" nunca
+bloqueava nada de verdade (nada lê `decisaoMercado.decisao` pra
+reprovar o sinal - quem bloqueia é `avaliarConfiguracao()`, separada,
+ver Achado 3) - só desligava o próprio ajuste que deveria fazer.
+Explica por que o comportamento antigo (visto nos prints do usuário)
+sumiu: com histórico pequeno, a taxa de acerto passa de 80% por acaso
+com facilidade (2-3 WINs seguidos); com histórico maduro (30-50
+operações), ela se estabiliza numa faixa realista e a trava nunca mais
+abre.
+
+Correção: removida a saída antecipada; os ajustes por ADX/ATR/
+expectativa agora sempre rodam. Taxa de acerto baixa continua
+registrada (`risco: "HISTORICO_FRACO"`), só que como informação, não
+mais bloqueando o ajuste.
+
+**Achado 3 - avaliarConfiguracao() (o gate que REALMENTE bloqueia,
+via `recomendacaoFinanceira` lido por `decisionEngine.js`'s
+`avaliarOperacao()`) ignorava o perfil**: usava
+`DEFAULT_CONFIG.riscoMaximo` (1,0% fixo) e `rewardRisk < 1` fixo pra
+QUALQUER perfil, mesmo `PERFIL_FINANCEIRO` definindo
+`riscoPorOperacao`/`rrMinimo` diferentes por perfil (Conservador 1%/
+1.2, Balanceado 2%/1.0, Agressivo 3%/1.0).
+`validarPerfilFinanceiro()` já fazia a conta certa, por perfil, mas
+seu resultado (`validacaoPerfil`) nunca era lido por ninguém - campo
+morto. Na prática, todo perfil operava sob o teto do Conservador
+sem saber.
+
+Correção: `avaliarConfiguracao()` e `sugerirConfiguracao()` passam a
+receber `perfil` e usar `obterPerfilFinanceiro(perfil)` pras regras
+certas, a mesma fonte que `validarPerfilFinanceiro()` já usava
+corretamente.
+
+**Achado 4 - o `risco` que decisionEngine.js devolvia pro sinal
+aprovado (BUY/SELL) estava quebrado E escondia o fallback correto**:
+`avaliarOperacao()` devolvia `risco: {lote: resultado.financeiro?.
+lote, ..., riscoRetorno: null, riscoPercentual: null}` -
+`resultado.financeiro` nunca existe (pairAnalyzer.js nunca passa
+`financeiro` nessa chamada), então lote/tpUSD/slUSD saíam `undefined`,
+e riscoRetorno/riscoPercentual eram hardcoded `null` de qualquer
+forma. Pior: por ser um objeto (truthy, mesmo quebrado), isso fazia
+`pairAnalyzer.js`'s `const risco = decisao.risco || {fallback
+correto}` SEMPRE escolher esse objeto quebrado - o fallback certo
+(que já tinha acesso direto ao `financeiro` real, calculado
+corretamente) nunca era alcançado. `operacao.rewardRisk`/
+`riscoPercentual` salvos no Firestore eram sempre `null`, mesmo depois
+do Achado 2/3 corrigidos.
+
+Correção: removido o bloco `risco: {...}` de `decisionEngine.js` (nos
+dois branches, COMPRA e VENDA) - `pairAnalyzer.js` volta a cair no
+próprio fallback, que já usa `financeiro.rewardRisk`/
+`financeiro.riscoPercentual` reais. Também adicionado `expectativa:
+financeiro.expectativa` no nível raiz de `operacao` (antes só existia
+aninhado em `operacao.financeiro.expectativa`).
+
+**Limpeza relacionada (scripts/scanner.js)**: `processarOperacaoSalva()`
+chamava `riskEngine.js`'s `calcularRisco()` - um SEGUNDO motor de
+risco, nunca escrito no Firestore, calculando com o `score` de
+mercado correto (diferente do Achado 2) mas só pra imprimir um resumo
+no log do GitHub Actions. Como usava premissas diferentes do
+`moneyManager.js` (que decide o que é salvo de verdade), o log exibia
+números que não batiam com a operação real - silenciosamente
+enganoso. Removida a chamada; o log agora imprime os valores REAIS
+salvos em `resultado.operacao`. `scripts/riskEngine.js` continua no
+repositório, sem nenhum uso ativo - fica como está, é provavelmente o
+início da tentativa "RMI V2" que o usuário lembra ter abandonado nesse
+mesmo ponto. Destino (integrar/remover) segue em aberto.
+
+Validado: 12 cenários isolados em `moneyManager.js` (ajuste dinâmico
+volta a rodar; perfil correto em `avaliarConfiguracao`/
+`sugerirConfiguracao`) + 7 cenários end-to-end chamando
+`analisarPar()` de verdade (sinal aprovado agora É salvo; rewardRisk/
+riscoPercentual/expectativa não são mais `null`) + 1 cenário adicional
+confirmando que ADX fraco reduz lote/TP/SL até o documento salvo
+(0,04→0,02, 5→3) + 1 cenário SELL (branch de venda, também corrigida).
+Toda a suíte de testes das correções anteriores desta sessão
+(BUG-017, BUG-018, BUG-019, BUG-020, LIMPEZA-003, FEATURE-006)
+revalidada sem falha.
+
+**Pendência conforme a regra não-negociável do CLAUDE.md**: esta
+correção mexe direto no que decide se um sinal é salvo e com que
+lote/risco. Antes de deixar o Scanner rodando sozinho via cron sem
+supervisão, validar manualmente os primeiros ciclos reais após o
+deploy - conferir no Firestore/log do GitHub Actions se sinais
+aprovados estão sendo salvos, com lote/TP/SL variando quando as
+condições de mercado justificarem.
+--------
+
