@@ -6766,3 +6766,84 @@ mesmo `try/catch` por par que já isola outros erros de Firestore no
 Scanner, sem derrubar a execução inteira).
 --------
 
+BUG-018 — scripts/statisticsEngine.js (pool estatístico compartilhado
+entre perfis operacionais)
+
+Severidade: CRÍTICA (contamina silenciosamente o histórico usado pelo
+score de qualquer perfil - o tipo de problema que a seção "Qualidade de
+sinal da RMI" do CLAUDE.md trata como não-negociável).
+
+Origem: usuário ia testar o perfil Agressivo (score mínimo 35, sem
+exigência de multi-timeframe) como diagnóstico, e perguntou se cada
+perfil deveria ter sua própria avaliação - preocupado que operações
+abertas num perfil mais permissivo acabassem influenciando o Balanceado
+e principalmente o Conservador, que deveria ser o mais rigoroso.
+
+Confirmado no código: cada operação salva em `historico` já é gravada
+com o campo `perfil` (o que a aprovou - ver `scripts/pairAnalyzer.js`
+linhas 183/231, existente desde antes desta sessão). Mas
+`obterEstatisticasPar()` sempre consultou só por
+`where("par","==",par)`, sem nenhum filtro por perfil - o
+`taxaAcerto`/`winStreak`/`pesoEstatistico`/`status` usados por
+QUALQUER perfil vinham do mesmo pool misto. Uma operação aprovada pelo
+Agressivo (barra mais baixa) virava "evidência" também para o
+Conservador, que nunca teria aprovado aquele sinal.
+
+Correção: hierarquia de rigor entre perfis (AGRESSIVO=1, BALANCEADO=2,
+CONSERVADOR=3 - ver `PERFIL_ANALISE` em `scripts/decisionEngine.js`).
+Nova função `operacaoAtendeRigorDoPerfil(perfilOperacao, perfilAtual)`:
+uma operação só conta como evidência pro perfil atual se foi aprovada
+por um perfil igual ou mais rigoroso. Na prática: Conservador só
+aprende com o que o próprio Conservador aprovou; Balanceado aprende com
+Balanceado+Conservador; Agressivo aprende com todos os três (é o mais
+permissivo, então qualquer evidência mais rigorosa continua válida pra
+ele). Documento sem campo `perfil` (histórico anterior ao recurso, se
+existir) é tratado como BALANCEADO - mesmo fallback que o próprio
+`pairAnalyzer.js` já usava na gravação.
+
+Decisão deliberada de implementação: o filtro é aplicado em memória,
+sobre a mesma amostra de até 50 documentos que o BUG-017 já busca
+(`where par== + orderBy timestamp desc + limit 50`, sem nenhuma
+alteração) - não como `where("perfil","in",[...])` adicional na
+consulta. Um filtro assim exigiria um índice composto novo (par +
+perfil + timestamp) ainda não provisionado no Firestore de produção; a
+primeira execução real quebraria pedindo criação manual do índice,
+justamente no momento em que o usuário ia rodar o diagnóstico do
+Agressivo. Filtrar em memória evita esse risco operacional sem
+aumentar o custo de leitura por consulta (continua no máximo 50,
+mesmo limite de sempre).
+
+Efeito colateral aceito e correto: como o filtro atua sobre a mesma
+amostra de 50 (não busca mais documentos pra compensar), o perfil
+Conservador pode enxergar MENOS de 50 operações mesmo quando o par tem
+50+ no Firestore, se boa parte delas foi aprovada por outros perfis -
+isso é o comportamento pretendido (evidência escassa e correta é
+melhor que evidência abundante e emprestada de um perfil mais
+permissivo).
+
+`scripts/scanner.js`: `executarAnalisePar()` agora passa
+`context.configuracao?.perfil` como terceiro argumento pra
+`obterEstatisticasPar()`.
+
+Validado isoladamente (scratchpad, 16 cenários): tabela de rigor
+completa (cada perfil vendo/não vendo evidência de cada outro);
+case-insensitive; documento sem `perfil` tratado como BALANCEADO;
+`perfilAtual` não informado não quebra (fallback BALANCEADO); consulta
+ao Firestore inalterada (mesmo where/orderBy/limit de sempre, sem novo
+campo); cenário com 50 operações misturadas entre os 3 perfis
+confirma contagem exata por perfil atual (Agressivo vê 50, Balanceado
+vê 40, Conservador vê 15). Suite de regressão do BUG-017 revalidada
+sem falha (11/11).
+
+Não fixado nesta correção (fora de escopo, registrado para o futuro):
+`js/pairInsights.js`'s `calcularDesempenhoPorPar()` - a função que
+alimenta o card "Sugestão de Agora" do Dashboard - é uma implementação
+duplicada e independente que também consulta `historico` (com
+`.limit(500)`) sem filtro por perfil. Ela é só informativa (não
+alimenta o Decision Engine), mas sofre da mesma inconsistência
+conceitual: o desempenho mostrado ao usuário no Dashboard mistura
+operações de todos os perfis, podendo divergir do que o score real do
+perfil ativo está considerando. Correção pendente de decisão do
+usuário sobre se vale a pena replicar a mesma hierarquia ali.
+--------
+

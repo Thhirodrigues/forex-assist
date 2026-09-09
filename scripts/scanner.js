@@ -683,7 +683,8 @@ async function executarAnalisePar(context,par) {
         const estatisticas =
             await obterEstatisticasPar(
                 db,
-                par
+                par,
+                context.configuracao?.perfil
             );
 
         iniciarAnalisePar(

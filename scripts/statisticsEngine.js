@@ -26,9 +26,43 @@ const OPERACOES_MINIMAS_HISTORICO = 30;
 // impossível de atingir, mesmo com histórico real muito maior.
 const AMOSTRA_MAXIMA_HISTORICO = 50;
 
+// Hierarquia de rigor entre perfis operacionais (ver PERFIL_ANALISE em
+// scripts/decisionEngine.js). Cada operação salva em "historico" é
+// gravada com o perfil que a aprovou (scripts/pairAnalyzer.js). Sem
+// filtro, o pool estatístico de um par ficava compartilhado entre os 3
+// perfis: uma operação aberta pelo Agressivo (barra mais baixa, sem
+// exigir multi-timeframe) virava "evidência" também para o Balanceado e
+// o Conservador, que nunca teriam aprovado aquele mesmo sinal.
+//
+// Regra: uma operação só conta como evidência para o perfil ATUAL se
+// foi aprovada por um perfil igualmente ou mais rigoroso. Conservador só
+// aprende com o que o próprio Conservador aprovou; Agressivo aprende com
+// tudo (é o mais permissivo, então qualquer evidência mais rigorosa
+// ainda é válida pra ele).
+const RIGOR_PERFIL = {
+    AGRESSIVO: 1,
+    BALANCEADO: 2,
+    CONSERVADOR: 3
+};
+
+function operacaoAtendeRigorDoPerfil(perfilOperacao, perfilAtual) {
+
+    const rigorOperacao =
+        RIGOR_PERFIL[(perfilOperacao || "BALANCEADO").toUpperCase()] ||
+        RIGOR_PERFIL.BALANCEADO;
+
+    const rigorAtual =
+        RIGOR_PERFIL[(perfilAtual || "BALANCEADO").toUpperCase()] ||
+        RIGOR_PERFIL.BALANCEADO;
+
+    return rigorOperacao >= rigorAtual;
+
+}
+
 async function obterEstatisticasPar(
     db,
-    par
+    par,
+    perfilAtual
 ) {
     // BUG-017: a consulta buscava TODO o histórico do par, sem limite
     // - Firestore cobra 1 leitura por documento retornado, então isso
@@ -38,6 +72,15 @@ async function obterEstatisticasPar(
     // existeCooldown() já usa em produção há tempos, e o custo por
     // consulta se estabiliza em no máximo AMOSTRA_MAXIMA_HISTORICO
     // leituras, para sempre, não importa quanto histórico se acumule.
+    //
+    // O filtro por perfil (operacaoAtendeRigorDoPerfil, abaixo) é
+    // aplicado nesta amostra já buscada, não como where() adicional na
+    // consulta - um novo where("perfil","in",[...]) aqui exigiria um
+    // índice composto novo (par + perfil + timestamp) ainda não
+    // provisionado no Firestore, e a primeira execução em produção
+    // quebraria com erro de índice faltando até alguém criar
+    // manualmente pelo link do console. Filtrar em memória evita esse
+    // risco sem aumentar o custo de leitura (mesmo limit de sempre).
     const snapshot =
     await db
         .collection("historico")
@@ -56,8 +99,11 @@ snapshot.forEach(doc => {
     const dados = doc.data();
 
     if (
-        dados.resultado === "WIN" ||
-        dados.resultado === "LOSS"
+        (
+            dados.resultado === "WIN" ||
+            dados.resultado === "LOSS"
+        ) &&
+        operacaoAtendeRigorDoPerfil(dados.perfil, perfilAtual)
     ) {
 
         operacoesHistorico.push(dados);
@@ -347,6 +393,8 @@ SELL: {
 
 module.exports = {
 
-    obterEstatisticasPar
+    obterEstatisticasPar,
+
+    operacaoAtendeRigorDoPerfil
 
 };
