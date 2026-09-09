@@ -53,12 +53,19 @@ histórico alimenta o aprendizado futuro do sistema. Por isso:
   técnico por arquivo. É o documento mais confiável do lote, mas precisa ser
   conferido contra o código quando algo parecer decisivo (arquitetura muda
   mais rápido do que a auditoria é atualizada).
-- Histórico do projeto (por que começou, quando o pensamento mudou): em
-  reorganização — hoje espalhado entre `WORKLOG_DEFINITIVO.md`,
-  `CHANGELOG.md`, `FASE05-RMI-EXPERT` e os dois `DOCUMENTO_MESTRE`, com
-  duplicação real entre eles.
-- Estado atual e próximo passo: ainda não centralizado (é parte do trabalho
-  de reorganização em andamento). Até lá, perguntar antes de assumir.
+- **Estado atual e próximo passo** (comece por aqui em qualquer sessão
+  nova): `DOCUMENTACAO/ESTADO_ATUAL.md` — atualizado por cima, não é log
+  cronológico. Diz o que está confirmado funcionando, o que está
+  quebrado/pendente, e a ordem do próximo passo.
+- Histórico do projeto (por que começou, quando e por que o pensamento
+  mudou): resumo verificado em `ESTADO_ATUAL.md` (seção 1). O detalhe
+  completo ainda está espalhado entre `WORKLOG_DEFINITIVO.md`,
+  `CHANGELOG.md`, `FASE05-RMI-EXPERT` e os dois `DOCUMENTO_MESTRE`
+  (~27 mil linhas, formato narrativo, duplicação real entre eles) —
+  consolidação pendente, aguardando cruzamento com um backup de
+  conversas da IA anterior que o usuário vai trazer. Até lá, tratar
+  como contexto histórico, nunca como prova de estado atual (mesma
+  ressalva de sempre).
 
 ## Ambiente
 
