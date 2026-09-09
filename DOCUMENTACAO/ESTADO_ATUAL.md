@@ -158,13 +158,22 @@ final em produção ainda pendente (ver seção 5).
   app é inconclusivo (o Scanner cai no fallback `CONFIG_PADRAO`, não
   lê o que foi salvo).
 - **`scripts/pairAnalyzer.js` — reportado pelo usuário como
-  "completamente corrompido na fase de divisão de arquivos".** Só uma
-  checagem superficial foi feita até agora (achado: variável `direcao`
-  usada sem `const`/`let`, gerando global implícita — inofensivo hoje
-  porque os pares rodam em sequência, mas seria condição de corrida se
-  isso rodasse em paralelo no futuro). **Investigação a fundo
-  pendente**, aguardando o backup das conversas da IA anterior que o
-  usuário vai cruzar. Não presumir que está tudo certo nesse arquivo.
+  "completamente corrompido na fase de divisão de arquivos".** Contexto
+  importante (09/09/2026): este foi especificamente o arquivo onde a IA
+  anterior **empacou o projeto inteiro** — dizia repetidamente que ia
+  corrigir e não corrigia, até o usuário desistir de insistir com ela.
+  Ou seja, não é só um arquivo com um bug qualquer: é o ponto onde a
+  tentativa anterior de seguir o princípio "preservar lógica, depois
+  reorganizar" (seção 1) parece ter falhado de verdade, sem nunca ter
+  sido resolvido. Só uma checagem superficial foi feita até agora nesta
+  sessão (achado: variável `direcao` usada sem `const`/`let`, gerando
+  global implícita — inofensivo hoje porque os pares rodam em
+  sequência, mas seria condição de corrida se isso rodasse em paralelo
+  no futuro). **Investigação a fundo pendente**, aguardando o backup
+  das conversas da IA anterior que o usuário vai cruzar — especialmente
+  útil aqui pra entender O QUE ela tentou e por que travou. Não
+  presumir que está tudo certo nesse arquivo, e não repetir o padrão de
+  "prometer conserto sem entregar".
 - **`scripts/riskEngine.js`** — módulo de risco separado e
   parcialmente redundante com `decisionEngine.js`/`moneyManager.js`;
   usa thresholds diferentes; tem um bug conhecido (lê
