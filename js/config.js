@@ -504,7 +504,7 @@ ${renderizarPares(config)}
 
 <div class="list-item">
 
-Saldo Inicial
+Saldo Inicial (USD)
 
 <br><br>
 
@@ -542,6 +542,10 @@ Usa o valor acima como saldo atual da Conta Real (o que você tem depositado na 
 
 <div class="list-item">
 
+Base de Cálculo de Risco
+
+<br><br>
+
 <select
 
 id="cfgConta"
@@ -552,7 +556,7 @@ style="width:100%;">
 value="simulada"
 ${config.conta=="simulada"?"selected":""}>
 
-Conta Simulada
+Usar saldo da Conta Simulada
 
 </option>
 
@@ -560,11 +564,17 @@ Conta Simulada
 value="real"
 ${config.conta=="real"?"selected":""}>
 
-Conta Real
+Usar saldo da Conta Real
 
 </option>
 
 </select>
+
+<div style="font-size:11px; color:#8c95b3; margin-top:4px;">
+
+Conta Simulada e Conta Real são sempre atualizadas juntas (ver Dashboard) - isso aqui só decide qual das duas é usada como referência pro cálculo de risco por operação (ex: SL de $5 é X% de qual saldo). Use "Conta Real" quando já estiver operando com dinheiro de verdade na corretora.
+
+</div>
 
 </div>
 

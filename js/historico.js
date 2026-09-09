@@ -145,7 +145,7 @@ async function carregarHistorico() {
           <div style="margin-top:4px; font-size:12px; color:#8c95b3;">
             ${sinal.loteUtilizado ? `💳 Lote: <b>${sinal.loteUtilizado}</b> | ` : ""}${dataSinal} &nbsp; 
             ${dataObj ? dataObj.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 5) : "--:--"}
-            ${!isCooldown ? ` | Qualidade: ${sinal.qualidade ?? "-"}%` : ""}
+            ${!isCooldown ? ` | Qualidade: ${sinal.qualidade ?? "-"}${sinal.score !== undefined ? ` (${sinal.score}%)` : ""}` : ""}
           </div>
           ${sinal.movimentoPips !== undefined ? `
             <div style="margin-top:6px; font-size:12px; color:${sinal.resultado === 'WIN' ? '#00ff88' : '#ff4444'}; font-weight:bold;">
@@ -793,11 +793,27 @@ window.alternarOperacaoReal = async function (id, marcado) {
 
     const sinal = doc.data();
 
-    if (!sinal || !sinal.resultadoFinanceiro) {
+    // BUG-022 (09/09/2026): o guard original (`!sinal.resultadoFinanceiro`)
+    // saía em silêncio sempre que o campo estava ausente - o caso mais
+    // comum sendo sinais de antes de 28/07/2026, quando o schema usava
+    // `lucroAtual` em vez de `resultadoFinanceiro` (ver BUG-007 em
+    // ENGINEERING.md). O usuário marcava o checkbox, nada acontecia
+    // com a Conta Real, e não havia nenhuma indicação do motivo -
+    // parecia que o BUG-019 não tinha funcionado. Também usava `!` puro
+    // (falsy), o que trataria um resultadoFinanceiro genuinamente igual
+    // a 0 como "ausente" - trocado por checagem explícita de tipo.
+    if (!sinal || typeof sinal.resultadoFinanceiro !== "number") {
 
         await docRef.update({
             operacaoReal: marcado
         });
+
+        alert(
+            "Esse sinal não tem resultado financeiro registrado " +
+            "(comum em sinais de antes de 28/07/2026, de um schema " +
+            "anterior) - a marcação foi salva, mas não é possível somar " +
+            "ou subtrair da Conta Real sem esse valor."
+        );
 
         carregarHistorico();
         return;

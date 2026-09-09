@@ -7224,3 +7224,95 @@ cancelado não faz nada, ausência de `configuracoes/geral` prévia trata
 como 0).
 --------
 
+BUG-022 — js/historico.js (checkbox "Operação Real" falhava em
+silêncio pra sinais antigos, parecendo que o BUG-019 não funcionou)
+
+Origem: usuário testou o checkbox "Operação Real" (corrigido no
+BUG-019) num sinal de 28/07/2026 e reportou que a Conta Real não
+mudou.
+
+Achado: o guard `if (!sinal || !sinal.resultadoFinanceiro)` (linha
+logo após a correção do BUG-019) sai sem tocar `saldoReal` sempre que
+o documento não tem `resultadoFinanceiro` numérico - o caso exato de
+sinais de antes de 28/07/2026, quando o schema usava `lucroAtual` em
+vez de `resultadoFinanceiro` (documentado no BUG-007). O sinal
+testado pelo usuário é datado exatamente 28/07/2026 - bem na fronteira
+dessa transição de schema, então muito provavelmente cai do lado
+antigo. O código em si estava correto (não dá pra somar/subtrair um
+valor que não existe), mas saía **em silêncio** - sem nenhuma
+indicação de que a marcação foi salva mas o saldo não pôde ser
+ajustado, dando a impressão de que a correção do BUG-019 não tinha
+funcionado.
+
+Correção: `alert()` explicando o motivo quando isso acontece. Also
+trocado o guard de `!sinal.resultadoFinanceiro` (falsy) para
+`typeof sinal.resultadoFinanceiro !== "number"` - um resultado
+genuinamente igual a `0` é um valor válido (operação empatou/fechou
+sem lucro nem prejuízo), não deveria ser tratado como "ausente".
+
+Validado isoladamente (scratchpad, 6 cenários): sinal sem
+`resultadoFinanceiro` dispara o alerta e não mexe no saldo;
+`resultadoFinanceiro === 0` NÃO dispara alerta e processa normalmente;
+sinal com valor válido continua funcionando sem regressão do BUG-019.
+--------
+
+LIMPEZA-004 — pequenos ajustes de clareza pedidos pelo usuário após
+revisar o Histórico e o Config ao vivo
+
+- **"Qualidade: BOA%" não fazia sentido** (`js/historico.js`):
+  `sinal.qualidade` é uma categoria (INSTITUCIONAL/FORTE/BOA/
+  ACEITAVEL/CONFLITO, de `classificarQualidade()` em
+  `marketAnalyzer.js`), não um número - o template sempre apendava um
+  "%" nela, pra TODO sinal, sempre, desde que esse card existe. Não é
+  evidência de sinais analisados de forma diferente ao longo do tempo
+  (preocupação que o usuário levantou ao ver "ACEITAVEL%" e "BOA%" em
+  sinais próximos) - são só dois sinais reais com scores diferentes
+  (a classificação funcionando como esperado), mal exibidos. Corrigido
+  pra mostrar `Qualidade: BOA (85%)` - categoria + o score numérico
+  real (`sinal.score`) entre parênteses, só quando presente.
+- **"Saldo Inicial" sem indicar a moeda** (`js/config.js`): outros
+  campos monetários do Config já tinham "(USD)" no rótulo (Take
+  Profit, Stop Loss) - Saldo Inicial não tinha. Adicionado.
+- **Campo "Conta Simulada/Conta Real" no Config parecia inútil**
+  (`js/config.js`): não é - `scripts/pairAnalyzer.js` usa
+  `configuracao.tipoConta` pra decidir qual saldo (`saldoSimulado` ou
+  `saldoReal`) vira a `banca` usada no cálculo de risco por operação
+  (`riscoPercentual = slUSD/banca*100`, parte do BUG-021 já corrigido
+  hoje). Ficou confuso DEPOIS do BUG-020 (que fez as duas contas
+  atualizarem sempre, juntas) porque parecia que esse campo não fazia
+  mais diferença nenhuma - só não é mais sobre "qual conta é
+  rastreada", e sim "qual saldo referencia o cálculo de risco".
+  Renomeado o rótulo pra "Base de Cálculo de Risco", opções
+  reescritas ("Usar saldo da Conta Simulada"/"...Real"), com texto
+  explicativo abaixo.
+--------
+
+FERRAMENTA — calcular-saldo-simulado-historico.js (raiz do repo,
+somente leitura)
+
+Origem: usuário pediu o cálculo de quanto a Conta Simulada valeria se
+recalculada com TODOS os sinais já fechados no histórico, pra decidir
+entre aplicar esse total como saldo inicial ou começar a contabilizar
+do zero a partir de agora - motivado pela preocupação (ver LIMPEZA-004
+acima, esclarecida como não sendo o problema real) de sinais antigos
+não terem sido analisados do mesmo jeito que os de hoje.
+
+Script novo, só leitura (não grava nada no Firestore, mesmo padrão de
+cautela de `corrigir-bug007.js`/`audit-historico.js`, que também nunca
+existiram versionados neste repositório - rodados localmente pelo
+usuário, com a Service Account, fora do sandbox do Claude Code, que
+não tem essas credenciais). Soma `resultadoFinanceiro` de todo sinal
+`ENCERRADA` com `resultado` WIN/LOSS; sinais sem `resultadoFinanceiro`
+numérico (schema anterior a 28/07/2026) são contados separadamente e
+EXCLUÍDOS da soma - não tem como saber quanto teriam valido com o
+padrão de análise atual. Imprime o total geral, quebrado por mês e por
+par, pra dar visibilidade de onde vem o resultado antes da decisão.
+
+Uso: `node calcular-saldo-simulado-historico.js`, localmente, com
+`serviceAccount.json` presente na raiz do projeto.
+
+Decisão de aplicar o resultado (sobrescrever `configuracoes/geral.
+saldoSimulado`) ou começar do zero a partir de agora fica pro usuário,
+depois de ver o número - não implementado neste script de propósito.
+--------
+
