@@ -6675,3 +6675,94 @@ confirmado depois do deploy, na próxima execução real do
 `result-checker.yml`).
 --------
 
+BUG-017 — scripts/statisticsEngine.js: consulta sem limite (custo
+crescente de Firestore) + ordenação por campo que nunca é gravado
+("últimas operações" nunca foram as mais recentes de verdade)
+
+Severidade: CRÍTICA (dois problemas empilhados - um de custo de
+infraestrutura, outro de integridade estatística - ambos afetando o
+núcleo da RMI silenciosamente há tempos).
+
+Origem: usuário estranhou o volume de leituras do BUG-014/015 (55 mil
+leituras/dia) não bater com o cálculo baseado só nos pollings de 2s.
+Investigação apontou pra `obterEstatisticasPar()`, chamada uma vez por
+par a cada ciclo do Scanner.
+
+**Achado 1 - consulta sem limite, custo crescente pra sempre**:
+`db.collection("historico").where("par","==",par).get()` buscava
+TODO o histórico do par, sem `.limit()`. Firestore cobra 1 leitura
+por documento RETORNADO, não por consulta - com pares acumulando
+dezenas de operações ao longo de ~1,5 mês de uso, cada ciclo do
+Scanner (a cada 5 minutos) re-lia o histórico inteiro de cada par,
+do zero, mesmo sendo os MESMOS documentos antigos relidos
+repetidamente. É a explicação real do descompasso entre os
+"~2688/dia" calculados no BUG-015 (só a TwelveData) e as 55 mil
+leituras reais do Firestore vistas no console: essa consulta sozinha,
+crescendo a cada operação nova salva, é a maior fonte de leitura do
+projeto, não os pollings de 2s (esses contribuíam, mas eram menores).
+
+**Achado 2 - "últimas operações" nunca foram as mais recentes de
+verdade**: o código ordenava os resultados por `a.dataHora`/`b.dataHora`
+- campo que, confirmado por busca em todo o repositório, **nunca é
+gravado em lugar nenhum**. `new Date(undefined || 0)` é sempre a
+mesma data (epoch) pra todo documento, então o comparador do `.sort()`
+sempre devolvia 0 (nenhuma reordenação) - a "ordem" final era
+simplesmente a ordem arbitrária de retorno do Firestore, não a mais
+recente primeiro. Combinado com o corte fixo em 10 operações
+(`.slice(0, 10)`), isso tinha dois efeitos:
+- A fórmula de confiabilidade em `scripts/historyAnalyzer.js`
+  (`confiabilidade = min(100, operacoes/50*100)`) nunca passava de
+  20% (10/50), então o multiplicador de confiança do histórico no
+  score ficava travado no patamar mais baixo (0,80) pra sempre,
+  mesmo pra pares com dezenas de operações reais - o mecanismo de
+  "mais dado real = mais confiança" nunca funcionou de fato.
+- O gate `operacoesMinimas` do perfil Conservador em
+  `scripts/decisionEngine.js` (elevado de 10 para 30 mais cedo nesta
+  sessão, ver acima) ficou estruturalmente inatingível: a amostra
+  usada em `estatisticas.operacoes` nunca excedia 10, então
+  `>= 30` nunca era verdadeiro - o Conservador nunca mais aprovaria
+  sinal nenhum, um efeito colateral não percebido na hora daquela
+  mudança.
+
+Corrigido (`scripts/statisticsEngine.js`):
+- Nova constante `AMOSTRA_MAXIMA_HISTORICO = 50`, igual ao
+  denominador da fórmula de confiabilidade.
+- Consulta agora usa `.orderBy("timestamp", "desc").limit(50)` -
+  reaproveita o MESMO índice composto (par + timestamp) que
+  `scripts/riskManager.js`'s `existeCooldown()` já usa em produção há
+  tempos (confirmado por leitura do código - a mesma combinação
+  where+orderBy já funciona ali), então não deveria exigir criação de
+  índice novo. Custo de leitura por consulta agora se estabiliza em
+  no máximo 50, para sempre, em vez de crescer indefinidamente.
+- Removido o `.sort()` por `dataHora` (campo morto) - o resultado já
+  vem ordenado corretamente pelo Firestore, usando `timestamp`, campo
+  que `salvarOperacao()` de fato grava em toda operação.
+  `ultimasOperacoes` deixou de ser fixo em 10, passou a ser a amostra
+  inteira buscada (até 50); `ultimos5`/`ultimos10` continuam sendo
+  cortes de exatamente 5/10 itens dessa amostra maior.
+
+Não corrigido agora (fora de escopo, confirmado sem efeito na
+decisão): o campo `confianca` (ALTA/MÉDIA/BAIXA, limiares 100/50) não
+é lido em nenhum lugar do pipeline de decisão - só documentado que o
+patamar ALTA ficou estruturalmente inatingível com a nova amostra
+máxima de 50.
+
+Validado: função testada isoladamente com Firestore simulado - 11
+cenários (consulta usa where/orderBy/limit corretos; 35 operações
+agora atingem `historicoSuficiente`, antes impossível; `ultimos5`/
+`ultimos10` com o tamanho certo; respeita o limite de 50 mesmo com 80
+disponíveis; amostra pequena continua corretamente classificada como
+insuficiente; ordem de mais-recente-primeiro preservada de verdade) -
+todos passando. Confirmado também, isoladamente, que
+`confidenceMultiplier` agora sai de 0,80 fixo para 0,90 (30 operações)
+e 1,00 (50 operações), como a fórmula sempre pretendeu. Suites de
+regressão anteriores revalidadas sem falha.
+
+Não validado: se o índice composto (par + timestamp) realmente já
+existe no Firestore de produção (evidência forte via
+`existeCooldown()`, mas não confirmação direta - se não existir, o
+Firestore retorna um erro pedindo a criação do índice, capturado pelo
+mesmo `try/catch` por par que já isola outros erros de Firestore no
+Scanner, sem derrubar a execução inteira).
+--------
+

@@ -16,16 +16,36 @@
 // insignificante. Ver BUG-007/achado de saldo em DOCUMENTACAO/ENGINEERING.md.
 const OPERACOES_MINIMAS_HISTORICO = 30;
 
+// BUG-017 (08/09/2026): amostra máxima buscada/considerada. Igual ao
+// denominador da fórmula de confiabilidade em historyAnalyzer.js
+// (confiabilidade = min(100, operacoes/50*100)) - com essa amostra
+// menor que 50, a confiabilidade nunca chegaria a 100%, não importa
+// quanto histórico real existisse. Também resolve, na prática, o
+// mínimo de 30 acima: antes a amostra usada nos cálculos era
+// SEMPRE 10 (ver correção abaixo), tornando >=30 estruturalmente
+// impossível de atingir, mesmo com histórico real muito maior.
+const AMOSTRA_MAXIMA_HISTORICO = 50;
+
 async function obterEstatisticasPar(
     db,
     par
 ) {
+    // BUG-017: a consulta buscava TODO o histórico do par, sem limite
+    // - Firestore cobra 1 leitura por documento retornado, então isso
+    // crescia (e custava mais) a cada operação nova salva, para
+    // sempre. Com orderBy + limit, a consulta reusa o mesmo índice
+    // composto (par + timestamp) que scripts/riskManager.js's
+    // existeCooldown() já usa em produção há tempos, e o custo por
+    // consulta se estabiliza em no máximo AMOSTRA_MAXIMA_HISTORICO
+    // leituras, para sempre, não importa quanto histórico se acumule.
     const snapshot =
     await db
         .collection("historico")
         .where("par", "==", par)
+        .orderBy("timestamp", "desc")
+        .limit(AMOSTRA_MAXIMA_HISTORICO)
         .get();
-    
+
     let wins = 0;
     let loss = 0;
 
@@ -46,18 +66,18 @@ snapshot.forEach(doc => {
 
 });
 
-operacoesHistorico.sort((a, b) => {
-
-    const dataA = new Date(a.dataHora || 0);
-
-    const dataB = new Date(b.dataHora || 0);
-
-    return dataB - dataA;
-
-});
-
+// BUG-017: antes disto havia um .sort() aqui, ordenando por
+// "dataHora" - campo que NUNCA é gravado em lugar nenhum do código
+// (confirmado por busca em todo o repositório). Comparando
+// `undefined || 0` para todo documento, o sort sempre recebia 0 de
+// diferença e nunca reordenava nada - as "últimas operações" usadas
+// em todo o cálculo estatístico, desde sempre, eram uma ordem
+// arbitrária do Firestore, não as mais recentes de verdade. Já não é
+// mais necessário: orderBy("timestamp", "desc") acima já entrega os
+// documentos ordenados corretamente, usando o campo que é
+// efetivamente gravado por scripts/riskManager.js's salvarOperacao().
 const ultimasOperacoes =
-    operacoesHistorico.slice(0, 10);
+    operacoesHistorico;
 
 // ===================================================
 // STREAKS
@@ -167,6 +187,14 @@ const historicoSuficiente =
 
 // ===================================================
 // CONFIANÇA ESTATÍSTICA
+//
+// Nota (BUG-017): `confianca` (ALTA/MÉDIA/BAIXA) não é lido em
+// nenhum lugar do pipeline de decisão (confirmado por busca no
+// repositório) - é campo informativo/morto. Com
+// AMOSTRA_MAXIMA_HISTORICO=50, o patamar ALTA (>=100) ficou
+// estruturalmente inatingível; não corrigido agora por não afetar
+// nenhuma decisão real, só deixado registrado pra quem for mexer
+// aqui no futuro.
 // ===================================================
 
 let confianca = "BAIXA";
@@ -307,7 +335,11 @@ SELL: {
 
     ultimos5: ultimasOperacoes.slice(0, 5),
 
-    ultimos10: ultimasOperacoes,
+    // BUG-017: antes era so `ultimasOperacoes` (que ja era o corte
+    // de 10). Agora que ultimasOperacoes pode ter ate
+    // AMOSTRA_MAXIMA_HISTORICO (50) itens, precisa do .slice(0, 10)
+    // explicito pra continuar significando de verdade "ultimas 10".
+    ultimos10: ultimasOperacoes.slice(0, 10),
 
 };
 
