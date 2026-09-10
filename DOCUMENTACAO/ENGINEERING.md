@@ -7612,3 +7612,46 @@ quebra (cai no fallback antigo). Suíte de regressão do BUG-021
 de assinatura de `analisarFinanceiro()`.
 --------
 
+FEATURE-009 — Botão para definir saldo inicial da Conta Simulada
+(js/config.js)
+
+Origem: usuário decidiu não aportar dinheiro real na XM ainda ("não
+vou fazer o aporte enquanto não tiver confiança nos sinais"); plano
+combinado: lançar um "aporte" fictício de $200 na Conta Simulada pra
+observar o RMI funcionando numa escala realista de banca, sem risco
+real, e só depois zerar e trocar pra Conta Real com dinheiro de
+verdade quando os sinais provarem consistência.
+
+Achado: não existia forma de fazer isso pela tela. O botão
+`btnDefinirSaldoReal` (FEATURE-006) grava `saldoReal` diretamente, mas
+não tinha equivalente pra `saldoSimulado`. O "Salvar Configurações"
+normal só grava `saldoInicial` (campo informativo) - e
+`pairAnalyzer.js` usa `saldoSimulado ?? saldoInicial` como banca
+quando a Base de Cálculo de Risco está em "Conta Simulada". Como o
+usuário já tinha zerado `saldoSimulado` direto no Firebase Console
+(sessão anterior), o campo ficou em `0` - não `null`/`undefined` -
+então o operador `??` não cai mais pro `saldoInicial`. Se o usuário
+tivesse digitado 200 em "Saldo Inicial" e clicado em "Salvar
+Configurações", a banca real usada no cálculo de risco continuaria
+`$0`, e toda operação seria reprovada silenciosamente (SL/$0 = risco
+percentual infinito) - sem nenhum aviso de que o valor digitado não
+tinha efeito nenhum.
+
+Correção: novo botão `btnDefinirSaldoSimulada`, espelhando
+exatamente o `btnDefinirSaldoReal` (mesma validação, mesmo confirm()
+de segurança, mesmo padrão de feedback), mas gravando `saldoSimulado`
+em vez de `saldoReal`. Usa o mesmo campo "Saldo Inicial" da tela como
+origem do valor. Também serve pro passo seguinte do plano do usuário:
+zerar a Conta Simulada de novo (digitar 0) quando for hora de migrar
+pra dinheiro real.
+
+Validado isoladamente (scratchpad, 5 cenários, extraindo o handler
+real do arquivo): valor válido grava `saldoSimulado` e NÃO grava
+`saldoReal` (contas não se misturam); cancelar o confirm() não grava
+nada; valor inválido (texto) e valor negativo são rejeitados com
+alerta; zero é aceito (permite re-zerar a conta simulada depois).
+Suíte de regressão do `btnDefinirSaldoReal`
+(validate-definir-saldo-inicial.js) revalidada sem falhas após a
+mudança de offset de linha no arquivo.
+--------
+

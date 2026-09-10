@@ -538,6 +538,26 @@ Usa o valor acima como saldo atual da Conta Real (o que você tem depositado na 
 
 </div>
 
+<br>
+
+<button
+
+id="btnDefinirSaldoSimulada"
+
+class="button"
+
+style="width:100%; padding:8px; border:none; border-radius:8px; background:#1f4e8a; color:white; font-size:12px; cursor:pointer;">
+
+🧪 Definir Saldo Inicial da Conta Simulada Agora
+
+</button>
+
+<div style="font-size:11px; color:#8c95b3; margin-top:4px;">
+
+Usa o valor acima como saldo atual da Conta Simulada (dinheiro fictício, pra testar o app sem risco real). Substitui o que estiver lá, incluindo qualquer WIN/LOSS já acumulado. Lembre de deixar "Base de Cálculo de Risco" abaixo em "Conta Simulada" enquanto estiver testando, senão isso aqui não afeta o dimensionamento dos sinais.
+
+</div>
+
 </div>
 
 <div class="list-item">
@@ -1380,6 +1400,60 @@ function bindConfigEvents() {
 
             setTimeout(() => {
                 btnDefinirSaldoReal.innerHTML = "💰 Definir Saldo Inicial da Conta Real Agora";
+            }, 3000);
+
+        };
+
+    }
+
+    // Espelha btnDefinirSaldoReal, mas grava saldoSimulado - o campo
+    // que pairAnalyzer.js realmente lê como banca quando a Base de
+    // Cálculo de Risco está em "Conta Simulada" (saldoSimulado ??
+    // saldoInicial). Sem este botão não havia como definir esse valor
+    // pela tela: o "Salvar Configurações" normal só grava
+    // saldoInicial (informativo), e saldoSimulado, uma vez zerado
+    // (0, não null/undefined), não cai mais no fallback de
+    // saldoInicial - toda operação seria reprovada com banca=$0.
+    const btnDefinirSaldoSimulada = document.getElementById("btnDefinirSaldoSimulada");
+
+    if (btnDefinirSaldoSimulada) {
+
+        btnDefinirSaldoSimulada.onclick = async () => {
+
+            const valor = Number(document.getElementById("cfgSaldo")?.value);
+
+            if (!Number.isFinite(valor) || valor < 0) {
+                alert("Informe um valor de Saldo Inicial válido antes de definir a Conta Simulada.");
+                return;
+            }
+
+            const confirmado = confirm(
+                `Isso vai definir o saldo da Conta Simulada como $${valor.toFixed(2)}, ` +
+                `substituindo o que estiver lá agora (incluindo qualquer WIN/LOSS já ` +
+                `acumulado). Confirma?`
+            );
+
+            if (!confirmado) return;
+
+            btnDefinirSaldoSimulada.innerHTML = "Salvando...";
+
+            try {
+
+                await db.collection("configuracoes").doc("geral").set({
+                    saldoSimulado: valor
+                }, { merge: true });
+
+                btnDefinirSaldoSimulada.innerHTML = "✅ Saldo da Conta Simulada definido";
+
+            } catch (erro) {
+
+                btnDefinirSaldoSimulada.innerHTML = "⚠️ Erro ao salvar";
+                console.error("Erro ao definir saldo da Conta Simulada:", erro);
+
+            }
+
+            setTimeout(() => {
+                btnDefinirSaldoSimulada.innerHTML = "🧪 Definir Saldo Inicial da Conta Simulada Agora";
             }, 3000);
 
         };
