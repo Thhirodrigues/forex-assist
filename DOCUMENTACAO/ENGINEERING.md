@@ -7787,3 +7787,101 @@ checkbox.js` (esta última com offset de linha corrigido) revalidadas
 sem falhas.
 --------
 
+PENTE-FINO-001 — Perfil Conservador permanentemente inoperante
+(scripts/pairAnalyzer.js)
+
+Origem: usuário pediu uma auditoria completa do pipeline inteiro
+(scanner.js → marketAnalyzer.js/historyAnalyzer.js/scoreEngine.js →
+statisticsEngine.js → decisionEngine.js → moneyManager.js →
+checker.js) antes de reativar o Scanner, dado o volume de correções
+feitas no mesmo dia. Lendo `scripts/statisticsEngine.js`'s
+`operacaoAtendeRigorDoPerfil()` (RIGOR_PERFIL: cada operação salva só
+conta como evidência pro perfil atual se foi aprovada por um perfil
+igualmente ou mais rigoroso) e comparando com `pairAnalyzer.js`, foi
+identificado que o `perfil` calculado (linha "const perfil =
+(configuracao?.perfil || "balanceado").toUpperCase();") nunca era
+incluído no objeto `analise`/`operacao` salvo no Firestore.
+
+Achado: sem o campo `perfil` no documento salvo,
+`operacaoAtendeRigorDoPerfil(dados.perfil, perfilAtual)` sempre recebia
+`undefined` como `perfilOperacao`, caindo no fallback
+`"BALANCEADO"` (rigor 2). Pro perfil CONSERVADOR (rigor 3), a
+comparação `rigorOperacao(2) >= rigorAtual(3)` é sempre falsa - ou
+seja, NENHUMA operação, de nenhum par, jamais contava como evidência
+pro Conservador, não importa quanto histórico real se acumulasse.
+`decisionEngine.js` exige 30 operações mínimas pro perfil Conservador
+(`PERFIL_ANALISE.CONSERVADOR.operacoesMinimas`) - como essa contagem
+ficava travada em 0 pra sempre, o Conservador nunca conseguia aprovar
+nenhum sinal, sempre retornando `SEM_VIABILIDADE` ("Histórico
+insuficiente"), mesmo com milhares de sinais reais no histórico.
+Estava dormente na prática (perfil padrão do app é Balanceado), mas
+quebraria silenciosamente - sem erro nenhum, parecendo "mercado
+ruim" - assim que o perfil Conservador fosse selecionado.
+
+Correção: `perfil` (já calculado) adicionado ao objeto `analise`
+salvo em `pairAnalyzer.js`.
+
+Validado isoladamente (scratchpad): teste que reproduz o bug
+(`validate-pentefino-conservador-quebrado.js`) confirma que, com o
+schema anterior (sem `perfil`), 0 de 100 operações contam pro
+Conservador e o gate de `decisionEngine.js` fica travado em
+`SEM_VIABILIDADE` mesmo com histórico muito acima do mínimo - e que,
+com o campo presente, as mesmas operações passam a contar
+normalmente. Teste de ponta a ponta (`validate-pentefino001-perfil-
+salvo.js`, via `analisarPar()` completo com mocks) confirma que o
+documento efetivamente salvo agora carrega `perfil: "CONSERVADOR"`
+(maiúsculo, consistente com o resto do pipeline).
+--------
+
+PENTE-FINO-002 — Gate de "mercado sem tendência" comparava o campo
+errado, bloqueando sinais válidos por score (scripts/decisionEngine.js)
+
+Origem: mesma auditoria completa do PENTE-FINO-001. Ao ler
+`marketAnalyzer.js`'s `analisarEMAs()`/`classificarQualidade()`,
+confirmado que nenhuma das duas funções jamais produz o valor
+`"LATERAL"` - `classificarQualidade(scoreFinal)` só retorna
+INSTITUCIONAL/FORTE/BOA/ACEITAVEL/CONFLITO; `analisarEMAs()` inicia
+`tendencia = "LATERAL"` mas todo branch do if/else é exaustivo
+(sempre sobrescreve pra ALTA/BAIXA/COMPRESSAO/CONFLITO) - o valor
+inicial nunca sobrevive.
+
+Achado: `decisionEngine.js`'s `avaliarOperacao()` tinha `if
+(qualidade === "LATERAL" || qualidade === "CONFLITO")` - comparando
+`qualidade` (a categoria por SCORE final) contra "LATERAL" (que
+`qualidade` nunca assume - metade da condição sempre falsa,
+inofensiva, porque o mesmo caso já caía no catch-all genérico no fim
+da função com o mesmo resultado, só motivo/status menos específicos).
+Mas a outra metade, `qualidade === "CONFLITO"`, tinha efeito colateral
+real: `classificarQualidade()` retorna "CONFLITO" sempre que
+`scoreFinal < 70`, então QUALQUER sinal - mesmo com tendência ALTA/
+BAIXA clara e aprovado pelo `scoreMinimo` do próprio perfil
+(AGRESSIVO: 35, BALANCEADO: 45) - era bloqueado aqui se o score final
+ficasse entre o mínimo do perfil e 70. Um segundo gate de score,
+fixo e cego ao perfil, sobrepondo silenciosamente o `scoreMinimo` por
+perfil já definido em `PERFIL_ANALISE` (o motivo de existir esse
+gate por perfil, em primeiro lugar). Usuário autorizou a correção
+explicitamente ao revisar o achado.
+
+Correção: a condição passou a checar `tendencia` (o campo que de
+fato representa "mercado sem direção definida": `COMPRESSAO`/
+`CONFLITO`), não mais `qualidade`. `motivo` da resposta também
+corrigido pra bater com a `justificativa` ("Mercado sem tendência
+definida" em vez do genérico "Qualidade insuficiente").
+
+Efeito esperado em produção: sinais com tendência clara (ALTA/BAIXA)
+e score entre o mínimo do perfil e 70 - principalmente perfil
+AGRESSIVO (mínimo 35) e BALANCEADO (mínimo 45) - deixam de ser
+bloqueados por essa checagem redundante; o `scoreMinimo` de cada
+perfil volta a ser o único gate de score que vale, como o desenho
+original de `PERFIL_ANALISE` pretendia.
+
+Validado isoladamente (scratchpad, 5 cenários,
+`validate-pentefino002-mercado-lateral.js`): tendência ALTA/BAIXA
+clara com `qualidade: "CONFLITO"` e score acima do mínimo do perfil
+agora aprova (antes bloqueava incorretamente); tendência `COMPRESSAO`
+e `CONFLITO` (mercado realmente sem direção) continuam bloqueando,
+agora com motivo específico; regressão de sinal forte/score alto
+continua aprovando normalmente. Suítes `validate-feature010-aviso-
+risco.js` e `validate-bug021-moneymanager.js` revalidadas sem falhas.
+--------
+

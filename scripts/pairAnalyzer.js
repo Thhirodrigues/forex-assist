@@ -316,6 +316,18 @@ const analise = {
 
     direcao,
 
+    // PENTE-FINO-001 (10/09/2026): `perfil` era calculado (linha acima)
+    // mas nunca persistido no documento salvo. statisticsEngine.js's
+    // operacaoAtendeRigorDoPerfil() depende de `dados.perfil` pra
+    // decidir se uma operação passada conta como evidência pro perfil
+    // ATUAL - sem esse campo, toda operação salva sempre caía no
+    // fallback "BALANCEADO" (nunca "CONSERVADOR"), fazendo o perfil
+    // Conservador nunca conseguir acumular as 30 operações mínimas
+    // exigidas por decisionEngine.js, para sempre - mesmo com milhares
+    // de sinais reais no histórico. Confirmado com teste isolado antes
+    // da correção.
+    perfil,
+
     score: qualidade.score,
 
     qualidade: qualidade.qualidade,

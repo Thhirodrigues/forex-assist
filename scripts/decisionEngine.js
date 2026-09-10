@@ -160,11 +160,34 @@ function avaliarOperacao(resultado) {
 
     }
 
+    // PENTE-FINO-002 (10/09/2026): comparava `qualidade` (categoria
+    // pelo SCORE final - INSTITUCIONAL/FORTE/BOA/ACEITAVEL/CONFLITO,
+    // de marketAnalyzer.js's classificarQualidade()) contra "LATERAL",
+    // valor que essa variável NUNCA assume (não existe nenhum branch
+    // em classificarQualidade() que produza "LATERAL" - só apareceria,
+    // em teoria, em `tendencia`, mas nem lá: analisarEMAs() também não
+    // tem nenhum caminho que deixe o "LATERAL" inicial sem sobrescrita,
+    // é sempre substituído por ALTA/BAIXA/COMPRESSAO/CONFLITO). Ou
+    // seja, metade desta condição nunca disparava - inofensivo aqui
+    // porque tendencia !== "ALTA"/"BAIXA" já cai no catch-all no fim da
+    // função (mesmo resultado, só com mensagem/status genéricos em vez
+    // de "Mercado sem tendência definida"). Mas a outra metade,
+    // `qualidade === "CONFLITO"`, tem um efeito colateral real: bloqueia
+    // QUALQUER sinal (mesmo com tendência ALTA/BAIXA clara) sempre que
+    // o score final ficar abaixo de 70 - um segundo gate de score,
+    // fixo e cego ao perfil, por cima do scoreMinimo por perfil já
+    // definido em PERFIL_ANALISE (35/45/55) acima. Corrigido pra
+    // checar `tendencia` (o campo que de fato representa "mercado sem
+    // direção definida": COMPRESSAO/CONFLITO), não `qualidade`. Efeito
+    // esperado: sinais com tendência clara e score entre o mínimo do
+    // perfil e 70 (ex.: AGRESSIVO com score 40-69) deixam de ser
+    // bloqueados aqui só por essa checagem redundante - o scoreMinimo
+    // por perfil continua sendo o gate de score que vale.
     if (
 
-    qualidade === "LATERAL" ||
+    tendencia === "COMPRESSAO" ||
 
-    qualidade === "CONFLITO"
+    tendencia === "CONFLITO"
 
 ) {
 
@@ -174,7 +197,7 @@ function avaliarOperacao(resultado) {
         aprovado: false,
         status: "SEM_SINAL",
         direcao: "NONE",
-        motivo: "Qualidade insuficiente",
+        motivo: "Mercado sem tendência definida",
         score,
         qualidade,
         tendencia,
