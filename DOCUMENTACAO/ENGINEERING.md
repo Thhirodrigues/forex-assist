@@ -7933,3 +7933,81 @@ AUD/USD x2) continuam normalmente até fechar - a correção só evita
 NOVAS duplicatas a partir de agora, não fecha as que já existem.
 --------
 
+PENTE-FINO-004 — expectativaMinima nunca era aplicada; RSI/EMA
+sempre "--" no detalhe do sinal; sem indicação de ajuste automático
+(scripts/decisionEngine.js, scripts/moneyManager.js,
+scripts/pairAnalyzer.js, js/historico.js)
+
+Origem: usuário revisou o detalhe de um sinal real no app e perguntou
+(a) se o TP/SL de $3 exibido era configuração manual ou sugestão do
+sistema, (b) por que RSI e as EMAs apareciam como "--", e definiu a
+regra pro achado da expectativa negativa do turno anterior: bloquear
+de verdade no Conservador e no Balanceado, só avisar no Agressivo.
+
+Achado 1 (expectativaMinima morta): `moneyManager.js`'s
+`PERFIL_FINANCEIRO` define `expectativaMinima` por perfil (0/0/-1)
+desde sempre, mas nenhuma função no arquivo - nem `avaliarConfiguracao()`,
+nem `validarPerfilFinanceiro()` (já campo morto por outro motivo, ver
+BUG-021) - nunca lê esse campo. Os 3 sinais reais abertos no mesmo dia
+tinham expectativa negativa (-0.45, -0.52, -2.06) e foram aprovados
+sem nenhuma checagem sobre isso.
+
+Achado 2 (RSI/EMAs sempre "--"): `pairAnalyzer.js` salva os
+indicadores técnicos ANINHADOS em `operacao.indicadores.{rsi, ema9,
+ema21, ema200, ...}` - mas `js/historico.js` lia os campos NO NÍVEL
+RAIZ do documento (`sinal.rsi`, `sinal.ema9`, `sinal.ema21`,
+`sinal.ema200`), que nunca existiram ali. Bug pré-existente (não
+introduzido nesta sessão), só agora percebido porque foi a primeira
+vez que um sinal real foi conferido com atenção no detalhe.
+
+Achado 3 (nenhuma indicação de ajuste automático): a tela mostrava
+Lote/TP/SL como se fossem sempre o valor configurado manualmente,
+mesmo quando `decidirConfiguracaoMercado()` os havia reduzido
+automaticamente (ADX fraco, ATR baixo ou expectativa negativa) -
+gerando a pergunta do usuário.
+
+Correção:
+
+1. `moneyManager.js` exporta `obterPerfilFinanceiro` (única fonte da
+   tabela 0/0/-1, não duplicada em outro arquivo).
+2. `decisionEngine.js`'s `avaliarOperacao()` agora usa essa tabela: se
+   `expectativa < expectativaMinima` do perfil, e o perfil é
+   CONSERVADOR ou BALANCEADO, reprova de verdade (`aprovado:false`,
+   `SEM_VIABILIDADE` - sinal nem salva); se o perfil é AGRESSIVO,
+   aprova normalmente mas anexa `avisoExpectativa: {ativo, mensagem}`
+   ao resultado (mesmo padrão do `avisoRisco` da FEATURE-010).
+   `pairAnalyzer.js` passa `expectativa: financeiro.expectativa` na
+   chamada e salva `avisoExpectativa: decisao.avisoExpectativa ||
+   null` no documento.
+3. `js/historico.js`: os 4 campos (RSI/EMA9/EMA21/EMA200) agora leem
+   de `sinal.indicadores?.X`, com fallback pro campo raiz antigo
+   (`sinal.X`) só por segurança - não quebra nenhum schema anterior
+   que porventura tivesse usado o formato plano. Novo banner ⚠️/📉
+   pro `avisoExpectativa` (mesmo estilo do banner de risco). Nova
+   função `bannerConfiguracaoAjustada()`: lê
+   `sinal.financeiro.decisaoMercado.decisao` e mostra um aviso 🤖
+   "ajustado automaticamente" com o motivo (ADX fraco / baixa
+   volatilidade / expectativa negativa reduziu o lote) quando o
+   sistema alterou Lote/TP/SL, ou uma confirmação ✅ "conforme
+   configurado" quando não houve ajuste (`decisao === "MANTER"` ou
+   campo ausente, schema antigo).
+
+Validado isoladamente (scratchpad): `validate-pentefino004-
+expectativa.js` (13 cenários) - expectativa abaixo do mínimo bloqueia
+de verdade no Conservador/Balanceado; a mesma expectativa (-0.5,
+dentro do limite -1 do Agressivo) aprova sem aviso; expectativa bem
+negativa (-2.06, replicando o caso real) no Agressivo aprova COM
+aviso; expectativa ausente não quebra a função; risco financeiro e
+expectativa ruins coexistem como dois avisos independentes no
+Agressivo. `validate-historico-rsi-ema-ajuste.js` (12 cenários) -
+banner mostra "ajustado automaticamente" com o motivo certo por
+código de decisão, banner "sem ajuste" quando MANTER ou campo
+ausente, e os 4 campos de indicador agora leem o valor real
+aninhado (antes sempre "--"). Suítes de regressão `validate-
+feature010-aviso-risco.js`, `validate-pentefino002-mercado-
+lateral.js`, `validate-bug021-moneymanager.js`, `validate-
+pentefino001-perfil-salvo.js`, `validate-feature010-bloqueio-
+real.js` e `validate-bug022-feedback-checkbox.js` (offset de linha
+corrigido de novo) revalidadas sem falhas.
+--------
+

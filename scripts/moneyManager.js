@@ -938,6 +938,8 @@ module.exports = {
 
     DEFAULT_CONFIG,
 
+    obterPerfilFinanceiro,
+
     calcularValorPip,
 
     calcularTP,

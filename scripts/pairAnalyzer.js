@@ -233,6 +233,8 @@ const decisao = avaliarOperacao({
 
     recomendacaoFinanceira: financeiro.recomendacao,
 
+    expectativa: financeiro.expectativa,
+
     perfil,
 
     operacoesHistoricas: estatisticas.operacoes
@@ -367,6 +369,8 @@ const analise = {
     // alternarOperacaoReal (não deixa marcar como operação REAL sem
     // saldo suficiente pra cobrir o SL).
     avisoRisco: decisao.avisoRisco || null,
+
+    avisoExpectativa: decisao.avisoExpectativa || null,
 
     indicadores: {
 

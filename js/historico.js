@@ -51,6 +51,39 @@ const NOMES_MES = [
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ];
 
+// Usuário pediu pra deixar claro, no detalhe do sinal, quando lote/TP/SL
+// não são o valor configurado manualmente na tela de Config, e sim um
+// ajuste automático do decidirConfiguracaoMercado() (scripts/moneyManager.js).
+// sinal.financeiro.decisaoMercado.decisao guarda o motivo do ajuste (ou
+// "MANTER" quando nada foi alterado).
+const LEGENDA_AJUSTE_MERCADO = {
+  REDUZIR_EXPOSICAO: "ADX fraco - tendência sem força suficiente",
+  MERCADO_LENTO: "baixa volatilidade (ATR baixo)",
+  EXPECTATIVA_NEGATIVA: "expectativa histórica negativa reduziu o lote"
+};
+
+function bannerConfiguracaoAjustada(sinal) {
+
+  const decisao = sinal.financeiro?.decisaoMercado?.decisao;
+
+  if (!decisao || decisao === "MANTER") {
+    return `
+      <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:rgba(0,210,106,.08); border:1px solid rgba(0,210,106,.25); font-size:11px; color:#8fd6b0;">
+        ✅ Lote/TP/SL conforme configurado na tela de Config - sem ajuste automático.
+      </div>
+    `;
+  }
+
+  const motivo = LEGENDA_AJUSTE_MERCADO[decisao] || decisao;
+
+  return `
+    <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:rgba(79,195,247,.10); border:1px solid rgba(79,195,247,.3); font-size:11px; color:#9adcf9;">
+      🤖 Lote/TP/SL ajustados automaticamente pelo sistema (${motivo}) - não é o valor bruto configurado manualmente.
+    </div>
+  `;
+
+}
+
 // "DD/MM/YYYY" -> "MM/YYYY" (chave de ordenação/agrupamento por mês).
 // "Data Indefinida" fica isolada no próprio grupo, no fim da lista.
 function mesChaveDe(dataStr) {
@@ -152,6 +185,11 @@ async function carregarHistorico() {
               ⚠️ ${sinal.avisoRisco.mensagem}
             </div>
           ` : ''}
+          ${sinal.avisoExpectativa?.ativo ? `
+            <div style="margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(255,82,82,.12); border:1px solid rgba(255,82,82,.35); font-size:11px; color:#ff8a8a;">
+              📉 ${sinal.avisoExpectativa.mensagem}
+            </div>
+          ` : ''}
           ${sinal.movimentoPips !== undefined ? `
             <div style="margin-top:6px; font-size:12px; color:${sinal.resultado === 'WIN' ? '#00ff88' : '#ff4444'}; font-weight:bold;">
               📊 Movimentação: ${sinal.movimentoPips > 0 ? '+' : ''}${sinal.movimentoPips} pips
@@ -183,7 +221,7 @@ font-size:20px;
 font-weight:bold;
 color:#4fc3f7;
 ">
-${sinal.rsi ? Number(sinal.rsi).toFixed(2) : "--"}
+${(sinal.indicadores?.rsi ?? sinal.rsi) != null ? Number(sinal.indicadores?.rsi ?? sinal.rsi).toFixed(2) : "--"}
 </div>
 
 </div>
@@ -205,7 +243,7 @@ font-size:18px;
 font-weight:bold;
 color:#ffffff;
 ">
-${sinal.ema9 ? Number(sinal.ema9).toFixed(5) : "--"}
+${(sinal.indicadores?.ema9 ?? sinal.ema9) != null ? Number(sinal.indicadores?.ema9 ?? sinal.ema9).toFixed(5) : "--"}
 </div>
 
 </div>
@@ -227,7 +265,7 @@ font-size:18px;
 font-weight:bold;
 color:#ffffff;
 ">
-${sinal.ema21 ? Number(sinal.ema21).toFixed(5) : "--"}
+${(sinal.indicadores?.ema21 ?? sinal.ema21) != null ? Number(sinal.indicadores?.ema21 ?? sinal.ema21).toFixed(5) : "--"}
 </div>
 
 </div>
@@ -249,7 +287,7 @@ font-size:18px;
 font-weight:bold;
 color:#ffffff;
 ">
-${sinal.ema200 ? Number(sinal.ema200).toFixed(5) : "--"}
+${(sinal.indicadores?.ema200 ?? sinal.ema200) != null ? Number(sinal.indicadores?.ema200 ?? sinal.ema200).toFixed(5) : "--"}
 </div>
 
 </div>
@@ -320,6 +358,8 @@ ${sinal.precoSaida ?? sinal.precoFechamento ?? "--"}
     ">
         ⚙️ Configuração Utilizada
     </div>
+
+    ${bannerConfiguracaoAjustada(sinal)}
 
     <div style="
         text-align:center;

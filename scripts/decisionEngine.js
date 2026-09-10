@@ -11,6 +11,14 @@
 // SPRINT 07
 // ===================================================
 
+// PENTE-FINO-004 (10/09/2026): expectativaMinima (moneyManager.js's
+// PERFIL_FINANCEIRO) era definida por perfil mas nunca lida em lugar
+// nenhum - reusa a mesma fonte de regras (não duplica os números
+// 0/0/-1 aqui) pra aplicar o gate que faltava.
+const {
+    obterPerfilFinanceiro
+} = require("./moneyManager");
+
 // ===================================================
 // PERFIL DE ANÁLISE
 //
@@ -160,6 +168,73 @@ function avaliarOperacao(resultado) {
 
     }
 
+    // PENTE-FINO-004 (10/09/2026): usuário decidiu, por perfil,
+    // diferente do risco financeiro (que é sempre só aviso, ver
+    // FEATURE-010): expectativa matemática negativa BLOQUEIA de
+    // verdade no Conservador e no Balanceado (perfis que já são mais
+    // seletivos por design - PERFIL_ANALISE acima), mas vira só aviso
+    // no Agressivo (que aceita mais risco por definição). Expectativa
+    // negativa significa que, pela própria conta do sistema
+    // (probabilidade histórica × TP menos perda × SL), esse tipo de
+    // operação tende a dar prejuízo em média - aprovar isso sem
+    // filtro nenhum contradiz o propósito de ter a conta.
+    let avisoExpectativa = null;
+
+    const regrasFinanceiras = obterPerfilFinanceiro(resultado.perfil);
+
+    const expectativa = Number(resultado.expectativa);
+
+    const perfilNormalizado = (resultado.perfil || "BALANCEADO").toUpperCase();
+
+    if (
+        Number.isFinite(expectativa) &&
+        expectativa < regrasFinanceiras.expectativaMinima
+    ) {
+
+        if (perfilNormalizado === "AGRESSIVO") {
+
+            justificativas.push("Expectativa matemática abaixo do mínimo do perfil (aviso)");
+
+            avisoExpectativa = {
+
+                ativo: true,
+
+                mensagem: `Expectativa matemática negativa (${expectativa.toFixed(2)}) para este par agora - ` +
+                    `pelo histórico, esse tipo de operação tende a dar prejuízo em média. Você concorda em operar mesmo assim?`
+
+            };
+
+        } else {
+
+            justificativas.push("Expectativa matemática abaixo do mínimo aceito para o perfil");
+
+            return {
+
+                aprovado: false,
+
+                status: "SEM_VIABILIDADE",
+
+                direcao: "NONE",
+
+                motivo: `Expectativa matemática (${expectativa.toFixed(2)}) abaixo do mínimo aceito ` +
+                    `pro perfil ${perfilNormalizado} (${regrasFinanceiras.expectativaMinima})`,
+
+                score,
+
+                qualidade,
+
+                tendencia,
+
+                confianca,
+
+                justificativas
+
+            };
+
+        }
+
+    }
+
     // PENTE-FINO-002 (10/09/2026): comparava `qualidade` (categoria
     // pelo SCORE final - INSTITUCIONAL/FORTE/BOA/ACEITAVEL/CONFLITO,
     // de marketAnalyzer.js's classificarQualidade()) contra "LATERAL",
@@ -221,6 +296,7 @@ function avaliarOperacao(resultado) {
     tendencia,
     confianca,
     avisoRisco,
+    avisoExpectativa,
 
     // BUG-021 (09/09/2026): este objeto `risco` era montado com
     // resultado.financeiro?.lote/tpUSD/slUSD, mas pairAnalyzer.js
@@ -252,6 +328,7 @@ function avaliarOperacao(resultado) {
     tendencia,
     confianca,
     avisoRisco,
+    avisoExpectativa,
 
     justificativas
 };
