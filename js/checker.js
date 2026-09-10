@@ -1,5 +1,6 @@
 const admin = require("firebase-admin");
 const { getCandles } = require("../scripts/marketData");
+const { idCacheDoPar } = require("../scripts/statisticsEngine");
 
 console.log("KEY 1:", !!process.env.API_KEY_1);
 console.log("KEY 2:", !!process.env.API_KEY_2);
@@ -417,6 +418,16 @@ const {
             saldoSimulado: saldoDepois
 
         });
+
+        // CACHE-001 (10/09/2026): invalida o cache de estatísticas
+        // deste par (scripts/statisticsEngine.js) assim que uma
+        // operação dele fecha - o próximo ciclo do Scanner que pedir
+        // estatísticas deste par vai buscar de novo no historico
+        // (incluindo esta operação recém-fechada) e repovoar o cache,
+        // em vez de continuar servindo dados desatualizados.
+        transaction.delete(
+            db.collection("cacheEstatisticas").doc(idCacheDoPar(sinal.par))
+        );
 
     });
 

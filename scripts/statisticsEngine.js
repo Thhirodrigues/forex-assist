@@ -59,44 +59,98 @@ function operacaoAtendeRigorDoPerfil(perfilOperacao, perfilAtual) {
 
 }
 
+// BUG-024 (10/09/2026): "/" não pode ir cru num ID de documento do
+// Firestore (é separador de caminho) - "EUR/USD" vira "EUR_USD".
+function idCacheDoPar(par) {
+
+    return String(par).replace(/\//g, "_");
+
+}
+
+// CACHE-001 (10/09/2026): a consulta com limit(50) do BUG-017 já
+// resolveu o crescimento sem fim, mas ainda custa até 50 leituras POR
+// PAR, EM TODO CICLO do Scanner - com 5 pares e o cron tentando rodar
+// a cada 5 min, isso sozinho passa de 50 mil leituras/dia (confirmado
+// no gráfico de uso real do Firestore em produção; ver BUG-023 em
+// ENGINEERING.md). A cota estourar interrompe o Scanner inteiro (nem
+// lê a configuração), o que apareceu como "nenhum sinal no dia".
+//
+// Design: o resultado BRUTO da consulta (até 50 documentos, sem
+// filtro de perfil - o filtro por perfil precisa rodar por cima do
+// cache toda vez, porque o perfil ativo pode mudar entre chamadas) é
+// cacheado em cacheEstatisticas/{par}. Enquanto não existir operação
+// NOVA fechada pra aquele par, o cache serve o mesmo conteúdo - 1
+// leitura em vez de até 50. js/checker.js apaga o cache do par assim
+// que fecha uma operação daquele par, forçando a próxima chamada a
+// buscar de novo (e repovoar o cache) - ou seja, o cache só fica
+// "velho" entre um fechamento de operação e outro, não por tempo.
+//
+// Efeito esperado: pares sem operação nova no ciclo custam 1 leitura
+// em vez de até 50 - a grande maioria dos ciclos, já que operações
+// fecham bem menos que a cada 5 minutos. Permite manter o cron do
+// Scanner em 5 min sem repetir o estouro de cota.
+async function obterOperacoesBrutasDoPar(db, par) {
+
+    const cacheRef =
+        db.collection("cacheEstatisticas").doc(idCacheDoPar(par));
+
+    const cacheSnap = await cacheRef.get();
+
+    if (cacheSnap.exists) {
+
+        return cacheSnap.data().operacoesHistorico || [];
+
+    }
+
+    // BUG-017: com orderBy + limit, a consulta reusa o mesmo índice
+    // composto (par + timestamp) que scripts/riskManager.js's
+    // existeCooldown() já usa em produção há tempos, e o custo por
+    // consulta se estabiliza em no máximo AMOSTRA_MAXIMA_HISTORICO
+    // leituras, não importa quanto histórico se acumule.
+    const snapshot =
+        await db
+            .collection("historico")
+            .where("par", "==", par)
+            .orderBy("timestamp", "desc")
+            .limit(AMOSTRA_MAXIMA_HISTORICO)
+            .get();
+
+    const operacoesRaw = [];
+    snapshot.forEach(doc => operacoesRaw.push(doc.data()));
+
+    // Escreve o cache pro próximo ciclo reaproveitar - não bloqueia o
+    // retorno se falhar (ex.: sem permissão de escrita), só loga.
+    try {
+
+        await cacheRef.set({
+            operacoesHistorico: operacoesRaw,
+            atualizadoEm: Date.now()
+        });
+
+    } catch (erro) {
+
+        console.log(`Aviso: não foi possível gravar cacheEstatisticas/${par}: ${erro.message}`);
+
+    }
+
+    return operacoesRaw;
+
+}
+
 async function obterEstatisticasPar(
     db,
     par,
     perfilAtual
 ) {
-    // BUG-017: a consulta buscava TODO o histórico do par, sem limite
-    // - Firestore cobra 1 leitura por documento retornado, então isso
-    // crescia (e custava mais) a cada operação nova salva, para
-    // sempre. Com orderBy + limit, a consulta reusa o mesmo índice
-    // composto (par + timestamp) que scripts/riskManager.js's
-    // existeCooldown() já usa em produção há tempos, e o custo por
-    // consulta se estabiliza em no máximo AMOSTRA_MAXIMA_HISTORICO
-    // leituras, para sempre, não importa quanto histórico se acumule.
-    //
-    // O filtro por perfil (operacaoAtendeRigorDoPerfil, abaixo) é
-    // aplicado nesta amostra já buscada, não como where() adicional na
-    // consulta - um novo where("perfil","in",[...]) aqui exigiria um
-    // índice composto novo (par + perfil + timestamp) ainda não
-    // provisionado no Firestore, e a primeira execução em produção
-    // quebraria com erro de índice faltando até alguém criar
-    // manualmente pelo link do console. Filtrar em memória evita esse
-    // risco sem aumentar o custo de leitura (mesmo limit de sempre).
-    const snapshot =
-    await db
-        .collection("historico")
-        .where("par", "==", par)
-        .orderBy("timestamp", "desc")
-        .limit(AMOSTRA_MAXIMA_HISTORICO)
-        .get();
+
+    const operacoesRaw = await obterOperacoesBrutasDoPar(db, par);
 
     let wins = 0;
     let loss = 0;
 
     const operacoesHistorico = [];
 
-snapshot.forEach(doc => {
-
-    const dados = doc.data();
+operacoesRaw.forEach(dados => {
 
     if (
         (
@@ -395,6 +449,10 @@ module.exports = {
 
     obterEstatisticasPar,
 
-    operacaoAtendeRigorDoPerfil
+    operacaoAtendeRigorDoPerfil,
+
+    idCacheDoPar,
+
+    obterOperacoesBrutasDoPar
 
 };

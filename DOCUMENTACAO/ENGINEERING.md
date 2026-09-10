@@ -7411,3 +7411,76 @@ daquele par fecha, não a cada ciclo) registrada como pendência, fora
 de escopo pra decidir às pressas.
 --------
 
+CACHE-001 — cache de estatísticas por par (scripts/statisticsEngine.js,
+js/checker.js)
+
+Origem: usuário reportou medo concreto de perder sinais de qualidade
+se o intervalo do cron ficasse mais espaçado (15 min) - a análise usa
+velas de 5 minutos, então checar com menos frequência pode significar
+chegar depois do ponto de entrada ideal já ter passado. Pediu a
+solução "certa", não só reduzir a frequência - e uma nova varredura
+por outros erros antes de esperar mais um dia inteiro pra descobrir
+algo quebrado.
+
+Implementa a "solução de longo prazo" já registrada como pendência no
+BUG-023: `obterEstatisticasPar()` custava até `AMOSTRA_MAXIMA_HISTORICO`
+(50) leituras por par, EM TODO ciclo do Scanner - o driver dominante
+identificado no estouro de cota de hoje. Mas um par só ganha
+informação nova quando uma operação dele fecha de verdade (WIN/LOSS) -
+não a cada 5 minutos. Não fazia sentido pagar o custo de reler tudo
+toda vez que nada mudou.
+
+Implementação: nova coleção `cacheEstatisticas/{par}` (par sanitizado,
+"/" vira "_", já que Firestore não aceita "/" cru num ID de documento -
+nova função `idCacheDoPar()`). `obterOperacoesBrutasDoPar()` (extraída
+de dentro de `obterEstatisticasPar()`) lê o cache primeiro (1 leitura);
+se existir, usa o conteúdo dele direto, sem consultar `historico`. Se
+não existir, faz a consulta de sempre (até 50 leituras) e grava o
+resultado no cache pro próximo ciclo. Importante: o que é cacheado é o
+resultado BRUTO da consulta (sem filtro de perfil) - o filtro por
+rigor de perfil (BUG-018) continua rodando por cima, toda vez, porque
+o perfil ativo pode mudar entre uma chamada e outra; cachear o
+resultado já filtrado serviria dado errado pra um perfil diferente do
+que gerou o cache.
+
+Invalidação: `js/checker.js`, na MESMA transação que fecha uma
+operação (`status: "ENCERRADA"`), agora também `transaction.delete()`
+o documento de cache daquele par - a próxima vez que
+`obterEstatisticasPar()` for chamada pra esse par, o cache não existe
+mais, busca fresco no `historico` (agora incluindo a operação
+recém-fechada) e repovoa o cache. Ou seja: o cache não expira por
+tempo, expira por evento (uma operação daquele par fechou).
+
+Efeito esperado no custo: pares sem operação fechada no meio tempo
+custam 1 leitura por ciclo (era até 51, incluindo `existeCooldown()`)
+- a maioria esmagadora dos ciclos, já que operações fecham bem menos
+frequentemente que o cron roda. Deve reduzir o consumo diário de
+`statisticsEngine.js` de dezenas de milhares de leituras pra uma
+fração pequena disso, permitindo manter o Scanner rodando a cada 5
+minutos sem repetir o estouro de hoje.
+
+Validado isoladamente (scratchpad, 14 cenários): sanitização do ID;
+sem cache prévio busca no historico e grava o cache; COM cache prévio
+não consulta o historico nem uma vez, mesmo com 50 documentos
+disponíveis (o teste que prova a economia real); filtro de perfil
+(BUG-018) continua correto com dados vindos do cache, perfis
+diferentes veem quantidades diferentes da mesma amostra cacheada;
+cache vazio/malformado não quebra; fechamento de operação em
+`js/checker.js` (rodando o arquivo real via `require()`, com Firebase
+Admin/marketData mockados) invalida o cache do par certo, na mesma
+transação que fecha a operação.
+
+Toda a suíte de testes desta sessão (15 arquivos) revalidada sem
+falha - dois arquivos de teste anteriores (BUG-018) precisaram só de
+um mock a mais (`cacheEstatisticas` sempre "sem cache"), sem mudar
+nenhuma asserção existente.
+
+**Decisão deliberada de NÃO reverter o cron pra 5 min ainda**: o
+CLAUDE.md deste projeto é explícito - validar manualmente os primeiros
+ciclos reais de qualquer correção no pipeline antes de deixar rodando
+sozinho, e isso vale em dobro depois de dois estouros de cota no mesmo
+dia. Cron do Scanner segue em 15 min (BUG-023) até o usuário confirmar,
+via Console do Firebase, que a coleção `cacheEstatisticas` está sendo
+criada/lida corretamente em produção - só então reverter pra 5 min.
+--------
+
