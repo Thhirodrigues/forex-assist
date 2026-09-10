@@ -211,7 +211,11 @@ const financeiro =
 
         slUSD: configuracao?.sl,
 
-        perfil
+        perfil,
+
+        par,
+
+        precoAtual: closes[closes.length - 1]
 
     });
 

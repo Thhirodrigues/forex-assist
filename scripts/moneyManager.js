@@ -207,21 +207,50 @@ const {
 // Responsável por calcular quanto vale
 // um Pip para determinado lote.
 //
-// Futuramente poderá utilizar:
-//
-// • Par negociado
-// • Cotação atual
-// • Conversão automática
+// BUG-024 (10/09/2026): fórmula antiga (lote * 10) só está certa
+// quando USD é a moeda de COTAÇÃO do par (EUR/USD, AUD/USD, GBP/USD
+// - o pip já nasce em USD). Quando USD é a moeda BASE (USD/JPY,
+// USD/CAD, USD/CHF - 3 dos 5 pares ativos hoje), o pip nasce na
+// OUTRA moeda (JPY/CAD/CHF) e precisa ser convertido pra USD
+// dividindo pela cotação atual do par. Sem essa conversão,
+// slUSD/tpUSD configurados pelo usuário viravam pips errados (SL de
+// "$5" virava um SL em pips muito maior ou menor que $5 de verdade
+// nesses 3 pares), contaminando riscoPercentual e o position sizing
+// que dependem de valorPip estar certo.
 //
 // ===================================================
 
 function calcularValorPip(
 
-    lote
+    lote,
+
+    par,
+
+    precoAtual
 
 ) {
 
-    return lote * 10;
+    const ehJPY = String(par).includes("JPY");
+
+    const tamanhoPip = ehJPY ? 0.01 : 0.0001;
+
+    const tamanhoLotePadrao = 100000;
+
+    const [moedaBase] = String(par).split("/");
+
+    // USD como moeda base: pip nasce na moeda de cotação, converte
+    // pra USD dividindo pela cotação atual (ex.: USD/JPY, USD/CAD).
+    if (moedaBase === "USD") {
+
+        return (
+            tamanhoPip * tamanhoLotePadrao * lote
+        ) / precoAtual;
+
+    }
+
+    // USD como moeda de cotação: pip já nasce em USD (ex.: EUR/USD,
+    // AUD/USD) - comportamento igual ao da fórmula antiga.
+    return tamanhoPip * tamanhoLotePadrao * lote;
 
 }
 
@@ -682,13 +711,19 @@ adx = 25,
 
 atr = 0.0015,
 
-perfil = "CONSERVADOR"
+perfil = "CONSERVADOR",
+
+par,
+
+precoAtual
 
 }) {
 
     const valorPip =
         calcularValorPip(
-            lote
+            lote,
+            par,
+            precoAtual
         );
 
     const tpPips =

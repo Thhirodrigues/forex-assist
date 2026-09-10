@@ -7558,3 +7558,57 @@ lote passa de 500; exatamente 500 continua sendo 1 lote só; poucos
 documentos e coleção vazia continuam funcionando sem regressão.
 --------
 
+BUG-024 — Valor do pip errado pra pares com USD como moeda base
+(scripts/moneyManager.js, scripts/pairAnalyzer.js)
+
+Origem: usuário revisou 5 prints reais da conta XM (saldo $5.11,
+alavancagem 1000:1) e uma análise de mercado real (EUR/USD), a pedido
+do usuário para avaliar utilidade das ferramentas da corretora.
+Durante essa revisão, ao reler `moneyManager.js` pra confirmar o
+comportamento do position sizing sobre o saldo real de $5.11, foi
+identificado que `calcularValorPip(lote)` sempre retornava
+`lote * 10`, sem considerar qual par estava sendo operado. Usuário
+autorizou a correção explicitamente ("achado 2, pode resolver").
+
+Achado: `lote * 10` só está certo quando USD é a moeda de COTAÇÃO do
+par (o pip já nasce em USD) - é o caso de EUR/USD e AUD/USD, 2 dos 5
+pares ativos. Nos outros 3 pares ativos (USD/JPY, USD/CAD, USD/CHF),
+USD é a moeda BASE: o pip nasce na outra moeda (JPY/CAD/CHF) e precisa
+ser convertido pra USD dividindo pela cotação atual do par - conversão
+que a fórmula fixa nunca fazia. O próprio comentário original da
+função já antecipava isso ("Futuramente poderá utilizar: Par
+negociado, Cotação atual, Conversão automática") - limitação
+documentada desde a criação da função, nunca implementada. Efeito
+prático: `tpPips`/`slPips` calculados a partir de `tpUSD`/`slUSD`
+configurados pelo usuário saíam errados nesses 3 pares, e
+`riscoPercentual`/position sizing (que dependem de `valorPip` estar
+certo) herdavam o erro - um SL configurado como "$5" não correspondia
+de fato a uma perda de $5 nesses pares.
+
+Correção: `calcularValorPip(lote, par, precoAtual)` agora calcula
+`tamanhoPip` (0.01 se o par tem JPY, senão 0.0001) e, quando a moeda
+base do par é USD, divide `tamanhoPip * 100000 * lote` pela cotação
+atual antes de retornar; quando USD é a moeda de cotação, mantém o
+comportamento antigo (`lote * 10`, equivalente a
+`tamanhoPip * 100000 * lote` sem conversão). `analisarFinanceiro()`
+passou a aceitar `par`/`precoAtual` e repassá-los pra
+`calcularValorPip()`; `pairAnalyzer.js` agora envia `par` (já
+disponível nos parâmetros da função) e `precoAtual: closes[closes.length - 1]`
+(o preço de fechamento mais recente, já usado logo depois como
+`precoEntrada` da operação) na chamada a `analisarFinanceiro()`. Sem
+`par`/`precoAtual` informados, cai no ramo antigo (`lote * 10`) - não
+quebra nenhuma chamada que não passe esses campos.
+
+Validado isoladamente (scratchpad, 14 cenários): EUR/USD e AUD/USD
+mantêm exatamente `lote * 10` (regressão zero pros pares onde USD é
+cotação); USD/JPY, USD/CAD e USD/CHF agora convertem pela cotação
+atual e produzem valores diferentes (e corretos) da fórmula antiga;
+`analisarFinanceiro()` ponta-a-ponta com EUR/USD e USD/JPY produz
+`tpPips`/`slPips` finitos e positivos nos dois casos, com o par
+realmente influenciando o resultado; chamada sem `par` informado não
+quebra (cai no fallback antigo). Suíte de regressão do BUG-021
+(validate-bug021-moneymanager.js) e da hierarquia de perfil
+(validate-hierarquia-perfil.js) revalidada sem falhas após a mudança
+de assinatura de `analisarFinanceiro()`.
+--------
+
