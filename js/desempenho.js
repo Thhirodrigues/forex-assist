@@ -50,6 +50,21 @@ function formatarUSD(valor) {
 
 }
 
+// BUG-023 (10/09/2026): a versão original desta função, quando
+// .count() falhava, caía pra `query.get()` SEM NENHUM limite - uma
+// leitura completa da coleção historico inteira filtrada por
+// resultado, TODA VEZ que o Dashboard renderiza (a cada troca de aba,
+// não só uma vez). Com .count() não confirmado como suportado no SDK
+// do navegador (só no SDK Admin do backend - ver histórico deste
+// arquivo), isso muito provavelmente era exatamente o fallback sendo
+// acionado o tempo todo, e é o motivo mais provável do usuário ter
+// esgotado a cota diária do Firestore de novo hoje, o que por sua vez
+// intercepta o Scanner (mesmo padrão do BUG-014) e explica também
+// "nenhum sinal" - mesma causa raiz, dois sintomas. Corrigido: o
+// fallback agora É limitado (mesma cautela do BUG-017/BUG-018) -
+// prefere um número aproximado ("500+") a arriscar a cota de novo.
+const LIMITE_CONTAGEM_FALLBACK = 500;
+
 async function contarPorResultado(resultado) {
 
     const query =
@@ -61,20 +76,23 @@ async function contarPorResultado(resultado) {
         // baixar o conteúdo dos documentos, custo praticamente
         // irrelevante mesmo com milhares de sinais (confirmado
         // disponível no SDK Admin usado no backend, node_modules/
-        // @google-cloud/firestore@6.8.0; NÃO foi possível confirmar
-        // diretamente no SDK do navegador porque a política de rede
-        // deste ambiente bloqueia gstatic.com - o fallback abaixo
-        // cobre esse caso).
+        // @google-cloud/firestore@6.8.0). Se isso realmente funcionar
+        // no navegador, é sempre a via preferida - só chega aqui na
+        // exceção.
         const snap = await query.count().get();
-        return snap.data().count;
+        return { valor: snap.data().count, aproximado: false };
 
     } catch (erro) {
 
         // SDK sem suporte a .count() (ou qualquer outra falha na
-        // agregação) - cai pra leitura normal. Mais caro (lê os
-        // documentos inteiros), mas nunca quebra a tela.
-        const snap2 = await query.get();
-        return snap2.size;
+        // agregação) - cai pra leitura normal, mas SEMPRE limitada.
+        // Se bater exatamente no limite, o número é um piso, não o
+        // total exato - sinalizado pra quem exibe.
+        const snap2 = await query.limit(LIMITE_CONTAGEM_FALLBACK).get();
+        return {
+            valor: snap2.size,
+            aproximado: snap2.size >= LIMITE_CONTAGEM_FALLBACK
+        };
 
     }
 
@@ -132,7 +150,7 @@ async function obterResumoGeral() {
     const config =
         configSnap.exists ? configSnap.data() : {};
 
-    const [winsTotal, lossesTotal] = await Promise.all([
+    const [wins, losses] = await Promise.all([
         contarPorResultado("WIN"),
         contarPorResultado("LOSS")
     ]);
@@ -140,11 +158,18 @@ async function obterResumoGeral() {
     return {
         saldoReal: Number(config.saldoReal || 0),
         saldoSimulado: Number(config.saldoSimulado ?? config.saldoInicial ?? 0),
-        winsTotal,
-        lossesTotal,
-        totalSinais: winsTotal + lossesTotal
+        winsTotal: wins.valor,
+        winsAproximado: wins.aproximado,
+        lossesTotal: losses.valor,
+        lossesAproximado: losses.aproximado,
+        totalSinais: wins.valor + losses.valor,
+        totalAproximado: wins.aproximado || losses.aproximado
     };
 
+}
+
+function formatarContagem(valor, aproximado) {
+    return aproximado ? `${valor}+` : `${valor}`;
 }
 
 async function renderizarDesempenhoDiario(dataStr) {
@@ -201,7 +226,8 @@ async function renderDesempenho() {
         </div>
 
         <div class="list-item">
-            Sinais desde sempre: ✅ ${resumo.winsTotal} · ❌ ${resumo.lossesTotal} · Total ${resumo.totalSinais}
+            Sinais desde sempre: ✅ ${formatarContagem(resumo.winsTotal, resumo.winsAproximado)} · ❌ ${formatarContagem(resumo.lossesTotal, resumo.lossesAproximado)} · Total ${formatarContagem(resumo.totalSinais, resumo.totalAproximado)}
+            ${resumo.totalAproximado ? '<div style="font-size:10px; color:#8c95b3; margin-top:2px;">Número aproximado (piso) - agregação rápida indisponível neste momento</div>' : ''}
         </div>
 
         <div class="list-item">

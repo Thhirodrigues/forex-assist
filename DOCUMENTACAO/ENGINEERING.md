@@ -7326,3 +7326,55 @@ confirmando; com `--aplicar` + "sim" grava a soma exata; com
 `resultadoFinanceiro` continuam excluídos da soma em ambos os modos.
 --------
 
+BUG-023 — js/desempenho.js (contarPorResultado sem .count() lia a
+coleção historico INTEIRA, sem limite, toda vez que o Dashboard abria)
+
+Severidade: MÁXIMA (esgotou a cota diária do Firestore de novo em
+produção, 10/09/2026 - o mesmo tipo de sintoma do BUG-014, incluindo
+"nenhum sinal" no dia, porque quota esgotada intercepta a leitura de
+configuração do Scanner, mesmo padrão de sempre).
+
+Origem: usuário reportou "esgotei novamente os limites diários" ao
+tentar editar `saldoSimulado` pelo Console do Firebase, e que não
+recebeu nenhum sinal no dia - "durante julho não aconteceu".
+
+Achado: `contarPorResultado()` (FEATURE-006, escrita nesta mesma
+sessão, algumas horas antes) tenta `.count()` primeiro (agregação
+nativa do Firestore, custo irrelevante) - mas o fallback, pro caso de
+`.count()` não ser suportado no SDK do navegador (nunca confirmado
+diretamente aqui, só no SDK Admin do backend - ver nota já registrada
+na FEATURE-006 original), fazia `query.get()` **sem nenhum `.limit()`**
+- uma leitura completa da coleção `historico` inteira, filtrada por
+`resultado`, DUAS vezes (WIN e LOSS) a cada vez que
+`obterResumoGeral()` roda, que por sua vez roda toda vez que o
+Dashboard renderiza (não só uma vez por sessão). Com 450+ documentos
+no histórico e o usuário navegando entre abas várias vezes ao longo do
+dia testando as mudanças de hoje, é o candidato mais provável pra ter
+esgotado a cota - exatamente o mesmo tipo de erro do BUG-017 (query
+sem `.limit()`), reintroduzido numa função nova antes desse padrão
+estar automático.
+
+Correção: fallback agora usa `.limit(LIMITE_CONTAGEM_FALLBACK)` (500).
+`contarPorResultado()` passa a devolver `{valor, aproximado}` em vez
+de um número cru - `aproximado: true` quando o resultado bate
+exatamente no limite (sinal de que pode haver mais documentos não
+contados, o piso, não o total exato). Interface mostra "500+" nesse
+caso, com uma nota explicando, em vez de fingir um número exato.
+
+Validado isoladamente (scratchpad, 17 cenários no total, incluindo os
+já existentes revalidados): com 900 documentos falsos e `.count()`
+indisponível, o fallback para exatamente em 500 (não lê os 900) e o
+resultado vem marcado como aproximado; com poucos documentos (abaixo
+do limite), o resultado continua exato, marcado como não-aproximado;
+`.count()` disponível continua sendo o caminho preferido, sem
+regressão. Toda a suíte de testes desta sessão revalidada sem falha.
+
+**Ainda não confirmado diretamente (real dependência de acesso ao
+Firestore de produção, que este ambiente não tem)**: se `.count()`
+realmente falha no SDK do navegador deste projeto (`firebase-
+firestore-compat.js@10.12.2`), ou se o esgotamento de cota teve outra
+causa concorrente. Pedido ao usuário: conferir no Console do Firebase
+→ Firestore → aba "Uso"/"Usage" qual operação/coleção consumiu as
+leituras hoje, pra confirmar (ou descartar) esta hipótese com certeza.
+--------
+
