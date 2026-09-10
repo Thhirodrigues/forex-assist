@@ -1,6 +1,7 @@
 const admin = require("firebase-admin");
 const { getCandles } = require("../scripts/marketData");
 const { idCacheDoPar } = require("../scripts/statisticsEngine");
+const { calcularValorPip } = require("../scripts/moneyManager");
 
 console.log("KEY 1:", !!process.env.API_KEY_1);
 console.log("KEY 2:", !!process.env.API_KEY_2);
@@ -49,9 +50,16 @@ function calcularPips(par, entrada, fechamento) {
 
 }
 
-function calcularLucroUSD(pips, lote) {
+// BUG-025 (10/09/2026): "10 * lote" e o mesmo bug do BUG-024
+// (scripts/moneyManager.js), so que numa copia separada, do lado do
+// FECHAMENTO da operacao em vez da abertura - so acertava o valor do
+// pip pros pares onde USD e a moeda de cotacao (EUR/USD, AUD/USD).
+// Reusa calcularValorPip() de moneyManager.js (mesma fonte da
+// verdade, nao uma 3a copia da formula) - par e precoAtual precisam
+// ser passados por quem chama.
+function calcularLucroUSD(pips, lote, par, precoAtual) {
 
-    const valorPip = 10 * lote;
+    const valorPip = calcularValorPip(lote, par, precoAtual);
 
     return Number(
         (pips * valorPip).toFixed(2)
@@ -110,6 +118,37 @@ async function buscarCandlesDesde(par, desde) {
 
 }
 
+// BUG-025 (10/09/2026): antes disto, TP_USD/SL_USD/TP_PIPS/SL_PIPS
+// eram SEMPRE $5/$5/50 pips fixos (CONFIG.LIMITES), lidos de
+// "configuracao?.limites" - campo que nunca existiu em
+// configuracoes/geral (js/config.js nunca grava "limites"), ou seja
+// esse fallback sempre era usado, pra QUALQUER TP/SL/lote que o
+// usuario configurasse na tela. O fechamento da operacao (WIN/LOSS/
+// quanto ganhou-perdeu) ignorava completamente o que a analise
+// decidiu na abertura (pairAnalyzer.js/moneyManager.js), inclusive
+// depois de decidirConfiguracaoMercado() ajustar TP/SL pra 3 (ADX
+// fraco/mercado lento) - o checker fechava mesmo assim em $5/$5.
+// Corrigido: le tpUSD/slUSD/tpPips/slPips do PROPRIO sinal salvo
+// (o que realmente foi decidido quando essa operacao abriu - nao o
+// que a config diz agora, que pode ja ter mudado entre a abertura e
+// o fechamento). CONFIG.LIMITES vira só o fallback pra sinais
+// salvos antes desta correcao, que nao tem esses campos.
+function limitesDoSinal(sinal) {
+
+    return {
+
+        TP_USD: sinal.tpUSD ?? LIMITES.TP_USD,
+
+        SL_USD: -Math.abs(sinal.slUSD ?? Math.abs(LIMITES.SL_USD)),
+
+        TP_PIPS: sinal.financeiro?.tpPips ?? LIMITES.TP_PIPS,
+
+        SL_PIPS: -Math.abs(sinal.financeiro?.slPips ?? Math.abs(LIMITES.SL_PIPS))
+
+    };
+
+}
+
 function calcularResultadoOperacao({
 
     sinal,
@@ -118,7 +157,7 @@ function calcularResultadoOperacao({
 
 }) {
 
-    const limites = configuracao?.limites ?? LIMITES;
+    const limites = limitesDoSinal(sinal);
     const lote = sinal.lote ?? 0.01;
 
     let precoMaximo = sinal.precoMaximo ?? sinal.precoEntrada;
@@ -166,7 +205,9 @@ function calcularResultadoOperacao({
 
         const lucroCandle = calcularLucroUSD(
             calcularMovimentoPips(sinal, candle.close),
-            lote
+            lote,
+            sinal.par,
+            candle.close
         );
 
         if (lucroCandle >= limites.TP_USD) {
@@ -193,7 +234,9 @@ function calcularResultadoOperacao({
 
     const lucroAtual = calcularLucroUSD(
         movimentoPips,
-        lote
+        lote,
+        sinal.par,
+        precoAtual
     );
 
     // BUG-020 (09/09/2026): saldoAntes/saldoDepois só eram calculados

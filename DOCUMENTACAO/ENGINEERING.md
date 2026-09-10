@@ -7655,3 +7655,59 @@ Suíte de regressão do `btnDefinirSaldoReal`
 mudança de offset de linha no arquivo.
 --------
 
+BUG-025 — Checker fechava toda operação em $5/$5/50 pips fixos,
+ignorando o que o sinal realmente configurou (js/checker.js)
+
+Origem: usuário pediu explicação didática de como saldoSimulado/
+saldoReal/TP/SL/lote se relacionam; ao reler `js/checker.js` (quem
+decide se uma operação virou WIN ou LOSS) pra responder com precisão,
+foi identificado que ele nunca lia `tp`/`sl` da configuração real,
+nem o `tpUSD`/`slUSD` do próprio sinal salvo. Usuário autorizou a
+correção explicitamente ("pode aplicar a correção da pipeline"), com
+a exigência de que nada ficasse fixo/hardcoded.
+
+Achado: `calcularResultadoOperacao()` lia `configuracao?.limites ??
+LIMITES`, onde `LIMITES = {TP_USD:5, SL_USD:-5, TP_PIPS:50,
+SL_PIPS:-50}` - constantes fixas no topo do arquivo. `configuracao.
+limites` nunca existiu de fato em `configuracoes/geral` (`js/config.js`
+nunca grava um campo chamado `limites`), então esse fallback SEMPRE
+era usado, para qualquer `tp`/`sl`/`lote` que o usuário configurasse
+na tela, e mesmo depois de `decidirConfiguracaoMercado()` (moneyManager.
+js) ajustar dinamicamente TP/SL pra 3 (ADX fraco/mercado lento) - o
+checker fechava a operação em $5/$5 mesmo assim, ignorando o valor
+real decidido na abertura. Além disso, `calcularLucroUSD()` usava
+`10 * lote` fixo pro valor do pip - a MESMA fórmula que o BUG-024
+corrigiu em `moneyManager.js`, só que numa cópia paralela e
+independente, do lado do FECHAMENTO da operação em vez da abertura -
+errada pros mesmos 3 pares (USD/JPY, USD/CAD, USD/CHF). Resultado
+prático: o WIN/LOSS e o valor em dólares registrados no histórico
+para esses 3 pares nunca correspondiam ao que a análise/gestão de
+risco realmente decidiu para aquela operação específica.
+
+Correção: nova função `limitesDoSinal(sinal)` lê `tpUSD`/`slUSD`
+diretamente do PRÓPRIO sinal salvo (o que foi decidido quando aquela
+operação abriu - não a configuração atual, que pode já ter mudado
+entre a abertura e o fechamento) e `financeiro.tpPips`/`financeiro.
+slPips` (também já salvos no sinal) para os limites em pips -
+substituindo os $5/$5/50 pips fixos. `CONFIG.LIMITES` vira só
+fallback pra sinais salvos antes desta correção, que não têm esses
+campos (não quebra o histórico já existente). `calcularLucroUSD()`
+agora recebe `par`/`precoAtual` e chama `calcularValorPip()`
+importado direto de `scripts/moneyManager.js` (mesma fonte da
+verdade do BUG-024, não uma 3ª cópia da fórmula).
+
+Validado isoladamente (scratchpad, 13 cenários, extraindo o módulo
+real sem o auto-exec do cron): sinal com tpUSD/slUSD diferentes do
+$5 fixo faz o checker respeitar o valor real do sinal, não o fixo;
+sinal sem esses campos (schema antigo) cai no fallback $5/$5/50 pips
+sem quebrar; USD/JPY fecha em TP_FINANCEIRO com lucro correto usando
+a cotação real (não o gatilho de preço que a fórmula antiga geraria);
+EUR/USD SELL continua fechando em LOSS corretamente quando o preço
+sobe (regressão do BUG-007 preservada). Suítes de regressão
+`validate-checker.js` (8 cenários) e `validate-checker-error-handling.
+js` (6 cenários) revalidadas sem falhas; `validate-cache-invalidacao-
+checker.js` também revalidada após corrigir uma fragilidade própria
+do teste (data de candle fixa no passado, sem relação com esta
+correção - não regressão de código).
+--------
+
