@@ -7885,3 +7885,51 @@ continua aprovando normalmente. Suítes `validate-feature010-aviso-
 risco.js` e `validate-bug021-moneymanager.js` revalidadas sem falhas.
 --------
 
+PENTE-FINO-003 — Cooldown não impedia posições simultâneas no mesmo
+par (scripts/riskManager.js)
+
+Origem: usuário observou, nos primeiros sinais reais gerados após
+ligar o Scanner, que USD/JPY e AUD/USD acumularam 2 operações
+`ABERTA` cada ao mesmo tempo, com intervalos de 36 e 52 minutos entre
+elas - maior que o cooldown configurado (30 min) - e perguntou se o
+cooldown não deveria ter bloqueado. Confirmado com a conta exata:
+36min e 52min > 30min, então pela lógica antiga o bloqueio realmente
+não deveria disparar. Usuário confirmou explicitamente a expectativa
+correta: "o cooldown deve bloquear enquanto o sinal, que já foi
+aprovado, está em andamento".
+
+Achado: `existeCooldown()` só checava "a última operação deste par
+foi ABERTA há menos de X minutos?" - nunca checava se essa última
+operação ainda estava com `status === "ABERTA"` (ainda não fechou).
+Como o cooldown conta a partir da ABERTURA, não do fechamento, um par
+cujo TP/SL demorasse mais que o cooldown pra bater - bem provável,
+dado TP/SL de $3 e lote pequeno (0.02) nas condições atuais de
+mercado - ficava livre pra abrir uma SEGUNDA posição simultânea no
+mesmo par assim que o timer passasse, mesmo com a primeira ainda em
+andamento. Cada posição calcula seu próprio risco isoladamente
+contra a banca total (`riscoPercentual`, `avisoRisco`) - nada no
+pipeline soma a exposição real quando há mais de uma posição aberta
+no mesmo par ao mesmo tempo, então essa lacuna multiplicava risco
+não contabilizado.
+
+Correção: `existeCooldown()` agora bloqueia imediatamente quando a
+última operação salva do par tem `status === "ABERTA"`, independente
+de quanto tempo passou desde a abertura. Só cai no cálculo por tempo
+(comportamento original) quando a última operação já está
+`ENCERRADA`.
+
+Validado isoladamente (scratchpad, 6 cenários): operação ABERTA há
+52min (acima do cooldown) continua bloqueando - reproduz e corrige o
+caso real de produção; operação ABERTA há 5min continua bloqueando
+(comportamento já esperado, sem regressão); operação ENCERRADA há
+52min libera normalmente; operação ENCERRADA há 5min ainda bloqueia
+pelo timer (regressão do comportamento original preservada); sem
+operação anterior libera; status diferente de "ABERTA" não trava por
+si só, cai no timer. Suíte de regressão `validate-limpeza005-
+salvaroperacao.js` (mesmo arquivo) revalidada sem falhas.
+
+Efeito esperado em produção: as duplicatas já abertas (USD/JPY x2,
+AUD/USD x2) continuam normalmente até fechar - a correção só evita
+NOVAS duplicatas a partir de agora, não fecha as que já existem.
+--------
+

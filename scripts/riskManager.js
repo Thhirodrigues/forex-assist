@@ -2,6 +2,19 @@
 // configuracoes/geral (ver configuracao.cooldown em scripts/scanner.js).
 const COOLDOWN_MINUTOS_PADRAO = 30;
 
+// PENTE-FINO-003 (10/09/2026): existeCooldown() só checava "a última
+// operação deste par foi aberta há menos de X minutos?" - nunca
+// checava se essa última operação ainda estava ABERTA. Como o
+// cooldown conta a partir da ABERTURA (não do fechamento), um par
+// cujo TP/SL demorasse mais que o cooldown pra bater (bem provável,
+// com TP/SL de $3 e lote pequeno) ficava livre pra abrir uma SEGUNDA
+// posição simultânea assim que o timer passasse - confirmado em
+// produção no mesmo dia: USD/JPY e AUD/USD acumularam 2 operações
+// ABERTA cada, simultaneamente. Cada uma calcula risco isoladamente
+// contra a banca total - nada soma a exposição real quando há mais
+// de uma posição aberta no mesmo par. Usuário pediu explicitamente:
+// cooldown deve bloquear enquanto o sinal aprovado ainda estiver em
+// andamento, não só por tempo.
 async function existeCooldown(db, par, minutos) {
 
     const cooldownMinutos =
@@ -18,6 +31,13 @@ async function existeCooldown(db, par, minutos) {
         return false;
 
     const ultima = snapshot.docs[0].data();
+
+    // Bloqueia enquanto a última operação deste par ainda não fechou,
+    // não importa há quanto tempo foi aberta - evita empilhar
+    // posições simultâneas no mesmo par.
+    if (ultima.status === "ABERTA") {
+        return true;
+    }
 
     const limite =
         Date.now() - cooldownMinutos * 60 * 1000;
