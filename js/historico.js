@@ -62,6 +62,63 @@ const LEGENDA_AJUSTE_MERCADO = {
   EXPECTATIVA_NEGATIVA: "expectativa histórica negativa reduziu o lote"
 };
 
+// Usuário pediu pra poder ver o movimento completo do preço, da
+// entrada até o encerramento - js/checker.js's amostrarCaminhoPrecos()
+// grava sinal.caminhoPrecos (até 300 pontos {t,c}) no fechamento. SVG
+// inline, sem biblioteca externa (mesma filosofia vanilla-JS do resto
+// do app) - uma polyline simples, com uma linha tracejada marcando o
+// preço de entrada como referência.
+function renderizarCaminhoPrecos(sinal) {
+
+  const caminho = sinal.caminhoPrecos;
+
+  if (!Array.isArray(caminho) || caminho.length < 2) return "";
+
+  const closes = caminho.map(p => p.c);
+  const entrada = Number(sinal.precoEntrada);
+  const valores = Number.isFinite(entrada) ? [...closes, entrada] : closes;
+
+  const min = Math.min(...valores);
+  const max = Math.max(...valores);
+  const span = (max - min) || 1;
+
+  const largura = 300;
+  const altura = 90;
+  const pad = 6;
+
+  const pontos = caminho.map((p, i) => {
+    const x = pad + (i / (caminho.length - 1)) * (largura - pad * 2);
+    const y = altura - pad - ((p.c - min) / span) * (altura - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+
+  const corLinha = sinal.resultado === "WIN"
+    ? "#00d26a"
+    : sinal.resultado === "LOSS"
+      ? "#ff5252"
+      : "#4fc3f7";
+
+  const linhaEntrada = Number.isFinite(entrada)
+    ? `<line x1="0" y1="${(altura - pad - ((entrada - min) / span) * (altura - pad * 2)).toFixed(1)}" x2="${largura}" y2="${(altura - pad - ((entrada - min) / span) * (altura - pad * 2)).toFixed(1)}" stroke="#8c95b3" stroke-width="1" stroke-dasharray="4,3" />`
+    : "";
+
+  return `
+    <div style="margin:14px 0;">
+      <div style="font-weight:bold; color:#9aa4b5; margin-bottom:8px;">
+        📈 Movimento do Preço (entrada → encerramento)
+      </div>
+      <svg viewBox="0 0 ${largura} ${altura}" preserveAspectRatio="none" style="width:100%; height:90px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:8px;">
+        ${linhaEntrada}
+        <polyline points="${pontos}" fill="none" stroke="${corLinha}" stroke-width="2" />
+      </svg>
+      <div style="font-size:10px; color:#8c95b3; margin-top:4px; text-align:center;">
+        linha tracejada = preço de entrada
+      </div>
+    </div>
+  `;
+
+}
+
 function bannerConfiguracaoAjustada(sinal) {
 
   const decisao = sinal.financeiro?.decisaoMercado?.decisao;
@@ -347,7 +404,8 @@ ${sinal.precoSaida ?? sinal.precoFechamento ?? "--"}
 </div>
 
 </div>
-            
+
+${sinal.status === "ENCERRADA" ? renderizarCaminhoPrecos(sinal) : ""}
 
 <div style="margin-top:12px;">
 

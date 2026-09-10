@@ -8132,3 +8132,51 @@ dedicada) - se o primeiro sinal real não gerar notificação, o
 primeiro lugar a olhar é esse documento no Firestore, não um log de
 tela.
 --------
+FEATURE-012 — Movimento completo do preço (entrada → encerramento) no
+detalhe do sinal (js/checker.js, js/historico.js)
+
+Origem: pedido do usuário, depois de ver o primeiro sinal real
+fechar: "conseguimos depois do fechamento analisar o movimento
+completo desde a entrada do sinal até o encerramento?".
+
+Achado que tornou isso quase de graça: `js/checker.js`'s
+`buscarCandlesDesde()` já busca TODOS os candles desde
+`sinal.inicioOperacao` a cada ciclo (não incremental - ver comentário
+já existente sobre atrasos do cron do GitHub Actions) - no ciclo que
+efetivamente fecha a operação, a variável `candles` já contém o
+caminho inteiro do preço, do início ao fim. Não foi preciso nenhuma
+chamada extra à API nem redesenho do fluxo existente.
+
+Correção/Feature:
+
+1. `js/checker.js`: nova função `amostrarCaminhoPrecos(candles,
+   maxPontos=300)` - grava até 300 pontos `{t, c}` (timestamp +
+   close) no documento fechado, como `caminhoPrecos`. Teto de 300
+   pontos de propósito: sem isso, uma operação que ficasse aberta por
+   muitas horas geraria um array enorme e sem controle - mesmo
+   princípio de "nunca deixar algo crescer sem teto" já aplicado em
+   CACHE-001/LIMPEZA-006/BUG-017. Sempre inclui o ÚLTIMO candle (o do
+   fechamento) mesmo quando isso significa passar do teto por 1 -
+   sem isso o gráfico "mentiria" sobre onde a operação realmente
+   fechou.
+2. `js/historico.js`: nova função `renderizarCaminhoPrecos(sinal)` -
+   SVG inline (sem biblioteca externa, mesma filosofia vanilla-JS do
+   resto do app), uma polyline simples colorida por resultado (verde
+   WIN / vermelho LOSS), com uma linha tracejada marcando o preço de
+   entrada como referência. Só aparece no detalhe de sinais já
+   `ENCERRADA` (sinais pendentes ou antigos, sem `caminhoPrecos`, não
+   mostram nada - função retorna string vazia, sem gráfico quebrado).
+
+Validado isoladamente (scratchpad, 14 cenários,
+`validate-caminho-precos.js`): amostragem retorna tudo quando está
+abaixo do teto; acima do teto, nunca passa muito de 300 e SEMPRE
+inclui o candle de fechamento real; array vazio e exatamente-no-teto
+não quebram; SVG gera cor certa por resultado (WIN/LOSS), inclui a
+linha de referência da entrada, e retorna vazio com segurança quando
+falta `caminhoPrecos` ou há só 1 ponto (não dá pra traçar linha).
+`node --check` limpo nos dois arquivos. Suítes de regressão
+`validate-checker.js`, `validate-checker-error-handling.js`,
+`validate-cache-invalidacao-checker.js`, `validate-bug025-checker-
+limites.js` e `validate-push-integracao-checker.js` revalidadas sem
+falhas.
+--------

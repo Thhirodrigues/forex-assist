@@ -119,6 +119,49 @@ async function buscarCandlesDesde(par, desde) {
 
 }
 
+// Usuário pediu pra poder analisar o movimento completo do preço,
+// da entrada até o encerramento, depois que a operação fecha.
+// buscarCandlesDesde() já busca TODOS os candles desde
+// sinal.inicioOperacao EM TODO CICLO (não incremental) - no ciclo que
+// fecha a operação, `candles` já contém o caminho inteiro, sem
+// nenhuma chamada extra à API. Amostra com teto de 300 pontos (em vez
+// de gravar o array inteiro) pra não deixar o documento crescer sem
+// fim em operações que ficam abertas por horas - mesmo princípio de
+// "por um teto no que é ilimitado" já usado em CACHE-001/LIMPEZA-006/
+// BUG-017. Sempre inclui o último candle (o do fechamento), mesmo
+// quando isso significa passar de 300 por 1.
+function amostrarCaminhoPrecos(candles, maxPontos = 300) {
+
+    if (!candles.length) return [];
+
+    if (candles.length <= maxPontos) {
+
+        return candles.map(c => ({ t: c.timestamp, c: c.close }));
+
+    }
+
+    const passo = candles.length / maxPontos;
+    const amostra = [];
+
+    for (let i = 0; i < maxPontos; i++) {
+
+        const indice = Math.floor(i * passo);
+        amostra.push({ t: candles[indice].timestamp, c: candles[indice].close });
+
+    }
+
+    const ultimo = candles[candles.length - 1];
+
+    if (amostra[amostra.length - 1].t !== ultimo.timestamp) {
+
+        amostra.push({ t: ultimo.timestamp, c: ultimo.close });
+
+    }
+
+    return amostra;
+
+}
+
 // BUG-025 (10/09/2026): antes disto, TP_USD/SL_USD/TP_PIPS/SL_PIPS
 // eram SEMPRE $5/$5/50 pips fixos (CONFIG.LIMITES), lidos de
 // "configuracao?.limites" - campo que nunca existiu em
@@ -453,8 +496,10 @@ const {
 
             fimOperacao: agora,
 
-            tempoOperacao
-            
+            tempoOperacao,
+
+            caminhoPrecos: amostrarCaminhoPrecos(candles)
+
         });
 
         transaction.update(configuracaoRef, {
