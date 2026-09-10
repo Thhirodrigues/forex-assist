@@ -7376,5 +7376,38 @@ firestore-compat.js@10.12.2`), ou se o esgotamento de cota teve outra
 causa concorrente. Pedido ao usuário: conferir no Console do Firebase
 → Firestore → aba "Uso"/"Usage" qual operação/coleção consumiu as
 leituras hoje, pra confirmar (ou descartar) esta hipótese com certeza.
+
+CONFIRMAÇÃO (10/09/2026): usuário trouxe os gráficos reais de uso do
+Firestore. 50 mil leituras (teto exato), 355 gravações, curva subindo
+de forma CONSTANTE desde ~2h da manhã, não em pico concentrado à
+tarde (quando o usuário estava de fato testando o Dashboard). Isso
+descarta o BUG-023 como causa principal - um bug de UI só geraria
+carga quando a tela é aberta, não durante a madrugada. Padrão de
+subida constante o dia inteiro aponta pro cron de fundo
+(`scripts/scanner.js`, a cada 5 min) como driver dominante.
+
+Conta que sustenta essa hipótese: `statisticsEngine.js` (BUG-017) lê
+até 50 documentos por par, TODO ciclo do Scanner. Com 5 pares ativos:
+até 250 leituras só nessa consulta por ciclo, mais `existeCooldown()`
+(mais ~5). Com o cron tentando rodar a cada 5 min (288 ciclos/dia
+teóricos, tipicamente menos na prática pelo atraso conhecido do
+GitHub Actions grátis), mesmo metade disso já ultrapassa 50 mil
+leituras/dia. O BUG-017 de ontem trocou "sem limite, crescendo pra
+sempre" por "limite de 50, cobrado em todo ciclo, o dia inteiro" -
+resolveu um problema e deixou consumo alto de outro jeito.
+
+Decisão (conversada com o usuário, priorizando confiabilidade do
+sinal sobre velocidade - NÃO reduzir a amostra de 50, que foi
+calibrada de propósito pra bater com a fórmula de confiabilidade):
+reduzir a frequência do cron do Scanner de 5 para 15 minutos
+(`.github/workflows/forex-scanner-real.yml`) - corta o número teórico
+de ciclos/dia de 288 pra 96 (~3x), sem tocar em nenhuma lógica de
+análise ou tamanho de amostra. `result-checker.yml` mantido em 5 min
+(seu custo é proporcional ao número de operações ABERTAS, não por par
+do histórico - não é o driver principal, e fechar operações mais
+rápido continua valioso). Solução "certa" de mais longo prazo
+(cachear a estatística por par, recalculando só quando uma operação
+daquele par fecha, não a cada ciclo) registrada como pendência, fora
+de escopo pra decidir às pressas.
 --------
 
