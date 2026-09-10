@@ -10,7 +10,7 @@
 // DEPENDÊNCIAS
 // ===================================================
 
-const { db } = require("./firebase");
+const { db, admin } = require("./firebase");
 
 const {
     analisarPar
@@ -40,6 +40,17 @@ const {
     salvarOperacao,
     existeCooldown
 } = require("./riskManager");
+
+const {
+    enviarPushAbertura: enviarPushAberturaBase
+} = require("./pushNotifier");
+
+// Pré-vinculado a admin/db reais (scripts/firebase.js), pra
+// pairAnalyzer.js poder chamar só com a operação, sem precisar saber
+// de Firebase Admin - mantém pairAnalyzer.js testável sem
+// credenciais reais (ver comentário no próprio parâmetro).
+const enviarPushAbertura =
+    (operacao) => enviarPushAberturaBase(admin, db, operacao);
 
 // ===================================================
 // CONFIGURAÇÃO PADRÃO
@@ -710,7 +721,9 @@ async function executarAnalisePar(context,par) {
 
                 existeCooldown,
 
-                salvarOperacao
+                salvarOperacao,
+
+                enviarPushAbertura
 
             });
 

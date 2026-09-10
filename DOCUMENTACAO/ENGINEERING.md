@@ -8011,3 +8011,124 @@ real.js` e `validate-bug022-feedback-checkbox.js` (offset de linha
 corrigido de novo) revalidadas sem falhas.
 --------
 
+FEATURE-011 — Push notification na abertura e no encerramento do
+sinal, com deep link pra XM (scripts/pushNotifier.js,
+scripts/pairAnalyzer.js, scripts/scanner.js, js/checker.js,
+firebase-messaging-sw.js)
+
+Origem: pedido explícito do usuário, retomando uma funcionalidade que
+"chegou a funcionar" numa versão anterior do projeto e quebrou sem
+nunca ser consertada. Investigação anterior (mesmo dia) já tinha
+confirmado que só o CADASTRO do dispositivo existia (`js/push.js`,
+`messaging().getToken()`) - nenhum código em lugar nenhum do
+repositório chamava `admin.messaging().send()`. Usuário pediu push
+na abertura E no encerramento do sinal, com uma estimativa de "tempo
+hábil pra agir" baseada em ATR (não um número arbitrário) - a mesma
+ideia da versão antiga. Link de destino ao tocar a notificação:
+decidido com o usuário como a área geral da conta XM
+(`my.xm.com/pt/member`) - XM não expõe URL pública que abra uma
+ordem pronta ou logue automaticamente.
+
+Design:
+
+1. **`scripts/pushNotifier.js`** (novo módulo): NÃO chama
+   `admin.initializeApp()` - recebe `admin`/`db` já inicializados de
+   quem chama. Motivo: `js/checker.js` já inicializa o próprio Admin
+   diretamente (`admin.initializeApp()` no topo do arquivo);
+   `scripts/scanner.js` inicializa via `./firebase`. Chamar
+   `initializeApp()` de novo no mesmo processo derruba com "the
+   default Firebase app already exists" - confirmado como risco real
+   antes de escrever qualquer código, não depois de quebrar em
+   produção.
+
+   - `estimarTempoHabilMinutos(atrAtual, slPips, par)`: ATR de 14
+     períodos em candles de 5min representa a amplitude MÉDIA de UM
+     candle de 5min (não dos 14 juntos) - dividido por 5, vira uma
+     velocidade média de pips/minuto. A janela "hábil" é o tempo, nessa
+     velocidade, pra percorrer 15%-30% do SL em pips (banda
+     conservadora: além disso, a entrada já não reflete bem o que
+     gerou o sinal). Teto de 10-15 min (sinal validado em candles de
+     5min não deveria prometer janelas de dezenas de minutos). Fallback
+     3-5min quando falta ATR/SL.
+   - `enviarPushAbertura(admin, db, operacao)` / `enviarPushEncerramento(admin, db, sinal)`:
+     leem tokens ativos (`tokens` where `ativo==true`), montam
+     notification+data, enviam token por token (não multicast - poucos
+     tokens esperados, evita qualquer dúvida de compatibilidade de
+     versão do SDK). Cada uma envolvida no próprio try/catch: uma
+     falha de envio (FCM fora do ar, Firestore indisponível pra ler
+     tokens) NUNCA propaga pra quem chamou - só loga um aviso. Token
+     que o FCM reporta como não registrado/inválido é desativado
+     (`ativo:false`) automaticamente, sem interromper o envio pros
+     demais tokens.
+   - `data.url` sempre `https://my.xm.com/pt/member` (constante
+     `URL_XM_MEMBER`) - centralizado num só lugar, fácil de trocar se
+     a decisão mudar depois.
+
+2. **`scripts/pairAnalyzer.js`**: novo parâmetro OPCIONAL
+   `enviarPushAbertura`, injetado (mesmo padrão de `salvarOperacao`/
+   `existeCooldown`) - preserva a testabilidade da função sem precisar
+   mockar Firebase Admin quando o teste não se importa com push.
+   Chamado logo depois de `salvarOperacao()`, com a `operacao` recém
+   salva - envolvido no PRÓPRIO try/catch local (achado durante o
+   teste, não depois: sem esse try/catch local, uma falha no push
+   escapava pro try/catch GERAL da função e fazia `analisarPar()`
+   retornar status "ERRO" mesmo com o sinal já salvo com sucesso no
+   Firestore - um sinal real, persistido, reportado como se tivesse
+   falhado).
+
+3. **`scripts/scanner.js`**: importa `enviarPushAbertura` de
+   `pushNotifier.js` e cria uma versão pré-vinculada a `admin`/`db`
+   reais (`./firebase`) antes de passar pra `analisarPar()` - assim
+   `pairAnalyzer.js` só chama `enviarPushAbertura(operacao)`, sem
+   precisar saber nada sobre Firebase Admin.
+
+4. **`js/checker.js`**: chama `enviarPushEncerramento(admin, db,
+   {...})` logo depois que a transação de fechamento confirma
+   (`await db.runTransaction(...)` já resolvido - nunca dentro da
+   própria transação, pra não segurar uma chamada de rede lenta
+   com a transação aberta), com try/catch próprio, mesmo
+   `enviarPushEncerramento` já engolindo os próprios erros - defesa
+   em camada dupla, barata e sem custo real.
+
+5. **`firebase-messaging-sw.js`**: `onBackgroundMessage()` agora
+   repassa `data: payload.data` pro `showNotification()` (antes não
+   repassava nada - a notificação aparecia, mas sem informação
+   nenhuma de destino). Novo listener de `notificationclick` - antes
+   NÃO EXISTIA nenhum (tocar na notificação não fazia nada, o usuário
+   tinha que abrir a XM manualmente por fora). Reaproveita uma aba já
+   aberta do app na mesma URL, se existir; senão abre uma nova.
+
+Validado isoladamente (scratchpad):
+`validate-push-estimativa-tempo.js` (10 cenários) - janela cresce
+quando o mercado está mais lento (ATR menor), nunca degenera num
+único minuto, respeita o teto de segurança, cai no fallback 3-5min
+sem ATR/SL. `validate-push-envio.js` (19 cenários) - envia pra todos
+os tokens ativos com título/corpo/data corretos; token
+inválido é desativado sem impedir o envio pros demais; erro genérico
+do FCM não desativa o token nem propaga; Firestore indisponível ao
+ler tokens não derruba a função (achado e corrigido no meio do teste:
+formatação de valor negativo mostrava "$-3.20" em vez de "-$3.20" -
+`toFixed()` já inclui o sinal, concatenar "$" na frente duplicava a
+posição do sinal). `validate-push-integracao-pairanalyzer.js` (6
+cenários) - confirma a ordem certa (push depois de salvar), que
+ausência do parâmetro não quebra chamadas antigas, e o achado do
+try/catch local descrito acima (push falhando não derruba o SALVO).
+`validate-push-integracao-checker.js` (10 cenários, via require real
+do módulo com mocks) - push chamado com par/resultado/valor corretos
+depois da transação confirmar; falha no push não impede o resto do
+ciclo do Result Checker. Suítes de regressão `validate-checker.js`,
+`validate-checker-error-handling.js`, `validate-cache-invalidacao-
+checker.js`, `validate-bug025-checker-limites.js`, `validate-
+pentefino001-perfil-salvo.js` e `validate-pentefino004-
+expectativa.js` revalidadas sem falhas. `node --check` limpo nos 4
+arquivos JS tocados (não há framework de teste automatizado pra
+Service Worker/browser neste projeto - `firebase-messaging-sw.js`
+validado só por sintaxe e revisão manual).
+
+Pendente, fora do escopo desta correção: nenhuma tela do app mostra
+hoje se o push está de fato ativo/qual erro ocorreu além do que já
+existia em `js/push.js` (grava em `scanner/status.pushDebug`, sem UI
+dedicada) - se o primeiro sinal real não gerar notificação, o
+primeiro lugar a olhar é esse documento no Firestore, não um log de
+tela.
+--------

@@ -39,9 +39,52 @@ messaging.onBackgroundMessage(
           "forex-assist",
 
         requireInteraction:
-          true
+          true,
+
+        // "data" nunca era repassado pra cá antes - sem isso, o clique
+        // na notificação não tinha como saber pra onde abrir (ver
+        // listener de notificationclick abaixo). scripts/pushNotifier.js
+        // manda a URL de destino em payload.data.url.
+        data:
+          payload.data || {}
       }
     );
 
   }
 );
+
+// Antes desta correção, não existia NENHUM listener de clique - tocar
+// na notificação não fazia nada (o usuário via o alerta, mas precisava
+// abrir a XM manualmente por fora). Reaproveita uma aba já aberta do
+// app, se existir; senão abre uma nova na URL informada pelo push
+// (scripts/pushNotifier.js's URL_XM_MEMBER).
+self.addEventListener("notificationclick", event => {
+
+  event.notification.close();
+
+  const url =
+    event.notification.data?.url ||
+    "https://my.xm.com/pt/member";
+
+  event.waitUntil(
+    clients.matchAll({
+      type: "window",
+      includeUncontrolled: true
+    }).then(janelas => {
+
+      for (const janela of janelas) {
+
+        if (janela.url === url && "focus" in janela) {
+          return janela.focus();
+        }
+
+      }
+
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+
+    })
+  );
+
+});

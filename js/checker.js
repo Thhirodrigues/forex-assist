@@ -2,6 +2,7 @@ const admin = require("firebase-admin");
 const { getCandles } = require("../scripts/marketData");
 const { idCacheDoPar } = require("../scripts/statisticsEngine");
 const { calcularValorPip } = require("../scripts/moneyManager");
+const { enviarPushEncerramento } = require("../scripts/pushNotifier");
 
 console.log("KEY 1:", !!process.env.API_KEY_1);
 console.log("KEY 2:", !!process.env.API_KEY_2);
@@ -474,7 +475,27 @@ const {
 
     });
 
-} 
+    // Best-effort: enviarPushEncerramento() já engole os próprios
+    // erros (ver scripts/pushNotifier.js) e nunca deveria lançar, mas
+    // envolvido aqui mesmo assim - uma falha no push nunca pode
+    // impedir o restante do ciclo do Result Checker de continuar
+    // pros próximos sinais pendentes.
+    try {
+
+        await enviarPushEncerramento(admin, db, {
+            par: sinal.par,
+            resultado,
+            resultadoFinanceiro,
+            motivoEncerramento
+        });
+
+    } catch (erroPush) {
+
+        console.log(`Aviso: falha ao enviar push de encerramento: ${erroPush.message}`);
+
+    }
+
+}
     else {
 
     await documento.ref.update({

@@ -54,7 +54,13 @@ calcularADX,
 calcularATR,
 calcularQualidade,
 existeCooldown,
-salvarOperacao
+salvarOperacao,
+
+// Opcional de propósito: injetado por scripts/scanner.js já vinculado
+// a admin/db reais. Ausente (ex.: chamadas de teste) ou falha no
+// envio nunca impede o sinal de salvar - push é um efeito colateral
+// best-effort, não parte do critério de aprovação da RMI.
+enviarPushAbertura
 
 }) {
 
@@ -432,6 +438,26 @@ const operacao = decisao.operacao || {
         
         
 await salvarOperacao(db, operacao);
+
+if (enviarPushAbertura) {
+
+    // Best-effort de verdade: sem try/catch aqui, uma falha no envio
+    // (FCM fora do ar, token malformado etc.) escaparia pro try/catch
+    // GERAL desta função (linha ~447) e faria analisarPar() retornar
+    // status "ERRO" mesmo com a operação já salva com sucesso no
+    // Firestore - um sinal real, persistido, reportado como se tivesse
+    // falhado. Confirmado com teste antes de ir pra produção.
+    try {
+
+        await enviarPushAbertura(operacao);
+
+    } catch (erroPush) {
+
+        console.log(`Aviso: falha ao enviar push de abertura: ${erroPush.message}`);
+
+    }
+
+}
 
 console.log(`Direção...........${direcao}`);
 console.log(`EMA9..............${ema9.toFixed(5)}`);
