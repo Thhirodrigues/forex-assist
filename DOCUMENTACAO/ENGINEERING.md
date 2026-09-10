@@ -7711,3 +7711,79 @@ do teste (data de candle fixa no passado, sem relação com esta
 correção - não regressão de código).
 --------
 
+FEATURE-010 — Risco financeiro vira aviso, não bloqueio; bloqueio de
+verdade migra pro checkbox "Operação Real"
+(scripts/decisionEngine.js, scripts/moneyManager.js,
+scripts/pairAnalyzer.js, js/historico.js)
+
+Origem: discussão direta com o usuário sobre por que
+`avaliarConfiguracao()` (BUG-021) REPROVA (bloqueia) um sinal inteiro
+quando o risco calculado passa do teto do perfil. Usuário argumentou
+que a análise técnica (score/qualidade/tendência, calculada por
+`marketAnalyzer.js`) não recebe banca nem lote como entrada - não
+piora nem melhora com o tamanho da conta - então bloquear o sinal
+inteiro por causa do saldo não protege o aprendizado (`taxaAcerto` é
+sobre a direção do preço ter acertado, não sobre quanto dinheiro
+estava em jogo), só impede o usuário de decidir se quer assumir o
+risco. Argumento verificado contra o código e confirmado correto:
+nenhuma entrada de `marketAnalyzer.js` depende de banca/lote/saldo.
+Combinado com o usuário (mensagem "3.1"/"3.2"): o sinal deve salvar
+normal (Conta Simulada sempre acompanha, como já era) mesmo com risco
+alto - mas o usuário NÃO pode marcar esse sinal como "Operação Real"
+se o saldo real dele não seria suficiente pra ter coberto o SL
+daquela operação (ele não teria conseguido executar isso de verdade
+na XM com esse saldo).
+
+Achado/Decisão: dois pontos de controle diferentes, cada um no lugar
+onde a decisão realmente pertence:
+
+1. Geração do sinal (`decisionEngine.js`'s `avaliarOperacao()`): o
+   bloqueio "Operação reprovada pelo Money Manager" (return
+   `aprovado:false`/`SEM_VIABILIDADE`) foi removido. Em seu lugar, um
+   `avisoRisco = {ativo, mensagem}` é montado e incluído nos retornos
+   de aprovação (BUY/SELL) - o sinal segue aprovado, salva
+   normalmente, e carrega o aviso junto. Os outros gates (score
+   mínimo, histórico mínimo por perfil, multi-timeframe divergente)
+   continuam bloqueando de verdade - não têm relação com risco
+   financeiro, então não foram tocados.
+
+2. `moneyManager.js`'s `gerarRecomendacao()`: a mensagem, que antes
+   era um código genérico (`"UTILIZAR_CONFIGURACAO_SUGERIDA"`), agora
+   descreve a situação real (saldo atual, SL em dólar, % de risco,
+   pedindo confirmação do usuário) quando o motivo é `RISCO_ELEVADO`,
+   ou a relação risco/retorno quando o motivo é `RISK_REWARD_INVALIDO`
+   - essa mensagem é o texto que vai aparecer como aviso pro usuário.
+
+3. `pairAnalyzer.js`: `avisoRisco: decisao.avisoRisco || null` passou
+   a ser salvo junto com o resto da operação em `historico`.
+
+4. `js/historico.js`: exibe um banner de aviso (⚠️) no card do sinal
+   quando `sinal.avisoRisco?.ativo`. E o bloqueio de verdade migrou
+   pra `window.alternarOperacaoReal()`: ao tentar MARCAR (não ao
+   desmarcar) o checkbox "Operação Real", se `sinal.slUSD` for maior
+   que o `saldoReal` atual, a marcação é recusada com um alert
+   explicativo - não grava `operacaoReal` nem mexe no `saldoReal`.
+   Serve também como checagem indireta: se isso disparar, ou o saldo
+   real cadastrado está desatualizado (aporte feito e não registrado
+   na tela de Config), ou a operação realmente não foi executada como
+   o usuário estava tentando marcar.
+
+Validado isoladamente (scratchpad):
+`validate-feature010-aviso-risco.js` (9 cenários) - risco elevado
+aprova o sinal com `avisoRisco.ativo=true` e mensagem descritiva
+(antes reprovava com SEM_VIABILIDADE); risco dentro do perfil aprova
+sem aviso (`avisoRisco: null`); score insuficiente continua
+bloqueando de verdade (gate não tocado). `validate-feature010-
+bloqueio-real.js` (12 cenários) - saldo insuficiente bloqueia marcar
+como Real (sem gravar nada, com alerta); saldo suficiente marca e
+soma normalmente; desmarcar nunca é bloqueado por saldo; saldo
+EXATAMENTE igual ao SL não bloqueia (limite é estritamente maior);
+sinal sem `resultadoFinanceiro` continua caindo no guard do BUG-022,
+sem chegar na checagem nova. Suítes de regressão `validate-bug021-
+moneymanager.js`, `validate-hierarquia-perfil.js`, `validate-bug024-
+valorpip.js`, `validate-bug025-checker-limites.js`, `validate-
+bug019-alternar-operacao-real.js` e `validate-bug022-feedback-
+checkbox.js` (esta última com offset de linha corrigido) revalidadas
+sem falhas.
+--------
+

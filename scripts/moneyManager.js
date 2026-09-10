@@ -654,6 +654,14 @@ function simularOperacao(
 // ===================================================
 // RECOMENDAÇÃO OPERACIONAL
 // ===================================================
+//
+// FEATURE-010 (10/09/2026): mensagem era um código genérico
+// ("UTILIZAR_CONFIGURACAO_SUGERIDA"), sem explicar o motivo real nem
+// os números da operação. Agora que decisionEngine.js usa esta
+// mensagem como AVISO (não mais bloqueio - ver FEATURE-010 em
+// ENGINEERING.md), ela precisa ser compreensível pra quem vai decidir
+// se assume o risco ou não.
+// ===================================================
 
 function gerarRecomendacao(
 
@@ -673,6 +681,43 @@ function gerarRecomendacao(
 
             mensagem:
                 "CONFIGURACAO_APROVADA"
+
+        };
+
+    }
+
+    const {
+        riscoPercentual,
+        banca,
+        slUSD,
+        rewardRisk
+    } = simulacao.configuracaoOriginal;
+
+    if (simulacao.avaliacao.motivo === "RISCO_ELEVADO") {
+
+        return {
+
+            operar: false,
+
+            mensagem:
+                `Seu saldo atual é de $${Number(banca).toFixed(2)}. Essa operação tem SL de ` +
+                `$${Number(slUSD).toFixed(2)} (${Number(riscoPercentual).toFixed(1)}% da sua banca) - ` +
+                `acima do limite recomendado pro seu perfil. Em caso de perda, isso pode comprometer ` +
+                `boa parte do seu saldo e exigir um novo aporte. Você concorda em operar mesmo assim?`
+
+        };
+
+    }
+
+    if (simulacao.avaliacao.motivo === "RISK_REWARD_INVALIDO") {
+
+        return {
+
+            operar: false,
+
+            mensagem:
+                `Relação risco/retorno de ${Number(rewardRisk).toFixed(2)} está abaixo do mínimo ` +
+                `recomendado pro seu perfil.`
 
         };
 

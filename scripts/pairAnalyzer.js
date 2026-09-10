@@ -348,6 +348,14 @@ const analise = {
 
     risco,
 
+    // FEATURE-010 (10/09/2026): risco acima do recomendado pelo Money
+    // Manager não bloqueia mais o sinal (ver decisionEngine.js) - vira
+    // este aviso, salvo junto do sinal, pra aparecer na tela de
+    // Histórico. O bloqueio de verdade ficou só em js/historico.js's
+    // alternarOperacaoReal (não deixa marcar como operação REAL sem
+    // saldo suficiente pra cobrir o SL).
+    avisoRisco: decisao.avisoRisco || null,
+
     indicadores: {
 
         ema9,

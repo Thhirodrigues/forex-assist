@@ -147,6 +147,11 @@ async function carregarHistorico() {
             ${dataObj ? dataObj.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 5) : "--:--"}
             ${!isCooldown ? ` | Qualidade: ${sinal.qualidade ?? "-"}${sinal.score !== undefined ? ` (${sinal.score}%)` : ""}` : ""}
           </div>
+          ${sinal.avisoRisco?.ativo ? `
+            <div style="margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(255,180,0,.12); border:1px solid rgba(255,180,0,.35); font-size:11px; color:#ffb400;">
+              ⚠️ ${sinal.avisoRisco.mensagem}
+            </div>
+          ` : ''}
           ${sinal.movimentoPips !== undefined ? `
             <div style="margin-top:6px; font-size:12px; color:${sinal.resultado === 'WIN' ? '#00ff88' : '#ff4444'}; font-weight:bold;">
               📊 Movimentação: ${sinal.movimentoPips > 0 ? '+' : ''}${sinal.movimentoPips} pips
@@ -821,12 +826,6 @@ window.alternarOperacaoReal = async function (id, marcado) {
 
     const jaMarcado = Boolean(sinal.operacaoReal);
 
-    await docRef.update({
-
-        operacaoReal: marcado
-
-    });
-
   const configRef = db
     .collection("configuracoes")
     .doc("geral");
@@ -842,8 +841,39 @@ const config = configDoc.data();
 
 let saldoReal = Number(config.saldoReal || 0);
 
+// FEATURE-010 (10/09/2026): o bloqueio por risco saiu da análise
+// (decisionEngine.js/pairAnalyzer.js - agora vira só aviso, sinal
+// salva normal) e passou pra cá: não é possível ter executado de
+// verdade, na XM, uma operação cujo SL é maior que o saldo real que
+// você tinha - marcar isso mesmo assim contaminaria a Conta Real com
+// um número que não reflete o que de fato aconteceu na corretora.
+// Serve também como checagem indireta: se isso disparar, ou o saldo
+// real cadastrado aqui está desatualizado (fez aporte e esqueceu de
+// registrar), ou a operação realmente não foi executada como está
+// marcada.
+if (marcado && Number(sinal.slUSD || 0) > saldoReal) {
+
+    alert(
+        `Saldo insuficiente: essa operação tem SL de $${Number(sinal.slUSD).toFixed(2)}, ` +
+        `mas sua Conta Real está em $${saldoReal.toFixed(2)}. Não é possível marcar como ` +
+        `"Operação Real" - você não teria saldo suficiente pra ter executado essa operação ` +
+        `de verdade. Se você já depositou mais na XM, atualize o saldo na tela de Config antes ` +
+        `de marcar.`
+    );
+
+    carregarHistorico();
+    return;
+
+}
+
+    await docRef.update({
+
+        operacaoReal: marcado
+
+    });
+
 const lucro = Number(sinal.resultadoFinanceiro || 0);
-  
+
 if (marcado && !jaMarcado) {
 
     saldoReal += lucro;

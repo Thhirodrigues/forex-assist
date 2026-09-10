@@ -129,37 +129,37 @@ function avaliarOperacao(resultado) {
 
     }
 
+    // FEATURE-010 (10/09/2026): antes disto, risco acima do recomendado
+    // pelo Money Manager REPROVAVA o sinal (return aprovado:false) -
+    // nem chegava a ser salvo, em nenhuma conta. Usuário pediu pra
+    // isso virar um AVISO, não bloqueio: a análise técnica (score/
+    // qualidade/tendência) não depende de banca/lote - só decide se o
+    // PAR vai subir ou descer, então um sinal tecnicamente bom não fica
+    // pior só porque a banca do usuário é pequena. O bloqueio de
+    // verdade passou pra outro lugar (js/historico.js's
+    // alternarOperacaoReal): não deixa marcar "Operação Real" se o
+    // saldo real não cobrir o SL daquela operação especificamente -
+    // aqui, na análise, só registra o aviso pra o sinal salvar normal
+    // (Conta Simulada sempre acompanha, como já era).
+    let avisoRisco = null;
+
     if (
     recomendacaoFinanceira &&
     !recomendacaoFinanceira.operar
 ) {
 
-    justificativas.push("Operação reprovada pelo Money Manager");
+    justificativas.push("Risco acima do recomendado pelo Money Manager para o saldo atual");
 
-    return {
+    avisoRisco = {
 
-        aprovado: false,
+        ativo: true,
 
-        status: "SEM_VIABILIDADE",
-
-        direcao: "NONE",
-
-        motivo: recomendacaoFinanceira.mensagem,
-
-        score,
-
-        qualidade,
-
-        tendencia,
-
-        confianca,
-
-        justificativas
+        mensagem: recomendacaoFinanceira.mensagem
 
     };
 
     }
-    
+
     if (
 
     qualidade === "LATERAL" ||
@@ -197,6 +197,7 @@ function avaliarOperacao(resultado) {
     qualidade,
     tendencia,
     confianca,
+    avisoRisco,
 
     // BUG-021 (09/09/2026): este objeto `risco` era montado com
     // resultado.financeiro?.lote/tpUSD/slUSD, mas pairAnalyzer.js
@@ -227,6 +228,7 @@ function avaliarOperacao(resultado) {
     qualidade,
     tendencia,
     confianca,
+    avisoRisco,
 
     justificativas
 };
