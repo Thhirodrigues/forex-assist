@@ -35,18 +35,34 @@ async function limparHistorico() {
 
     }
 
-    const batch = db.batch();
+    // LIMPEZA-006 (10/09/2026): db.batch() aceita no máximo 500
+    // operações por commit - com o histórico crescendo (450+ hoje),
+    // rodar isso sem dividir em lotes ia começar a falhar assim que
+    // passasse de 500 documentos. Processa em lotes de até 500,
+    // um commit por lote.
+    const TAMANHO_LOTE = 500;
+    const docs = snapshot.docs;
+    let removidos = 0;
 
-    snapshot.forEach(doc => {
+    for (let i = 0; i < docs.length; i += TAMANHO_LOTE) {
 
-        batch.delete(doc.ref);
+        const lote = docs.slice(i, i + TAMANHO_LOTE);
+        const batch = db.batch();
 
-    });
+        lote.forEach(doc => {
+            batch.delete(doc.ref);
+        });
 
-    await batch.commit();
+        await batch.commit();
+
+        removidos += lote.length;
+
+        console.log(`Lote ${Math.floor(i / TAMANHO_LOTE) + 1}: ${lote.length} removidos (${removidos}/${docs.length})`);
+
+    }
 
     console.log("------------------------------------");
-    console.log(`Registros removidos: ${snapshot.size}`);
+    console.log(`Registros removidos: ${removidos}`);
     console.log("LIMPEZA CONCLUÍDA");
     console.log("------------------------------------");
 

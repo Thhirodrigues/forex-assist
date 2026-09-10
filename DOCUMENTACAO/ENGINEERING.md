@@ -7484,3 +7484,77 @@ via Console do Firebase, que a coleção `cacheEstatisticas` está sendo
 criada/lida corretamente em produção - só então reverter pra 5 min.
 --------
 
+CONFIRMAÇÃO (10/09/2026): usuário trouxe a informação oficial do
+Firebase - "A utilização é redefinida todos os dias à meia-noite do
+horário do Pacífico". Isso é sobre QUANDO o contador de cota zera
+(útil - equivale a ~04h da manhã em Brasília, considerando horário de
+verão dos EUA em setembro/2026), não necessariamente sobre o fuso do
+eixo do gráfico de uso em si. A dúvida original ("por que leituras às
+2h da manhã, se a janela começa às 7h30") **não foi totalmente
+resolvida** - o rastreio manual do código (`dentroJanelaPadrao()`)
+confirma que a janela configurada bloqueia corretamente esse horário,
+então não é um bug na lógica de janela. Provavelmente é o gráfico do
+Firebase mostrando horas num fuso diferente do de Brasília, mas isso
+não foi confirmado com certeza. Não perseguido mais a fundo por ora -
+a causa dominante do estouro de cota (`statisticsEngine.js` relendo
+até 50 documentos por par em todo ciclo) já foi identificada e
+corrigida (CACHE-001), o que importa mais do que fechar essa dúvida
+secundária.
+--------
+
+LIMPEZA-005 — IDs de documento ilegíveis no Console do Firebase
+(scripts/riskManager.js)
+
+Origem: usuário relatou (navegando direto no Console do Firebase, sem
+passar pelo app) que a listagem de sinais em `historico` vem com IDs
+de documento sendo "uma série de letras e números desordenados", e
+que o sinal mais recente aparece em posições inconsistentes na lista -
+"às vezes em cima, às vezes no meio".
+
+Achado: `salvarOperacao()` usava `.collection("historico").add({...})`
+- o Firestore gera um ID aleatório opaco quando nenhum ID é
+especificado. Sem nenhum `where()`/`orderBy()` aplicado manualmente
+pelo usuário na tela do Console, a listagem de documentos não segue
+nenhuma ordem cronológica - exatamente o sintoma relatado.
+
+Correção: ID próprio, `${timestamp}_${par sanitizado}` (ex.:
+`1757520234567_EUR_USD`) em vez de `.add()`. `Date.now()` sempre tem
+13 dígitos (até o ano ~2286), então ordenar os IDs como STRING no
+Console já reproduz a ordem cronológica real - e o par fica visível
+direto no ID, sem precisar abrir cada documento pra saber qual sinal
+é. Par+timestamp juntos evitam colisão mesmo se dois pares diferentes
+salvarem no mesmo milissegundo (o mesmo par não colide - tem cooldown
+entre operações). Nenhum código lê `doc.id` esperando o formato antigo
+(só usado como identificador opaco em `js/historico.js`), então a
+troca não quebra nada existente.
+
+Validado isoladamente (scratchpad, 7 cenários): ID contém par
+sanitizado e timestamp de 13 dígitos; dois pares no mesmo milissegundo
+não colidem; ordenar os IDs como string reproduz a ordem cronológica
+real mesmo com sinais salvos fora de ordem; campos originais do
+documento preservados sem regressão.
+--------
+
+LIMPEZA-006 — clearHistorico.js quebraria acima de 500 documentos
+(scripts/clearHistorico.js)
+
+Origem: descoberto durante a varredura geral por consultas sem limite
+pedida pelo usuário; confirmado relevante porque o histórico de hoje
+já tem 450+ documentos, perto do limite.
+
+Achado: `db.batch()` do Firestore aceita no máximo 500 operações por
+commit - o script fazia um único batch com TODOS os documentos da
+coleção de uma vez, então rodar a limpeza manual (usada antes pelo
+usuário pra descartar sinais analisados com um padrão antigo/
+inconsistente, conforme BUG-007) ia falhar assim que a coleção
+passasse de 500 documentos.
+
+Correção: processa em lotes de até 500, um commit por lote,
+imprimindo o progresso.
+
+Validado isoladamente (scratchpad, 6 cenários, extraindo a função real
+do arquivo): 1200 documentos dividem em 3 lotes (500+500+200), nenhum
+lote passa de 500; exatamente 500 continua sendo 1 lote só; poucos
+documentos e coleção vazia continuam funcionando sem regressão.
+--------
+
