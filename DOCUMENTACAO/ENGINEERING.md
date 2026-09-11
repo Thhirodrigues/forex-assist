@@ -8393,3 +8393,27 @@ cortada, depois de expandir a tabela usa a largura cheia da tela e o
 botão vira "Recolher"; recolher restaura o layout normal
 corretamente.
 --------
+FEATURE-016 — "Modo Atual" gigante demais no dashboard
+(css/styles.css, js/expert.js)
+
+Origem: usuário revisando o app real, print do dashboard - "aquele
+modo bola azul balanceado está muito grande no dashboard".
+
+Achado: o card usava a classe `.big-number` (font-size:52px),
+pensada pra números curtos de estatística (ex.: "0" em Cooldowns
+Hoje, "156" em Total) - reaproveitada por engano pro rótulo de texto
+"🔵 Balanceado"/"🟢 Agressivo"/"🟡 Conservador". Nesse tamanho, tanto o
+emoji quanto a palavra inteira saem enormes, desproporcionais ao
+resto do dashboard.
+
+Correção: nova classe `.perfil-atual` (font-size:22px) substituindo
+`.big-number` só no `#modoAtual` - mesma lógica de exibição
+(`ROTULOS_PERFIL`), só o tamanho mudou. `.big-number` continua igual
+pros cards numéricos (Cooldowns Hoje, etc.), não afetados.
+
+Validado visualmente (Chromium/Playwright, harness isolado com
+`dashboardView()` + `renderModoAtual()` mockando só
+`configuracoes/geral.perfil`): card fica proporcional ao resto do
+dashboard, sem alterar a lógica de qual perfil é mostrado. `node
+--check` limpo.
+--------

@@ -17,7 +17,7 @@ function dashboardView() {
 
     <div class="card">
         <div class="card-title">Modo Atual</div>
-        <div id="modoAtual" class="big-number">Carregando...</div>
+        <div id="modoAtual" class="perfil-atual">Carregando...</div>
     </div>
 
     <div class="card">
