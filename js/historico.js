@@ -1336,7 +1336,7 @@ if (el.style.display === 'none') {
 
     style="padding:12px; font-size:13px; color:#e0e6f5; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.06);">
    <span><span class="seta-grupo" style="margin-right:8px;">${mostrarMes ? "▼" : "▶"}</span>${labelMes}</span>
-   <span style="font-weight:normal; font-size:12px;">✅ ${winsDoMes} ❌ ${lossesDoMes} 🎯 ${taxaDoMes}%</span>
+   <span style="font-weight:normal; font-size:12px;">${mesContemHoje ? "" : `✅ ${winsDoMes} ❌ ${lossesDoMes} 🎯 ${taxaDoMes}%`}</span>
     </div>
     <div id="mes${idMes}" style="display: ${mostrarMes ? 'block' : 'none'}; padding:8px;">
       ${diasHtml}

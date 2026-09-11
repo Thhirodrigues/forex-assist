@@ -8753,3 +8753,68 @@ Urgency === "high"`). Suíte completa de push revalidada
 checker.js`, `validate-push-integracao-pairanalyzer.js`) sem
 regressão.
 --------
+FEATURE-022 — Total do MÊS vigente some do cabeçalho do agrupamento
+(js/historico.js)
+
+Origem: usuário reportou a tela do Histórico "confusa, muita
+informação de totais" - print com seta apontando pro cabeçalho do
+agrupamento de Setembro (mês vigente) mostrando o mesmo placar
+(✅/❌/🎯) que já aparece no card grande do topo (`#historicoStats`) E
+no cabeçalho do dia "HOJE" - a mesma informação repetida 3 vezes na
+tela. Pedido exato: "só vamos colocar os totais ali onde marquei com
+uma seta, quando o mês vigente for o seguinte, ou seja os resultados
+totais grande do mês vigente, e no agrupamento só fica o total geral
+quando não for mais o mês vigente, igual está em julho, setembro deve
+ficar em branco, quando entrarmos em outubro, aí aparece o total geral
+do mês no agrupamento de setembro" - ou seja, o comportamento correto
+já existia pra meses PASSADOS (Julho já mostrava seu total no
+agrupamento), faltava só suprimir isso enquanto o mês ainda está em
+andamento.
+
+Correção: em `carregarHistorico()`, o span de placar do cabeçalho do
+MÊS (`✅ ${winsDoMes} ❌ ${lossesDoMes} 🎯 ${taxaDoMes}%`) passou a ser
+condicional em `!mesContemHoje` (variável já calculada no mesmo loop) -
+fica em branco enquanto `mesContemHoje` é true, e mostra o placar
+normalmente assim que o mês deixa de ser o vigente. Nenhuma outra
+camada foi tocada: o card grande do topo (`#historicoStats`, que já é
+só do mês vigente) continua exatamente como estava, e o placar por DIA
+(cabeçalho "HOJE"/datas passadas) também não foi alterado - interpretação
+deliberada, já que o exemplo do usuário (Julho/Setembro/Outubro) fala
+inteiramente em nível de MÊS. Fica pendente confirmar com o usuário se
+o placar por dia também deveria mudar; não alterado nesta rodada por
+falta de pedido explícito nesse nível.
+
+Validado: `node --check` limpo. `validate-historico-agrupamento.js`
+ganhou 4 asserções novas (span do mês vigente vem vazio; card do topo
+não foi afetado; placar por dia continua aparecendo; span do mês
+PASSADO - Agosto - continua mostrando o placar, provando que a
+condição não quebrou o caso que já funcionava). Esse teste também
+precisou de 2 mocks novos (`document.querySelector`, `localStorage`,
+`element.remove()`) pra voltar a carregar `carregarHistorico()` até o
+fim - fragilidade de mock desatualizado conforme o arquivo cresce
+(FEATURE-018/019 passaram a chamar essas APIs), não regressão de
+código; mesma classe de manutenção já documentada antes pro offset de
+linha do BUG-022. Suíte completa de Histórico revalidada (comparação,
+modo tabela, modo compacto, auto-atualização, BUG-022) sem regressão.
+--------
+FEATURE-023 — Orientação sobre otimização de bateria no Manual
+(js/manual.js)
+
+Origem: usuário confirmou ter desativado manualmente a otimização de
+bateria do Chrome (print mostrando "Nenhuma restrição" selecionado,
+complemento da correção de BUG-026) e pediu pra essa orientação ficar
+documentada dentro do próprio app, não só ter sido dita na conversa.
+
+Correção: nova seção "Notificação atrasando?" na tela Manual
+(`manualView()`), explicando em linguagem direta por que o push pode
+atrasar (Doze/economia de bateria do Android) e o caminho exato nas
+configurações do Android (Bateria > Chrome > Sem restrições) - mesmo
+texto que já constava como comentário de código em
+`scripts/pushNotifier.js` desde o BUG-026, agora também visível pro
+usuário dentro do app.
+
+Validado: `node --check` limpo. Sem lógica nova (só HTML estático
+dentro da view), não foi criado teste automatizado dedicado - conferido
+visualmente que a string renderiza corretamente dentro do template
+literal existente.
+--------
