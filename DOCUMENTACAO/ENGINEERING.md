@@ -8570,3 +8570,51 @@ modo compacto, confirmando que o critério de altura (não de
 dispositivo) preserva o comportamento que o usuário já aprovou no
 computador.
 --------
+FEATURE-019 — Atualização automática do Histórico, ligada de verdade
+(js/historico.js)
+
+Origem: usuário viu, na prática, um sinal AUD/USD já fechado como WIN
+havia 23 minutos ainda aparecendo como PENDENTE na tela - não era um
+problema de dado (o Firestore já tinha o resultado certo, confirmado
+nos logs reais do result-checker.yml), era a tela nunca se atualizar
+sozinha. O código de auto-atualização existia no arquivo, mas estava
+inteiro comentado desde sempre (nunca chegou a ser ligado) - `//
+setInterval(() => { ... }, 5000);`.
+
+Não liguei com os 5 segundos originais. Antes de ligar, conferimos
+juntos o console do Firebase (print real do usuário: 51 mil leituras
+do Firestore no dia) - esse número por si só já bate ou passa o teto
+gratuito do plano Spark (50 mil leituras/dia), e o projeto já tinha
+um precedente documentado EXATAMENTE desse tipo de estouro: o
+polling de status do Scanner no dashboard (`js/expert.js`) precisou
+subir de 2s pra 15s depois de "confirmado no console do Firebase: 55
+mil leituras/dia contra um teto gratuito de 50 mil" (ver entrada mais
+antiga deste arquivo). `carregarHistorico()` lê até 300 documentos
+por chamada (`.limit(300)`) - bem mais caro que o polling de 1
+documento do status do Scanner. Aplicar os mesmos 15s usados lá
+custaria 300 leituras a cada 15s = ~72 mil leituras/hora só desta
+tela, o que estouraria a cota (já perto do limite) em minutos.
+
+Implementação: `setInterval(..., 90000)` (90s) - mais frequente que o
+próprio ciclo do backend (5 min), então ainda pega um fechamento real
+bem mais rápido que esperar o usuário lembrar de recarregar a página,
+sem multiplicar a leitura que acabou de estourar. Guard idêntico ao
+já usado em `js/expert.js`: só atualiza com `!document.hidden` (aba
+em primeiro plano) E `app.currentTab === "historico"` (usuário
+realmente olhando essa tela) - não gasta cota com o app minimizado ou
+noutra aba.
+
+Validado: `node --check` limpo. Novo `validate-auto-atualizacao-
+historico.js` (6 cenários): setInterval registrado com 90000ms exatos
+(não 5000 nem 15000); chama carregarHistorico() só com aba visível E
+na tela Histórico; NÃO chama com aba em segundo plano; NÃO chama
+estando noutra aba do app; volta a chamar quando as duas condições
+voltam a ser verdadeiras. Suítes de regressão revalidadas
+(comparação, modo tabela, modo compacto, caminho do preço, BUG-022) -
+os 3 mocks de sandbox (vm.runInContext, já que historico.js não é
+módulo Node) precisaram ganhar um `setInterval: () => {}` no-op, já
+que esse ambiente isolado não tem o `setInterval` global do
+navegador/Node por padrão - sem isso o carregamento do arquivo
+inteiro quebrava com "setInterval is not defined" (só nos testes;
+não afeta o app real, que sempre roda num browser de verdade).
+--------

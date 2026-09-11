@@ -1530,9 +1530,28 @@ await configRef.update({
 
 };
 
-// Atualização automática a cada 5 segundos - PRESERVA ESTADO
-// setInterval(() => {
-// if (app.currentTab === "historico") {
-//carregarHistorico();
-//  }
-//}, 5000);
+// Atualização automática (pedido do usuário, 11/09/2026: um sinal
+// fechado ficava com status desatualizado na tela até o usuário
+// recarregar a página manualmente - viu isso na prática quando um
+// AUD/USD já tinha fechado como WIN havia 23 minutos e a tela ainda
+// mostrava PENDENTE).
+//
+// Intervalo NÃO é os 5 segundos do código antigo (comentado, nunca
+// tinha sido ligado) - carregarHistorico() lê até 300 documentos por
+// chamada (.limit(300)), bem mais caro que o polling de 1 documento
+// do status do Scanner em js/expert.js (que já teve que subir de 2s
+// pra 15s por esse mesmo motivo - ver ENGINEERING.md e o comentário
+// lá, "confirmado no console do Firebase: 55 mil leituras/dia contra
+// um teto gratuito de 50 mil"). Aplicar o mesmo 15s aqui seria 300
+// leituras a cada 15s = 72 mil leituras/hora só desta tela. 90
+// segundos ainda é mais frequente que o próprio ciclo do backend (5
+// min), então continua pegando fechamentos reais bem mais rápido que
+// esperar um reload manual, sem multiplicar a mesma cota que acabou
+// de estourar. Mesmo guard de "só enquanto a aba está em primeiro
+// plano e o usuário está de fato na aba Histórico" usado em
+// js/expert.js, pelo mesmo motivo.
+setInterval(() => {
+  if (document.hidden) return;
+  if (app.currentTab !== "historico") return;
+  carregarHistorico();
+}, 90000);
