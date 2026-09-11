@@ -8618,3 +8618,41 @@ navegador/Node por padrão - sem isso o carregamento do arquivo
 inteiro quebrava com "setInterval is not defined" (só nos testes;
 não afeta o app real, que sempre roda num browser de verdade).
 --------
+FEATURE-020 — Favor/Contra em pips na tabela principal do Histórico
+(js/historico.js)
+
+Origem: usuário fechou o dia com 8x2, revisando os resultados e
+pedindo dois esclarecimentos/ajustes de manhã. (1) Pergunta: o que
+são "Máx"/"Mín" na tela de comparação (FEATURE-015)? Resposta: são o
+preço mais alto e mais baixo que o par tocou desde a entrada,
+independente de direção - "Favor"/"Contra" é esse mesmo dado já
+convertido pra pips considerando a direção do sinal (confirmado com o
+próprio print do usuário: AUD/USD VENDA, entrada 0.71621, Mín 0.71507
+= 11.4 pips a favor, Máx 0.71756 = 13.5 pips contra, que bateu o SL e
+virou LOSS mesmo tendo chegado a estar no lucro). (2) Pedido: mesma
+lógica de Favor/Contra que já existia só na comparação de sinais,
+agora também na tabela principal do Histórico (modo tabela,
+FEATURE-017) - motivo dado pelo usuário: "olhando num geral dá pra
+ver os pares que quase bateram [o TP]", sem precisar abrir cada
+sinal ou montar uma comparação manual pra isso.
+
+Implementação: `construirLinhaTabela()` ganhou duas colunas novas,
+"Favor" e "Contra", lendo os mesmos campos `sinal.maxPipsFavor`/
+`maxPipsContra` que `js/checker.js` já grava a cada ciclo (nenhuma
+captura nova de dado) - posicionadas entre "Resultado" e "Resultado
+Financeiro", mesma ordem lógica da tabela de comparação. `colspan` da
+linha de detalhe expandido subiu de 8 pra 10 (2 colunas a mais).
+`min-width` da tabela ajustado de 600px pra 720px pra acomodar sem
+apertar demais.
+
+Validado: `node --check` limpo. `validate-modo-tabela-historico.js`
+ampliado (novas asserções: colunas Favor/Contra presentes com os
+valores certos, colspan=10) - suíte completa segue em 31 cenários,
+todos passando. Regressão revalidada (comparação de sinais, modo
+compacto, caminho do preço, BUG-022 com offset de linha atualizado
+mais uma vez - mesma fragilidade de sempre desse teste específico).
+Visual real via Chromium/Playwright: colunas aparecem coloridas
+(Favor verde, Contra vermelho) com os valores corretos pros sinais
+que têm o campo, e "--" sem quebrar nada pros sinais antigos que não
+têm (schema anterior).
+--------

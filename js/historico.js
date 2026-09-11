@@ -533,6 +533,16 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
   const usdFormatado = usd == null ? "--" : `${usd >= 0 ? "+" : "-"}$${Math.abs(Number(usd)).toFixed(2)}`;
   const usdCor = usd == null ? "#fff" : (usd >= 0 ? "#00d26a" : "#ff5252");
 
+  // Pedido do usuário (12/09/2026): dá pra ver de relance, olhando a
+  // tabela toda, quais operações quase bateram TP ou quase escaparam
+  // do SL - mesmos campos maxPipsFavor/maxPipsContra que checker.js já
+  // grava (ver comparação de sinais, FEATURE-015), agora também na
+  // tabela principal do Histórico, não só na comparação.
+  const favor = sinal.maxPipsFavor;
+  const contra = sinal.maxPipsContra;
+  const favorFormatado = favor != null ? Number(favor).toFixed(1) : "--";
+  const contraFormatado = contra != null ? Number(contra).toFixed(1) : "--";
+
   return `
     <tr id="sinal-${docId}" data-sinal-id="${docId}" style="cursor:pointer; ${borderStyle}">
       <td style="padding:8px; white-space:nowrap;">${horario}</td>
@@ -540,6 +550,8 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
       <td style="padding:8px; white-space:nowrap;">${direcaoLabel}</td>
       <td style="padding:8px; white-space:nowrap;">${tempoLabel}</td>
       <td style="padding:8px; white-space:nowrap;">${resultadoLabel}${avisoIcone}</td>
+      <td style="padding:8px; text-align:right; color:#00d26a;">${favorFormatado}</td>
+      <td style="padding:8px; text-align:right; color:#ff5252;">${contraFormatado}</td>
       <td style="padding:8px; text-align:right; font-weight:bold; color:${usdCor};">${usdFormatado}</td>
       <td style="padding:8px; text-align:center;" onclick="event.stopPropagation();">
         <input type="checkbox"
@@ -556,7 +568,7 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
       </td>
     </tr>
     <tr>
-      <td colspan="8" style="padding:0; border:none;">
+      <td colspan="10" style="padding:0; border:none;">
         ${detalheHtml}
       </td>
     </tr>
@@ -1263,7 +1275,7 @@ async function carregarHistorico() {
         const conteudoDia = modoTabela
           ? `
             <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-              <table style="border-collapse:collapse; width:100%; min-width:600px; font-size:12px;">
+              <table style="border-collapse:collapse; width:100%; min-width:720px; font-size:12px;">
                 <thead>
                   <tr style="background:rgba(255,255,255,.06); text-align:left;">
                     <th style="padding:6px 8px;">Horário</th>
@@ -1271,6 +1283,8 @@ async function carregarHistorico() {
                     <th style="padding:6px 8px;">Direção</th>
                     <th style="padding:6px 8px;">Tempo</th>
                     <th style="padding:6px 8px;">Resultado</th>
+                    <th style="padding:6px 8px; text-align:right;">Favor</th>
+                    <th style="padding:6px 8px; text-align:right;">Contra</th>
                     <th style="padding:6px 8px; text-align:right;">Resultado Financeiro</th>
                     <th style="padding:6px 8px; text-align:center;">Operação Real</th>
                     <th style="padding:6px 8px; text-align:center;">Cmp</th>
