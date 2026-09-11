@@ -8712,3 +8712,44 @@ largura da tela real do usuário que reproduziu o bug original) - os 4
 números da régua aparecem completos, sem corte, confirmando a
 correção no cenário exato que falhou.
 --------
+BUG-026 — Push chegando com atraso de vários minutos
+(scripts/pushNotifier.js)
+
+Origem: usuário reportou, com timestamp real ("recebi a mensagem
+10:12, muita margem") - sinais salvos às 09:50 (USD/CAD, AUD/USD) e
+10:05 (GBP/USD), push só chegou às 10:12. Mais de 20 minutos de
+atraso no pior caso.
+
+Achado, conferindo o código: `enviarParaTokens()` nunca marcava
+nenhuma urgência na mensagem enviada ao FCM. Como os tokens registrados
+(`js/push.js`, via `VAPID_KEY` + `firebase.messaging()` do browser)
+são tokens de **web push** (não um app Android nativo), o campo que
+controla prioridade de entrega é `webpush.headers.Urgency`, não
+`android.priority` (que só vale pra apps nativos). Sem `Urgency`
+explícito, o FCM/navegador trata como prioridade normal - em Doze ou
+economia de bateria agressiva do Android (comum em MIUI/Xiaomi,
+Samsung, etc. - compatível com o aparelho do usuário pelos prints já
+vistos nesta sessão), push de prioridade normal pode ser segurado e
+entregue só em lote, bem depois do envio real. O service worker
+(`firebase-messaging-sw.js`) foi conferido e não introduz atraso
+nenhum por conta própria - chama `showNotification()` assim que a
+mensagem chega, sem espera artificial.
+
+Correção: `webpush: { headers: { Urgency: "high" } }` adicionado nos
+dois envios (`enviarPushAbertura`/`enviarPushEncerramento`). Pede
+entrega imediata ao sistema de push.
+
+**Ressalva honesta pro usuário** (não é garantia só de código): mesmo
+com `Urgency: high`, o Android ainda pode restringir push de um app/
+navegador específico se a otimização de bateria estiver ativa pra
+ele - vale conferir nas configurações do aparelho (Bateria > Chorme/
+navegador usado > "sem restrições" ou "permitir atividade em segundo
+plano") como complemento, não como substituto desta correção.
+
+Validado: `node --check` limpo. `validate-push-envio.js` ampliado (2
+asserções novas: os dois tipos de push marcam `webpush.headers.
+Urgency === "high"`). Suíte completa de push revalidada
+(`validate-push-estimativa-tempo.js`, `validate-push-integracao-
+checker.js`, `validate-push-integracao-pairanalyzer.js`) sem
+regressão.
+--------

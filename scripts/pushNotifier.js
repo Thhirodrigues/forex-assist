@@ -168,6 +168,21 @@ async function enviarPushAbertura(admin, db, operacao) {
                 tipo: "abertura",
                 par: String(operacao.par || ""),
                 direcao: String(operacao.direcao || "")
+            },
+
+            // FEATURE-011 nunca marcou urgência - por padrão o FCM (e o
+            // sistema de push do Android por trás dele) trata push web
+            // como prioridade normal, que pode ser segurada e entregue
+            // em lote durante o Doze/economia de bateria do Android
+            // (bem comum em MIUI/Xiaomi, Samsung, etc.) - exatamente o
+            // tipo de atraso de vários minutos que o usuário reportou
+            // (sinal às 09:50/10:05, push só às 10:12). "high" pede
+            // pro sistema entregar imediatamente, acordando o
+            // dispositivo se precisar - não é garantia (o Android ainda
+            // pode restringir por app, ver aviso separado sobre
+            // otimização de bateria), mas é o que o código controla.
+            webpush: {
+                headers: { Urgency: "high" }
             }
 
         });
@@ -212,6 +227,11 @@ async function enviarPushEncerramento(admin, db, sinal) {
                 tipo: "encerramento",
                 par: String(sinal.par || ""),
                 resultado: String(sinal.resultado || "")
+            },
+
+            // Mesmo motivo do push de abertura - ver comentário lá.
+            webpush: {
+                headers: { Urgency: "high" }
             }
 
         });
