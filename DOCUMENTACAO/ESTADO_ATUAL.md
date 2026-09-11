@@ -8,7 +8,19 @@
 > continua sendo o log cronológico de decisões técnicas — auditável,
 > mas não é pra navegação rápida).
 >
-> Última atualização: 09/09/2026.
+> Última atualização: 09/09/2026 (seções 1-4 abaixo) — **aviso
+> honesto**: entre 10 e 11/09/2026 houve uma sessão extensa com muita
+> coisa nova (scanner ativado em produção, várias correções de
+> pipeline - PENTE-FINO-001 a 004, push notifications, gráfico de
+> movimento do preço, comparação de sinais, modo tabela/compacto do
+> Histórico, atualização automática) que **ainda não foi incorporada
+> às seções 1-4** - todas essas mudanças estão documentadas em ordem
+> cronológica no final do `ENGINEERING.md` (procure por FEATURE-010 em
+> diante), mas ninguém ainda consolidou isso de volta pra este resumo.
+> Se você está retomando o projeto agora, leia o final do
+> `ENGINEERING.md` antes de confiar nas seções 3/4 abaixo como estado
+> atual - elas ainda descrevem 09/09, não 11/09. A seção 5 (próximo
+> passo) foi atualizada com o que ficou pendente da sessão de 11/09.
 
 ---
 
@@ -200,6 +212,42 @@ final em produção ainda pendente (ver seção 5).
 ---
 
 ## 5. Próximo passo, em ordem
+
+**Pendente da sessão de 11/09/2026, pedido explícito do usuário pra
+retomar primeiro amanhã** (ele estava satisfeito com o dia mas
+cansado demais pra decidir isso à noite):
+
+0a. **Decidir sobre o plano Blaze do Firebase** (pay-as-you-go, mesma
+    cota grátis de 50 mil leituras/dia do Spark continua valendo -
+    só cobra o excedente, provavelmente poucos centavos de dólar/mês
+    no volume atual, mas confirmar o valor exato na página de preços
+    do Firebase antes de decidir, e lembrar que exige cartão de
+    crédito cadastrado na conta Google Cloud). Contexto: cota do
+    Firestore bateu 51 mil leituras/dia em 11/09 (confirmado no
+    console real do usuário) - mesmo padrão de estouro já registrado
+    antes nesta sessão (ver ENGINEERING.md, correção do polling de
+    status do Scanner de 2s pra 15s).
+0b. **Levantar tudo que é necessário pra rodar 24h sem delay de
+    tempo** (aproximar o ciclo do backend do "tempo real"), **mantendo
+    a janela de abertura de sinais novos em 07:30-00:00** (isso não
+    muda - só o monitoramento/fechamento de operações já abertas, que
+    `js/checker.js` já roda sem gate de horário, precisa ficar mais
+    ágil). Pontos já identificados nesta sessão que qualquer
+    levantamento precisa considerar: (a) cota de leitura do Firestore
+    (item 0a acima - é o gargalo mais imediato); (b) limite de
+    requisições da API de preço TwelveData (usuário vai buscar uma 4ª
+    chave, de 2400 pra 3200 requisições/dia - mas isso não resolve a
+    cota do Firestore, são orçamentos independentes); (c) granularidade
+    mínima prática de cron do GitHub Actions (hoje 5 em 5 minutos via
+    pinger externo cron-job.org apontando pro workflow_dispatch -
+    confirmar se dá pra encurtar de forma confiável); (d) qualquer
+    coisa nova que aparecer ao investigar os três itens acima.
+    **Ainda não é uma pesquisa feita - é a tarefa em si, a começar
+    amanhã.**
+
+---
+
+Itens mais antigos (09/09/2026), ainda não revisitados:
 
 1. Aguardar a cota do Firestore resetar; confirmar no console do
    Firebase que as leituras voltaram a um patamar saudável (bem abaixo
