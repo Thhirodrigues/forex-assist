@@ -8322,3 +8322,16 @@ extração por `linhas.slice()` quebrou com as ~180 linhas novas antes
 de `alternarOperacaoReal` - mesma fragilidade de teste já documentada
 em sessões anteriores, não regressão de código).
 --------
+Ajuste na FEATURE-015 (mesmo dia): a dica "Gire o celular pra ver a
+tabela inteira mais confortável" aparecia sempre, mesmo depois de
+girar e a tabela já caber sem precisar de scroll - encontrado testando
+visualmente no navegador (Chromium via Playwright, screenshots em
+retrato e paisagem, antes de reportar como pronto). Corrigido:
+`abrirComparacao()` agora mede `scrollWidth` vs `clientWidth` do
+wrapper da tabela e só mostra a dica quando ela realmente não cabe,
+reavaliando a cada evento de `resize` (a própria rotação do celular)
+enquanto a comparação estiver aberta. Validado visualmente (400px
+retrato: dica visível; 800px paisagem: dica some) e via
+`validate-comparacao-sinais.js` (mock de `window.addEventListener`
+adicionado ao teste, que antes não previa essa chamada).
+--------

@@ -148,7 +148,7 @@ function abrirComparacao() {
       <div style="font-weight:bold; font-size:14px;">🔍 Comparando ${sinais.length} sinais - ${par}</div>
       <button onclick="fecharComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;">← Voltar</button>
     </div>
-    <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+    <div id="comparacaoScrollWrapper" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
       <table style="border-collapse:collapse; width:100%; min-width:640px; font-size:12px;">
         <thead>
           <tr style="background:rgba(255,255,255,.06); text-align:left;">
@@ -169,7 +169,7 @@ function abrirComparacao() {
         </tbody>
       </table>
     </div>
-    <div style="font-size:10px; color:#8c95b3; margin-top:8px; text-align:center;">
+    <div id="comparacaoDicaGirar" style="display:none; font-size:10px; color:#8c95b3; margin-top:8px; text-align:center;">
       Gire o celular pra ver a tabela inteira mais confortável.
     </div>
   `;
@@ -180,6 +180,26 @@ function abrirComparacao() {
 
   const barra = document.getElementById("barraComparacao");
   if (barra) barra.style.display = "none";
+
+  // A dica só faz sentido quando a tabela realmente não cabe na tela -
+  // sem essa checagem, ela continuava aparecendo mesmo depois de girar
+  // o celular e a tabela já caber inteira. Reavaliada de novo a cada
+  // resize (a própria rotação do celular) enquanto a comparação estiver
+  // aberta - listener antigo removido antes pra não empilhar um por
+  // comparação aberta.
+  const reavaliarDicaGirar = () => {
+    const wrapper = document.getElementById("comparacaoScrollWrapper");
+    const dica = document.getElementById("comparacaoDicaGirar");
+    if (wrapper && dica) {
+      dica.style.display = wrapper.scrollWidth > wrapper.clientWidth ? "block" : "none";
+    }
+  };
+
+  if (window._removerListenerDicaGirar) window._removerListenerDicaGirar();
+  window.addEventListener("resize", reavaliarDicaGirar);
+  window._removerListenerDicaGirar = () => window.removeEventListener("resize", reavaliarDicaGirar);
+
+  reavaliarDicaGirar();
 }
 
 // Gerenciar estado de sinais abertos com persistência blindada
