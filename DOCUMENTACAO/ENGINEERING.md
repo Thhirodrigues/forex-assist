@@ -8656,3 +8656,59 @@ Visual real via Chromium/Playwright: colunas aparecem coloridas
 que têm o campo, e "--" sem quebrar nada pros sinais antigos que não
 têm (schema anterior).
 --------
+FEATURE-021 — Ajustes de manhã (12/09/2026): Máx/Mín saem da
+comparação, régua do gráfico vira HTML (bug real de corte no
+celular) - js/historico.js
+
+Origem: usuário fechou o dia anterior 8x2, satisfeito, e trouxe dois
+ajustes antes de seguir pro planejamento do dia (Blaze/operação 24h,
+ver ESTADO_ATUAL.md). Também mandou um print real confirmando um bug
+que eu tinha certeza que uma versão anterior (FEATURE-018, régua com
+`<text>` dentro do SVG) resolvia - não resolvia completamente.
+
+1. **Comparação de sinais**: colunas Máx/Mín removidas (ficam
+   Horário/Direção/Status/Entrada/Atual/Favor/Contra/USD).
+   Confirmado antes com o usuário (conversa da noite anterior): Favor/
+   Contra já É o Máx/Mín convertido pra pips relativo à Entrada -
+   remover o preço bruto não perde informação de "até onde foi",
+   só simplifica a leitura (pips são comparáveis de cabeça, preço
+   bruto depende da escala de cada par). `min-width` do wrapper
+   ajustado de 640px pra 520px (2 colunas a menos).
+
+2. **Régua do gráfico (bug real, achado pelo usuário num print do
+   celular de verdade)**: a "régua" de Máx/Mín implementada na
+   FEATURE-018 usava `<text>` DENTRO do `<svg>` - funcionava bem no
+   teste feito na sessão anterior (viewport de desktop, ~380-900px),
+   mas o SVG usa `preserveAspectRatio="none"` (esticar o gráfico pra
+   preencher a largura do card, não importa o tamanho do container) -
+   isso estica X muito mais que Y quando o container é MUITO mais
+   largo que o viewBox (300 unidades). Em paisagem no celular real
+   (~2000px de largura), esse esticão de X chega a ~6-7x, e texto
+   SVG sob transformação não-uniforme extrema não escala/posiciona
+   de forma confiável entre motores de renderização - os números
+   apareciam cortados na borda ("154.5" em vez de "154.560",
+   confirmado no print do usuário). `<line>`/`<polyline>` não sofrem
+   esse problema (só ficam visualmente mais "esticados", sem cortar
+   nada) - por isso só a régua precisou mudar.
+
+   Correção: a régua virou 4 `<div>` HTML (`position:absolute`) por
+   cima do SVG, dentro de um container `position:relative` - HTML
+   normal, fora do sistema de coordenadas do SVG, imune ao esticão
+   do `preserveAspectRatio`. A linha/polyline/linha tracejada de
+   entrada continuam exatamente como estavam (pedido explícito do
+   usuário: "gráfico fica do jeito que está, só ajuste os números").
+
+Validado: `node --check` limpo. `validate-comparacao-sinais.js`
+ganhou 2 asserções novas (Máx/Mín realmente sumiram, checado pelo
+texto do cabeçalho da coluna - não pelo valor numérico, que podia
+coincidir por acaso com outra coluna do mesmo range de preço).
+`validate-caminho-precos.js` ganhou 2 cenários novos (régua não usa
+mais `<text>`, vira 4 `<div position:absolute>`, casas decimais
+continuam corretas por par - JPY vs não-JPY). Suíte completa
+revalidada (comparação, modo tabela, modo compacto, auto-atualização,
+BUG-022 com offset de linha atualizado mais uma vez). Visual real via
+Chromium/Playwright numa viewport de exatamente 2000x900 (a mesma
+largura da tela real do usuário que reproduziu o bug original) - os 4
+números da régua aparecem completos, sem corte, confirmando a
+correção no cenário exato que falhou.
+--------

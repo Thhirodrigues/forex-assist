@@ -194,8 +194,6 @@ function abrirComparacao() {
         <td style="padding:8px; white-space:nowrap;">${statusLabel}</td>
         <td style="padding:8px; text-align:right;">${sinal.precoEntrada ?? "--"}</td>
         <td style="padding:8px; text-align:right;">${sinal.precoAtual ?? "--"}</td>
-        <td style="padding:8px; text-align:right;">${sinal.precoMaximo ?? "--"}</td>
-        <td style="padding:8px; text-align:right;">${sinal.precoMinimo ?? "--"}</td>
         <td style="padding:8px; text-align:right; color:#00d26a;">${sinal.maxPipsFavor != null ? Number(sinal.maxPipsFavor).toFixed(1) : "--"}</td>
         <td style="padding:8px; text-align:right; color:#ff5252;">${sinal.maxPipsContra != null ? Number(sinal.maxPipsContra).toFixed(1) : "--"}</td>
         <td style="padding:8px; text-align:right; font-weight:bold; color:${usdCor};">${usdFormatado}</td>
@@ -212,7 +210,7 @@ function abrirComparacao() {
       </div>
     </div>
     <div id="comparacaoScrollWrapper" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-      <table style="border-collapse:collapse; width:100%; min-width:640px; font-size:12px;">
+      <table style="border-collapse:collapse; width:100%; min-width:520px; font-size:12px;">
         <thead>
           <tr style="background:rgba(255,255,255,.06); text-align:left;">
             <th style="padding:8px;">Horário</th>
@@ -220,8 +218,6 @@ function abrirComparacao() {
             <th style="padding:8px;">Status</th>
             <th style="padding:8px; text-align:right;">Entrada</th>
             <th style="padding:8px; text-align:right;">Atual</th>
-            <th style="padding:8px; text-align:right;">Máx</th>
-            <th style="padding:8px; text-align:right;">Mín</th>
             <th style="padding:8px; text-align:right;">Favor</th>
             <th style="padding:8px; text-align:right;">Contra</th>
             <th style="padding:8px; text-align:right;">USD</th>
@@ -331,20 +327,11 @@ function renderizarCaminhoPrecos(sinal) {
   const altura = 90;
   const pad = 6;
 
-  // Usuário pediu uma "régua" nas laterais do gráfico (início e fim)
-  // pra dar referência de preço, não só a forma da linha - reserva uma
-  // faixa de cada lado pro rótulo de Máx/Mín, sem mexer no tamanho
-  // renderizado (viewBox é livre, quem fixa o box na tela é o CSS
-  // width:100%/height:90px com preserveAspectRatio="none").
-  const margemRegua = 32;
-  const plotX0 = pad + margemRegua;
-  const plotX1 = largura - pad - margemRegua;
-
   const casasDecimais = String(sinal.par || "").includes("JPY") ? 3 : 5;
   const formatarPreco = (v) => Number(v).toFixed(casasDecimais);
 
   const pontos = caminho.map((p, i) => {
-    const x = plotX0 + (i / (caminho.length - 1)) * (plotX1 - plotX0);
+    const x = pad + (i / (caminho.length - 1)) * (largura - pad * 2);
     const y = altura - pad - ((p.c - min) / span) * (altura - pad * 2);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(" ");
@@ -358,33 +345,39 @@ function renderizarCaminhoPrecos(sinal) {
   const yEntrada = (altura - pad - ((entrada - min) / span) * (altura - pad * 2)).toFixed(1);
 
   const linhaEntrada = Number.isFinite(entrada)
-    ? `<line x1="${plotX0}" y1="${yEntrada}" x2="${plotX1}" y2="${yEntrada}" stroke="#8c95b3" stroke-width="1" stroke-dasharray="4,3" />`
+    ? `<line x1="0" y1="${yEntrada}" x2="${largura}" y2="${yEntrada}" stroke="#8c95b3" stroke-width="1" stroke-dasharray="4,3" />`
     : "";
 
-  const yMax = (pad + 3).toFixed(1);
-  const yMin = (altura - pad).toFixed(1);
-
-  // Régua: Máx/Mín repetidos nas duas laterais (início e fim do
-  // período), pra dar referência de preço onde quer que o usuário
-  // esteja olhando na linha, sem precisar rolar os olhos até uma ponta
-  // só.
-  const regua = `
-    <text x="2" y="${yMax}" font-size="8" fill="#8c95b3">${formatarPreco(max)}</text>
-    <text x="2" y="${yMin}" font-size="8" fill="#8c95b3">${formatarPreco(min)}</text>
-    <text x="${largura - 2}" y="${yMax}" font-size="8" fill="#8c95b3" text-anchor="end">${formatarPreco(max)}</text>
-    <text x="${largura - 2}" y="${yMin}" font-size="8" fill="#8c95b3" text-anchor="end">${formatarPreco(min)}</text>
-  `;
-
+  // Régua de preço (Máx/Mín no início e no fim do gráfico) - pedido do
+  // usuário, feito primeiro como <text> DENTRO do SVG (ver ENGINEERING.md,
+  // FEATURE-018). Bug real encontrado depois no celular de verdade
+  // (print do usuário, 12/09/2026): o SVG usa preserveAspectRatio="none"
+  // pra esticar o polyline e preencher a largura toda do card, não
+  // importa a largura real do container - em retrato isso é um esticão
+  // pequeno (~1.2x), mas em paisagem no celular a largura real do
+  // container é MUITO maior que os 300 do viewBox (~6-7x) - <text>
+  // dentro do SVG estica junto (só X, preserveAspectRatio="none" não
+  // escala X e Y igual), cortando os números na borda. <line>/
+  // <polyline> não têm esse problema (só ficam um pouco mais "compridos"
+  // visualmente, sem cortar nada) - por isso a régua virou 4 <div>
+  // HTML posicionados por cima do SVG (fora do sistema de coordenadas
+  // dele, imune a esse esticão) e a linha/polyline continuam exatamente
+  // como estavam.
   return `
     <div style="margin:14px 0;">
       <div style="font-weight:bold; color:#9aa4b5; margin-bottom:8px;">
         📈 Movimento do Preço (entrada → encerramento)
       </div>
-      <svg viewBox="0 0 ${largura} ${altura}" preserveAspectRatio="none" style="width:100%; height:90px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:8px;">
-        ${linhaEntrada}
-        <polyline points="${pontos}" fill="none" stroke="${corLinha}" stroke-width="2" />
-        ${regua}
-      </svg>
+      <div style="position:relative;">
+        <svg viewBox="0 0 ${largura} ${altura}" preserveAspectRatio="none" style="width:100%; height:90px; display:block; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:8px;">
+          ${linhaEntrada}
+          <polyline points="${pontos}" fill="none" stroke="${corLinha}" stroke-width="2" />
+        </svg>
+        <div style="position:absolute; top:3px; left:5px; font-size:10px; color:#8c95b3;">${formatarPreco(max)}</div>
+        <div style="position:absolute; top:3px; right:5px; font-size:10px; color:#8c95b3;">${formatarPreco(max)}</div>
+        <div style="position:absolute; bottom:3px; left:5px; font-size:10px; color:#8c95b3;">${formatarPreco(min)}</div>
+        <div style="position:absolute; bottom:3px; right:5px; font-size:10px; color:#8c95b3;">${formatarPreco(min)}</div>
+      </div>
       <div style="font-size:10px; color:#8c95b3; margin-top:4px; text-align:center;">
         linha tracejada = preço de entrada
       </div>
