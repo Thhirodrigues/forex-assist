@@ -95,6 +95,58 @@ function fecharComparacao() {
   atualizarBarraComparacao();
 }
 
+// A dica de rotação só faz sentido quando a tabela realmente não cabe
+// na tela - sem essa checagem, ela continuava aparecendo mesmo depois
+// de girar o celular (ou expandir) e a tabela já caber inteira.
+// Função de módulo (não mais fechada dentro de abrirComparacao) pra
+// poder ser chamada também por alternarExpandirComparacao() e pelo
+// listener de resize.
+function reavaliarDicaGirar() {
+  const wrapper = document.getElementById("comparacaoScrollWrapper");
+  const dica = document.getElementById("comparacaoDicaGirar");
+  if (wrapper && dica) {
+    dica.style.display = wrapper.scrollWidth > wrapper.clientWidth ? "block" : "none";
+  }
+}
+
+// Usuário pediu um equivalente, pro computador, do "gire o celular" -
+// no desktop não existe rotação física, então isso vira um botão
+// manual: expande a seção de comparação pra tela cheia (position:fixed
+// cobrindo a viewport), ganhando toda a largura disponível sem
+// depender da janela do navegador estar larga o bastante. Funciona
+// igual em qualquer dispositivo - reduz também a dependência da
+// rotação real do celular (que teve comportamento inconsistente em
+// teste real, ver ENGINEERING.md).
+function alternarExpandirComparacao() {
+  const comparacao = document.getElementById("historicoComparacao");
+  const btn = document.getElementById("btnExpandirComparacao");
+  if (!comparacao) return;
+
+  const expandido = comparacao.dataset.expandido === "true";
+
+  if (expandido) {
+    comparacao.style.position = "";
+    comparacao.style.inset = "";
+    comparacao.style.zIndex = "";
+    comparacao.style.background = "";
+    comparacao.style.overflow = "";
+    comparacao.style.padding = "";
+    comparacao.dataset.expandido = "false";
+    if (btn) btn.innerHTML = "⤢ Expandir";
+  } else {
+    comparacao.style.position = "fixed";
+    comparacao.style.inset = "0";
+    comparacao.style.zIndex = "2000";
+    comparacao.style.background = "#081733";
+    comparacao.style.overflow = "auto";
+    comparacao.style.padding = "16px";
+    comparacao.dataset.expandido = "true";
+    if (btn) btn.innerHTML = "⤡ Recolher";
+  }
+
+  reavaliarDicaGirar();
+}
+
 function abrirComparacao() {
   const sinais = [...sinaisComparacaoSelecionados]
     .map((id) => cacheSinaisHistorico[id])
@@ -110,6 +162,13 @@ function abrirComparacao() {
   const lista = document.getElementById("historicoLista");
   const stats = document.getElementById("historicoStats");
   if (!comparacao) return;
+
+  // Reseta qualquer estado de "expandido" deixado de uma comparação
+  // anterior - o innerHTML é reconstruído abaixo, mas o próprio
+  // elemento `comparacao` (e seu style/dataset inline) persiste entre
+  // aberturas.
+  comparacao.removeAttribute("style");
+  comparacao.dataset.expandido = "false";
 
   const par = sinais[0].sinal.par;
 
@@ -144,9 +203,12 @@ function abrirComparacao() {
   }).join("");
 
   comparacao.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">
       <div style="font-weight:bold; font-size:14px;">🔍 Comparando ${sinais.length} sinais - ${par}</div>
-      <button onclick="fecharComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;">← Voltar</button>
+      <div style="display:flex; gap:8px; flex-shrink:0;">
+        <button id="btnExpandirComparacao" onclick="alternarExpandirComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(79,195,247,.15); color:#9adcf9; font-size:12px; cursor:pointer;">⤢ Expandir</button>
+        <button onclick="fecharComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;">← Voltar</button>
+      </div>
     </div>
     <div id="comparacaoScrollWrapper" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
       <table style="border-collapse:collapse; width:100%; min-width:640px; font-size:12px;">
@@ -170,7 +232,7 @@ function abrirComparacao() {
       </table>
     </div>
     <div id="comparacaoDicaGirar" style="display:none; font-size:10px; color:#8c95b3; margin-top:8px; text-align:center;">
-      Gire o celular pra ver a tabela inteira mais confortável.
+      Gire o celular ou toque em "⤢ Expandir" pra ver a tabela inteira mais confortável.
     </div>
   `;
 
@@ -181,20 +243,10 @@ function abrirComparacao() {
   const barra = document.getElementById("barraComparacao");
   if (barra) barra.style.display = "none";
 
-  // A dica só faz sentido quando a tabela realmente não cabe na tela -
-  // sem essa checagem, ela continuava aparecendo mesmo depois de girar
-  // o celular e a tabela já caber inteira. Reavaliada de novo a cada
-  // resize (a própria rotação do celular) enquanto a comparação estiver
+  // Reavaliada de novo a cada resize (rotação do celular, ou a janela
+  // do navegador sendo redimensionada) enquanto a comparação estiver
   // aberta - listener antigo removido antes pra não empilhar um por
   // comparação aberta.
-  const reavaliarDicaGirar = () => {
-    const wrapper = document.getElementById("comparacaoScrollWrapper");
-    const dica = document.getElementById("comparacaoDicaGirar");
-    if (wrapper && dica) {
-      dica.style.display = wrapper.scrollWidth > wrapper.clientWidth ? "block" : "none";
-    }
-  };
-
   if (window._removerListenerDicaGirar) window._removerListenerDicaGirar();
   window.addEventListener("resize", reavaliarDicaGirar);
   window._removerListenerDicaGirar = () => window.removeEventListener("resize", reavaliarDicaGirar);
@@ -278,8 +330,20 @@ function renderizarCaminhoPrecos(sinal) {
   const altura = 90;
   const pad = 6;
 
+  // Usuário pediu uma "régua" nas laterais do gráfico (início e fim)
+  // pra dar referência de preço, não só a forma da linha - reserva uma
+  // faixa de cada lado pro rótulo de Máx/Mín, sem mexer no tamanho
+  // renderizado (viewBox é livre, quem fixa o box na tela é o CSS
+  // width:100%/height:90px com preserveAspectRatio="none").
+  const margemRegua = 32;
+  const plotX0 = pad + margemRegua;
+  const plotX1 = largura - pad - margemRegua;
+
+  const casasDecimais = String(sinal.par || "").includes("JPY") ? 3 : 5;
+  const formatarPreco = (v) => Number(v).toFixed(casasDecimais);
+
   const pontos = caminho.map((p, i) => {
-    const x = pad + (i / (caminho.length - 1)) * (largura - pad * 2);
+    const x = plotX0 + (i / (caminho.length - 1)) * (plotX1 - plotX0);
     const y = altura - pad - ((p.c - min) / span) * (altura - pad * 2);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(" ");
@@ -290,9 +354,25 @@ function renderizarCaminhoPrecos(sinal) {
       ? "#ff5252"
       : "#4fc3f7";
 
+  const yEntrada = (altura - pad - ((entrada - min) / span) * (altura - pad * 2)).toFixed(1);
+
   const linhaEntrada = Number.isFinite(entrada)
-    ? `<line x1="0" y1="${(altura - pad - ((entrada - min) / span) * (altura - pad * 2)).toFixed(1)}" x2="${largura}" y2="${(altura - pad - ((entrada - min) / span) * (altura - pad * 2)).toFixed(1)}" stroke="#8c95b3" stroke-width="1" stroke-dasharray="4,3" />`
+    ? `<line x1="${plotX0}" y1="${yEntrada}" x2="${plotX1}" y2="${yEntrada}" stroke="#8c95b3" stroke-width="1" stroke-dasharray="4,3" />`
     : "";
+
+  const yMax = (pad + 3).toFixed(1);
+  const yMin = (altura - pad).toFixed(1);
+
+  // Régua: Máx/Mín repetidos nas duas laterais (início e fim do
+  // período), pra dar referência de preço onde quer que o usuário
+  // esteja olhando na linha, sem precisar rolar os olhos até uma ponta
+  // só.
+  const regua = `
+    <text x="2" y="${yMax}" font-size="8" fill="#8c95b3">${formatarPreco(max)}</text>
+    <text x="2" y="${yMin}" font-size="8" fill="#8c95b3">${formatarPreco(min)}</text>
+    <text x="${largura - 2}" y="${yMax}" font-size="8" fill="#8c95b3" text-anchor="end">${formatarPreco(max)}</text>
+    <text x="${largura - 2}" y="${yMin}" font-size="8" fill="#8c95b3" text-anchor="end">${formatarPreco(min)}</text>
+  `;
 
   return `
     <div style="margin:14px 0;">
@@ -302,6 +382,7 @@ function renderizarCaminhoPrecos(sinal) {
       <svg viewBox="0 0 ${largura} ${altura}" preserveAspectRatio="none" style="width:100%; height:90px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:8px;">
         ${linhaEntrada}
         <polyline points="${pontos}" fill="none" stroke="${corLinha}" stroke-width="2" />
+        ${regua}
       </svg>
       <div style="font-size:10px; color:#8c95b3; margin-top:4px; text-align:center;">
         linha tracejada = preço de entrada

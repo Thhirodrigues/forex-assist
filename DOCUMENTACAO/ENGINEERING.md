@@ -8335,3 +8335,61 @@ retrato: dica visível; 800px paisagem: dica some) e via
 `validate-comparacao-sinais.js` (mock de `window.addEventListener`
 adicionado ao teste, que antes não previa essa chamada).
 --------
+Ajustes na FEATURE-012 e FEATURE-015 (mesmo dia, feedback do usuário
+depois de ver as duas em produção real no celular):
+
+1. Régua de preço no gráfico do detalhe do sinal (js/historico.js,
+   `renderizarCaminhoPrecos`). Pedido: "faltou a régua na lateral do
+   início e na lateral do fim" - o gráfico (FEATURE-012) só tinha a
+   linha colorida e a referência tracejada da entrada, sem nenhum
+   número de preço visível. Agora o SVG reserva uma margem de cada
+   lado (`margemRegua = 32` unidades do viewBox) e mostra o preço
+   Máximo (topo) e Mínimo (base) do período, repetidos nas duas
+   laterais (início e fim da linha do tempo) - dá referência de preço
+   onde quer que o usuário esteja olhando, sem precisar caçar num
+   canto só. Casas decimais adaptadas ao par (3 pra pares com JPY, 5
+   pros demais - mesma convenção de pip usada em scripts/moneyManager.js).
+   Verificado visualmente (Chromium/Playwright, screenshot com zoom no
+   SVG) que o texto não sai distorcido apesar do
+   `preserveAspectRatio="none"` (que estica X e Y de forma
+   independente) - risco real que só apareceria testando de verdade,
+   não em `node --check`.
+
+2. Botão "⤢ Expandir" na comparação de sinais (js/historico.js,
+   `abrirComparacao`/nova `alternarExpandirComparacao`). Dois achados
+   do usuário testando no celular real: (a) a mensagem de aviso de
+   risco (FEATURE-014) ainda aparecia com o texto antigo - **não é
+   regressão**: `avisoRisco.mensagem` é gravada no documento no
+   momento da análise (scanner.js) e nunca recalculada na leitura;
+   nenhum sinal com risco elevado foi gerado desde o deploy (logs reais
+   do `forex-scanner-real.yml` conferidos - só COOLDOWN/SEM_VIABILIDADE
+   nos últimos ciclos), então o usuário só viu sinais antigos, gravados
+   antes da correção. O texto novo vai aparecer no primeiro sinal novo
+   que cair nessa condição. (b) girar o celular físico não estava
+   reformatando a tabela de comparação como no teste (Chromium
+   headless via Playwright reflow perfeitamente, mas emulação não é o
+   dispositivo real) - suspeita, não confirmada: zoom/rotação manual de
+   alguns navegadores mobile (ex.: o botão de "girar só esta aba" do
+   Chrome Android quando a rotação automática do sistema está
+   desligada) às vezes só amplia a renderização em retrato em vez de
+   recalcular o layout. Em vez de perseguir esse comportamento
+   específico de dispositivo/navegador (não reproduzível neste
+   ambiente), o usuário pediu um equivalente pro computador - decidido
+   resolver os dois com a mesma solução: um botão manual "Expandir"
+   que joga a seção de comparação pra tela cheia (`position:fixed`
+   cobrindo a viewport, ganhando a largura toda disponível sem depender
+   de girar nada, físico ou de navegador). Funciona igual em qualquer
+   dispositivo/janela. `reavaliarDicaGirar()` (antes só uma função
+   fechada dentro de `abrirComparacao()`) virou função de módulo pra
+   poder ser chamada também pelo toggle do botão.
+
+Validado: `node --check` limpo. `validate-comparacao-sinais.js`
+ampliado pra 27 cenários (4 novos: botão "Expandir" presente no
+cabeçalho, alterna `position:fixed`/`zIndex` corretamente, e recolhe
+de volta). Visual real via Chromium/Playwright: régua legível e sem
+distorção (zoom no SVG isolado); botão "Expandir" testado numa janela
+de desktop estreita (700px) - antes de expandir a coluna USD ficava
+cortada, depois de expandir a tabela usa a largura cheia da tela e o
+botão vira "Recolher"; recolher restaura o layout normal
+corretamente.
+--------
