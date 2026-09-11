@@ -8180,3 +8180,145 @@ falta `caminhoPrecos` ou há só 1 ponto (não dá pra traçar linha).
 limites.js` e `validate-push-integracao-checker.js` revalidadas sem
 falhas.
 --------
+FEATURE-013 — Dashboard: remoção de cards redundantes e reordenação do
+card Desempenho (js/expert.js, js/desempenho.js)
+
+Origem: pedido do usuário revisando o app real (prints do dashboard e
+do histórico). Três observações diretas: "sinais hoje não contabilizou
+os sinais, mas com o placar acima, não vejo necessidade desse campo",
+"qualidade do mercado tbm não entendi, mas acho que não precisamos
+tbm", "último sinal tbm não" - e, à parte, pedido pra inverter a ordem
+de "Filtrar por dia" e "Sinais desde sempre" dentro do card Desempenho
+(o filtro por dia subindo, o total "desde sempre" descendo, virando o
+fechamento do card).
+
+Correção/Feature:
+
+1. `js/expert.js`: removidos os 3 cards `Sinais Hoje`, `Qualidade do
+   Mercado` e `Último Sinal` de `dashboardView()`, junto com o bloco
+   de JS que escrevia neles (`dados.sinaisHoje`, `dados.ultimaAnalise`,
+   `dados.ultimoSinal` - leitura pura, sem efeito colateral em nenhum
+   outro lugar do sistema, confirmado por grep antes de remover).
+   `Cooldowns Hoje` foi mantido (não fazia parte do pedido).
+2. `js/desempenho.js`: `renderDesempenho()` reordenado - o bloco
+   `Filtrar por dia` + resultado do dia filtrado (`desempenhoDiario`)
+   agora vem logo após Conta Real/Conta Simulada, e `Sinais desde
+   sempre` (o total agregado, mais estático dos três) virou o último
+   item do card, em vez de ficar espremido entre o input de data e o
+   resultado que depende dele.
+
+Validado: `node --check` limpo nos dois arquivos.
+`validate-aporte-saldo-real.js` e `validate-desempenho.js`
+revalidados sem falhas (testam as funções de dado por trás do card,
+não o HTML em si - a reordenação de template não tinha cobertura
+automatizada prévia, mudança de baixo risco).
+--------
+FEATURE-014 — Correção do texto do aviso de risco elevado
+(scripts/moneyManager.js)
+
+Origem: usuário revisando o aviso real em produção (print de um sinal
+com SL de $3.00 contra saldo de $4.89), pedindo uma frase mais
+objetiva.
+
+Achado, apontado antes de reescrever: a frase antiga ("Essa operação
+tem SL de $X (Y% da sua banca) - acima do limite recomendado... Você
+concorda em operar mesmo assim?") tinha dois problemas, não só
+tamanho. (1) Desde a FEATURE-010, esse aviso não bloqueia mais nada -
+perguntar "você concorda?" sugere uma ação de aceitar/recusar que não
+existe, o que é enganoso sobre o que o sistema realmente faz. (2) A
+primeira reformulação proposta pelo usuário ("X% acima do
+recomendado") confundia dois números diferentes: o risco percentual
+da operação (quanto do saldo o SL representa) não é o mesmo que "o
+quanto esse risco excede o recomendado" - "102% acima do recomendado"
+só bate com "102% da banca" por coincidência numérica nesse caso
+específico (2% + 100% = 102%); com outros números (ex.: risco de 5%
+contra teto de 2%) as duas frases dariam valores diferentes.
+
+Correção: `gerarRecomendacao()` agora recebe `perfil` como segundo
+parâmetro (antes só recebia `simulacao`) e usa
+`obterPerfilFinanceiro(perfil).riscoPorOperacao` pra citar o teto real
+do perfil (1%/2%/3% Conservador/Balanceado/Agressivo). Mensagem nova:
+"Essa operação arrisca X% da sua banca - acima do máximo recomendado
+(Y%). Em caso de Loss, pode ser necessário um novo aporte." - mantém
+os números concretos (que são a parte que ajuda a decidir), tira a
+pergunta retórica sem função, e não mistura risco percentual com
+delta acima do teto. O emoji ⚠️ não entra na mensagem em si porque
+`js/historico.js` já prefixa o aviso com ⚠️ ao renderizar
+(`sinal.avisoRisco.mensagem`) - colocar no texto também duplicaria.
+
+Validado: teste isolado confirmando a mensagem com números reais
+("SL 3 / banca 4.89 -> risco 61.3%, teto Balanceado 2%"), e
+`validate-feature010-aviso-risco.js` revalidado (a asserção antiga,
+que checava a presença literal das palavras "saldo/SL/risco" no
+texto, foi atualizada pra "banca/recomendado/aporte" - reflete a
+mudança de copy deliberada desta correção, não uma quebra). `node
+--check` limpo.
+--------
+FEATURE-015 — Comparação de sinais do mesmo par, lado a lado
+(js/historico.js)
+
+Origem: usuário pediu pra comparar sinais manualmente (3 sinais reais
+de AUD/USD SELL, verificados via TwelveData/result-checker.yml antes
+desta feature - ver conversa) e gostou do formato de tabela usado
+nessa checagem manual. Pediu pra virar recurso do app: checkbox por
+sinal pra selecionar quais comparar, restrito ao mesmo par, seleção
+livre (sem limite de quantidade), abrindo como seção nova dentro do
+próprio Histórico (não modal) - pra caber melhor girando o celular.
+
+Achado que tornou a feature barata: `js/checker.js` já grava
+`precoAtual`, `precoMaximo`, `precoMinimo`, `maxPipsFavor`,
+`maxPipsContra` e `resultadoFinanceiro` no documento a cada ciclo de
+5 min, tanto pra sinais ainda `ABERTA` (branch else da atualização,
+antes do fechamento) quanto pra `ENCERRADA` (dentro da transação de
+fechamento) - os mesmos nomes de campo nos dois casos. Ou seja: os
+"campos atuais" que a comparação precisa já existem no documento,
+sem exigir nenhuma captura nova nem chamada extra à API. Confirmado
+lendo o código antes de implementar, não suposto.
+
+Feature:
+
+1. Checkbox `.chk-comparar` no fim da linha de resumo de cada sinal
+   (ao lado do badge de resultado) - ausente em linhas de COOLDOWN
+   (não faz sentido comparar um cooldown). `onclick="event.
+   stopPropagation()"` no próprio input, não só no `onchange` -
+   necessário porque o listener de expandir/recolher o card está no
+   `click` do `<div data-sinal-id>` que envolve a linha inteira;
+   sem isso, marcar o checkbox também expandiria/recolheria o card
+   (mesma armadilha que o clique no checkbox "Operação Real", dentro
+   do detalhe, já tem hoje - não corrigida aqui por estar fora do
+   escopo pedido).
+2. `alternarSelecaoComparacao()`: mantém `sinaisComparacaoSelecionados`
+   (Set de ids). Ao marcar um sinal de par diferente do(s) já
+   selecionado(s), bloqueia com alert explicando o motivo e desmarca
+   o checkbox de volta - sem limite de quantidade quando o par bate.
+3. `cacheSinaisHistorico` (id -> {sinal, dataObj}) populado a cada
+   `carregarHistorico()`, evitando nova leitura ao Firestore só pra
+   montar a comparação - reusa os mesmos 300 docs já buscados pra
+   lista normal.
+4. Barra flutuante fixa (`#barraComparacao`) aparece com 1+
+   selecionados, mostrando a contagem e os botões "Limpar"/"Comparar".
+5. `abrirComparacao()`: exige 2+ selecionados (com menos, alerta e
+   não abre). Monta uma tabela (Horário, Direção, Status, Entrada,
+   Atual, Máx, Mín, Favor, Contra, USD) dentro de `#historicoComparacao`,
+   escondendo a lista normal e a barra flutuante. Wrapper com
+   `overflow-x:auto` pra rolar a tabela sem quebrar o layout girando
+   o celular. `fecharComparacao()` ("← Voltar") restaura a lista.
+   `limparSelecaoComparacao()` zera a seleção e fecha a comparação.
+
+Validado isoladamente (scratchpad, 23 cenários,
+`validate-comparacao-sinais.js`, historico.js carregado via
+`vm.runInContext` já que é script de browser sem module.exports):
+primeira seleção nunca bloqueia; par diferente bloqueia com alert e
+desmarca o checkbox de volta; mesmo par aceita 3+ sinais sem limite;
+desmarcar remove da seleção e atualiza a contagem; `abrirComparacao()`
+recusa com menos de 2 selecionados; a tabela reproduz corretamente o
+caso real usado como referência (AUD/USD SELL pendente com entrada
+0.71621/atual 0.71608/favor 9.7/contra -4.2/USD +$0.78, comparado com
+um sinal já fechado em WIN); "Voltar" restaura a lista; "Limpar" zera
+o Set de verdade (confirmado selecionando um par totalmente diferente
+logo depois, sem bloqueio). `node --check` limpo, `validate-bug022-
+feedback-checkbox.js` revalidado com offset de linha atualizado (a
+extração por `linhas.slice()` quebrou com as ~180 linhas novas antes
+de `alternarOperacaoReal` - mesma fragilidade de teste já documentada
+em sessões anteriores, não regressão de código).
+--------

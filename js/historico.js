@@ -6,8 +6,180 @@ function historicoView() {
         <div id="historicoStats" style="margin-bottom:15px;">Carregando estatísticas...</div>
       </div>
       <div id="historicoLista">Carregando histórico...</div>
+      <div id="historicoComparacao" style="display:none;"></div>
+    </div>
+    <div id="barraComparacao" style="display:none; position:fixed; left:12px; right:12px; bottom:64px; z-index:1000; background:#132852; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:10px 14px; align-items:center; justify-content:space-between; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,.4);">
+      <span id="barraComparacaoTexto" style="font-size:12px; color:#e0e6f5;"></span>
+      <div style="display:flex; gap:8px;">
+        <button onclick="limparSelecaoComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;">Limpar</button>
+        <button onclick="abrirComparacao()" style="padding:6px 12px; border:none; border-radius:8px; background:#4fc3f7; color:#081733; font-weight:bold; font-size:12px; cursor:pointer;">Comparar</button>
+      </div>
     </div>
   `;
+}
+
+// Item 1 do pedido do usuário (11/09/2026): comparar sinais do mesmo par
+// lado a lado, usando só os campos que já existem no documento (o
+// checker.js já grava precoAtual/precoMaximo/precoMinimo/maxPipsFavor/
+// maxPipsContra/resultadoFinanceiro a cada ciclo, tanto pra sinais
+// ABERTA quanto ENCERRADA - nenhuma captura nova precisou ser criada).
+// Seleção livre (sem limite), restrita ao mesmo par, numa seção nova
+// dentro do próprio Histórico (não modal) pra caber melhor girando o
+// celular (tabela com overflow-x:auto).
+const sinaisComparacaoSelecionados = new Set();
+let cacheSinaisHistorico = {};
+
+function atualizarBarraComparacao() {
+  const barra = document.getElementById("barraComparacao");
+  if (!barra) return;
+
+  const total = sinaisComparacaoSelecionados.size;
+
+  if (total === 0) {
+    barra.style.display = "none";
+    return;
+  }
+
+  barra.style.display = "flex";
+  document.getElementById("barraComparacaoTexto").innerHTML =
+    `${total} selecionado${total > 1 ? "s" : ""}`;
+}
+
+function alternarSelecaoComparacao(checkbox, id) {
+  const par = checkbox.dataset.par;
+
+  if (checkbox.checked) {
+
+    const paresJaSelecionados = new Set(
+      [...sinaisComparacaoSelecionados]
+        .map((idSelecionado) => cacheSinaisHistorico[idSelecionado]?.sinal.par)
+        .filter(Boolean)
+    );
+
+    if (paresJaSelecionados.size > 0 && !paresJaSelecionados.has(par)) {
+      alert(
+        `Só é possível comparar sinais do mesmo par. Você já tem ${[...paresJaSelecionados][0]} ` +
+        `selecionado - desmarque antes de escolher um ${par}.`
+      );
+      checkbox.checked = false;
+      return;
+    }
+
+    sinaisComparacaoSelecionados.add(id);
+
+  } else {
+
+    sinaisComparacaoSelecionados.delete(id);
+
+  }
+
+  atualizarBarraComparacao();
+}
+
+function limparSelecaoComparacao() {
+  sinaisComparacaoSelecionados.clear();
+  document.querySelectorAll(".chk-comparar").forEach((el) => (el.checked = false));
+  atualizarBarraComparacao();
+  fecharComparacao();
+}
+
+function fecharComparacao() {
+  const comparacao = document.getElementById("historicoComparacao");
+  const lista = document.getElementById("historicoLista");
+  const stats = document.getElementById("historicoStats");
+
+  if (comparacao) comparacao.style.display = "none";
+  if (lista) lista.style.display = "block";
+  if (stats) stats.style.display = "block";
+
+  atualizarBarraComparacao();
+}
+
+function abrirComparacao() {
+  const sinais = [...sinaisComparacaoSelecionados]
+    .map((id) => cacheSinaisHistorico[id])
+    .filter(Boolean)
+    .sort((a, b) => (b.dataObj?.getTime() || 0) - (a.dataObj?.getTime() || 0));
+
+  if (sinais.length < 2) {
+    alert("Selecione pelo menos 2 sinais do mesmo par pra comparar.");
+    return;
+  }
+
+  const comparacao = document.getElementById("historicoComparacao");
+  const lista = document.getElementById("historicoLista");
+  const stats = document.getElementById("historicoStats");
+  if (!comparacao) return;
+
+  const par = sinais[0].sinal.par;
+
+  const linhas = sinais.map(({ sinal, dataObj }) => {
+    const horario = dataObj
+      ? dataObj.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 17)
+      : "--";
+
+    const statusLabel =
+      sinal.resultado === "WIN" ? "✅ WIN"
+      : sinal.resultado === "LOSS" ? "❌ LOSS"
+      : "⏳ PENDENTE";
+
+    const usd = sinal.resultadoFinanceiro;
+    const usdFormatado = usd == null ? "--" : `${usd >= 0 ? "+" : "-"}$${Math.abs(Number(usd)).toFixed(2)}`;
+    const usdCor = usd == null ? "#fff" : (usd >= 0 ? "#00d26a" : "#ff5252");
+
+    return `
+      <tr>
+        <td style="padding:8px; white-space:nowrap;">${horario}</td>
+        <td style="padding:8px; white-space:nowrap;">${(sinal.direcao || "-").replace("CALL", "COMPRA").replace("PUT", "VENDA").replace("BUY", "COMPRA").replace("SELL", "VENDA")}</td>
+        <td style="padding:8px; white-space:nowrap;">${statusLabel}</td>
+        <td style="padding:8px; text-align:right;">${sinal.precoEntrada ?? "--"}</td>
+        <td style="padding:8px; text-align:right;">${sinal.precoAtual ?? "--"}</td>
+        <td style="padding:8px; text-align:right;">${sinal.precoMaximo ?? "--"}</td>
+        <td style="padding:8px; text-align:right;">${sinal.precoMinimo ?? "--"}</td>
+        <td style="padding:8px; text-align:right; color:#00d26a;">${sinal.maxPipsFavor != null ? Number(sinal.maxPipsFavor).toFixed(1) : "--"}</td>
+        <td style="padding:8px; text-align:right; color:#ff5252;">${sinal.maxPipsContra != null ? Number(sinal.maxPipsContra).toFixed(1) : "--"}</td>
+        <td style="padding:8px; text-align:right; font-weight:bold; color:${usdCor};">${usdFormatado}</td>
+      </tr>
+    `;
+  }).join("");
+
+  comparacao.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div style="font-weight:bold; font-size:14px;">🔍 Comparando ${sinais.length} sinais - ${par}</div>
+      <button onclick="fecharComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;">← Voltar</button>
+    </div>
+    <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+      <table style="border-collapse:collapse; width:100%; min-width:640px; font-size:12px;">
+        <thead>
+          <tr style="background:rgba(255,255,255,.06); text-align:left;">
+            <th style="padding:8px;">Horário</th>
+            <th style="padding:8px;">Direção</th>
+            <th style="padding:8px;">Status</th>
+            <th style="padding:8px; text-align:right;">Entrada</th>
+            <th style="padding:8px; text-align:right;">Atual</th>
+            <th style="padding:8px; text-align:right;">Máx</th>
+            <th style="padding:8px; text-align:right;">Mín</th>
+            <th style="padding:8px; text-align:right;">Favor</th>
+            <th style="padding:8px; text-align:right;">Contra</th>
+            <th style="padding:8px; text-align:right;">USD</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhas}
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:10px; color:#8c95b3; margin-top:8px; text-align:center;">
+      Gire o celular pra ver a tabela inteira mais confortável.
+    </div>
+  `;
+
+  if (lista) lista.style.display = "none";
+  if (stats) stats.style.display = "none";
+  comparacao.style.display = "block";
+
+  const barra = document.getElementById("barraComparacao");
+  if (barra) barra.style.display = "none";
 }
 
 // Gerenciar estado de sinais abertos com persistência blindada
@@ -180,6 +352,8 @@ async function carregarHistorico() {
     const mesAtualStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", month: "2-digit", year: "numeric" });
     const sinaisAbertos = obterSinaisAbertos();
 
+    cacheSinaisHistorico = {};
+
     snapshot.forEach((doc) => {
       const sinal = doc.data();
       let dataObj = null;
@@ -218,7 +392,9 @@ async function carregarHistorico() {
       const estaAberto = sinaisAbertos.includes(doc.id) || isDestaque;
       const detalheId = `detalhe-${doc.id}`;
       const borderStyle = isDestaque ? 'border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.1);' : '';
-      
+
+      cacheSinaisHistorico[doc.id] = { sinal, dataObj };
+
       const card = `
         <div class="list-item" id="sinal-${doc.id}" style="${borderStyle}" data-sinal-id="${doc.id}">
           <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:bold;">
@@ -228,8 +404,19 @@ async function carregarHistorico() {
               |
               ${(sinal.direcao || "-").replace("CALL", "COMPRA").replace("PUT", "VENDA")}
             </span>
-            <span>
-              ${isCooldown ? "COOLDOWN" : (sinal.resultado === "WIN" ? "✅ WIN" : sinal.resultado === "LOSS" ? "❌ LOSS" : "⏳ PENDENTE")}
+            <span style="display:flex; align-items:center; gap:8px;">
+              <span>${isCooldown ? "COOLDOWN" : (sinal.resultado === "WIN" ? "✅ WIN" : sinal.resultado === "LOSS" ? "❌ LOSS" : "⏳ PENDENTE")}</span>
+              ${!isCooldown ? `
+                <input
+                  type="checkbox"
+                  class="chk-comparar"
+                  data-par="${sinal.par || ""}"
+                  ${sinaisComparacaoSelecionados.has(doc.id) ? "checked" : ""}
+                  onclick="event.stopPropagation();"
+                  onchange="alternarSelecaoComparacao(this, '${doc.id}')"
+                  title="Selecionar pra comparar"
+                >
+              ` : ""}
             </span>
           </div>
           <div style="margin-top:4px; font-size:12px; color:#8c95b3;">
@@ -807,6 +994,8 @@ if (el.style.display === 'none') {
     });
 
     lista.innerHTML = finalHtml || '<div class="list-item">Nenhum sinal encontrado.</div>';
+
+    atualizarBarraComparacao();
 
 // Adicionar listeners de clique APÓS renderizar - BLINDADO
     setTimeout(() => {

@@ -25,27 +25,8 @@ function dashboardView() {
     </div>
 
     <div class="card">
-        <div class="card-title">Sinais Hoje</div>
-        <div id="sinaisHoje" class="big-number">0</div>
-    </div>
-
-    <div class="card">
         <div class="card-title">Cooldowns Hoje</div>
         <div id="cooldownsHoje" class="big-number">0</div>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Qualidade do Mercado</div>
-        <div id="ultimaAnalise" class="signal wait">
-            Aguardando análise...
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Último Sinal</div>
-        <div id="ultimoSinal" class="signal wait">
-            Nenhum sinal
-        </div>
     </div>
 
     <div class="card">
@@ -151,42 +132,9 @@ setInterval(async () => {
                 : "🔴 Parado";
 
         document.getElementById(
-            "sinaisHoje"
-        ).innerHTML =
-            dados.sinaisHoje || 0;
-
-        document.getElementById(
             "cooldownsHoje"
         ).innerHTML =
             dados.cooldownsHoje || 0;
-
-        let ultimaAnalise =
-    dados.ultimaAnalise ||
-    "Aguardando análise";
-
-ultimaAnalise =
-    ultimaAnalise
-      .replaceAll("CALL", "🟢 COMPRA")
-      .replaceAll("PUT", "🔴 VENDA");
-
-document.getElementById(
-    "ultimaAnalise"
-).innerHTML =
-    ultimaAnalise;
-
-let ultimoSinal =
-    dados.ultimoSinal ||
-    "Nenhum sinal";
-
-ultimoSinal =
-    ultimoSinal
-      .replaceAll("CALL", "🟢 COMPRA")
-      .replaceAll("PUT", "🔴 VENDA");
-
-document.getElementById(
-    "ultimoSinal"
-).innerHTML =
-    ultimoSinal;
 
     } catch (erro) {
 

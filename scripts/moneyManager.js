@@ -665,7 +665,8 @@ function simularOperacao(
 
 function gerarRecomendacao(
 
-    simulacao
+    simulacao,
+    perfil
 
 ) {
 
@@ -695,15 +696,17 @@ function gerarRecomendacao(
 
     if (simulacao.avaliacao.motivo === "RISCO_ELEVADO") {
 
+        const riscoRecomendado =
+            obterPerfilFinanceiro(perfil).riscoPorOperacao;
+
         return {
 
             operar: false,
 
             mensagem:
-                `Seu saldo atual é de $${Number(banca).toFixed(2)}. Essa operação tem SL de ` +
-                `$${Number(slUSD).toFixed(2)} (${Number(riscoPercentual).toFixed(1)}% da sua banca) - ` +
-                `acima do limite recomendado pro seu perfil. Em caso de perda, isso pode comprometer ` +
-                `boa parte do seu saldo e exigir um novo aporte. Você concorda em operar mesmo assim?`
+                `Essa operação arrisca ${Number(riscoPercentual).toFixed(1)}% da sua banca - ` +
+                `acima do máximo recomendado (${riscoRecomendado}%). Em caso de Loss, pode ser ` +
+                `necessário um novo aporte.`
 
         };
 
@@ -867,7 +870,8 @@ const decisaoMercado =
 
     const recomendacao =
         gerarRecomendacao(
-            simulacao
+            simulacao,
+            perfil
         );
 
 // ===================================================

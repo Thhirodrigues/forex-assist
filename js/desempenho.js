@@ -226,17 +226,17 @@ async function renderDesempenho() {
         </div>
 
         <div class="list-item">
-            Sinais desde sempre: ✅ ${formatarContagem(resumo.winsTotal, resumo.winsAproximado)} · ❌ ${formatarContagem(resumo.lossesTotal, resumo.lossesAproximado)} · Total ${formatarContagem(resumo.totalSinais, resumo.totalAproximado)}
-            ${resumo.totalAproximado ? '<div style="font-size:10px; color:#8c95b3; margin-top:2px;">Número aproximado (piso) - agregação rápida indisponível neste momento</div>' : ''}
-        </div>
-
-        <div class="list-item">
             Filtrar por dia
             <br><br>
             <input type="date" id="desempenhoDataFiltro" value="${dataHoje}" style="width:100%;">
         </div>
 
         <div id="desempenhoDiario">Carregando...</div>
+
+        <div class="list-item">
+            Sinais desde sempre: ✅ ${formatarContagem(resumo.winsTotal, resumo.winsAproximado)} · ❌ ${formatarContagem(resumo.lossesTotal, resumo.lossesAproximado)} · Total ${formatarContagem(resumo.totalSinais, resumo.totalAproximado)}
+            ${resumo.totalAproximado ? '<div style="font-size:10px; color:#8c95b3; margin-top:2px;">Número aproximado (piso) - agregação rápida indisponível neste momento</div>' : ''}
+        </div>
     `;
 
     const inputData = document.getElementById("desempenhoDataFiltro");
