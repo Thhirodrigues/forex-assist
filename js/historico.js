@@ -3,6 +3,7 @@ function historicoView() {
     <div class="card">
       <div id="historicoHeader" style="position:sticky; top:0; z-index:999; background:#081733; padding-bottom:10px;">
         <div class="card-title">Histórico de Sinais</div>
+        <div id="historicoModoToggle" style="margin-bottom:10px;"></div>
         <div id="historicoStats" style="margin-bottom:15px;">Carregando estatísticas...</div>
       </div>
       <div id="historicoLista">Carregando histórico...</div>
@@ -428,119 +429,149 @@ function mesLabelDe(dataStr) {
   return `${NOMES_MES[Number(mm) - 1]} ${aaaa}`;
 }
 
-async function carregarHistorico() {
-  const lista = document.getElementById("historicoLista");
-  const stats = document.getElementById("historicoStats");
-  if (!lista) return;
+// Pedido do usuário (11/09/2026, segunda rodada): o Histórico virar
+// tabela (parecido com uma referência que ele mandou - colunas
+// Horário/Par/Direção/Tempo/Resultado/Resultado Financeiro/Operação
+// Real, agrupado por dia) quando o celular for girado pra paisagem, ou
+// via um botão manual (equivalente no computador, que não tem como
+// girar fisicamente).
+let modoTabela = false;
+let deteccaoOrientacaoInicializada = false;
 
-  try {
-    const snapshot = await db
-      .collection("historico")
-      .orderBy("timestamp", "desc")
-      .limit(300)
-      .get();
+// Detecção real de orientação via matchMedia - mecanismo nativo do CSS
+// pra isso, dispara só quando a orientação de fato muda (mais
+// confiável que ficar comparando window.innerWidth a cada resize).
+// Registrado uma única vez (guard) porque historicoView() é
+// recarregado toda vez que o usuário entra na aba Histórico.
+function inicializarDeteccaoOrientacao() {
+  if (deteccaoOrientacaoInicializada) return;
+  deteccaoOrientacaoInicializada = true;
 
-    let wins = 0;
-    let losses = 0;
-    const gruposPorData = {};
+  if (typeof window.matchMedia !== "function") return;
 
-    // FEATURE-007 (09/09/2026): estatística por dia/mês, além do total
-    // global dos últimos 300 - antes só existia um total único
-    // misturando tudo.
-    const statsPorData = {};
+  const mq = window.matchMedia("(orientation: landscape)");
+  modoTabela = mq.matches;
 
-    const hojeStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-    const mesAtualStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", month: "2-digit", year: "numeric" });
-    const sinaisAbertos = obterSinaisAbertos();
+  mq.addEventListener("change", () => {
+    modoTabela = mq.matches;
+    carregarHistorico();
+  });
+}
 
-    cacheSinaisHistorico = {};
+// Botão manual - equivalente no computador de "virar o celular" (não
+// existe rotação física em desktop). Sempre disponível, independente
+// da orientação atual, e também serve de reforço no celular caso a
+// detecção automática não dispare em algum navegador específico.
+function alternarModoTabela() {
+  modoTabela = !modoTabela;
+  carregarHistorico();
+}
 
-    snapshot.forEach((doc) => {
-      const sinal = doc.data();
-      let dataObj = null;
+function atualizarBotaoModoTabela() {
+  const el = document.getElementById("historicoModoToggle");
+  if (!el) return;
+  el.innerHTML = `
+    <button onclick="alternarModoTabela()" style="padding:6px 12px; border:none; border-radius:8px; background:rgba(79,195,247,.15); color:#9adcf9; font-size:12px; cursor:pointer;">
+      ${modoTabela ? "📋 Ver como lista" : "📊 Ver como tabela"}
+    </button>
+  `;
+}
 
-      if (sinal.timestamp) {
-          let ts = sinal.timestamp;
-          if (ts.toDate) ts = ts.toDate();
-          else if (typeof ts === "number" && ts < 1000000000000) ts = ts * 1000;
-          
-          const d = new Date(ts);
-          if (!isNaN(d.getTime())) dataObj = d;
-      }
+// "Tempo" - coluna que o usuário viu na referência e achou interessante
+// (duração da operação). Sinais já encerrados têm tempoOperacao (ms,
+// calculado por js/checker.js no fechamento). Sinais ainda
+// ABERTA/COOLDOWN não têm esse campo ainda - calculado aqui como
+// "tempo decorrido até agora" a partir de inicioOperacao (mesmo campo
+// que checker.js usa pra buscar candles), como uma foto do momento do
+// carregamento - não fica contando ao vivo, igual ao resto do app.
+function obterTempoOperacaoMs(sinal) {
+  if (Number.isFinite(sinal.tempoOperacao)) return sinal.tempoOperacao;
+  if (Number.isFinite(sinal.inicioOperacao)) return Date.now() - sinal.inicioOperacao;
+  return null;
+}
 
-      if (!dataObj && (sinal.horario || sinal.data)) {
-          const str = sinal.horario || sinal.data;
-          const partes = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-          if (partes) {
-              dataObj = new Date(partes[3], partes[2] - 1, partes[1]);
-          }
-      }
+function formatarDuracaoMs(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return "--:--:--";
+  const totalSegundos = Math.floor(ms / 1000);
+  const h = String(Math.floor(totalSegundos / 3600)).padStart(2, "0");
+  const m = String(Math.floor((totalSegundos % 3600) / 60)).padStart(2, "0");
+  const s = String(totalSegundos % 60).padStart(2, "0");
+  return `${h}:${m}:${s}`;
+}
 
-      if (sinal.resultado === "WIN") wins++;
-      if (sinal.resultado === "LOSS") losses++;
+// Linha de tabela (modo paisagem/botão) equivalente ao card do modo
+// retrato - mesmas colunas da referência que o usuário mandou, mais
+// uma coluna extra "Cmp" (comparação, FEATURE-015) já que essa
+// seleção precisa continuar acessível nos dois modos. O detalhe rico
+// (RSI/EMA/gráfico/Saldo Antes-Depois) é o MESMO construirDetalheSinal()
+// usado no card - só muda o container em volta (aqui, uma <tr> com
+// colspan em vez do card inteiro) - e o clique pra expandir usa o
+// mesmo listener genérico de [data-sinal-id] já existente, sem
+// duplicar lógica.
+function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, detalheHtml) {
+  const horario = dataObj
+    ? dataObj.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 5)
+    : "--:--";
 
-      const dataSinal = dataObj
-          ? dataObj.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
-          : "Data Indefinida";
+  const direcaoLabel = (sinal.direcao || "-")
+    .replace("CALL", "COMPRA").replace("PUT", "VENDA")
+    .replace("BUY", "COMPRA").replace("SELL", "VENDA");
 
-      if (!statsPorData[dataSinal]) statsPorData[dataSinal] = { wins: 0, losses: 0 };
-      if (sinal.resultado === "WIN") statsPorData[dataSinal].wins++;
-      if (sinal.resultado === "LOSS") statsPorData[dataSinal].losses++;
+  const tempoLabel = isCooldown ? "--" : formatarDuracaoMs(obterTempoOperacaoMs(sinal));
 
-      const isCooldown = sinal.status === "COOLDOWN" || sinal.origem === "cooldown";
+  const resultadoLabel = isCooldown
+    ? "🚫 COOLDOWN"
+    : (sinal.resultado === "WIN" ? "✅ WIN" : sinal.resultado === "LOSS" ? "❌ LOSS" : "⏳ PENDENTE");
 
-      const isDestaque = app.sinalParaDestacar === doc.id;
-      const estaAberto = sinaisAbertos.includes(doc.id) || isDestaque;
-      const detalheId = `detalhe-${doc.id}`;
-      const borderStyle = isDestaque ? 'border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.1);' : '';
+  const avisoIcone = sinal.avisoRisco?.ativo
+    ? `<span title="${String(sinal.avisoRisco.mensagem).replace(/"/g, "&quot;")}"> ⚠️</span>`
+    : sinal.avisoExpectativa?.ativo
+      ? `<span title="${String(sinal.avisoExpectativa.mensagem).replace(/"/g, "&quot;")}"> 📉</span>`
+      : "";
 
-      cacheSinaisHistorico[doc.id] = { sinal, dataObj };
+  const usd = sinal.resultadoFinanceiro;
+  const usdFormatado = usd == null ? "--" : `${usd >= 0 ? "+" : "-"}$${Math.abs(Number(usd)).toFixed(2)}`;
+  const usdCor = usd == null ? "#fff" : (usd >= 0 ? "#00d26a" : "#ff5252");
 
-      const card = `
-        <div class="list-item" id="sinal-${doc.id}" style="${borderStyle}" data-sinal-id="${doc.id}">
-          <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:bold;">
-            <span>
-              ${isCooldown ? "🚫" : (sinal.direcao === "BUY" || sinal.direcao === "CALL" ? "🟢" : "🔴")}
-              ${sinal.par || "-"}
-              |
-              ${(sinal.direcao || "-").replace("CALL", "COMPRA").replace("PUT", "VENDA")}
-            </span>
-            <span style="display:flex; align-items:center; gap:8px;">
-              <span>${isCooldown ? "COOLDOWN" : (sinal.resultado === "WIN" ? "✅ WIN" : sinal.resultado === "LOSS" ? "❌ LOSS" : "⏳ PENDENTE")}</span>
-              ${!isCooldown ? `
-                <input
-                  type="checkbox"
-                  class="chk-comparar"
-                  data-par="${sinal.par || ""}"
-                  ${sinaisComparacaoSelecionados.has(doc.id) ? "checked" : ""}
-                  onclick="event.stopPropagation();"
-                  onchange="alternarSelecaoComparacao(this, '${doc.id}')"
-                  title="Selecionar pra comparar"
-                >
-              ` : ""}
-            </span>
-          </div>
-          <div style="margin-top:4px; font-size:12px; color:#8c95b3;">
-            ${sinal.loteUtilizado ? `💳 Lote: <b>${sinal.loteUtilizado}</b> | ` : ""}${dataSinal} &nbsp; 
-            ${dataObj ? dataObj.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 5) : "--:--"}
-            ${!isCooldown ? ` | Qualidade: ${sinal.qualidade ?? "-"}${sinal.score !== undefined ? ` (${sinal.score}%)` : ""}` : ""}
-          </div>
-          ${sinal.avisoRisco?.ativo ? `
-            <div style="margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(255,180,0,.12); border:1px solid rgba(255,180,0,.35); font-size:11px; color:#ffb400;">
-              ⚠️ ${sinal.avisoRisco.mensagem}
-            </div>
-          ` : ''}
-          ${sinal.avisoExpectativa?.ativo ? `
-            <div style="margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(255,82,82,.12); border:1px solid rgba(255,82,82,.35); font-size:11px; color:#ff8a8a;">
-              📉 ${sinal.avisoExpectativa.mensagem}
-            </div>
-          ` : ''}
-          ${sinal.movimentoPips !== undefined ? `
-            <div style="margin-top:6px; font-size:12px; color:${sinal.resultado === 'WIN' ? '#00ff88' : '#ff4444'}; font-weight:bold;">
-              📊 Movimentação: ${sinal.movimentoPips > 0 ? '+' : ''}${sinal.movimentoPips} pips
-            </div>
-          ` : ''}
-          
+  return `
+    <tr id="sinal-${docId}" data-sinal-id="${docId}" style="cursor:pointer; ${borderStyle}">
+      <td style="padding:8px; white-space:nowrap;">${horario}</td>
+      <td style="padding:8px; white-space:nowrap;">${isCooldown ? "🚫" : (sinal.direcao === "BUY" || sinal.direcao === "CALL" ? "🟢" : "🔴")} ${sinal.par || "-"}</td>
+      <td style="padding:8px; white-space:nowrap;">${direcaoLabel}</td>
+      <td style="padding:8px; white-space:nowrap;">${tempoLabel}</td>
+      <td style="padding:8px; white-space:nowrap;">${resultadoLabel}${avisoIcone}</td>
+      <td style="padding:8px; text-align:right; font-weight:bold; color:${usdCor};">${usdFormatado}</td>
+      <td style="padding:8px; text-align:center;" onclick="event.stopPropagation();">
+        <input type="checkbox"
+          ${sinal.operacaoReal ? "checked" : ""}
+          ${sinal.status !== "ENCERRADA" ? "disabled" : ""}
+          onchange="alternarOperacaoReal('${docId}', this.checked);">
+      </td>
+      <td style="padding:8px; text-align:center;" onclick="event.stopPropagation();">
+        ${!isCooldown ? `
+          <input type="checkbox" class="chk-comparar" data-par="${sinal.par || ""}"
+            ${sinaisComparacaoSelecionados.has(docId) ? "checked" : ""}
+            onchange="alternarSelecaoComparacao(this, '${docId}')" title="Selecionar pra comparar">
+        ` : ""}
+      </td>
+    </tr>
+    <tr>
+      <td colspan="8" style="padding:0; border:none;">
+        ${detalheHtml}
+      </td>
+    </tr>
+  `;
+}
+
+// Detalhe rico do sinal (RSI/EMA/ENTRADA-SAÍDA/gráfico do preço/
+// Configuração Utilizada/LOTE/TP-SL/SALDO ANTES-DEPOIS/checkbox
+// Operação Real) - extraído do template do card pra ser reutilizado
+// também nas linhas da tabela (mesmo conteúdo, containers diferentes
+// em volta: <div> dentro do card, <td colspan> dentro da tabela).
+function construirDetalheSinal(sinal, docId, estaAberto) {
+  const detalheId = `detalhe-${docId}`;
+
+  return `
           <div id="${detalheId}" style="display: ${estaAberto ? 'block' : 'none'}; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#8c95b3;">
             <div style="
 display:grid;
@@ -886,7 +917,7 @@ border-top:1px solid rgba(255,255,255,.10);
 type="checkbox"
 ${sinal.operacaoReal ? "checked" : ""}
 ${sinal.status !== "ENCERRADA" ? "disabled" : ""}
-onchange="event.stopPropagation(); alternarOperacaoReal('${doc.id}', this.checked);"
+onchange="event.stopPropagation(); alternarOperacaoReal('${docId}', this.checked);"
 >
 
 </label>
@@ -944,11 +975,133 @@ ${sinal.resultadoFinanceiro ??
 </div>
 
 </div>
-                  
+
                 ` : ''}
               </div>
             ` : ''}
           </div>
+        `;
+}
+
+async function carregarHistorico() {
+  const lista = document.getElementById("historicoLista");
+  const stats = document.getElementById("historicoStats");
+  if (!lista) return;
+
+  inicializarDeteccaoOrientacao();
+
+  try {
+    const snapshot = await db
+      .collection("historico")
+      .orderBy("timestamp", "desc")
+      .limit(300)
+      .get();
+
+    let wins = 0;
+    let losses = 0;
+    const gruposPorData = {};
+
+    // FEATURE-007 (09/09/2026): estatística por dia/mês, além do total
+    // global dos últimos 300 - antes só existia um total único
+    // misturando tudo.
+    const statsPorData = {};
+
+    const hojeStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    const mesAtualStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", month: "2-digit", year: "numeric" });
+    const sinaisAbertos = obterSinaisAbertos();
+
+    cacheSinaisHistorico = {};
+
+    snapshot.forEach((doc) => {
+      const sinal = doc.data();
+      let dataObj = null;
+
+      if (sinal.timestamp) {
+          let ts = sinal.timestamp;
+          if (ts.toDate) ts = ts.toDate();
+          else if (typeof ts === "number" && ts < 1000000000000) ts = ts * 1000;
+          
+          const d = new Date(ts);
+          if (!isNaN(d.getTime())) dataObj = d;
+      }
+
+      if (!dataObj && (sinal.horario || sinal.data)) {
+          const str = sinal.horario || sinal.data;
+          const partes = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+          if (partes) {
+              dataObj = new Date(partes[3], partes[2] - 1, partes[1]);
+          }
+      }
+
+      if (sinal.resultado === "WIN") wins++;
+      if (sinal.resultado === "LOSS") losses++;
+
+      const dataSinal = dataObj
+          ? dataObj.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
+          : "Data Indefinida";
+
+      if (!statsPorData[dataSinal]) statsPorData[dataSinal] = { wins: 0, losses: 0 };
+      if (sinal.resultado === "WIN") statsPorData[dataSinal].wins++;
+      if (sinal.resultado === "LOSS") statsPorData[dataSinal].losses++;
+
+      const isCooldown = sinal.status === "COOLDOWN" || sinal.origem === "cooldown";
+
+      const isDestaque = app.sinalParaDestacar === doc.id;
+      const estaAberto = sinaisAbertos.includes(doc.id) || isDestaque;
+      const detalheId = `detalhe-${doc.id}`;
+      const borderStyle = isDestaque ? 'border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.1);' : '';
+
+      cacheSinaisHistorico[doc.id] = { sinal, dataObj };
+
+      const detalheHtml = construirDetalheSinal(sinal, doc.id, estaAberto);
+
+      const card = modoTabela
+        ? construirLinhaTabela(sinal, doc.id, dataObj, isCooldown, borderStyle, detalheHtml)
+        : `
+        <div class="list-item" id="sinal-${doc.id}" style="${borderStyle}" data-sinal-id="${doc.id}">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:bold;">
+            <span>
+              ${isCooldown ? "🚫" : (sinal.direcao === "BUY" || sinal.direcao === "CALL" ? "🟢" : "🔴")}
+              ${sinal.par || "-"}
+              |
+              ${(sinal.direcao || "-").replace("CALL", "COMPRA").replace("PUT", "VENDA")}
+            </span>
+            <span style="display:flex; align-items:center; gap:8px;">
+              <span>${isCooldown ? "COOLDOWN" : (sinal.resultado === "WIN" ? "✅ WIN" : sinal.resultado === "LOSS" ? "❌ LOSS" : "⏳ PENDENTE")}</span>
+              ${!isCooldown ? `
+                <input
+                  type="checkbox"
+                  class="chk-comparar"
+                  data-par="${sinal.par || ""}"
+                  ${sinaisComparacaoSelecionados.has(doc.id) ? "checked" : ""}
+                  onclick="event.stopPropagation();"
+                  onchange="alternarSelecaoComparacao(this, '${doc.id}')"
+                  title="Selecionar pra comparar"
+                >
+              ` : ""}
+            </span>
+          </div>
+          <div style="margin-top:4px; font-size:12px; color:#8c95b3;">
+            ${sinal.loteUtilizado ? `💳 Lote: <b>${sinal.loteUtilizado}</b> | ` : ""}${dataSinal} &nbsp;
+            ${dataObj ? dataObj.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 5) : "--:--"}
+            ${!isCooldown ? ` | Qualidade: ${sinal.qualidade ?? "-"}${sinal.score !== undefined ? ` (${sinal.score}%)` : ""}` : ""}
+          </div>
+          ${sinal.avisoRisco?.ativo ? `
+            <div style="margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(255,180,0,.12); border:1px solid rgba(255,180,0,.35); font-size:11px; color:#ffb400;">
+              ⚠️ ${sinal.avisoRisco.mensagem}
+            </div>
+          ` : ''}
+          ${sinal.avisoExpectativa?.ativo ? `
+            <div style="margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(255,82,82,.12); border:1px solid rgba(255,82,82,.35); font-size:11px; color:#ff8a8a;">
+              📉 ${sinal.avisoExpectativa.mensagem}
+            </div>
+          ` : ''}
+          ${sinal.movimentoPips !== undefined ? `
+            <div style="margin-top:6px; font-size:12px; color:${sinal.resultado === 'WIN' ? '#00ff88' : '#ff4444'}; font-weight:bold;">
+              📊 Movimentação: ${sinal.movimentoPips > 0 ? '+' : ''}${sinal.movimentoPips} pips
+            </div>
+          ` : ''}
+          ${detalheHtml}
         </div>
       `;
 
@@ -1040,6 +1193,36 @@ ${sinal.resultadoFinanceiro ??
 
         const mostrarDia = isHoje || temSinalDestacado;
 
+        // Pedido do usuário (11/09/2026, 2a rodada): virar tabela
+        // (mesma referência do checkbox "Operação Real" que ele mandou
+        // antes) mantendo o agrupamento por dia que já existia -
+        // só troca o conteúdo de dentro de cada dia, o "envelope"
+        // (cabeçalho clicável, placar do dia) continua igual nos dois
+        // modos.
+        const conteudoDia = modoTabela
+          ? `
+            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+              <table style="border-collapse:collapse; width:100%; min-width:600px; font-size:12px;">
+                <thead>
+                  <tr style="background:rgba(255,255,255,.06); text-align:left;">
+                    <th style="padding:6px 8px;">Horário</th>
+                    <th style="padding:6px 8px;">Par</th>
+                    <th style="padding:6px 8px;">Direção</th>
+                    <th style="padding:6px 8px;">Tempo</th>
+                    <th style="padding:6px 8px;">Resultado</th>
+                    <th style="padding:6px 8px; text-align:right;">Resultado Financeiro</th>
+                    <th style="padding:6px 8px; text-align:center;">Operação Real</th>
+                    <th style="padding:6px 8px; text-align:center;">Cmp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${gruposPorData[data]}
+                </tbody>
+              </table>
+            </div>
+          `
+          : gruposPorData[data];
+
         diasHtml += `
         <div style="margin-top:10px; border:1px solid rgba(255,255,255,.08); border-radius:10px; overflow:hidden;">
            <div
@@ -1060,8 +1243,8 @@ ${sinal.resultadoFinanceiro ??
      <span><span class="seta-grupo" style="margin-right:8px;">${mostrarDia ? "▼" : "▶"}</span>${label}</span>
      <span style="font-weight:normal;">✅ ${placarDia.wins} ❌ ${placarDia.losses} 🎯 ${taxaDia}%</span>
       </div>
-      <div id="data${idData}" style="display: ${mostrarDia ? 'block' : 'none'}; padding:10px;">
-        ${gruposPorData[data]}
+      <div id="data${idData}" style="display: ${mostrarDia ? 'block' : 'none'}; padding:${modoTabela ? '0' : '10px'};">
+        ${conteudoDia}
       </div>
         </div>
         `;
@@ -1097,6 +1280,7 @@ if (el.style.display === 'none') {
     lista.innerHTML = finalHtml || '<div class="list-item">Nenhum sinal encontrado.</div>';
 
     atualizarBarraComparacao();
+    atualizarBotaoModoTabela();
 
 // Adicionar listeners de clique APÓS renderizar - BLINDADO
     setTimeout(() => {

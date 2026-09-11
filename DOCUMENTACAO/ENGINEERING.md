@@ -8417,3 +8417,97 @@ Validado visualmente (Chromium/Playwright, harness isolado com
 dashboard, sem alterar a lógica de qual perfil é mostrado. `node
 --check` limpo.
 --------
+FEATURE-017 — Modo tabela no Histórico (girar o celular, ou botão no
+computador) - js/historico.js
+
+Origem: correção de rumo do usuário sobre a FEATURE-015/016. Ele não
+queria só a comparação de sinais selecionados virando tabela ao girar
+- queria o HISTÓRICO INTEIRO trocando de formato (cards -> tabela),
+igual a uma referência visual que já tinha mandado antes (a mesma do
+pedido de mover o checkbox "Operação Real" pro final da linha):
+colunas Horário/Par/Direção/Tempo/Resultado/Resultado Financeiro/
+Operação Real, agrupado por dia. Perguntei duas coisas antes de
+construir (mudança grande demais pra arriscar errado): (1) o que
+acontece com o detalhe rico (RSI/EMA/gráfico/Saldo Antes-Depois) em
+modo tabela - resposta: continua expansível por linha, mesmo formato
+de hoje; e ele comentou gostar do campo "Tempo" da referência, que não
+existia ainda como coluna. (2) manter o agrupamento por mês/dia que já
+existe, ou trocar por paginação numérica (a referência tinha "1 de
+3") - resposta: manter o agrupamento (mais barato de construir e não
+perde a organização por data já em uso).
+
+Implementação:
+
+1. `construirDetalheSinal(sinal, docId, estaAberto)` - o bloco de
+   detalhe (RSI/EMA/ENTRADA-SAÍDA/gráfico do preço/Configuração
+   Utilizada/LOTE/TP-SL/SALDO ANTES-DEPOIS/checkbox Operação Real) foi
+   EXTRAÍDO do template do card pra uma função própria, reutilizada
+   nos dois modos - card mode embute o div direto, modo tabela embute
+   o mesmo div dentro de um `<td colspan="8">` numa linha própria. O
+   listener de clique que expande/recolhe (`document.querySelectorAll
+   ('[data-sinal-id]')`, já existente) não precisou de nenhuma
+   mudança - ele já procura o elemento por `id="detalhe-${sinalId}"` e
+   alterna `display:none/block`, e isso funciona igual não importa se
+   esse id está dentro de um `<div>` de card ou de um `<td>` de
+   tabela. Colocar a `<tr>` do detalhe SEMPRE presente (só o `<div>`
+   interno alterna display) evitou o bug de tentar alternar
+   `display:block` numa `<tr>` (quebraria o layout da tabela -
+   `<tr>` precisa ficar em `display:table-row`).
+2. `construirLinhaTabela(sinal, docId, dataObj, isCooldown,
+   borderStyle, detalheHtml)` - linha de tabela equivalente ao card,
+   mesmas colunas da referência + uma coluna extra "Cmp" (o checkbox
+   de comparação da FEATURE-015, que precisa continuar acessível nos
+   dois modos). Aviso de risco/expectativa (que no card aparece como
+   banner sempre visível) vira um ícone (⚠️/📉) com tooltip (`title`)
+   na coluna Resultado - continua visível sem precisar expandir a
+   linha, só compacto.
+3. Coluna "Tempo" nova - `obterTempoOperacaoMs()`/`formatarDuracaoMs()`.
+   Sinais `ENCERRADA` usam `sinal.tempoOperacao` (já gravado por
+   `js/checker.js` no fechamento); sinais ainda `ABERTA` calculam
+   "tempo decorrido até agora" a partir de `inicioOperacao` (mesmo
+   campo que `checker.js` já usa pra buscar candles) - uma foto do
+   momento do carregamento, não fica contando ao vivo (mesmo padrão
+   do resto do app, sem `setInterval`).
+4. Troca automática por rotação real: `inicializarDeteccaoOrientacao()`
+   usa `window.matchMedia("(orientation: landscape)")` - o mecanismo
+   nativo do CSS pra isso (mais confiável que comparar
+   `window.innerWidth` a cada `resize`, que foi o que pareceu falhar
+   no celular real do usuário antes). Registrado uma única vez (guard
+   `deteccaoOrientacaoInicializada`) porque `historicoView()` recarrega
+   toda vez que o usuário entra na aba. O listener de `change` da
+   media query atualiza `modoTabela` e chama `carregarHistorico()` de
+   novo - sem precisar recarregar a página.
+5. Botão manual "📊 Ver como tabela"/"📋 Ver como lista"
+   (`alternarModoTabela()`) sempre visível no cabeçalho - equivalente
+   pro computador (que não tem rotação física) e reforço no celular
+   caso a detecção automática falhe nalgum navegador específico. O
+   agrupamento por mês/dia (cabeçalho clicável, placar por dia)
+   continua idêntico nos dois modos - só o conteúdo de dentro de cada
+   dia troca entre lista de cards e `<table>` (com
+   `overflow-x:auto`, mesmo padrão da FEATURE-015).
+
+Validado: `node --check` limpo. Novo `validate-modo-tabela-
+historico.js` (29 cenários): formatação de tempo (encerrado usa o
+campo gravado, aberto calcula ao vivo, não quebra sem nenhum dos
+dois); colunas da linha de tabela batem com a referência; aviso de
+risco vira ícone com tooltip sem esconder atrás de um toque;
+COOLDOWN não ganha checkbox de comparação; detecção de orientação
+liga/desliga modoTabela automaticamente no evento de mudança e
+recarrega a lista; guard contra registrar o listener mais de uma vez;
+botão manual alterna independente da orientação atual. Suítes de
+regressão revalidadas: `validate-comparacao-sinais.js` (27 cenários,
+sem mudança de comportamento), `validate-caminho-precos.js` (14
+cenários), `validate-bug022-feedback-checkbox.js` (offset de linha
+atualizado - função `alternarOperacaoReal` moveu por causa das
+~500 linhas novas antes dela no arquivo).
+
+Validado visualmente, ponta a ponta, via Chromium/Playwright: (1)
+retrato nasce em modo card com o botão manual disponível; (2)
+redimensionar de verdade pra paisagem (simulando a rotação física, SEM
+recarregar a página) troca pra tabela automaticamente via o listener
+de `matchMedia`, com as colunas exatas pedidas; (3) tocar numa linha
+expande o mesmo detalhe rico (RSI/EMA/Configuração/SALDO) dentro da
+própria tabela; (4) redimensionar de volta pro retrato reverte pra
+card automaticamente, preservando o estado de expandido/recolhido de
+cada sinal entre os dois modos.
+--------
