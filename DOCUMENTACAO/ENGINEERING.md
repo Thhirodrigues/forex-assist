@@ -8511,3 +8511,62 @@ própria tabela; (4) redimensionar de volta pro retrato reverte pra
 card automaticamente, preservando o estado de expandido/recolhido de
 cada sinal entre os dois modos.
 --------
+FEATURE-018 — Modo compacto do Histórico em paisagem de tela curta
+(js/historico.js)
+
+Origem: usuário mandou um print real do celular deitado (pedido
+explícito, "não faça nada ainda vou mandar um print") mostrando o
+problema de verdade - cabeçalho fixo (título + estatísticas do mês +
+"Minimizar Tudo"), a logo do app ("Forex Assist"/subtítulo) e a barra
+de navegação inferior (fixa) juntos comiam quase toda a altura de
+~430px do celular deitado, sobrando 1-2 linhas de tabela visíveis (o
+próprio cabeçalho da tabela já estava sendo empurrado pra fora). Ideia
+do usuário: mesmo padrão de um projeto de cardápio dele - quando
+expande, mostra só o conteúdo relevante, minimizando o "chrome" ao
+redor. Confirmado com o usuário via pergunta objetiva: o cabeçalho de
+totais E a barra de navegação inferior somem COMPLETAMENTE (não fica
+um resumo colapsável) - com um botão fixo pra voltar, não um toque em
+qualquer lugar (toque na linha já é o gesto de expandir o detalhe
+RSI/EMA/gráfico - usar o mesmo toque pros dois ia confundir).
+
+Implementação: `aplicarModoCompactoSeNecessario()`, chamada no fim de
+`carregarHistorico()`. Gatilho não é "celular vs computador" - é
+`window.innerHeight < 500` (limite de altura de tela) combinado com
+`modoTabela === true`. É a causa real do problema (a mesma coisa
+aconteceria numa janela de desktop redimensionada baixa), e explica
+por que o desktop do usuário (bem mais alto) nunca aciona isso mesmo
+em modo tabela - ele mesmo confirmou "no computador ficou
+maravilhoso, sobrou espaço", então não fazia sentido esconder nada
+lá. Quando aciona: esconde `#historicoHeader` (id, específico do
+Histórico), `.header` (classe, logo do app inteiro - renderizada por
+js/app.js, fora deste arquivo) e `.bottom-nav` (classe, navegação
+principal do app) via `style.display = "none"`; cria um botão `✕`
+fixo (`position:fixed; top/right`) que restaura os três de uma vez.
+Reavaliado a cada `carregarHistorico()` (então girar de volta pro
+retrato, ou a barra de navegação nunca ter sido escondida por causa
+de retomar em altura normal, já corrige sozinho - sem depender do
+usuário lembrar de clicar no ✕).
+
+Validado: `node --check` limpo. Novo `validate-modo-compacto-
+historico.js` (14 cenários): aciona só com altura curta E modo
+tabela juntos (não aciona em modo card mesmo com tela curta, não
+aciona com tela alta mesmo em modo tabela); esconde os 3 elementos
+(cabeçalho, logo, navegação) e cria o botão; botão restaura os 3 e se
+autorremove; reavaliação automática (sem precisar clicar no ✕)
+remove o botão órfão e restaura tudo quando a altura volta ao
+normal. Suítes de regressão revalidadas: `validate-comparacao-
+sinais.js` (27), `validate-caminho-precos.js` (14), `validate-modo-
+tabela-historico.js` (29), `validate-bug022-feedback-checkbox.js`
+(offset de linha atualizado de novo - mesma fragilidade de sempre
+desse teste específico, não regressão).
+
+Validado visualmente via Chromium/Playwright, com harness incluindo a
+logo e a navegação reais do app (não só o Histórico isolado): (1)
+celular deitado curto (900x420) já nasce em modo compacto - logo,
+cabeçalho de totais e navegação inferior somem, só sobra o
+agrupamento por dia + a tabela + o botão ✕; (2) clicar no ✕ restaura
+os três; (3) janela alta (1000x700, cenário desktop) NUNCA aciona o
+modo compacto, confirmando que o critério de altura (não de
+dispositivo) preserva o comportamento que o usuário já aprovou no
+computador.
+--------

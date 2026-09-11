@@ -983,6 +983,67 @@ ${sinal.resultadoFinanceiro ??
         `;
 }
 
+// Pedido do usuário (11/09/2026, 3a rodada, depois de ver um print
+// real do celular deitado): em paisagem, o cabeçalho fixo (título +
+// estatísticas do mês + "Minimizar Tudo") e a barra de navegação
+// inferior do app (fixa também) sobravam quase toda a altura da tela
+// curta do celular deitado, deixando só 1-2 linhas de tabela visíveis.
+// Limite de altura (não é "celular vs computador" - é literalmente
+// "a tela é baixa o bastante pra doer") porque é a causa real do
+// problema, funciona igual numa janela de desktop redimensionada
+// baixa. Confirmado com o usuário: os dois (cabeçalho de totais E
+// barra de navegação) somem completamente em modo compacto, com um
+// botão "✕" fixo pra voltar - não um toque em qualquer lugar, porque
+// tocar na linha já é o gesto de expandir o detalhe (RSI/EMA/gráfico),
+// usar o mesmo toque pros dois ia confundir.
+const ALTURA_LIMITE_MODO_COMPACTO = 500;
+
+function aplicarModoCompactoSeNecessario() {
+  const header = document.getElementById("historicoHeader");
+  const nav = document.querySelector(".bottom-nav");
+  // Logo "Forex Assist"/subtítulo (js/app.js, fora do controle deste
+  // arquivo) - não é sticky, então normalmente rolaria pra fora
+  // sozinha, mas no primeiro carregamento (sem rolagem ainda) ela
+  // come uma fatia grande da altura curta da tela deitada.
+  const logoApp = document.querySelector(".header");
+  let botaoSair = document.getElementById("btnSairModoCompacto");
+
+  const deveSerCompacto =
+    modoTabela &&
+    typeof window.innerHeight === "number" &&
+    window.innerHeight < ALTURA_LIMITE_MODO_COMPACTO;
+
+  if (!deveSerCompacto) {
+    if (header) header.style.display = "";
+    if (nav) nav.style.display = "";
+    if (logoApp) logoApp.style.display = "";
+    if (botaoSair) botaoSair.remove();
+    return;
+  }
+
+  if (header) header.style.display = "none";
+  if (nav) nav.style.display = "none";
+  if (logoApp) logoApp.style.display = "none";
+
+  if (!botaoSair) {
+    botaoSair = document.createElement("button");
+    botaoSair.id = "btnSairModoCompacto";
+    botaoSair.innerHTML = "✕";
+    botaoSair.title = "Mostrar cabeçalho e navegação de novo";
+    botaoSair.style.cssText =
+      "position:fixed; top:8px; right:8px; z-index:3000; width:32px; height:32px; " +
+      "border:none; border-radius:50%; background:rgba(255,255,255,.15); color:#fff; " +
+      "font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;";
+    botaoSair.onclick = () => {
+      if (header) header.style.display = "";
+      if (nav) nav.style.display = "";
+      if (logoApp) logoApp.style.display = "";
+      botaoSair.remove();
+    };
+    document.body.appendChild(botaoSair);
+  }
+}
+
 async function carregarHistorico() {
   const lista = document.getElementById("historicoLista");
   const stats = document.getElementById("historicoStats");
@@ -1281,6 +1342,7 @@ if (el.style.display === 'none') {
 
     atualizarBarraComparacao();
     atualizarBotaoModoTabela();
+    aplicarModoCompactoSeNecessario();
 
 // Adicionar listeners de clique APÓS renderizar - BLINDADO
     setTimeout(() => {
