@@ -9033,3 +9033,50 @@ Dashboard/Histórico de que o gate bloqueou um ciclo - hoje só aparece
 no log do GitHub Actions. Considerar expor isso na tela se o gate vier
 a disparar de verdade em produção.
 --------
+CORREÇÃO DO BUG-028 — cadence real do Scanner é 5min, não 15min
+(js/config.js)
+
+Origem: usuário reportou um sinal de EUR/JPY às 08:05 de hoje
+(15/09/2026) e perguntou como isso era possível com o scanner
+"desligado". Investigando o log real do GitHub Actions (não a
+suposição), duas coisas ficaram claras:
+
+1. **O scanner não estava desligado** - a execução exata das 08:05
+   (11:05 UTC) rodou análise completa de 8 pares em ~31s (não os ~2-3s
+   de um ciclo que aborta em "SCANNER DESATIVADO"), aprovou EUR/JPY
+   SELL com score 43. Todas as execuções desde 06:00 UTC daquele dia
+   mostram o mesmo padrão - scanner ativo o tempo todo, sem lacuna.
+
+2. **BUG-028 (commit anterior, um dia antes) estava errado.** Ele
+   mudou `MINUTOS_POR_CICLO_SCANNER` de 5 pra 15 lendo só o
+   `cron: '*/15 * * * *'` declarado em `forex-scanner-real.yml`, sem
+   checar o histórico real de execuções do Actions. Checando agora:
+   **centenas de execuções reais, via `workflow_dispatch` (o pinger
+   externo cron-job.org), disparam a cada 5 minutos, de forma contínua
+   e sem lacuna** - o `schedule:` nativo do YAML existe mas não é o
+   que governa o cadence de produção. BUG-028 corrigiu na direção
+   errada: a tela de Config estava SUBESTIMANDO o consumo real (não
+   superestimando), fazendo parecer que sobrava ~1.500 consultas/dia
+   de folga quando na verdade **os 10 pares padrão já excedem o
+   orçamento de 3 chaves em ~288 consultas/dia no cadence real**.
+
+Correção: `MINUTOS_POR_CICLO_SCANNER` revertido pra `5` (valor
+original). Comentário do código atualizado documentando as duas
+mudanças de direção nesta mesma linha - evidência de que "ler a
+configuração declarada" não é o mesmo que "confirmar contra o log de
+execução real", a mesma lição já registrada várias vezes neste
+projeto, desta vez cometida pelo próprio Code.
+
+Validado: `node --check` limpo. `validate-orcamento-api.js` revertido
+pros valores originais (10 pares padrão voltam a EXCEDER o orçamento
+de 2.400/dia, margem -288). Suíte completa revalidada, sem regressão
+nova.
+
+**Implicação real pra decidir**: com o cadence de 5min confirmado, os
+10 pares padrão já consomem mais do que as 3 chaves atuais suportam.
+Isso muda a conversa sobre expandir pra mais pares (13-15/09/2026) -
+a folga que eu tinha reportado não existe; o caminho mais imediato pra
+não estourar cota é reduzir pares, aumentar chaves, ou aceitar operar
+perto/acima do limite (com risco de "Quota exceeded" silencioso em
+alguns ciclos, já documentado antes em BUG-015).
+--------

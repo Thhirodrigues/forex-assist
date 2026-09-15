@@ -792,13 +792,21 @@ function renderizarPresetHorario(config) {
 //
 // O ciclo do Scanner é definido pelo pinger externo (cron-job.org),
 // fora do alcance deste app - não configurável na tela, então é uma
-// CONSTANTE ASSUMIDA aqui. Se o intervalo do cron mudar, esta conta
-// precisa ser atualizada manualmente - foi exatamente o que ficou
-// desatualizado aqui: o cron passou de 5 para 15 minutos quando a
-// cota do Firestore estourou (ver ENGINEERING.md, correção do
-// polling do Scanner), mas esta constante continuou em 5, fazendo a
-// tela superestimar o consumo real de API em 3x (achado em
-// 13-15/09/2026, investigando se dava pra monitorar mais pares).
+// CONSTANTE ASSUMIDA aqui. Se o intervalo do pinger mudar, esta conta
+// precisa ser atualizada manualmente.
+//
+// CORREÇÃO DE UMA CORREÇÃO (15/09/2026): esta constante já foi trocada
+// de 5 pra 15 um dia antes (BUG-028), lendo só o `cron: '*/15 * * * *'`
+// declarado em forex-scanner-real.yml, sem checar o histórico real de
+// execuções - exatamente o erro que este projeto documenta não fazer.
+// Conferido depois, direto no GitHub Actions: quem dispara de verdade é
+// o pinger externo via `workflow_dispatch`, rodando A CADA 5 MINUTOS,
+// de forma contínua e sem lacunas (centenas de execuções reais
+// checadas) - o `schedule:` nativo do YAML está ali mas não é o que
+// governa o cadence real. Revertido pra 5, que é o valor original E o
+// valor real - as duas "correções" anteriores desta linha estavam
+// erradas em direções opostas por não confirmar contra o log de
+// execução real antes de mudar.
 //
 // MOEDAS_JANELA_ASIA/PARES_JANELA_ASIA_EXCLUIDOS/
 // parElegivelJanelaAsia() são uma 3ª cópia da mesma regra de
@@ -807,7 +815,7 @@ function renderizarPresetHorario(config) {
 // ordem de carregamento de outro <script>.
 // ======================================================
 
-const MINUTOS_POR_CICLO_SCANNER = 15;
+const MINUTOS_POR_CICLO_SCANNER = 5;
 
 const CHAMADAS_POR_PAR_POR_CICLO = 2;
 
