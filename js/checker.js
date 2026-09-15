@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
 const { getCandles } = require("../scripts/marketData");
 const { idCacheDoPar } = require("../scripts/statisticsEngine");
-const { calcularValorPip } = require("../scripts/moneyManager");
+const { calcularValorPip, parEhCruzado, simboloCotacaoCruzada } = require("../scripts/moneyManager");
 const { enviarPushEncerramento } = require("../scripts/pushNotifier");
 
 console.log("KEY 1:", !!process.env.API_KEY_1);
@@ -58,9 +58,9 @@ function calcularPips(par, entrada, fechamento) {
 // Reusa calcularValorPip() de moneyManager.js (mesma fonte da
 // verdade, nao uma 3a copia da formula) - par e precoAtual precisam
 // ser passados por quem chama.
-function calcularLucroUSD(pips, lote, par, precoAtual) {
+function calcularLucroUSD(pips, lote, par, precoAtual, cotacaoCruzada) {
 
-    const valorPip = calcularValorPip(lote, par, precoAtual);
+    const valorPip = calcularValorPip(lote, par, precoAtual, cotacaoCruzada);
 
     return Number(
         (pips * valorPip).toFixed(2)
@@ -197,7 +197,8 @@ function calcularResultadoOperacao({
 
     sinal,
     candles,
-    configuracao
+    configuracao,
+    cotacaoCruzada
 
 }) {
 
@@ -251,7 +252,8 @@ function calcularResultadoOperacao({
             calcularMovimentoPips(sinal, candle.close),
             lote,
             sinal.par,
-            candle.close
+            candle.close,
+            cotacaoCruzada
         );
 
         if (lucroCandle >= limites.TP_USD) {
@@ -280,7 +282,8 @@ function calcularResultadoOperacao({
         movimentoPips,
         lote,
         sinal.par,
-        precoAtual
+        precoAtual,
+        cotacaoCruzada
     );
 
     // BUG-020 (09/09/2026): saldoAntes/saldoDepois só eram calculados
@@ -421,6 +424,32 @@ if (!candles.length) {
 
 }
 
+// Par cruzado (nem base nem cotação é USD - EUR/JPY, GBP/JPY,
+// EUR/GBP): calcularValorPip() precisa da cotação da moeda de
+// cotação contra o dólar. Busca uma vez por sinal pendente aqui
+// (não dentro do loop de velas em calcularResultadoOperacao) pra
+// não multiplicar chamada de API à toa.
+let cotacaoCruzada;
+
+if (parEhCruzado(sinal.par)) {
+
+    const { simbolo, inverter } = simboloCotacaoCruzada(sinal.par) || {};
+
+    if (simbolo) {
+
+        const candlesCruzados = await getCandles(simbolo, "1min", 1);
+        const cotacao = Number(candlesCruzados[candlesCruzados.length - 1]?.close);
+
+        if (Number.isFinite(cotacao) && cotacao > 0) {
+
+            cotacaoCruzada = inverter ? 1 / cotacao : cotacao;
+
+        }
+
+    }
+
+}
+
 const {
 
     precoAtual,
@@ -443,7 +472,8 @@ const {
 
     sinal,
     candles,
-    configuracao: configuracaoSnap.data()
+    configuracao: configuracaoSnap.data(),
+    cotacaoCruzada
 
 });
 

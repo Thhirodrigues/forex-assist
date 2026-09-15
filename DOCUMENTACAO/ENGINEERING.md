@@ -8818,3 +8818,89 @@ dentro da view), não foi criado teste automatizado dedicado - conferido
 visualmente que a string renderiza corretamente dentro do template
 literal existente.
 --------
+BUG-027 — EUR/JPY fechando com SL de -$104/-$128 em vez de ~-$5
+(scripts/moneyManager.js, scripts/pairAnalyzer.js, js/checker.js)
+
+Origem: usuário reportou, com print real do app, duas operações de
+EUR/JPY fechando com resultado financeiro muito maior que o TP/SL
+configurado ($5): -$104 (21:46, 13/09) e -$128 (21:11, 13/09).
+
+Achado, confirmado direto no Firestore de produção (chave de acesso
+fornecida pelo usuário especificamente pra esta investigação):
+`calcularValorPip()` (BUG-024, 10/09) só sabia tratar dois casos -
+"USD é a moeda BASE" (USD/JPY, USD/CAD...) e "USD é a moeda de
+COTAÇÃO" (EUR/USD, AUD/USD...). Qualquer par onde USD não é NENHUMA
+das duas pernas (EUR/JPY, GBP/JPY, EUR/GBP - os 3 "pares cruzados"
+monitorados) caía no segundo ramo por eliminação, tratando um pip
+nascido em JPY/GBP como se já fosse USD, sem nenhuma conversão. Pra
+EUR/JPY isso inflava o valor do pip em ~150x (a própria cotação
+USD/JPY). Como `calcularSL()`/`calcularTP()` convertem o TP/SL em
+dólar pra pips dividindo pelo valor do pip, um SL de $5 virava um SL
+de **0,125 pips** (confirmado nos dois documentos reais: `financeiro.
+slPips: 0.125`, contra 10-19 pips nos pares normais) - pequeno o
+bastante pra qualquer ruído normal de vela de 5min fechar a operação,
+com o resultado em dólar final dependendo só de quanto o preço já
+tinha se afastado até o checker (rodando a cada 5min) avaliar aquele
+candle - não do SL/TP real de $5 tendo qualquer chance de se
+desenvolver.
+
+Levantamento no histórico completo (484 documentos reais no
+Firestore): EUR/JPY (75 sinais, 45 fechados, |resultado| médio
+$24,02, máximo $382), GBP/JPY (122 sinais, 85 fechados, médio
+$10,13) e EUR/GBP (50 sinais, 5 fechados, médio $9,05) - todos bem
+acima dos pares normais de referência ($2,63-$4,98 médio,
+exatamente o design de $3-5). Ativo desde 02/07/2026 (mais de 2
+meses). Como o mecanismo fecha a operação por ruído de ~1 vela em vez
+do SL/TP real, WIN e LOSS desses 3 pares nesse período são
+igualmente não confiáveis como medida de qualidade do sinal -
+contamina `statisticsEngine.js`/PENTE-FINO-004 especificamente pra
+esses 3 pares. **Os 247 documentos desses 3 pares foram removidos do
+`historico` de produção** (autorizado pelo usuário), sem nenhuma
+operação aberta no momento da remoção (conferido antes).
+
+Correção: `calcularValorPip()` ganhou um terceiro caso explícito -
+par cruzado (nem base nem cotação é USD) precisa de um parâmetro novo,
+`cotacaoCruzada` (a cotação da moeda de cotação contra o dólar,
+buscada por quem chama). **Sem esse parâmetro, a função agora lança
+erro em vez de silenciar** (mesma filosofia do resto do projeto:
+nenhum sinal é melhor que um sinal com número inventado). Novos
+helpers em `moneyManager.js`: `parEhCruzado(par)` e
+`simboloCotacaoCruzada(par)` (decide qual símbolo buscar - `USD/JPY`
+com inversão pra moedas onde USD é base tradicionalmente [JPY, CAD,
+CHF], `<moeda>/USD` direto pra moedas cotadas contra USD [EUR, GBP,
+AUD, NZD] - regra por moeda, não lista fixa de pares, seguindo o
+mesmo padrão já usado em `parElegivelJanelaAsia()`). `analisarFinanceiro()`
+(moneyManager.js) e `calcularLucroUSD()` (checker.js) passaram a
+aceitar/repassar `cotacaoCruzada`. Dois pontos novos de busca dessa
+cotação, cada um reusando a infraestrutura já existente sem custo de
+configuração: `pairAnalyzer.js` (abertura do sinal, reusa o
+`getCandles` já injetado pelo scanner) e `checker.js` (fechamento,
+reusa o `getCandles` já importado de `marketData.js`, buscado uma vez
+por sinal pendente antes do loop de velas, não a cada vela). Falha
+nessa busca (API fora do ar, símbolo desconhecido) propaga o erro de
+`calcularValorPip()` pro try/catch já existente em `analisarPar()`/no
+loop do checker - o sinal simplesmente não é gerado/fechado nesse
+ciclo, tenta de novo no próximo, nunca salva um número errado.
+
+Validado: `node --check` limpo nos 3 arquivos. `validate-bug024-
+valorpip.js` ampliado (cenário de "sem par informado" mudou de
+"fallback silencioso" pra "lança erro" - mudança de comportamento
+intencional - mais 20+ cenários novos: `parEhCruzado`/
+`simboloCotacaoCruzada` pros 3 pares cruzados e pros normais, valor do
+pip com/sem `cotacaoCruzada`, `analisarFinanceiro` de ponta a ponta).
+Novo arquivo `validate-bugcruzado-eurjpy.js`: reproduz os DOIS sinais
+reais do Firestore (mesmo par, mesma entrada, mesmo preço de
+fechamento) através do `js/checker.js` REAL (extraído dinamicamente
+do arquivo atual, não uma cópia estática) - com a correção, os
+mesmos dois casos que fecharam em -$104/-$128 em produção fecham em
+**-$0,68 e -$0,83** no teste, batendo com a estimativa manual feita
+durante a investigação (~-$0,75/-$0,85). `validate-bug021-
+moneymanager.js`/`validate-perfis.js`/`validate-push-integracao-
+pairanalyzer.js`/`validate-pentefino001-perfil-salvo.js` precisaram
+de ajuste (passar `par: "EUR/USD"` explícito, ou mockar `parEhCruzado`/
+`simboloCotacaoCruzada` pra quem intercepta moneyManager.js) - não é
+regressão de código, é consequência esperada de deixar de aceitar
+chamada sem par informado. Suíte completa revalidada (só a falha
+pré-existente e não relacionada de `validate-pentefino-conservador-
+quebrado.js` continua de pé, já documentada antes).
+--------

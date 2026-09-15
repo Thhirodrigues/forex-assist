@@ -35,7 +35,9 @@
 // ===================================================
 
 const {
-    analisarFinanceiro
+    analisarFinanceiro,
+    parEhCruzado,
+    simboloCotacaoCruzada
 } = require("./moneyManager");
 
 const {
@@ -197,6 +199,33 @@ const banca = configuracao?.tipoConta === "SIMULADA"
 // MONEY MANAGER
 // ===================================================
 
+// Par cruzado (nem base nem cotação é USD - EUR/JPY, GBP/JPY,
+// EUR/GBP): calcularValorPip() precisa da cotação da moeda de
+// cotação contra o dólar pra converter o pip corretamente (ver
+// comentário grande em moneyManager.js). Busca antes de chamar
+// analisarFinanceiro - reusa o mesmo getCandles injetado pelo
+// scanner, sem custo extra de configuração.
+let cotacaoCruzada;
+
+if (parEhCruzado(par)) {
+
+    const { simbolo, inverter } = simboloCotacaoCruzada(par) || {};
+
+    if (simbolo) {
+
+        const candlesCruzados = await getCandles(simbolo, "1min", 1);
+        const cotacao = Number(candlesCruzados[candlesCruzados.length - 1]?.close);
+
+        if (Number.isFinite(cotacao) && cotacao > 0) {
+
+            cotacaoCruzada = inverter ? 1 / cotacao : cotacao;
+
+        }
+
+    }
+
+}
+
 const financeiro =
     analisarFinanceiro({
 
@@ -221,7 +250,9 @@ const financeiro =
 
         par,
 
-        precoAtual: closes[closes.length - 1]
+        precoAtual: closes[closes.length - 1],
+
+        cotacaoCruzada
 
     });
 

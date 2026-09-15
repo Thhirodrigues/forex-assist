@@ -201,6 +201,75 @@ const {
 } = require("./positionSizing");
 
 // ===================================================
+// PARES CRUZADOS (nem base nem cotação é USD)
+// ===================================================
+//
+// BUG (13-15/09/2026, achado ao investigar EUR/JPY fechando com SL de
+// -$104/-$128 em vez de ~-$5): calcularValorPip() só sabia tratar
+// "USD é a base" (USD/JPY, USD/CAD...) e "USD é a cotação" (EUR/USD,
+// AUD/USD...) - qualquer par onde USD não é NENHUMA das duas pernas
+// (EUR/JPY, GBP/JPY, EUR/GBP) caía no ramo "USD é cotação" por
+// eliminação, tratando um pip nascido em JPY/GBP como se já fosse
+// USD, sem nenhuma conversão. Pra EUR/JPY isso inflava o valor do
+// pip em ~150x (a própria cotação USD/JPY) - o SL configurado em
+// dólar virava um SL de uma fração de pip (calcularSL = slUSD /
+// valorPip), pequeno o bastante pra qualquer ruído normal de vela
+// fechar a operação, com resultado em dólar praticamente aleatório.
+// Confirmado com dados reais do Firestore (ver ENGINEERING.md).
+//
+// Pares cruzados PRECISAM da cotação da moeda de cotação contra o
+// dólar pra converter o pip corretamente - isso não dá pra derivar
+// só da cotação do próprio par (EUR/JPY sozinho não informa
+// USD/JPY). Quem chama calcularValorPip/analisarFinanceiro pra um
+// par cruzado precisa buscar essa cotação à parte e passar via
+// `cotacaoCruzada` - ver simboloCotacaoCruzada() abaixo pra saber
+// qual símbolo buscar e como usar o valor.
+//
+// ===================================================
+
+// Moedas cotadas normalmente CONTRA o dólar (EUR/USD, GBP/USD... -
+// a cotação já expressa "quanto vale 1 unidade dela em USD").
+const MOEDAS_COTADAS_CONTRA_USD = new Set(["EUR", "GBP", "AUD", "NZD"]);
+
+// Moedas em que o dólar normalmente é a BASE (USD/JPY, USD/CAD,
+// USD/CHF - a cotação expressa "quantas unidades dela por 1 USD",
+// o inverso do que precisamos).
+const MOEDAS_BASE_DO_USD = new Set(["JPY", "CAD", "CHF"]);
+
+function parEhCruzado(par) {
+
+    const [moedaBase, moedaCotacao] = String(par).split("/");
+
+    return moedaBase !== "USD" && moedaCotacao !== "USD";
+
+}
+
+// Diz qual símbolo buscar pra converter a moeda de COTAÇÃO de um par
+// cruzado pra USD, e se o valor buscado precisa ser invertido
+// (1/cotação) antes de virar `cotacaoCruzada`. Retorna null se a
+// moeda de cotação não é uma das moedas majors conhecidas (par fora
+// do que este projeto sabe converter).
+function simboloCotacaoCruzada(par) {
+
+    const [, moedaCotacao] = String(par).split("/");
+
+    if (MOEDAS_BASE_DO_USD.has(moedaCotacao)) {
+
+        return { simbolo: `USD/${moedaCotacao}`, inverter: true };
+
+    }
+
+    if (MOEDAS_COTADAS_CONTRA_USD.has(moedaCotacao)) {
+
+        return { simbolo: `${moedaCotacao}/USD`, inverter: false };
+
+    }
+
+    return null;
+
+}
+
+// ===================================================
 // VALOR DO PIP
 // ===================================================
 //
@@ -226,7 +295,9 @@ function calcularValorPip(
 
     par,
 
-    precoAtual
+    precoAtual,
+
+    cotacaoCruzada
 
 ) {
 
@@ -236,7 +307,7 @@ function calcularValorPip(
 
     const tamanhoLotePadrao = 100000;
 
-    const [moedaBase] = String(par).split("/");
+    const [moedaBase, moedaCotacao] = String(par).split("/");
 
     // USD como moeda base: pip nasce na moeda de cotação, converte
     // pra USD dividindo pela cotação atual (ex.: USD/JPY, USD/CAD).
@@ -250,7 +321,30 @@ function calcularValorPip(
 
     // USD como moeda de cotação: pip já nasce em USD (ex.: EUR/USD,
     // AUD/USD) - comportamento igual ao da fórmula antiga.
-    return tamanhoPip * tamanhoLotePadrao * lote;
+    if (moedaCotacao === "USD") {
+
+        return tamanhoPip * tamanhoLotePadrao * lote;
+
+    }
+
+    // Par cruzado (nem base nem cotação é USD, ex.: EUR/JPY, GBP/JPY,
+    // EUR/GBP): o pip nasce na moeda de COTAÇÃO, precisa da cotação
+    // dela contra USD pra converter - ver comentário grande acima.
+    // Sem essa cotação, é melhor falhar alto (nenhum sinal desse
+    // ciclo pra esse par) do que repetir o bug e salvar um número
+    // inventado - quem chama já trata esse erro sem derrubar o
+    // processo (analisarPar/checker.js engolem por operação).
+    if (!cotacaoCruzada) {
+
+        throw new Error(
+            `calcularValorPip: par cruzado "${par}" sem cotacaoCruzada - ` +
+            `nem base nem cotação é USD, não dá pra converter o pip sem ` +
+            `a cotação da moeda de cotação contra o dólar.`
+        );
+
+    }
+
+    return tamanhoPip * tamanhoLotePadrao * lote * cotacaoCruzada;
 
 }
 
@@ -763,7 +857,9 @@ perfil = "CONSERVADOR",
 
 par,
 
-precoAtual
+precoAtual,
+
+cotacaoCruzada
 
 }) {
 
@@ -771,7 +867,8 @@ precoAtual
         calcularValorPip(
             lote,
             par,
-            precoAtual
+            precoAtual,
+            cotacaoCruzada
         );
 
     const tpPips =
@@ -943,6 +1040,10 @@ module.exports = {
     DEFAULT_CONFIG,
 
     obterPerfilFinanceiro,
+
+    parEhCruzado,
+
+    simboloCotacaoCruzada,
 
     calcularValorPip,
 
