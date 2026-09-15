@@ -38,7 +38,8 @@ const {
 
 const {
     salvarOperacao,
-    existeCooldown
+    existeCooldown,
+    limiteDiarioAtingido
 } = require("./riskManager");
 
 const {
@@ -571,6 +572,31 @@ async function validarExecucao(context){
 
         console.log("\n========================================");
         console.log("NENHUM PAR CONFIGURADO");
+        console.log("========================================");
+
+        return false;
+
+    }
+
+    // Gate de risco diário + disjuntor de losses consecutivos
+    // (prioridade nº 1 das duas auditorias estratégicas, 13-15/09/2026)
+    // - checado UMA vez por ciclo, antes do loop de pares, não por
+    // par: é um limite de conta inteira, não de um par específico.
+    const perfil =
+        (context.configuracao?.perfil || "balanceado").toUpperCase();
+
+    const banca =
+        context.configuracao?.tipoConta === "SIMULADA"
+            ? (context.configuracao.saldoSimulado ?? context.configuracao.saldoInicial)
+            : (context.configuracao?.saldoReal ?? context.configuracao?.saldoInicial);
+
+    const limite = await limiteDiarioAtingido(db, perfil, banca);
+
+    if (limite.bloqueado) {
+
+        console.log("\n========================================");
+        console.log(`LIMITE DE RISCO DIÁRIO ATINGIDO (${limite.motivo})`);
+        console.log(limite.mensagem);
         console.log("========================================");
 
         return false;

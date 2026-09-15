@@ -1,3 +1,5 @@
+const { obterPerfilFinanceiro } = require("./moneyManager");
+
 // Usado apenas quando quem chama não informa um valor vindo de
 // configuracoes/geral (ver configuracao.cooldown em scripts/scanner.js).
 const COOLDOWN_MINUTOS_PADRAO = 30;
@@ -82,10 +84,147 @@ async function salvarOperacao(db, dados) {
 
 }
 
+// ===================================================
+// LIMITE DE RISCO DIÁRIO / DISJUNTOR DE LOSSES CONSECUTIVOS
+// ===================================================
+//
+// PERFIL_FINANCEIRO (moneyManager.js) já define, por perfil,
+// `riscoDiario` (% da banca) e `perdasConsecutivas` desde a sprint
+// original - mas nenhum gate os lia. Busquei em todo o repositório:
+// não existia nada que impedisse o sistema de continuar abrindo
+// operações depois de uma sequência de losses, nem depois que a
+// perda acumulada do dia já tivesse passado do teto do perfil. Um
+// dia ruim (a manhã real de 6x0 do modo Agressivo, por exemplo) não
+// tinha nenhum freio estrutural - só parava quando a janela
+// operacional fechava ou o saldo acabava. Prioridade nº 1 apontada
+// em ambos os relatórios de auditoria estratégica (13-15/09/2026).
+//
+// ===================================================
+
+// Formata um timestamp (epoch ms, UTC real) como "YYYY-MM-DD" no
+// fuso de Brasília - usado só pra COMPARAR datas por igualdade de
+// string, nunca pra fazer aritmética de epoch entre fusos (mesmo
+// cuidado de obterAgoraBrasil() em scripts/scanner.js - misturar
+// epoch com componentes de wall-clock de outro fuso já causou bug
+// neste projeto antes).
+function diaBrasiliaDe(timestampMs) {
+
+    return new Date(timestampMs).toLocaleDateString(
+        "en-CA",
+        { timeZone: "America/Sao_Paulo" }
+    );
+
+}
+
+// Quantos fechamentos recentes olhar pra decidir perda diária +
+// streak. Uma ÚNICA consulta cobre os dois: "1 igualdade (status) +
+// 1 orderBy (fimOperacao)" é o mesmo formato de existeCooldown() -
+// única combinação já confirmada funcionando neste projeto sem
+// índice composto manual no Firestore. A primeira versão desta
+// função usava `where("fimOperacao", ">=", desde)` junto - isso
+// PARECIA correto e passou limpo no teste isolado com db falso, mas
+// falhou em produção de verdade com "FAILED_PRECONDITION: The query
+// requires an index" (13-15/09/2026) - índice composto que não
+// existe e que este projeto não gerencia como código. Corrigido
+// trocando o filtro por range por um LIMIT generoso, com o corte por
+// dia feito em JS (mesma técnica seletiva por string de data já
+// usada em diaBrasiliaDe). 200 cobre o volume atual (36 operações
+// fechadas em TODO o histórico até agora) com folga enorme - revisar
+// se o volume diário real algum dia se aproximar disso.
+const LIMITE_CONSULTA_RECENTES = 200;
+
+async function limiteDiarioAtingido(db, perfil, banca) {
+
+    const { riscoDiario, perdasConsecutivas } =
+        obterPerfilFinanceiro(perfil);
+
+    const snapshot = await db
+        .collection("historico")
+        .where("status", "==", "ENCERRADA")
+        .orderBy("fimOperacao", "desc")
+        .limit(LIMITE_CONSULTA_RECENTES)
+        .get();
+
+    const fechadasRecentes = snapshot.docs
+        .map(doc => doc.data())
+        .filter(d => typeof d.fimOperacao === "number");
+
+    // --- 1. Perda líquida acumulada HOJE (Brasília) ---
+    const hojeBrasilia = diaBrasiliaDe(Date.now());
+
+    const fechadosHoje = fechadasRecentes.filter(d =>
+        diaBrasiliaDe(d.fimOperacao) === hojeBrasilia
+    );
+
+    // Líquido, não só a soma dos LOSS - um WIN no mesmo dia abate a
+    // perda acumulada, igual qualquer limite de perda diária real de
+    // gestão de risco (não é "perdeu X vezes", é "o saldo do dia caiu
+    // X%").
+    const resultadoLiquidoHoje = fechadosHoje.reduce((soma, d) => {
+
+        const rf = d.resultadoFinanceiro ?? d.lucroAtual;
+
+        return soma + (typeof rf === "number" ? rf : 0);
+
+    }, 0);
+
+    const limiteRiscoDiarioUSD =
+        -Math.abs((riscoDiario / 100) * Number(banca || 0));
+
+    if (resultadoLiquidoHoje <= limiteRiscoDiarioUSD) {
+
+        return {
+
+            bloqueado: true,
+
+            motivo: "RISCO_DIARIO_ATINGIDO",
+
+            mensagem:
+                `Perda líquida do dia (US$ ${resultadoLiquidoHoje.toFixed(2)}) ` +
+                `atingiu o limite de ${riscoDiario}% da banca ` +
+                `(US$ ${limiteRiscoDiarioUSD.toFixed(2)}) do perfil ${perfil}. ` +
+                `Novas operações bloqueadas até virar o dia (horário de Brasília).`
+
+        };
+
+    }
+
+    // --- 2. Losses consecutivos (entre TODOS os pares) ---
+    const ultimasFechadas = fechadasRecentes.slice(0, perdasConsecutivas);
+
+    const streakCompleto =
+        ultimasFechadas.length === perdasConsecutivas &&
+        ultimasFechadas.every(d => d.resultado === "LOSS");
+
+    if (streakCompleto) {
+
+        return {
+
+            bloqueado: true,
+
+            motivo: "LOSSES_CONSECUTIVOS",
+
+            mensagem:
+                `${perdasConsecutivas} operações fechadas em sequência ` +
+                `resultaram em LOSS (perfil ${perfil}). Novas operações ` +
+                `bloqueadas até essa sequência ser quebrada por um WIN.`
+
+        };
+
+    }
+
+    return { bloqueado: false };
+
+}
+
 module.exports = {
 
     existeCooldown,
 
-    salvarOperacao
+    salvarOperacao,
+
+    limiteDiarioAtingido,
+
+    diaBrasiliaDe
 
 };

@@ -8969,3 +8969,67 @@ de novo (nova remoção de dados contaminados, por exemplo), o mesmo
 recálculo manual precisa ser repetido. Não foi criada nenhuma rotina
 automática de reconciliação neste momento - fora do escopo do pedido.
 --------
+FEATURE-024 — Gate de perda diária + disjuntor de losses consecutivos
+(scripts/riskManager.js, scripts/scanner.js)
+
+Origem: item nº 1 combinado entre as duas auditorias estratégicas
+recebidas (13-15/09/2026) - `PERFIL_FINANCEIRO` (moneyManager.js) já
+definia `riscoDiario` (3/5/8% por perfil) e `perdasConsecutivas`
+(3/4/5) desde a sprint original, mas nenhum gate os lia. Busca em
+todo o repositório confirmou: campos mortos, só existiam na
+definição. Não existia nada que impedisse o sistema de continuar
+abrindo operações depois de uma sequência de losses, nem depois que
+a perda acumulada do dia já tivesse passado do teto do perfil.
+
+Correção: `limiteDiarioAtingido(db, perfil, banca)`, nova função em
+`scripts/riskManager.js` (mesmo módulo de `existeCooldown`, já
+Firestore-aware - `pairAnalyzer.js` deliberadamente não acessa
+Firestore direto pra estatísticas). Duas checagens:
+
+1. **Perda líquida do dia** (fuso de Brasília, ganhos abatem perdas -
+   é "o saldo do dia caiu X%", não "perdeu X vezes") comparada contra
+   `riscoDiario`% da banca atual.
+2. **Losses consecutivos**, entre TODOS os pares (é um limite de
+   conta inteira, não por par) - as últimas N operações fechadas, N =
+   `perdasConsecutivas` do perfil, todas LOSS em sequência.
+
+Checado UMA vez por ciclo do Scanner, dentro de `validarExecucao()`
+(mesma função que já teria os gates de "scanner desativado"/"mercado
+fechado"/"nenhum par configurado") - se bloqueado, a execução inteira
+para ali, antes de gastar qualquer chamada de API analisando pares.
+
+**Bug real pego só ao testar contra produção, não no teste isolado**
+(exatamente o alerta que veio junto com o pedido): a consulta original
+(`where(status==ENCERRADA).where(fimOperacao>=desde).orderBy(fimOperacao,desc)`)
+passou limpo no teste com banco falso, mas falhou em produção com
+`FAILED_PRECONDITION: The query requires an index` - Firestore exige
+índice composto manual pra igualdade + range + orderBy assim, e este
+projeto não gerencia índices como código. Corrigido trocando o filtro
+por range por um único `orderBy(fimOperacao,desc).limit(200)` (mesmo
+formato de "1 igualdade + 1 orderBy" de `existeCooldown()`, que já
+tinha índice composto pronto de antes) - o corte por dia continua
+feito em JS, comparando string de data formatada, nunca aritmética de
+epoch entre fusos. Mesmo assim esse formato AINDA exigiu um índice
+composto próprio (`status` + `fimOperacao`), que não existia -
+criado programaticamente via `FirestoreAdminClient` (mesma
+credencial de produção desta investigação), confirmado `READY` antes
+de revalidar.
+
+Validado: `node --check` limpo nos 2 arquivos. `validate-
+limitediario-riskmanager.js` (11 cenários): perda líquida abaixo/
+acima do limite, WIN abatendo LOSS no mesmo dia, streak completo/
+quebrado/incompleto, perfis diferentes (mesma perda bloqueia
+CONSERVADOR mas não AGRESSIVO), operação de ontem não contando pro
+limite de hoje, `diaBrasiliaDe()` determinístico. **Revalidado contra
+o Firestore de produção real** (não só o teste isolado) com o
+perfil/banca reais (AGRESSIVO, banca atual -$22,47) - resultado
+`{bloqueado: false}`, coerente com o estado real (sem streak nem
+perda diária relevante agora). Suíte completa revalidada, sem
+regressão nova (só a falha pré-existente e não relacionada de
+`validate-pentefino-conservador-quebrado.js` continua de pé).
+
+Pendente, fora do escopo desta rodada: nenhuma indicação visual no
+Dashboard/Histórico de que o gate bloqueou um ciclo - hoje só aparece
+no log do GitHub Actions. Considerar expor isso na tela se o gate vier
+a disparar de verdade em produção.
+--------
