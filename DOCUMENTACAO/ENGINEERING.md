@@ -9080,3 +9080,73 @@ não estourar cota é reduzir pares, aumentar chaves, ou aceitar operar
 perto/acima do limite (com risco de "Quota exceeded" silencioso em
 alguns ciclos, já documentado antes em BUG-015).
 --------
+BUG-029 — ultimos5/ultimos10 embutindo documento bruto: crescimento
+recursivo estourava o limite de 1 MiB do Firestore, matando sinais
+silenciosamente (scripts/statisticsEngine.js)
+
+Origem: investigando um pedido do Claudinho (varrer logs do Actions
+atrás de 429/Quota exceeded/RESOURCE_EXHAUSTED na janela dos 36/37
+sinais do dataset de backtest do item 4, checando viés de
+disponibilidade), a varredura real não achou nenhum 429/quota - mas
+achou outra coisa, num ciclo real de 14/09 às 00:10 UTC:
+
+```
+Status............ERRO
+Motivo............3 INVALID_ARGUMENT: Document '.../historico/..._USD_JPY'
+cannot be written because its size (1,249,115 bytes) exceeds the
+maximum allowed size of 1,048,576 bytes.
+```
+
+Confirmado em 3 ciclos reais separados (14/09 00:10 UTC, 14/09 00:50
+UTC, e AO VIVO em 15/09 11:05 UTC - o mesmo ciclo que gerou o EUR/JPY
+das 08:05) - USD/JPY falhava com o mesmo erro em TODO ciclo em que
+teria um sinal aprovado pra salvar. AUD/USD confirmado no mesmo estado
+em 13-14/09 (não reconfirmado ao vivo em 15/09 porque nesse ciclo
+específico ele caiu em REPROVADO antes de tentar salvar).
+
+Causa raiz (confirmada no código, não suposição): `obterEstatisticasPar()`
+monta `ultimos5`/`ultimos10` a partir de `ultimasOperacoes.slice(0,5/10)` -
+os documentos BRUTOS (`doc.data()` inteiro, com indicadores, financeiro,
+risco, avisoRisco, caminhoPrecos e a própria `estatisticas` aninhada de
+quando cada um foi salvo). `pairAnalyzer.js` (linha 396) grava esse
+objeto `estatisticas` inteiro em toda operação NOVA via
+`riskManager.js`'s `salvarOperacao()`. Como cada documento salvo
+embutia até 10 documentos anteriores, cada um deles já embutindo até
+10 outros (a própria `estatisticas.ultimos10` de quando FOI salvo) -
+crescimento recursivo/combinatório, não linear. `historyAnalyzer.js`
+(único consumidor real de `ultimos5`/`ultimos10`) só lê
+`op.resultado` de cada item - nunca usa o resto do documento.
+`marketAnalyzer.js` também referencia `historicoDirecao.ultimos5`
+(linha ~769), mas esse caminho é código morto: `historicoDirecao` vem
+de `estatisticas.BUY`/`estatisticas.SELL`, que nunca tiveram campo
+`ultimos5` - sempre avaliava `[] `, `memoriaOperacional` sempre 0 por
+esse caminho. Não mexido agora (fora do escopo deste bug), só
+registrado.
+
+Correção: `ultimos5`/`ultimos10` agora guardam só `{ resultado }` de
+cada operação, não o documento bruto inteiro - elimina a recursão na
+origem, sem mudar nenhum resultado de `historyAnalyzer.js` (único
+consumidor real).
+
+Validado:
+1. Teste isolado (`validate-statisticsEngine.js`) - suíte completa
+   passou, incluindo 2 cenários novos confirmando que `ultimos5[0]`/
+   `ultimos10[0]` não carregam mais nenhum campo além de `resultado`.
+2. **Validado contra dados reais de produção** (não só teste
+   isolado): buscou `obterEstatisticasPar()` real de USD/JPY e
+   AUD/USD (os dois pares confirmados travados) e EUR/USD (controle),
+   simulou o documento completo que seria gravado (mesma estrutura
+   real de campos + a `estatisticas` nova). Resultado: campo
+   `estatisticas` isolado caiu de >1.048.576 bytes pra ~740 bytes;
+   documento completo simulado ficou em ~4-5 KB pros três pares -
+   bem dentro do limite de 1 MiB, com margem de ~250x.
+
+Pendente, fora do escopo desta correção: os documentos JÁ salvos no
+`historico` antes desta correção continuam com a `estatisticas`
+aninhada antiga (bloat histórico, não afeta gravações novas - só
+ocupa espaço/custa mais bytes de leitura nesses docs específicos).
+Não limpos agora por não bloquear nada; considerar um script de
+limpeza pontual se o custo de leitura desses documentos específicos
+vier a importar. Também não mexido: o código morto de
+`historicoDirecao.ultimos5` em `marketAnalyzer.js` (registrado acima).
+--------

@@ -433,13 +433,27 @@ SELL: {
     taxaAcerto: taxaSELL
 },
 
-    ultimos5: ultimasOperacoes.slice(0, 5),
+    // BUG-029 (15/09/2026): ultimos5/ultimos10 guardavam os documentos
+    // BRUTOS (doc.data() inteiro, com indicadores/financeiro/risco/
+    // caminhoPrecos e a propria estatisticas.ultimos10 de quando cada
+    // um foi salvo). Como esse objeto inteiro e persistido pelo
+    // pairAnalyzer.js em toda operacao NOVA, cada doc passava a
+    // embutir ate 10 docs anteriores, cada um deles ja embutindo ate
+    // 10 outros - crescimento recursivo, nao linear. Confirmado em
+    // producao real: USD/JPY e AUD/USD passaram a falhar em TODO
+    // ciclo com "INVALID_ARGUMENT: Document ... exceeds the maximum
+    // allowed size of 1,048,576 bytes" (limite de 1 MiB do Firestore),
+    // silenciosamente perdendo qualquer sinal aprovado desde então -
+    // sem gerar erro visivel no historico (o doc nem chega a ser
+    // criado). historyAnalyzer.js (unico consumidor real) so le
+    // op.resultado de cada item - nunca o restante do documento.
+    ultimos5: ultimasOperacoes.slice(0, 5).map(op => ({ resultado: op.resultado })),
 
     // BUG-017: antes era so `ultimasOperacoes` (que ja era o corte
     // de 10). Agora que ultimasOperacoes pode ter ate
     // AMOSTRA_MAXIMA_HISTORICO (50) itens, precisa do .slice(0, 10)
     // explicito pra continuar significando de verdade "ultimas 10".
-    ultimos10: ultimasOperacoes.slice(0, 10),
+    ultimos10: ultimasOperacoes.slice(0, 10).map(op => ({ resultado: op.resultado })),
 
 };
 
