@@ -790,10 +790,15 @@ function renderizarPresetHorario(config) {
 // 2.400 consultas/dia. Cada par consultado custa 2 chamadas por
 // ciclo do Scanner (candle de 5min + candle de 15min).
 //
-// O ciclo do Scanner (5 minutos) é definido pelo pinger externo
-// (cron-job.org), fora do alcance deste app - não configurável na
-// tela, então é uma CONSTANTE ASSUMIDA aqui. Se o intervalo do cron
-// mudar, esta conta precisa ser atualizada manualmente.
+// O ciclo do Scanner é definido pelo pinger externo (cron-job.org),
+// fora do alcance deste app - não configurável na tela, então é uma
+// CONSTANTE ASSUMIDA aqui. Se o intervalo do cron mudar, esta conta
+// precisa ser atualizada manualmente - foi exatamente o que ficou
+// desatualizado aqui: o cron passou de 5 para 15 minutos quando a
+// cota do Firestore estourou (ver ENGINEERING.md, correção do
+// polling do Scanner), mas esta constante continuou em 5, fazendo a
+// tela superestimar o consumo real de API em 3x (achado em
+// 13-15/09/2026, investigando se dava pra monitorar mais pares).
 //
 // MOEDAS_JANELA_ASIA/PARES_JANELA_ASIA_EXCLUIDOS/
 // parElegivelJanelaAsia() são uma 3ª cópia da mesma regra de
@@ -802,7 +807,7 @@ function renderizarPresetHorario(config) {
 // ordem de carregamento de outro <script>.
 // ======================================================
 
-const MINUTOS_POR_CICLO_SCANNER = 5;
+const MINUTOS_POR_CICLO_SCANNER = 15;
 
 const CHAMADAS_POR_PAR_POR_CICLO = 2;
 

@@ -8904,3 +8904,68 @@ chamada sem par informado. Suíte completa revalidada (só a falha
 pré-existente e não relacionada de `validate-pentefino-conservador-
 quebrado.js` continua de pé, já documentada antes).
 --------
+BUG-028 — Estimador de orçamento de API desatualizado (3x pessimista)
+(js/config.js)
+
+Origem: investigando se dava pra monitorar mais pares (pedido do
+usuário, 13-15/09/2026), fui conferir o orçamento real de consultas
+à TwelveData e achei `MINUTOS_POR_CICLO_SCANNER = 5` em
+`calcularConsumoEstimadoTwelveData()` - mas o cron real do Scanner
+(`forex-scanner-real.yml`) roda a cada 15 minutos desde a correção da
+cota do Firestore, há tempos. A constante nunca foi atualizada junto
+- o próprio comentário no código já avisava "se o intervalo do cron
+mudar, esta conta precisa ser atualizada manualmente", e isso não
+tinha acontecido.
+
+Efeito prático: a tela de Config mostrava o consumo estimado de API
+**3x maior** que o real, e podia estar sinalizando "excede o
+orçamento" (⚠️) pra configurações que na verdade cabem tranquilamente
+- com os 10 pares padrão e janela 07:30-18:00, por exemplo, o cálculo
+antigo dava 2.688 consultas/dia (acima do orçamento de 2.400) quando
+o real, com cron de 15min, é 896/dia (bem abaixo, ~1.500 de folga).
+
+Correção: `MINUTOS_POR_CICLO_SCANNER` de `5` para `15`, comentário
+atualizado explicando a defasagem encontrada. Nenhuma outra
+constante deste arquivo precisou mudar (`CHAMADAS_POR_PAR_POR_CICLO`
+e `ORCAMENTO_DIARIO_TWELVEDATA` continuam corretas, são independentes
+do cadence do cron). Constante não duplicada em nenhum outro arquivo
+- conferido via grep, só existe aqui.
+
+Validado: `node --check` limpo. `validate-orcamento-api.js`
+recalculado por completo (todos os cenários dependiam do valor antigo
+de ciclos/dia) - inclusive o cenário 1 (10 pares padrão), que antes
+esperava "excede o orçamento" e agora corretamente espera "dentro do
+orçamento, com folga de 1.504/dia". Suíte completa revalidada, sem
+regressão nova.
+--------
+CORREÇÃO DE DADO — saldoSimulado desatualizado após limpeza do
+BUG-027 (configuracoes/geral, produção)
+
+Origem: usuário perguntou por que a Conta Simulada no Dashboard
+continuava mostrando -$710,20 mesmo depois da remoção dos 247
+documentos contaminados do BUG-027. `saldoSimulado` é um acumulador
+persistido em `configuracoes/geral` - `checker.js` soma o resultado
+de cada operação nele no momento em que ela fecha, mas nada
+recalcula esse total a partir do histórico depois. Remover os
+documentos não corrigiu retroativamente o acumulador, que já tinha
+absorvido a contaminação antes da remoção.
+
+Achado ao recalcular do zero (soma de `resultadoFinanceiro`/
+`lucroAtual` dos 36 sinais `ENCERRADA` restantes no histórico, todos
+de pares não afetados pelo BUG-027): o valor real é **-$22,47**, não
+-$710,20. Ou seja, **$687,73 (97% do saldo negativo mostrado)** era
+resultado direto do bug de conversão de moeda, não desempenho real
+de mercado.
+
+Correção: `configuracoes/geral.saldoSimulado` recalculado do zero
+(soma real dos sinais restantes) e gravado, autorizado pelo usuário.
+Não é uma mudança de código - é uma correção pontual de estado, feita
+uma vez, com o valor conferido antes e depois da escrita direto no
+Firestore de produção.
+
+Nota pro futuro: `saldoSimulado` continua sendo um acumulador
+incremental, não recalculado automaticamente - se aparecer disparidade
+de novo (nova remoção de dados contaminados, por exemplo), o mesmo
+recálculo manual precisa ser repetido. Não foi criada nenhuma rotina
+automática de reconciliação neste momento - fora do escopo do pedido.
+--------
