@@ -163,6 +163,24 @@ enviarPushAbertura
 const candles =
     await getCandles(par);
 
+// DIAGNÓSTICO temporário (16/09/2026): usuário comparou o preço de
+// entrada de um sinal real com o gráfico ao vivo da própria corretora
+// (XM) e encontrou aquele preço só ocorrendo de verdade ~20-38min
+// DEPOIS do horário registrado pelo sinal - hipótese de atraso na
+// alimentação de dados da TwelveData (o endpoint REST usado aqui não
+// é o canal WebSocket de baixa latência deles, que é plano pago).
+// TwelveData devolve "datetime" por candle - logar isso contra o
+// horário real da requisição mede o atraso de verdade no próximo
+// ciclo real, sem depender de suposição. Remover depois de confirmar/
+// descartar (ver DOCUMENTACAO/ENGINEERING.md).
+if (candles.length) {
+
+    const ultimoCandle = candles[candles.length - 1];
+
+    console.log(`[DIAG-ATRASO] Último candle (5min) de ${par}: datetime=${ultimoCandle.datetime} | agora (UTC)=${new Date().toISOString()}`);
+
+}
+
 const candles15 =
     await obterCandles15ComCache(db, par, getCandles);
         
