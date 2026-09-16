@@ -44,6 +44,87 @@ const {
     avaliarOperacao
 } = require("./decisionEngine");
 
+// CACHE-002 (16/09/2026): candles de 15min só mudam a cada 15min, mas
+// o Scanner roda a cada 5min - sem cache, 2 de cada 3 chamadas a essa
+// perna traziam exatamente o mesmo candle da chamada anterior, puro
+// desperdício de orçamento da TwelveData (mesma ordem de ideia do
+// CACHE-001 em statisticsEngine.js, mas invalidado por JANELA DE
+// TEMPO, não por evento - não existe "operação nova" que marque
+// candle de mercado como desatualizado, só a passagem do tempo).
+//
+// Efeito esperado: ~2 chamadas/par/ciclo caem pra ~1,33 em média
+// (a perna de 5min continua sendo buscada todo ciclo, sem alternativa -
+// um candle novo fecha a cada 5min de verdade). Isso tira os 10 pares
+// padrão de 2.688 chamadas/dia (acima do orçamento de 2.400) pra
+// ~1.792/dia, abrindo margem real pra adicionar pares sem estourar
+// cota - ver DOCUMENTACAO/ENGINEERING.md.
+function idCacheCandles15(par) {
+
+    return String(par).replace(/\//g, "_");
+
+}
+
+async function obterCandles15ComCache(db, par, getCandles) {
+
+    const bucketAtual =
+        Math.floor(Date.now() / (15 * 60 * 1000));
+
+    // cacheRef fica null se `db` não suportar .collection() (testes com
+    // db falso/vazio, por exemplo) - degrada pra "sem cache" nesse par
+    // em vez de derrubar a análise inteira.
+    let cacheRef = null;
+
+    try {
+
+        cacheRef =
+            db.collection("cacheCandles15min").doc(idCacheCandles15(par));
+
+        const cacheSnap = await cacheRef.get();
+
+        if (cacheSnap.exists && cacheSnap.data().bucket === bucketAtual) {
+
+            return cacheSnap.data().candles;
+
+        }
+
+    } catch (erro) {
+
+        console.log(`Aviso: cache de candles 15min indisponível pra ${par}: ${erro.message}`);
+
+    }
+
+    const candles15 = await getCandles(par, "15min");
+
+    // Best-effort: se a escrita do cache falhar, o ciclo atual já tem
+    // os candles buscados agora - só o PRÓXIMO ciclo volta a buscar
+    // de novo em vez de reaproveitar (degrada pra "sem cache" nesse
+    // par, não quebra nada).
+    if (cacheRef) {
+
+        try {
+
+            await cacheRef.set({
+
+                candles: candles15,
+
+                bucket: bucketAtual,
+
+                atualizadoEm: Date.now()
+
+            });
+
+        } catch (erro) {
+
+            console.log(`Aviso: não foi possível gravar cacheCandles15min/${par}: ${erro.message}`);
+
+        }
+
+    }
+
+    return candles15;
+
+}
+
 async function analisarPar({
 db,
 par,
@@ -83,10 +164,7 @@ const candles =
     await getCandles(par);
 
 const candles15 =
-    await getCandles(
-        par,
-        "15min"
-    );
+    await obterCandles15ComCache(db, par, getCandles);
         
 const highs =
     candles.map(c => Number(c.high));

@@ -9150,3 +9150,47 @@ limpeza pontual se o custo de leitura desses documentos específicos
 vier a importar. Também não mexido: o código morto de
 `historicoDirecao.ultimos5` em `marketAnalyzer.js` (registrado acima).
 --------
+CACHE-002 — cache local do leg de 15min (scripts/pairAnalyzer.js)
+
+Contexto: usuário perguntou se cachear dado localmente ajudaria a
+abrir margem pra monitorar mais pares. Conferido: cada par consome 2
+chamadas TwelveData/ciclo (`getCandles(par)` em `5min` + `getCandles(par,
+"15min")`). O leg de `5min` precisa ser fresco todo ciclo (o Scanner
+roda a cada 5min, sempre há candle novo). O leg de `15min` NÃO - como
+um candle de 15min só fecha a cada 3 ciclos do Scanner, 2 de cada 3
+chamadas traziam exatamente o mesmo dado da anterior.
+
+Implementado: `obterCandles15ComCache(db, par, getCandles)` em
+`pairAnalyzer.js` - cache em `cacheCandles15min/{par}` no Firestore,
+invalidado por JANELA DE TEMPO (bucket de 15min via
+`Math.floor(Date.now()/(15*60*1000))`), não por evento (diferente do
+CACHE-001, que invalida quando fecha uma operação nova - aqui não
+existe evento equivalente, só a passagem do tempo). Fail-soft no
+mesmo padrão do CACHE-001: falha de leitura ou escrita do cache nunca
+bloqueia a análise, só degrada pra "sem cache" naquele par/ciclo -
+inclusive quando `db` não suporta `.collection()` (mocks antigos tipo
+`db: {}` usados em vários testes existentes).
+
+Efeito esperado: ~2 chamadas/par/ciclo caem pra ~1,33 em média. Com
+os 10 pares padrão, isso tira a demanda diária de 2.688 (acima do
+orçamento de 2.400/3 chaves) pra ~1.792/dia - margem real de +608/dia,
+maior que a de simplesmente somar uma 4ª chave (+512/dia). Abre espaço
+pra ~13-14 pares dentro do orçamento atual (3 chaves) sem estourar
+cota - usuário confirmou que esse é um alvo bom pra esta fase (não os
+28 pares do plano original, que exigiriam algo estrutural a mais,
+ainda não investigado).
+
+Validado:
+1. Teste isolado (`validate-cache002-candles15.js`): duas análises no
+   mesmo bucket de 15min chamam `getCandles("15min")` só 1 vez; ao
+   simular a virada de bucket, busca de novo; `db` sem `.collection()`
+   não quebra a análise (degrada pra sem cache, sinal continua sendo
+   aprovado normalmente).
+2. Suíte completa revalidada - sem regressão nova em nenhum teste que
+   já passava antes desta mudança.
+3. **Validado contra Firestore real de produção** (não só mock): doc
+   de teste em `cacheCandles15min` criado com os campos esperados
+   (`candles`/`bucket`/`atualizadoEm`); segunda chamada no mesmo
+   bucket confirmadamente NÃO re-chamou `getCandles`; doc de teste
+   removido ao final, sem deixar lixo em produção.
+--------
