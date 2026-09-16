@@ -582,24 +582,42 @@ async function validarExecucao(context){
     // (prioridade nº 1 das duas auditorias estratégicas, 13-15/09/2026)
     // - checado UMA vez por ciclo, antes do loop de pares, não por
     // par: é um limite de conta inteira, não de um par específico.
-    const perfil =
-        (context.configuracao?.perfil || "balanceado").toUpperCase();
+    //
+    // AJUSTE-001 (16/09/2026): só ativo em conta REAL. Em SIMULADA
+    // (fase de teste atual, sem capital de verdade em jogo) travar o
+    // Scanner aqui só reduz o volume de sinais que a RMI precisa
+    // gerar pra validar o modo Agressivo antes de avançar pro
+    // Conservador - o disjuntor existe pra proteger capital real, que
+    // não está em risco nesta fase. Decisão do usuário (16/09/2026).
+    if (context.configuracao?.tipoConta === "REAL") {
 
-    const banca =
-        context.configuracao?.tipoConta === "SIMULADA"
-            ? (context.configuracao.saldoSimulado ?? context.configuracao.saldoInicial)
-            : (context.configuracao?.saldoReal ?? context.configuracao?.saldoInicial);
+        const perfil =
+            (context.configuracao?.perfil || "balanceado").toUpperCase();
 
-    const limite = await limiteDiarioAtingido(db, perfil, banca);
+        // AJUSTE-001: base do % de risco é o capital de REFERÊNCIA
+        // (saldoInicial), não o saldo corrente. Usar o saldo corrente
+        // faz o teto encolher conforme a conta perde (e até inverter
+        // de sinal se ficar negativo) - travando o Scanner cada vez
+        // MAIS cedo em vez de proteger um % fixo do capital alocado.
+        // Confirmado em produção real: com saldoSimulado em -$22,47,
+        // 8% dava um teto de só -$1,80 - uma única perda do dia já
+        // bloqueava o resto do dia inteiro (achado do usuário,
+        // 16/09/2026, ao notar que só 1 sinal tinha sido gerado no dia).
+        const banca =
+            context.configuracao?.saldoInicial;
 
-    if (limite.bloqueado) {
+        const limite = await limiteDiarioAtingido(db, perfil, banca);
 
-        console.log("\n========================================");
-        console.log(`LIMITE DE RISCO DIÁRIO ATINGIDO (${limite.motivo})`);
-        console.log(limite.mensagem);
-        console.log("========================================");
+        if (limite.bloqueado) {
 
-        return false;
+            console.log("\n========================================");
+            console.log(`LIMITE DE RISCO DIÁRIO ATINGIDO (${limite.motivo})`);
+            console.log(limite.mensagem);
+            console.log("========================================");
+
+            return false;
+
+        }
 
     }
 

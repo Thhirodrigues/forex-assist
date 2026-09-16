@@ -9194,3 +9194,60 @@ Validado:
    bucket confirmadamente NÃO re-chamou `getCandles`; doc de teste
    removido ao final, sem deixar lixo em produção.
 --------
+AJUSTE-001 — gate de risco diário só ativo em conta REAL + base do %
+corrigida pra saldoInicial (scripts/scanner.js)
+
+Origem: usuário relatou "hoje gerou apenas 1 sinal em modo agressivo,
+acho que tem algo errado". Investigado contra logs reais do GitHub
+Actions (6 ciclos amostrados ao longo do dia 15/09): confirmado que,
+após o único sinal do dia (EUR/JPY LOSS, 08:05 Brasília), TODO ciclo
+seguinte por mais de 9 horas caiu em ~5s de execução (contra os ~30s
+normais de uma análise completa) com:
+
+```
+LIMITE DE RISCO DIÁRIO ATINGIDO (RISCO_DIARIO_ATINGIDO)
+Perda líquida do dia (US$ -2.87) atingiu o limite de 8% da banca (US$ -2.03) do perfil AGRESSIVO.
+```
+
+Causa: o gate (FEATURE-024, implementado um dia antes) calculava o
+teto como `8% × banca`, onde `banca` em modo SIMULADA é o
+`saldoSimulado` CORRENTE - que está negativo (-$22,47 e piorando). 8%
+de um saldo negativo dá um teto minúsculo (~-$1,80) que qualquer
+perda única de um dia já estoura, travando o resto do dia inteiro.
+Pior: quanto mais a conta perde, MENOR fica o teto - um efeito
+autodestrutivo, o oposto de um disjuntor de proteção de capital.
+
+Decisão do usuário (16/09/2026): nesta fase de teste (SIMULADA, sem
+capital real em jogo), o objetivo é gerar volume de sinais suficiente
+pra validar se o modo Agressivo funciona antes de avançar pro
+Conservador - o disjuntor de perda diária não deveria travar isso.
+Confirmado também o critério correto pro % de risco: capital de
+REFERÊNCIA fixo (saldoInicial), não o saldo corrente flutuante.
+
+Correção em `validarExecucao()`:
+1. O gate (`limiteDiarioAtingido` + disjuntor de losses consecutivos)
+   só roda quando `tipoConta === "REAL"`. Em SIMULADA, pulado
+   inteiramente - a RMI gera sinal em todo ciclo elegível, sem limite
+   de perda diária ou de losses consecutivos.
+2. Quando roda (REAL), a base do % passa a ser `saldoInicial`, não
+   `saldoReal`/`saldoSimulado` corrente - o teto fica fixo em dólares
+   (ex.: 8% de $1.000 = $80/dia), não encolhe conforme a conta perde.
+
+Validado: teste isolado novo (`validate-ajuste001-gate-scanner.js`,
+mock de `scripts/firebase.js` via `require.cache` - evita precisar de
+credencial real só pra testar esta lógica de roteamento) - 3
+cenários: SIMULADA não bloqueia mesmo com perda de $500 "hoje" no
+histórico; REAL bloqueia com a mesma perda; REAL com saldo corrente
+já negativo NÃO bloqueia uma perda pequena (prova que a base do %
+voltou a ser saldoInicial, não o saldo corrente). Suíte de testes
+relacionados a `scripts/scanner.js` (`validate-janela-asia.js`,
+`validate-janela-meia-noite.js`, `validate-schedule.js`,
+`validate-pentefino003-cooldown-em-andamento.js`) revalidada
+individualmente, sem regressão.
+
+Pendente: quando a conta migrar de SIMULADA pra REAL, o disjuntor
+volta a valer automaticamente (sem precisar de outro deploy) - vale
+uma checagem manual dos primeiros ciclos nesse momento, seguindo a
+mesma disciplina já registrada neste documento pra qualquer reativação
+de gate depois de correção.
+--------
