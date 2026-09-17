@@ -76,7 +76,14 @@ async function salvarOperacao(db, dados) {
 
             ...dados,
 
-            horario: new Date().toLocaleString("pt-BR"),
+            // MUD-04 (17/09/2026): toLocaleString("pt-BR") formata no
+            // padrão brasileiro mas usa o fuso do RUNTIME - no GitHub
+            // Actions é UTC, não Brasília. O campo "horario" parecia
+            // horário de Brasília mas ficava consistentemente 3h
+            // adiantado (confirmado comparando com o `timestamp` epoch,
+            // esse sempre correto, do mesmo documento). Não era atraso
+            // de execução - era rótulo errado.
+            horario: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
 
             timestamp
 
