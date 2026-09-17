@@ -185,7 +185,23 @@ function abrirComparacao() {
 
     const usd = sinal.resultadoFinanceiro;
     const usdFormatado = usd == null ? "--" : `${usd >= 0 ? "+" : "-"}$${Math.abs(Number(usd)).toFixed(2)}`;
-    const usdCor = usd == null ? "#fff" : (usd >= 0 ? "#00d26a" : "#ff5252");
+
+    // AJUSTE-002 (17/09/2026): a cor era decidida só pelo SINAL do
+    // número (usd >= 0), independente do rótulo WIN/LOSS - as duas
+    // lógicas podiam discordar (ex.: um sinal que fechou por SL_PIPS
+    // pode registrar um resultadoFinanceiro final positivo por
+    // coincidência de onde a vela fechou, mesmo o resultado sendo
+    // LOSS de verdade - usuário reportou ver "+$0,74" em verde do lado
+    // de um "❌ LOSS", com razão pra estranhar). Pra um sinal já
+    // ENCERRADA, a cor agora segue o resultado (fonte da verdade de
+    // WIN/LOSS), nunca o sinal do número. Só usa o sinal do número
+    // pra sinal ainda PENDENTE, onde é legitimamente um P&L flutuante
+    // em tempo real, sem resultado definido ainda.
+    const usdCor = usd == null
+        ? "#fff"
+        : sinal.resultado === "WIN" ? "#00d26a"
+        : sinal.resultado === "LOSS" ? "#ff5252"
+        : (usd >= 0 ? "#00d26a" : "#ff5252");
 
     return `
       <tr>
@@ -524,7 +540,16 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
 
   const usd = sinal.resultadoFinanceiro;
   const usdFormatado = usd == null ? "--" : `${usd >= 0 ? "+" : "-"}$${Math.abs(Number(usd)).toFixed(2)}`;
-  const usdCor = usd == null ? "#fff" : (usd >= 0 ? "#00d26a" : "#ff5252");
+
+  // AJUSTE-002 (17/09/2026): mesma correção da tabela de comparação
+  // (ver comentário lá) - cor segue o resultado WIN/LOSS pra sinal já
+  // ENCERRADA, não o sinal bruto do número. Só usa o sinal do número
+  // pra PENDENTE (P&L flutuante em tempo real, sem resultado ainda).
+  const usdCor = usd == null
+      ? "#fff"
+      : sinal.resultado === "WIN" ? "#00d26a"
+      : sinal.resultado === "LOSS" ? "#ff5252"
+      : (usd >= 0 ? "#00d26a" : "#ff5252");
 
   // Pedido do usuário (12/09/2026): dá pra ver de relance, olhando a
   // tabela toda, quais operações quase bateram TP ou quase escaparam

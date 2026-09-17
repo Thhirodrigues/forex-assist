@@ -9453,3 +9453,49 @@ delta pré-normalização que é o que a espec pede); ponta-a-ponta via
 linha de log de SMC aparece - a detecção literalmente nunca executa.
 Suíte completa sem regressão.
 --------
+AJUSTE-002 — cor do valor em USD segue o resultado WIN/LOSS, não o
+sinal bruto do número (js/historico.js)
+
+Origem: usuário revisando a tabela de comparação de sinais reportou
+ver "+$0,74" em VERDE do lado de um "❌ LOSS" (NZD/USD, 16/09/2026
+15:11) - com razão pra estranhar, já que intuitivamente verde deveria
+significar WIN.
+
+Causa: a cor (`usdCor`) era decidida só pelo SINAL matemático do
+`resultadoFinanceiro` (`usd >= 0 ? verde : vermelho`), numa lógica
+completamente desconectada do campo `resultado` (WIN/LOSS - a fonte
+real da verdade). As duas normalmente concordam, mas podem discordar
+- e discordaram aqui: o sinal fechou por SL_PIPS (critério de pips já
+usa o extremo intrabar correto pra decidir WIN/LOSS - ver MUD-03),
+mas o valor em dólar gravado (`resultadoFinanceiro`) ainda vem de
+`candleFinal.close`, que pode terminar do lado positivo por
+coincidência de onde a vela fechou, mesmo a operação sendo LOSS de
+verdade. TP_PIPS/SL_PIPS ficaram deliberadamente fora do escopo do
+MUD-03 (só o critério FINANCEIRO foi corrigido lá) - efeito colateral
+visível: o número e o rótulo podem contar histórias diferentes.
+
+Correção (2 ocorrências no arquivo - tabela de comparação e tabela
+principal do Histórico): pra sinal já `ENCERRADA`, a cor agora segue
+`sinal.resultado` (WIN=verde, LOSS=vermelho), nunca o sinal bruto do
+número. Só usa o sinal do número pra sinal ainda `PENDENTE` (P&L
+flutuante em tempo real, sem resultado definido ainda - ali o sinal
+bruto É a informação certa).
+
+Validado: teste isolado novo (`validate-ajuste002-cor-usd.js`, 6
+cenários, mesmo padrão `vm.runInContext` contra o arquivo real usado
+em `validate-comparacao-sinais.js`) - reproduz o caso real exato
+(LOSS com resultadoFinanceiro +$0,74, cor agora vermelha);
+contraprova (WIN com número negativo continua verde); PENDENTE
+continua colorindo pelo sinal bruto (sem regressão). Suíte completa
+de testes de `historico.js` revalidada sem regressão.
+
+Pendente, registrado mas não decidido agora: a causa RAIZ (SL_PIPS/
+TP_PIPS usando `candle.close` em vez do extremo intrabar pro valor em
+dólar, o mesmo padrão que o MUD-03 corrigiu só pro caminho
+financeiro) provavelmente ainda existe - esta correção resolve a
+CONTRADIÇÃO visual, não o número em si, que pode continuar levemente
+impreciso pra fechamentos via pips. Cota do Firestore ainda bloqueada
+no momento desta correção - não foi possível confirmar contra o
+documento real da operação de origem. Candidato a follow-up direto do
+MUD-03, quando a cota voltar.
+--------
