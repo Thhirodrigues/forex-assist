@@ -89,10 +89,15 @@ function calcularMovimentoPips(sinal, preco) {
 // olhar só o candle mais recente — senão um TP/SL tocado e revertido no
 // meio do intervalo nunca seria visto.
 //
-// Assume-se que "datetime" da TwelveData vem em UTC (comportamento padrão
-// da API para Forex quando o parâmetro "timezone" não é informado, como é
-// o caso aqui). Validar contra um candle real na primeira operação
-// encerrada por este código antes de confiar cegamente no resultado.
+// AJUSTE-003 (17/09/2026): "datetime" da TwelveData agora vem
+// garantidamente em UTC - scripts/marketData.js passa "&timezone=UTC"
+// explicitamente na chamada. Antes disso, a suposição registrada aqui
+// (API para Forex responde em UTC por padrão quando o parâmetro não é
+// informado) estava ERRADA: medido em produção um offset de ~9h54-55min
+// entre o "datetime" retornado e o horário real, o que fazia o filtro
+// `timestamp >= desde` logo abaixo nunca cortar o buffer de 10 candles
+// extras do outputsize - deixando até 50min de candles de ANTES da
+// abertura da operação entrarem na reconstrução do caminho de preço.
 async function buscarCandlesDesde(par, desde) {
 
     const agora = Date.now();

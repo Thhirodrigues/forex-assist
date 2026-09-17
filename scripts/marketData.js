@@ -134,11 +134,27 @@ outputsize = outputsize || CONFIG.outputsize;
 // selecionarApi() continua disponível para seleção manual explícita,
 // fora do caminho automático de rotação.
 
+// AJUSTE-003 (17/09/2026): sem "&timezone=UTC", a TwelveData retorna
+// "datetime" no fuso "Exchange" (padrão da API quando o parâmetro não é
+// informado) - NÃO em UTC, como js/checker.js sempre assumiu no
+// comentário de buscarCandlesDesde(). Medido em produção: offset
+// consistente de ~9h54min-55min entre o "datetime" retornado e o
+// horário real da requisição (6 medições em 25min de janela real,
+// variação de só 13s - assinatura de offset de fuso fixo, não de
+// atraso de mercado). Efeito colateral sério, não só cosmético: o
+// filtro `timestamp >= desde` em buscarCandlesDesde() comparava um
+// "timestamp" inflado (~10h no "futuro") contra `desde` (epoch real) -
+// sempre verdadeiro, então o buffer de 10 candles extras adicionado ao
+// outputsize NUNCA era cortado, deixando até 50min de candles de ANTES
+// da abertura da operação entrarem na reconstrução do caminho de preço
+// usado por calcularResultadoOperacao(). Forçar UTC aqui corrige a
+// origem pros dois efeitos (log de diagnóstico E o filtro do checker).
 const url =
     `https://api.twelvedata.com/time_series` +
     `?symbol=${encodeURIComponent(symbol)}` +
     `&interval=${interval}` +
     `&outputsize=${outputsize}` +
+    `&timezone=UTC` +
     `&apikey=${getApiKey(API_KEYS, apiIndex)}`;
   
 for (let tentativa = 1; tentativa <= CONFIG.maxRetries; tentativa++) {

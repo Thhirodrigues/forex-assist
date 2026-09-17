@@ -9552,3 +9552,63 @@ consistente com o rótulo WIN/LOSS pra QUALQUER motivo de encerramento
 (financeiro ou pips) - o gap de escopo aberto pelo MUD-03 está
 fechado.
 --------
+AJUSTE-003 — TwelveData responde com "&timezone=UTC" explícito
+(scripts/marketData.js, js/checker.js)
+
+Origem: pedido do usuário (16/09/2026) pra medir o atraso real da
+TwelveData, comparando o `datetime` do último candle contra o horário da
+requisição (log `[DIAG-ATRASO]` em `pairAnalyzer.js`, adicionado no
+commit `74ee02e`). Retomado por trigger agendado no dia seguinte
+(17/09/2026), primeiro ciclo real dentro da janela operacional.
+
+Achado, com dado real (6 medições em 25min de janela real, GitHub
+Actions runs 4442-4447): o `datetime` retornado pela TwelveData e o
+horário real da requisição (UTC) diferem consistentemente em
+~9h54min-55min (variação de só 13s entre medições) - a assinatura de um
+offset de fuso horário fixo, não de atraso de mercado variável. Causa:
+a chamada em `scripts/marketData.js` não passava o parâmetro
+`&timezone`, e a TwelveData usa "Exchange" como padrão nesse caso -
+NÃO UTC, como `js/checker.js` sempre assumiu (comentário de
+`buscarCandlesDesde()`, nunca confirmado contra dado real até agora).
+
+Efeito colateral sério, achado ao investigar - não só cosmético no log
+de diagnóstico: `buscarCandlesDesde()` busca os `outputsize =
+minutosDecorridos + 10` candles mais recentes (buffer de 10 candles
+extras de segurança) e filtra `timestamp >= desde` (`desde` =
+`sinal.inicioOperacao`, epoch real) pra cortar esse buffer. Com o
+`timestamp` calculado a partir de um `datetime` falsamente ~10h "no
+futuro", o filtro nunca cortava nada (qualquer candle recente já
+satisfazia a comparação trivialmente) - até 50min de candles de ANTES
+da abertura da operação entravam na reconstrução do caminho de preço
+usado por `calcularResultadoOperacao()` pra decidir TP/SL. Ou seja: o
+fechamento de operações podia (não necessariamente sempre, depende de
+quão cedo a operação fechava) considerar movimento de preço anterior à
+entrada como se fosse posterior a ela.
+
+Correção: `&timezone=UTC` adicionado à URL da TwelveData em
+`getCandles()` (`scripts/marketData.js`) - corrige a origem pros dois
+efeitos de uma vez, já que tanto o log de diagnóstico quanto
+`buscarCandlesDesde()` (via `js/checker.js`) consomem a mesma função.
+Comentário desatualizado em `buscarCandlesDesde()` corrigido pra
+registrar o achado real, não mais a suposição não verificada.
+
+Validado: teste isolado novo (`validate-ajuste003-timezone-utc.js`, 4
+cenários, axios mockado via injeção em `require.cache` + extração
+dinâmica de `checker.js`) - confirma que a URL construída por
+`getCandles()` inclui `&timezone=UTC`; reproduz o cenário exato do bug
+(10 candles sintéticos ANTES de `desde` + 4 candles DEPOIS, simulando
+datetime já em UTC de verdade) e confirma que `buscarCandlesDesde()`
+agora corta corretamente o buffer de 10 candles anteriores, mantendo
+só os 4 posteriores à abertura - o primeiro candle que sobra é
+exatamente o de `desde`, não um dos 10 de antes. Suíte completa de
+`checker.js`/`pairAnalyzer.js`/janela operacional revalidada sem
+regressão.
+
+Pendente, per a diretriz do CLAUDE.md de validar manualmente os
+primeiros ciclos após qualquer correção no pipeline antes de deixar
+rodando sozinho via cron: confirmar no próximo ciclo real do
+`forex-scanner-real.yml` que o `[DIAG-ATRASO]` passa a mostrar um
+atraso pequeno (poucos minutos, não mais ~10h) e acompanhar o próximo
+fechamento real via `result-checker.yml` pra confirmar que o
+comportamento em produção bate com o validado isoladamente.
+--------
