@@ -66,6 +66,11 @@ histórico alimenta o aprendizado futuro do sistema. Por isso:
   conversas da IA anterior que o usuário vai trazer. Até lá, tratar
   como contexto histórico, nunca como prova de estado atual (mesma
   ressalva de sempre).
+- Backlog, ideias fora do escopo da rodada atual, e critérios para o
+  Manual (a aba ainda não escrita): `DOCUMENTACAO/BACKLOG-E-VISAO.md`.
+  Explicitamente arquivado para não se perder, não para implementar sem
+  confirmação prévia — cada item lá tem uma recomendação de prioridade,
+  mas nenhum foi iniciado.
 
 ## Ambiente
 
