@@ -125,6 +125,94 @@ async function obterCandles15ComCache(db, par, getCandles) {
 
 }
 
+// ===================================================
+// MUD-05 (17/09/2026) — DETECÇÃO DE ORDER BLOCK (SMC)
+// ===================================================
+//
+// Camada secundária de confirmação - NUNCA fonte primária de sinal,
+// nunca gate. Um order block detectado não aprova nem reprova
+// operação nenhuma sozinho (ver aplicarBonusSMC em scoreEngine.js,
+// que decide o peso). Detecção mora aqui porque pairAnalyzer.js é
+// quem tem os candles - calcula, não interpreta.
+//
+// Definição operacional (deliberadamente objetiva, pra não ficar
+// ambígua): um order block de ALTA é o último candle de baixa
+// (close < open) imediatamente anterior a um movimento de alta
+// impulsivo; order block de BAIXA é o espelho. "Impulsivo" = candle
+// candidato seguido, dentro de OB_K_CONFIRMACAO velas, por um close
+// que se desloca pelo menos OB_DESLOCAMENTO_ATR × ATR na direção do
+// movimento. A zona do OB é o intervalo [low, high] do próprio candle
+// identificado. Varre as últimas OB_JANELA_CANDLES velas, do mais
+// recente pro mais antigo, retornando o PRIMEIRO (mais recente) OB
+// relevante encontrado.
+const OB_JANELA_CANDLES = 50;
+const OB_K_CONFIRMACAO = 3;
+const OB_DESLOCAMENTO_ATR = 1.5;
+
+function detectarOrderBlock(candles, atr, precoAtual) {
+
+    if (!Array.isArray(candles) || candles.length < OB_K_CONFIRMACAO + 1) return null;
+    if (!Number.isFinite(atr) || atr <= 0) return null;
+    if (!Number.isFinite(precoAtual)) return null;
+
+    const inicio = Math.max(0, candles.length - OB_JANELA_CANDLES);
+
+    for (let i = candles.length - 1 - OB_K_CONFIRMACAO; i >= inicio; i--) {
+
+        const candidato = candles[i];
+        const seguintes = candles.slice(i + 1, i + 1 + OB_K_CONFIRMACAO);
+
+        if (seguintes.length < OB_K_CONFIRMACAO) continue;
+
+        if (candidato.close < candidato.open) {
+
+            const maxCloseSeguinte = Math.max(...seguintes.map(c => c.close));
+            const deslocamento = maxCloseSeguinte - candidato.close;
+
+            if (deslocamento >= OB_DESLOCAMENTO_ATR * atr) {
+
+                return avaliarZonaOrderBlock("ALTA", candidato, precoAtual);
+
+            }
+
+        }
+
+        if (candidato.close > candidato.open) {
+
+            const minCloseSeguinte = Math.min(...seguintes.map(c => c.close));
+            const deslocamento = candidato.close - minCloseSeguinte;
+
+            if (deslocamento >= OB_DESLOCAMENTO_ATR * atr) {
+
+                return avaliarZonaOrderBlock("BAIXA", candidato, precoAtual);
+
+            }
+
+        }
+
+    }
+
+    return null;
+
+}
+
+// Preço "dentro ou perto" da zona: dentro do [low, high] do candle do
+// OB, com uma margem de 20% do próprio tamanho da zona pra cada lado
+// (zona muito estreita não deveria exigir precisão de pip).
+function avaliarZonaOrderBlock(direcao, candidato, precoAtual) {
+
+    const zonaLow = candidato.low;
+    const zonaHigh = candidato.high;
+    const margem = (zonaHigh - zonaLow) * 0.2;
+
+    const naZona =
+        precoAtual >= (zonaLow - margem) &&
+        precoAtual <= (zonaHigh + margem);
+
+    return { direcao, zonaLow, zonaHigh, naZona };
+
+}
+
 async function analisarPar({
 db,
 par,
@@ -254,6 +342,29 @@ return {
 };
 }
 
+// MUD-05 (17/09/2026): detecção de order block só roda com a flag
+// explicitamente ligada (configuracao?.smcAtivo === true) - padrão
+// desligada. Com a flag desligada, `smc` fica null e o score sai
+// idêntico ao de antes desta mudança (ver aplicarBonusSMC).
+let smc = null;
+
+if (configuracao?.smcAtivo === true) {
+
+    const candlesNumericos = candles.map(c => ({
+
+        open: Number(c.open),
+        high: Number(c.high),
+        low: Number(c.low),
+        close: Number(c.close)
+
+    }));
+
+    smc = detectarOrderBlock(candlesNumericos, atrAtual, closes[closes.length - 1]);
+
+    console.log(`SMC..............${smc ? `OB ${smc.direcao}${smc.naZona ? " (preço na zona)" : " (fora da zona)"}` : "nenhum OB relevante"}`);
+
+}
+
 const qualidade = calcularQualidade(
     ema9,
     ema21,
@@ -266,8 +377,9 @@ const qualidade = calcularQualidade(
     ema21_15,
     ema50_15,
     estatisticas,
-    atrAtual
-    
+    atrAtual,
+    smc
+
 );
 
 // ===================================================
@@ -370,7 +482,12 @@ const decisao = avaliarOperacao({
 
     perfil,
 
-    operacoesHistoricas: estatisticas.operacoes
+    // MUD-02 (17/09/2026): antes usava estatisticas.operacoes (contado
+    // pelo RÓTULO do perfil - travava o CONSERVADOR estruturalmente,
+    // ver statisticsEngine.js). Agora usa a contagem por SCORE. Fallback
+    // pro comportamento antigo (?? estatisticas.operacoes) se o campo
+    // faltar por qualquer motivo, em vez de quebrar.
+    operacoesHistoricas: estatisticas.operacoesElegiveis ?? estatisticas.operacoes
 
 });
 
@@ -468,6 +585,13 @@ const analise = {
     qualidade: qualidade.qualidade,
 
     tendencia: qualidade.tendencia,
+
+    // MUD-01 (17/09/2026): `qualidade.multi` já era usado por
+    // avaliarOperacao() pra decidir aprovar/reprovar (exigirMultiTimeframe
+    // no perfil) e aparecia no log ("Multi TF..."), mas nunca era
+    // persistido no documento salvo - não havia como reavaliar
+    // retroativamente se um sinal passado teria satisfeito esse critério.
+    multi: qualidade.multi,
 
     scoreTecnico: qualidade.scoreTecnico,
 
@@ -638,5 +762,8 @@ return {
 }
 
 module.exports = {
-    analisarPar
+    analisarPar,
+    // MUD-05: exportado só pra teste isolado da detecção em si, sem
+    // precisar montar todo o pipeline de analisarPar().
+    detectarOrderBlock
 };

@@ -8,7 +8,16 @@ const ENGINE_WEIGHTS = {
     BONUS_BOA: 3,
     PENALIDADE_RUIM: 10,
     PENALIDADE_SEM_BASE: 5,
-    PENALIDADE_DIVERGENCIA: 10
+    PENALIDADE_DIVERGENCIA: 10,
+
+    // MUD-05 (17/09/2026): peso inicial deliberadamente pequeno (mesma
+    // ordem do BONUS_BOA) - revisão de literatura não encontrou
+    // evidência revisada por pares de vantagem estatística própria de
+    // conceitos SMC/ICT testados isoladamente. Camada secundária de
+    // confirmação, nunca decisora sozinha: um order block não aprova
+    // nem reprova operação nenhuma por si só. Valor inicial pra
+    // calibrar depois com dado real, não definitivo.
+    SMC_ORDER_BLOCK: 3
 };
 
 // ======================================================
@@ -106,6 +115,36 @@ function aplicarPenalidadeHistorico(
 }
 
 // ======================================================
+// SMC — ORDER BLOCKS (MUD-05, 17/09/2026)
+// ======================================================
+//
+// `smc` vem da detecção feita em pairAnalyzer.js (quem tem os candles
+// - este arquivo só decide o PESO, não detecta nada). `tendencia` é a
+// direção já calculada pelo Market Analyzer (emas.tendencia) pro
+// sinal atual - comparada contra a direção do order block detectado.
+//
+// Regra: OB na MESMA direção do sinal, com o preço dentro/perto da
+// zona -> bônus. OB na direção CONTRÁRIA, mesma condição de zona ->
+// penalidade. Sem OB detectado, ou preço fora da zona -> neutro
+// (nunca penaliza AUSÊNCIA de order block - só a presença de um
+// contrário).
+function aplicarBonusSMC(smc, tendencia) {
+
+    if (!smc || !smc.naZona) {
+        return 0;
+    }
+
+    if (tendencia !== "ALTA" && tendencia !== "BAIXA") {
+        return 0;
+    }
+
+    return smc.direcao === tendencia
+        ? ENGINE_WEIGHTS.SMC_ORDER_BLOCK
+        : -ENGINE_WEIGHTS.SMC_ORDER_BLOCK;
+
+}
+
+// ======================================================
 // EXPORTS
 // ======================================================
 
@@ -118,5 +157,9 @@ module.exports = {
     aplicarBonusHistorico,
 
     aplicarPenalidadeHistorico,
+
+    aplicarBonusSMC,
+
+    ENGINE_WEIGHTS,
 
 };

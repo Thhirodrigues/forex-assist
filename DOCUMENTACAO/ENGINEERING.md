@@ -9251,3 +9251,205 @@ uma checagem manual dos primeiros ciclos nesse momento, seguindo a
 mesma disciplina já registrada neste documento pra qualquer reativação
 de gate depois de correção.
 --------
+MARCO ZERO — execução da ESPEC-EXECUCAO-RMI-MARCO-ZERO.md (17/09/2026)
+
+Origem: usuário trouxe uma especificação completa produzida pelo
+Claude "Claudinho" (auditoria/arquitetura), com diagnóstico,
+evidência real de produção, mudança exata e critério de aceitação
+pra 5 itens (MUD-01 a MUD-05), pedindo execução. Cada mudança abaixo
+foi implementada, testada isoladamente e revalidada contra a suíte
+completa (sem regressão nova além das 5 falhas pré-existentes já
+documentadas: bug020, definir-saldo-inicial, definir-saldo-simulada,
+limitediario-riskmanager [flakiness de horário perto da meia-noite,
+já registrada], pentefino-conservador-quebrado [rastreador de achado
+conhecido, intencional]) antes de passar pra próxima.
+
+--------
+MUD-01 — Persistir `multi` no documento do sinal (scripts/pairAnalyzer.js)
+
+`qualidade.multi` já era usado por `avaliarOperacao()` pra aprovar/
+reprovar (exigência de multi-timeframe por perfil) e aparecia no log
+("Multi TF..."), mas nunca era gravado no documento salvo - sem esse
+dado, nenhuma reavaliação retroativa desse critério era possível.
+Campo aditivo: `multi: qualidade.multi,` junto dos outros campos de
+`qualidade` no objeto `analise`.
+
+Validado: teste isolado (`validate-mud01-mud04.js`) confirmando que o
+valor persistido reflete exatamente o que `calcularQualidade()`
+devolveu (2 cenários, valores diferentes - não é fixo). Suíte
+completa sem regressão.
+--------
+MUD-02 — Destrava o CONSERVADOR: elegibilidade de histórico por
+score, não por rótulo (scripts/statisticsEngine.js, scripts/pairAnalyzer.js)
+
+Achado da espec, confirmado: `historico` com `perfil == "CONSERVADOR"`
+retornava 0 documentos - nunca houve UMA operação sob esse perfil em
+toda a história do app. Causa: trava circular entre dois mecanismos
+que se somam - `operacoesMinimas: 30` (decisionEngine.js) exige 30
+operações "elegíveis"; `operacaoAtendeRigorDoPerfil()`
+(statisticsEngine.js) só conta como elegível pro CONSERVADOR uma
+operação rotulada CONSERVADOR; pra existir uma operação CONSERVADOR
+ela precisa primeiro ser aprovada. Impossível por construção.
+
+Decisão de produto (da espec, não reaberta): histórico antigo conta
+pelo SCORE (`score >= scoreMinimo` do perfil atual), mesmo sem saber
+se teria multi-timeframe confirmado - esse dado nunca existiu antes
+do MUD-01. A exigência de multi continua valendo pro sinal NOVO.
+
+Decisão de arquitetura (da espec, não reaberta): calculado À PARTE do
+filtro estatístico global (`operacaoAtendeRigorDoPerfil`, que
+continua intacto, alimentando wins/loss/streaks/taxaAcerto de todos
+os perfis) - trocar aquele filtro globalmente mudaria a base
+estatística de todos os perfis de uma vez, sem conseguir medir o
+efeito isolado. `operacoesElegiveis` serve EXCLUSIVAMENTE o gate
+`operacoesMinimas`.
+
+Implementação: `statisticsEngine.js` importa `obterPerfilAnalise` de
+`decisionEngine.js` (sem duplicar os números 35/45/55; confirmado sem
+risco de import circular antes de implementar - `decisionEngine.js`
+só importa `moneyManager.js`). Dentro de `obterEstatisticasPar()`,
+sobre o MESMO `operacoesRaw` já carregado (zero consulta nova ao
+Firestore - restrição real de orçamento, ver abaixo), calcula
+`operacoesElegiveis = operacoesRaw.filter(WIN/LOSS com score >=
+scoreMinimoPerfil).length`, devolvido junto do resto. `pairAnalyzer.js`
+passa `operacoesHistoricas: estatisticas.operacoesElegiveis ??
+estatisticas.operacoes` (fallback preserva o comportamento antigo se
+o campo faltar).
+
+Validado: teste isolado novo (`validate-mud02-conservador.js`, 10
+cenários) - conta corretamente por score independente do rótulo;
+zero quando o score não bate; relativo ao perfil atual (mesmo score
+conta pro BALANCEADO mas não pro CONSERVADOR); documentos sem `score`
+gravado não contam (não quebra); ponta-a-ponta via `analisarPar()`
+confirmando que `operacoesElegiveis=35` destrava o CONSERVADOR e
+`operacoesElegiveis=10` continua bloqueando. Suíte completa sem
+regressão.
+
+**Checkpoint obrigatório da espec, PENDENTE**: "antes de dar a MUD-02
+por concluída, medir quantas das últimas 50 operações por par têm
+score >= 55 (real) e reportar os números - se a maioria ficar abaixo
+de 30, a correção é necessária mas não suficiente, decisão seguinte é
+do usuário". Script de medição pronto
+(`medir-mud02-viabilidade.js`), mas a cota do Firestore está
+estourada (`RESOURCE_EXHAUSTED`, confirmado em duas tentativas,
+mesmo problema que a própria espec registrou ter acontecido durante a
+auditoria original) - não foi possível rodar a medição real ainda.
+Não decidir se o CONSERVADOR está de fato destravado na prática sem
+esse número.
+--------
+MUD-03 — SL e TP financeiros pelo extremo intrabar, não pelo close da
+vela (js/checker.js)
+
+Achado da espec, com dado real: operações fechadas por
+`SL_FINANCEIRO` registravam prejuízo 81%-235% acima do `slUSD`
+combinado no sinal (AUD/USD: SL $3 / real $6,88; USD/JPY: SL $5 /
+real $9,06; USD/CHF: SL $3 / real $10,04). Causa: o critério de pips
+já usava os extremos intrabar corretos (`precoMaximo`/`precoMinimo`,
+acumulados a cada candle), mas o critério FINANCEIRO - o que fecha a
+maioria das operações reais - media o lucro só no `close` da vela de
+5min. O preço atravessava o SL no meio da vela, voltava um pouco, e a
+operação só fechava quando o CLOSE já tinha passado muito do limite.
+
+Correção: dentro do laço de candles, calcula `precoFavoravel`/
+`precoAdverso` conforme a direção (BUY: favorável=máximo corrente,
+adverso=mínimo corrente; SELL: espelho) - reaproveitando os mesmos
+`precoMaximo`/`precoMinimo` que os pips já usam. TP é comparado contra
+o lucro no extremo FAVORÁVEL; SL contra o lucro no extremo ADVERSO -
+não mais os dois contra o mesmo `close`. Regra de desempate (decisão
+de engenharia da espec, documentada no código): se a MESMA vela
+satisfaz TP e SL ao mesmo tempo (candle muito volátil - com OHLC não
+dá pra saber qual foi tocado primeiro), assume-se SL primeiro
+(hipótese pessimista, convenção padrão de backtest). Ao encerrar por
+critério financeiro, grava o extremo que efetivamente disparou o
+encerramento como `precoAtual` (não mais `candleFinal.close`) - sem
+isso o `resultadoFinanceiro` continuaria refletindo o fechamento da
+vela mesmo com a detecção corrigida. TP_PIPS/SL_PIPS continuam
+gravando `candle.close`, como antes - fora do escopo desta correção
+(só o critério financeiro estava errado).
+
+Validado: teste isolado novo (`validate-mud03-extremo-intrabar.js`, 11
+cenários, extrai `calcularResultadoOperacao()` do arquivo REAL via
+regex+requre, não uma cópia hardcoded) - reproduz o padrão exato do
+incidente real de AUD/USD com uma sequência de 3 velas (a função para
+JÁ na 1ª vela, que toca o SL no low mas fecha recuperada - antes
+disto ela teria continuado até a 3ª vela, terminando 2-3x pior);
+confirma o mesmo pro lado TP; confirma a regra de desempate SL-primeiro
+quando uma vela toca os dois; confirma que TP_PIPS/SL_PIPS não foram
+tocados. Suíte completa de testes relacionados a `checker.js`
+revalidada - 1 teste pré-existente (`validate-push-integracao-checker.js`)
+tinha uma vela cujo low e high batiam TP e SL ao mesmo tempo (ambiguidade
+que a lógica antiga não enxergava, por só olhar o close) - corrigido o
+fixture do teste (não o código), documentando por quê, já que o teste
+queria validar integração de push, não a regra de desempate.
+--------
+MUD-04 — `horario` gravado em fuso de Brasília, não UTC do runtime
+(scripts/riskManager.js)
+
+Achado da espec: `new Date().toLocaleString("pt-BR")` formata no
+padrão brasileiro mas usa o fuso do RUNTIME (GitHub Actions = UTC) -
+o campo parecia horário de Brasília mas ficava consistentemente 3h
+adiantado (confirmado comparando com o `timestamp` epoch, sempre
+correto, do mesmo documento). Corrigido:
+`toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })`.
+
+Validado: teste isolado (`validate-mud01-mud04.js`, forçando
+`TZ=UTC` no processo de teste pra reproduzir o ambiente real do
+GitHub Actions) - `horario` bate com o formato calculado
+explicitamente pra America/Sao_Paulo e NÃO bate mais com o formato
+UTC. Não altera documentos antigos (fora do escopo, como definido na
+espec).
+--------
+MUD-05 — Order blocks SMC como bônus/penalidade de score, com
+interruptor (scripts/pairAnalyzer.js, scripts/scoreEngine.js,
+scripts/marketAnalyzer.js)
+
+Escopo (da espec, não reaberto): só order blocks nesta primeira
+implementação (liquidity sweeps e fair value gaps ficam de fora).
+Camada secundária de confirmação, DELIBERADAMENTE conservadora - a
+revisão de literatura da espec não encontrou evidência revisada por
+pares de vantagem estatística própria de SMC/ICT testado
+isoladamente. Um order block nunca aprova nem reprova sozinho.
+
+Detecção (`detectarOrderBlock`, pairAnalyzer.js - é quem tem os
+candles, calcula sem interpretar): varre as últimas 50 velas de 5min,
+do mais recente pro mais antigo. Order block de ALTA = último candle
+de baixa (close<open) imediatamente antes de um movimento impulsivo
+de alta (deslocamento >= 1,5×ATR dentro de 3 velas seguintes,
+medido close-a-close); order block de BAIXA = espelho. Zona = [low,
+high] do próprio candle, com margem de 20% do tamanho da zona pra
+"perto" contar. Retorna o PRIMEIRO (mais recente) OB relevante
+encontrado, ou `null`.
+
+Peso (`aplicarBonusSMC`, scoreEngine.js - nova constante
+`SMC_ORDER_BLOCK: 3` em `ENGINE_WEIGHTS`, mesma ordem do
+`BONUS_BOA`): OB na MESMA direção do sinal + preço na zona -> +3; OB
+CONTRÁRIO + preço na zona -> -3; sem OB, ou fora da zona -> 0 (nunca
+penaliza AUSÊNCIA de order block).
+
+Aplicação (marketAnalyzer.js): `calcularQualidade()` ganha um 13º
+parâmetro OPCIONAL (`smc = null`) no FIM da lista - as 12 chamadas
+posicionais existentes continuam funcionando sem alteração nenhuma.
+Bônus somado ANTES da normalização (`calcularScoreBase`), junto do
+resto do score técnico.
+
+Interruptor: `configuracao.smcAtivo === true` (padrão: qualquer outro
+valor, incluindo ausente, é DESLIGADO). Com a flag desligada, a
+detecção NUNCA roda (nem o log "SMC.............." aparece) - zero
+chance de qualquer efeito colateral. Log claro quando ativo: mostra o
+OB detectado (direção, se o preço está na zona) ou "nenhum OB
+relevante".
+
+Validado: teste isolado novo (`validate-mud05-smc-orderblock.js`, 21
+cenários) - detecção pura (OB de alta e de baixa, sem deslocamento
+suficiente não detecta nada, preço fora da zona reportado
+corretamente, entradas inválidas não quebram); `aplicarBonusSMC`
+isolado (todos os casos de neutro/bônus/penalidade); `calcularQualidade()`
+REAL (não mock) confirmando REGRESSÃO ZERO byte-a-byte entre chamar
+sem o 13º parâmetro e chamar com `smc=null` explícito, e impacto de
+exatamente ±3 no score pré-normalização (documentado que um dos lados
+pode bater no teto/piso 0-100 depois da normalização, sem invalidar o
+delta pré-normalização que é o que a espec pede); ponta-a-ponta via
+`analisarPar()` confirmando que com a flag ausente/desligada nenhuma
+linha de log de SMC aparece - a detecção literalmente nunca executa.
+Suíte completa sem regressão.
+--------

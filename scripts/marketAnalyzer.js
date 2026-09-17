@@ -31,7 +31,9 @@ const {
 
     aplicarBonusHistorico,
 
-    aplicarPenalidadeHistorico
+    aplicarPenalidadeHistorico,
+
+    aplicarBonusSMC
 
 
 } = require("./scoreEngine");
@@ -621,6 +623,13 @@ function classificarQualidade(scoreFinal) {
     return "CONFLITO";
 }
 
+// MUD-05 (17/09/2026): `smc` é um parâmetro OPCIONAL no FIM da lista -
+// preserva todas as chamadas existentes (12 posicionais) intactas.
+// Vem de pairAnalyzer.js (detecção de order block, com os candles que
+// só ele tem) - este arquivo só interpreta/pesa, nunca recebe o array
+// de candles bruto. `null`/ausente (flag SMC desligada, ou nenhum OB
+// relevante detectado) reproduz o score de antes desta mudança,
+// bit a bit - ver aplicarBonusSMC() em scoreEngine.js.
 function calcularQualidade(
   ema9,
   ema21,
@@ -633,7 +642,8 @@ function calcularQualidade(
   ema21_15,
   ema50_15,
   estatisticas,
-  atrAtual
+  atrAtual,
+  smc = null
 ) {
 
   let score = 0;
@@ -825,9 +835,18 @@ const penalidade =
         multi
     );
 scoreFinal -= penalidade;
-    
+
 scoreFinal += Math.round(volatilidade.score * 0.5);
-    
+
+// MUD-05 (17/09/2026): bônus/penalidade de order block SMC, somado
+// ANTES da normalização (mesma altura de todo o resto do score
+// técnico) - camada secundária, nunca decide sozinha (ver
+// aplicarBonusSMC em scoreEngine.js). smcScore fica 0 quando `smc` é
+// null (flag desligada ou nenhum OB relevante) - score idêntico ao de
+// antes desta mudança nesse caso.
+const smcScore = aplicarBonusSMC(smc, emas.tendencia);
+scoreFinal += smcScore;
+
 // =====================================================
 // NORMALIZAÇÃO DO SCORE
 // =====================================================
@@ -916,7 +935,14 @@ return {
 
     consistencia: historico.consistencia,
 
-    tendenciaRecente: historico.tendenciaRecente
+    tendenciaRecente: historico.tendenciaRecente,
+
+    // MUD-05 (17/09/2026): expõe o que a detecção de order block
+    // decidiu, pra log e pra eventual persistência - smcScore é 0 quando
+    // `smc` é null (flag desligada ou nenhum OB relevante encontrado).
+    smcDetectado: smc ? { direcao: smc.direcao, naZona: smc.naZona } : null,
+
+    smcScore
 
 };
 

@@ -9,6 +9,15 @@
 // SPRINT 05
 // ===================================================
 
+// MUD-02 (17/09/2026): usado só para calcular operacoesElegiveis (gate
+// de operacoesMinimas do CONSERVADOR) - NÃO usado para trocar o filtro
+// estatístico global (operacaoAtendeRigorDoPerfil, abaixo). Ver
+// ENGINEERING.md pela justificativa de escopo dessa separação
+// deliberada. statisticsEngine.js não importava nada antes desta
+// mudança; decisionEngine.js importa só moneyManager.js - sem risco de
+// import circular (confirmado antes de implementar).
+const { obterPerfilAnalise } = require("./decisionEngine");
+
 // Amostra mínima para o histórico influenciar o score com confiança.
 // Elevado de 10 para 30 em 07/09/2026: auditoria do histórico de julho
 // mostrou pares com 1-5 operações recebendo peso significativo no score
@@ -144,6 +153,34 @@ async function obterEstatisticasPar(
 ) {
 
     const operacoesRaw = await obterOperacoesBrutasDoPar(db, par);
+
+    // MUD-02 (17/09/2026): o CONSERVADOR estava estruturalmente
+    // travado - operacoesMinimas=30 (decisionEngine.js) só contava
+    // operações rotuladas "CONSERVADOR" (via operacaoAtendeRigorDoPerfil,
+    // que é o filtro mais rigoroso da hierarquia), mas pra existir uma
+    // operação CONSERVADOR ele precisava primeiro ser aprovado - trava
+    // circular, impossível por construção (confirmado: 0 documentos com
+    // perfil=="CONSERVADOR" em todo o histórico real de produção).
+    //
+    // Decisão de produto: histórico antigo conta pelo SCORE pra fins de
+    // elegibilidade mínima, mesmo sem saber se teria multi-timeframe
+    // confirmado (esse dado nunca existiu antes do MUD-01). A exigência
+    // de multi continua valendo pro sinal NOVO (decisionEngine.js) - só
+    // não é exigida retroativamente do histórico.
+    //
+    // Decisão de arquitetura: calculado À PARTE do filtro estatístico
+    // usado no resto desta função (operacaoAtendeRigorDoPerfil, abaixo) -
+    // aquele alimenta wins/loss/streaks/taxaAcerto/expectativa de TODOS
+    // os perfis; trocá-lo agora mudaria a base estatística de uma vez só,
+    // sem conseguir medir o efeito isoladamente. operacoesElegiveis serve
+    // EXCLUSIVAMENTE o gate operacoesMinimas de decisionEngine.js.
+    const scoreMinimoPerfil =
+        obterPerfilAnalise((perfilAtual || "BALANCEADO").toUpperCase()).scoreMinimo;
+
+    const operacoesElegiveis = operacoesRaw.filter(dados =>
+        (dados.resultado === "WIN" || dados.resultado === "LOSS") &&
+        Number(dados.score) >= scoreMinimoPerfil
+    ).length;
 
     let wins = 0;
     let loss = 0;
@@ -381,6 +418,11 @@ if (operacoes >= OPERACOES_MINIMAS_HISTORICO) {
     loss,
 
     operacoes,
+
+    // MUD-02 (17/09/2026): contagem separada, só pro gate
+    // operacoesMinimas de decisionEngine.js - ver comentário acima de
+    // onde é calculado.
+    operacoesElegiveis,
 
     winStreak,
 
