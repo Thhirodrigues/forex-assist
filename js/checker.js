@@ -213,6 +213,19 @@ function calcularResultadoOperacao({
     let motivoEncerramento = null;
     let candleEncerramento = null;
 
+    // MUD-03 (17/09/2026): o critério de pips já usava os extremos
+    // intrabar corretos (precoMaximo/precoMinimo, acumulados abaixo),
+    // mas o critério FINANCEIRO (o que fecha a maioria das operações
+    // reais) media o lucro só no `close` da vela de 5min - o preço
+    // atravessava o SL no meio da vela, voltava um pouco, e a operação
+    // só encerrava quando o FECHAMENTO já tinha passado muito do
+    // limite. Confirmado com dado real de produção: SL combinado de
+    // $3-5 fechando com prejuízo de $6,88-$10,04 (81% a 235% acima do
+    // combinado). Corrigido: mede TP no extremo FAVORÁVEL e SL no
+    // extremo ADVERSO da vela (mesmos precoMaximo/precoMinimo já
+    // usados pelos pips), não mais os dois contra o mesmo `close`.
+    let precoExtremoEncerramento = null;
+
     // Percorre os candles em ordem cronológica, atualizando os extremos e
     // checando as condições de saída a cada passo - assim, um TP/SL tocado
     // no meio do caminho é detectado mesmo que candles posteriores já
@@ -221,6 +234,12 @@ function calcularResultadoOperacao({
 
         precoMaximo = Math.max(precoMaximo, candle.high);
         precoMinimo = Math.min(precoMinimo, candle.low);
+
+        // MUD-03: preço favorável/adverso desta vela, conforme a
+        // direção - mesma lógica que maxPipsFavor/maxPipsContra já
+        // aplicam, reaproveitada aqui pro critério financeiro.
+        const precoFavoravel = sinal.direcao === "BUY" ? precoMaximo : precoMinimo;
+        const precoAdverso = sinal.direcao === "BUY" ? precoMinimo : precoMaximo;
 
         if (sinal.direcao === "BUY") {
 
@@ -248,18 +267,41 @@ function calcularResultadoOperacao({
 
         }
 
-        const lucroCandle = calcularLucroUSD(
-            calcularMovimentoPips(sinal, candle.close),
+        const lucroNoExtremoFavoravel = calcularLucroUSD(
+            calcularMovimentoPips(sinal, precoFavoravel),
             lote,
             sinal.par,
-            candle.close,
+            precoFavoravel,
             cotacaoCruzada
         );
 
-        if (lucroCandle >= limites.TP_USD) {
-            motivoEncerramento = "TP_FINANCEIRO";
-        } else if (lucroCandle <= limites.SL_USD) {
+        const lucroNoExtremoAdverso = calcularLucroUSD(
+            calcularMovimentoPips(sinal, precoAdverso),
+            lote,
+            sinal.par,
+            precoAdverso,
+            cotacaoCruzada
+        );
+
+        const tpFinanceiroAtingido = lucroNoExtremoFavoravel >= limites.TP_USD;
+        const slFinanceiroAtingido = lucroNoExtremoAdverso <= limites.SL_USD;
+
+        // MUD-03: regra de desempate - com candles OHLC não dá pra
+        // saber se o preço tocou primeiro a máxima ou a mínima dentro
+        // da mesma vela. Se a MESMA vela satisfaz TP e SL ao mesmo
+        // tempo, assume-se SL primeiro (hipótese pessimista) - convenção
+        // padrão em backtest pra não superestimar resultado. Fora desse
+        // empate específico, a ordem de checagem original (TP -> SL ->
+        // TP_PIPS -> SL_PIPS) é preservada.
+        if (tpFinanceiroAtingido && slFinanceiroAtingido) {
             motivoEncerramento = "SL_FINANCEIRO";
+            precoExtremoEncerramento = precoAdverso;
+        } else if (tpFinanceiroAtingido) {
+            motivoEncerramento = "TP_FINANCEIRO";
+            precoExtremoEncerramento = precoFavoravel;
+        } else if (slFinanceiroAtingido) {
+            motivoEncerramento = "SL_FINANCEIRO";
+            precoExtremoEncerramento = precoAdverso;
         } else if (maxPipsFavor >= limites.TP_PIPS) {
             motivoEncerramento = "TP_PIPS";
         } else if (maxPipsContra <= limites.SL_PIPS) {
@@ -274,7 +316,15 @@ function calcularResultadoOperacao({
     }
 
     const candleFinal = candleEncerramento ?? candles[candles.length - 1];
-    const precoAtual = candleFinal.close;
+
+    // MUD-03: pro fechamento FINANCEIRO, grava o extremo que de fato
+    // disparou o encerramento, não candleFinal.close - senão
+    // resultadoFinanceiro/movimentoPips/saldoDepois continuam
+    // refletindo o fechamento da vela e o bug permanece nos números
+    // gravados mesmo com a detecção já corrigida acima. TP_PIPS/
+    // SL_PIPS continuam usando candleFinal.close, como antes (fora do
+    // escopo desta correção - só o critério financeiro estava errado).
+    const precoAtual = precoExtremoEncerramento ?? candleFinal.close;
 
     const movimentoPips = calcularMovimentoPips(sinal, precoAtual);
 
