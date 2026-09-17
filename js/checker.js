@@ -304,8 +304,10 @@ function calcularResultadoOperacao({
             precoExtremoEncerramento = precoAdverso;
         } else if (maxPipsFavor >= limites.TP_PIPS) {
             motivoEncerramento = "TP_PIPS";
+            precoExtremoEncerramento = precoFavoravel;
         } else if (maxPipsContra <= limites.SL_PIPS) {
             motivoEncerramento = "SL_PIPS";
+            precoExtremoEncerramento = precoAdverso;
         }
 
         if (motivoEncerramento) {
@@ -317,13 +319,18 @@ function calcularResultadoOperacao({
 
     const candleFinal = candleEncerramento ?? candles[candles.length - 1];
 
-    // MUD-03: pro fechamento FINANCEIRO, grava o extremo que de fato
-    // disparou o encerramento, não candleFinal.close - senão
-    // resultadoFinanceiro/movimentoPips/saldoDepois continuam
-    // refletindo o fechamento da vela e o bug permanece nos números
-    // gravados mesmo com a detecção já corrigida acima. TP_PIPS/
-    // SL_PIPS continuam usando candleFinal.close, como antes (fora do
-    // escopo desta correção - só o critério financeiro estava errado).
+    // AJUSTE-002 (17/09/2026): o MUD-03 corrigiu o extremo gravado pro
+    // fechamento FINANCEIRO, mas deixou TP_PIPS/SL_PIPS usando
+    // candleFinal.close por engano - achando que esses dois critérios
+    // eram "só contagem de pips", sem valor em dólar associado.
+    // Confirmado com dado real (NZD/USD 16/09 15:11): motivoEncerramento
+    // SL_PIPS (rompeu -13 pips no extremo intrabar), mas
+    // resultadoFinanceiro gravado saiu +$0,74 porque usava o close da
+    // vela, que tinha recuado - LOSS com valor em dólar positivo.
+    // Agora TP_PIPS/SL_PIPS também gravam precoExtremoEncerramento
+    // (precoFavoravel/precoAdverso), igual ao caminho financeiro -
+    // se o critério que fechou foi o extremo intrabar, o valor em
+    // dólar gravado precisa vir do mesmo extremo, não do close.
     const precoAtual = precoExtremoEncerramento ?? candleFinal.close;
 
     const movimentoPips = calcularMovimentoPips(sinal, precoAtual);

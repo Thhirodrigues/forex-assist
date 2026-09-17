@@ -9325,17 +9325,37 @@ confirmando que `operacoesElegiveis=35` destrava o CONSERVADOR e
 `operacoesElegiveis=10` continua bloqueando. Suíte completa sem
 regressão.
 
-**Checkpoint obrigatório da espec, PENDENTE**: "antes de dar a MUD-02
-por concluída, medir quantas das últimas 50 operações por par têm
-score >= 55 (real) e reportar os números - se a maioria ficar abaixo
-de 30, a correção é necessária mas não suficiente, decisão seguinte é
-do usuário". Script de medição pronto
-(`medir-mud02-viabilidade.js`), mas a cota do Firestore está
-estourada (`RESOURCE_EXHAUSTED`, confirmado em duas tentativas,
-mesmo problema que a própria espec registrou ter acontecido durante a
-auditoria original) - não foi possível rodar a medição real ainda.
-Não decidir se o CONSERVADOR está de fato destravado na prática sem
-esse número.
+**Checkpoint obrigatório da espec, RESOLVIDO (17/09/2026)**: "antes de
+dar a MUD-02 por concluída, medir quantas das últimas 50 operações por
+par têm score >= 55 (real) e reportar os números - se a maioria ficar
+abaixo de 30, a correção é necessária mas não suficiente, decisão
+seguinte é do usuário". Cota do Firestore resetou (confirmado por
+leitura mínima bem-sucedida) e a medição real rodou
+(`medir-mud02-viabilidade.js`) contra os 8 pares monitorados:
+
+```
+Pares configurados: EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD, USD/CHF, NZD/USD, EUR/JPY
+Amostra maxima por par: 50 | scoreMinimo CONSERVADOR: 55 | operacoesMinimas exigido: 30
+
+EUR/USD  | amostra=42 | score>=55=38 | DESTRAVADO (>=30)
+GBP/USD  | amostra=46 | score>=55=33 | DESTRAVADO (>=30)
+USD/JPY  | amostra=43 | score>=55=35 | DESTRAVADO (>=30)
+AUD/USD  | amostra=43 | score>=55=34 | DESTRAVADO (>=30)
+USD/CAD  | amostra=44 | score>=55=37 | DESTRAVADO (>=30)
+USD/CHF  | amostra=40 | score>=55=31 | DESTRAVADO (>=30)
+NZD/USD  | amostra=31 | score>=55=21 | AINDA TRAVADO (<30)
+EUR/JPY  | amostra=10 | score>=55= 0 | AINDA TRAVADO (<30)
+
+Resumo: 6/8 pares destravados pro CONSERVADOR com a MUD-02.
+```
+
+Decisão (regra da própria espec: maioria destravada -> correção
+necessária E suficiente, sem mudança adicional): **`operacoesMinimas`
+não é alterado**. NZD/USD e EUR/JPY continuam travados por terem
+histórico genuinamente pequeno (EUR/JPY foi zerado pela limpeza do
+BUG-027 e está reconstruindo do zero) - não é falha da correção, é
+amostra insuficiente ainda, que se resolve sozinha com o tempo/mais
+sinais.
 --------
 MUD-03 — SL e TP financeiros pelo extremo intrabar, não pelo close da
 vela (js/checker.js)
@@ -9489,13 +9509,46 @@ contraprova (WIN com número negativo continua verde); PENDENTE
 continua colorindo pelo sinal bruto (sem regressão). Suíte completa
 de testes de `historico.js` revalidada sem regressão.
 
-Pendente, registrado mas não decidido agora: a causa RAIZ (SL_PIPS/
-TP_PIPS usando `candle.close` em vez do extremo intrabar pro valor em
-dólar, o mesmo padrão que o MUD-03 corrigiu só pro caminho
-financeiro) provavelmente ainda existe - esta correção resolve a
-CONTRADIÇÃO visual, não o número em si, que pode continuar levemente
-impreciso pra fechamentos via pips. Cota do Firestore ainda bloqueada
-no momento desta correção - não foi possível confirmar contra o
-documento real da operação de origem. Candidato a follow-up direto do
-MUD-03, quando a cota voltar.
+Causa raiz confirmada e corrigida (17/09/2026, js/checker.js): com a
+cota do Firestore liberada, o documento real de origem (NZD/USD,
+16/09/2026 15:11, id `1789582295793_NZD_USD`) foi consultado direto -
+confirma a hipótese ponto a ponto: `motivoEncerramento: "SL_PIPS"`,
+`maxPipsContra: -13` (rompeu o limite de 12,5 pips no extremo
+`precoMaximo: 0.57657` intrabar), mas `resultadoFinanceiro: +0.74`
+gravado veio de `precoAtual/precoFechamento: 0.5749` - o `close` da
+vela final, que tinha recuado de volta pra perto da entrada, não o
+extremo que efetivamente disparou o SL. Mesmo padrão de bug que o
+MUD-03 já tinha corrigido pro caminho financeiro (SL_FINANCEIRO/
+TP_FINANCEIRO), só que ali TP_PIPS/SL_PIPS foram deixados de fora por
+decisão de escopo.
+
+Correção: dentro do mesmo laço de candles de `calcularResultadoOperacao()`,
+os branches `TP_PIPS`/`SL_PIPS` agora também gravam
+`precoExtremoEncerramento` (`precoFavoravel`/`precoAdverso`,
+respectivamente) - reaproveitando as mesmas variáveis que o critério
+financeiro (MUD-03) já usa. `precoAtual` deixa de cair no fallback
+`candleFinal.close` pra esses dois motivos de encerramento, igual já
+acontecia pros financeiros.
+
+Validado: teste isolado novo (`validate-ajuste002-precoAtual-pips.js`,
+10 cenários, mesmo padrão de extração dinâmica de
+`validate-mud03-extremo-intrabar.js`) - reproduz o caso real exato do
+NZD/USD com uma vela sintética que toca 0.57657 no high (extremo
+adverso, dispara SL_PIPS) e fecha em 0.5749 (close, que dava o +$0,74
+errado): confirma `precoAtual` agora grava 0.57657 (o extremo) e
+`resultadoFinanceiro` sai negativo, consistente com o LOSS; mesma
+prova pro lado TP_PIPS (extremo favorável, não o close); contraprova
+de não regressão pro critério financeiro (MUD-03, continua gravando o
+extremo certo) e pra operação que nunca toca TP/SL (continua sem
+fechar). Suíte completa de testes de `checker.js` revalidada sem
+regressão - único teste que precisou de ajuste foi o cenário 5 de
+`validate-mud03-extremo-intrabar.js`, cuja asserção original
+("TP_PIPS continua gravando close") descrevia o comportamento ANTES
+desta correção, por desenho; atualizado pra não afirmar mais isso,
+com nota explicando a superseded por esta mudança.
+
+Com isso, o valor em dólar gravado (não só a cor exibida) passa a ser
+consistente com o rótulo WIN/LOSS pra QUALQUER motivo de encerramento
+(financeiro ou pips) - o gap de escopo aberto pelo MUD-03 está
+fechado.
 --------
