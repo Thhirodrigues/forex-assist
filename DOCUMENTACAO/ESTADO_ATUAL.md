@@ -21,6 +21,20 @@
 > `ENGINEERING.md` antes de confiar nas seções 3/4 abaixo como estado
 > atual - elas ainda descrevem 09/09, não 11/09. A seção 5 (próximo
 > passo) foi atualizada com o que ficou pendente da sessão de 11/09.
+>
+> **Aviso honesto nº 2 (19/09/2026)**: a defasagem acima não foi
+> corrigida - piorou. Entre 11/09 e 19/09 houve BUG-027 (pip de pares
+> cruzados), FEATURE-024 (gate de perda diária/disjuntor de losses,
+> resolvendo o achado mais crítico do `RECOMENDACOES_ANALISTA_FOREX.md`),
+> CACHE-001/002 (resolvendo estruturalmente o BUG-015 de orçamento de
+> API), toda a rodada MARCO ZERO (MUD-01 a MUD-05) e AJUSTE-001 a 003 -
+> nenhuma dessas mudanças está refletida nas seções 1-4 abaixo, que
+> continuam descrevendo 09/09. Também mudou a configuração de produção
+> em si (perfil, pares monitorados, janela) - ver achado 4 de
+> `PENDENCIAS-ESTRATEGICAS-RMI.md`. Este documento precisa de uma
+> consolidação de verdade, não só mais um aviso em cima do anterior -
+> registrado aqui como dívida, não resolvido nesta sessão. Pra estado
+> real, ler o final do `ENGINEERING.md` e `PENDENCIAS-ESTRATEGICAS-RMI.md`.
 
 ---
 

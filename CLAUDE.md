@@ -71,6 +71,14 @@ histórico alimenta o aprendizado futuro do sistema. Por isso:
   Explicitamente arquivado para não se perder, não para implementar sem
   confirmação prévia — cada item lá tem uma recomendação de prioridade,
   mas nenhum foi iniciado.
+- Pendências estratégicas de qualidade de trading (RSI sem veto, sem
+  spread modelado, sem teto de exposição entre pares, `riskEngine.js`/
+  `positionSizing.js` mortos, etc.): `DOCUMENTACAO/PENDENCIAS-ESTRATEGICAS-RMI.md`
+  — síntese de dois relatórios formais (`AUDITORIA_ESTRATEGICA_RMI.md`,
+  `RECOMENDACOES_ANALISTA_FOREX.md`, também arquivados aqui verbatim)
+  mais um handoff externo, com cada item CONFERIDO contra o código real
+  (não é cópia cega da fonte externa). Igual ao backlog acima: registrado,
+  nenhum item implementado sem decisão explícita antes.
 
 ## Ambiente
 
