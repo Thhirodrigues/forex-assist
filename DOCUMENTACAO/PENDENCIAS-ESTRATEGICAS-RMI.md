@@ -107,3 +107,63 @@ janela do backtest antes de rodar; diferenciação técnica real entre perfis
 (pesos, não só limiares) — mesmo item já registrado em `BACKLOG-E-VISAO.md`
 seção 3.1, com a mesma recomendação de esperar histórico comparável entre
 perfis antes de mexer.
+
+## 6. Achado novo (23/09/2026) — universo de pares vai esbarrar em cold-start de histórico
+
+Contexto: nesta sessão, o usuário pediu pra investigar rotacionar
+automaticamente os pares monitorados conforme a sessão de mercado (ex.:
+trocar pra pares JPY/AUD/NZD durante a janela asiática, voltar pros majors
+durante Londres/NY), usando o universo completo de 20 pares já cadastrado
+(`TODOS_PARES` em `js/config.js`), não só os ~8 monitorados hoje. A ideia
+foi dividida em duas frentes (ver `ENGINEERING.md`, AJUSTE-005): a frente 1
+(reorganizar a janela dos 8 pares já monitorados) foi implementada; a
+frente 2 (expandir de fato pro universo de 20 pares) ficou pendente porque
+esbarra num problema estrutural, registrado aqui por pedido explícito do
+usuário ("futuramente esse app vai ter que trabalhar com todos os pares...
+já deixa documentado que vamos ter que resolver isso").
+
+**O problema:** o gate de histórico mínimo é por par, não global.
+- `decisionEngine.js` (`operacoesMinimas: 30` pro CONSERVADOR, linha ~54)
+  bloqueia qualquer par com menos de 30 operações registradas **daquele
+  par especificamente** (`operacoesHistoricas`, vindo de
+  `estatisticas.operacoesElegiveis` em `statisticsEngine.js`).
+- `statisticsEngine.js` (linha ~315-318) zera `taxaAcerto` pra um par sem
+  nenhuma operação (`operacoes === 0 ? 0 : ...`) — não é `NaN`, é
+  tratado, mas o efeito prático é o mesmo tipo de bloqueio por outra via:
+  com `taxaAcerto=0`, `calcularExpectativa()` em `moneyManager.js` sempre
+  devolve `-slUSD` (fortemente negativo), o que trava o gate de
+  expectativa mínima do BALANCEADO (`expectativaMinima: 0`) mesmo sem
+  passar pelo gate de `operacoesMinimas` (que é 0 pro BALANCEADO).
+- Resultado: um par novo é estruturalmente preso num "ovo e galinha" —
+  precisa de operação pra construir histórico, mas só gera operação se o
+  histórico (que ainda não existe) permitir passar pelo gate. Só o
+  AGRESSIVO (`expectativaMinima: -1`, só avisa, nunca bloqueia) consegue
+  de fato operar um par com zero histórico e começar a acumular dado.
+
+**Por que isso piora com rotação por horário:** se um par só fica "ativo"
+algumas horas por dia (ex.: só na janela asiática), ele acumula operação
+mais devagar que um par monitorado 24h — pode levar semanas ou meses pra
+sair do zero no CONSERVADOR, ou nunca sair se a rotação tirar e recolocar
+o par antes de fechar operações suficientes. Ampliar o número de pares
+sem resolver isso significa espalhar a atenção do sistema entre mais
+séries de dado raso, exatamente o oposto do que a RMI precisa agora — a
+sessão inteira de 22-23/09 foi gasta lidando com consequência direta de
+histórico por par raso (taxa de acerto pouco confiável, simulação de R/R
+com amostras de n=1-4 por par oscilando o resultado).
+
+**Não implementado, decisão explícita pendente.** Caminhos possíveis pra
+quando isso for priorizado (nenhum avaliado a fundo ainda):
+- Período de "prova" de um par novo exclusivamente sob regras tipo
+  AGRESSIVO (ou um perfil interno "APRENDIZADO", nunca exposto ao
+  usuário) até acumular histórico mínimo, só depois liberando pro
+  BALANCEADO/CONSERVADOR.
+- Manter os pares recém-adicionados sempre ativos (sem rotação) até
+  atingirem `operacoesMinimas`, e só entrar no esquema de rotação depois
+  de "formados" — inverte a ordem (primeiro constrói histórico contínuo,
+  depois rotaciona).
+- Aceitar que expandir pra novos pares é, por definição, mais lento que o
+  usuário talvez espere, e comunicar isso explicitamente na tela de
+  Config quando um par novo for ligado pela primeira vez.
+
+Nenhuma dessas opções foi escolhida. Fica como pendência estratégica,
+mesma disciplina dos itens acima: não implementar sem decisão explícita.

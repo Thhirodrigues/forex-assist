@@ -516,23 +516,34 @@ function parElegivelJanelaAsia(par) {
 
 function parNaJanelaOperacional(par, context) {
 
-    if (dentroJanelaPadrao(context))
-        return true;
-
     const { diaSemana, minutosDoDia } = obterAgoraBrasil();
 
-    const elegivelJanelaAsia =
+    // AJUSTE-005 (23/09/2026): de seg-qui, pares com lastro asiático
+    // (JPY/AUD/NZD, exceto GBP/JPY) passam a operar EXCLUSIVAMENTE na
+    // janela asiática - deixam de rodar também na janela padrão
+    // (07:30-18:00) nesses dias. Antes rodavam nas duas, disputando
+    // ciclo/chamada de API com pares que já cobrem bem o horário de
+    // Londres/NY (EUR/USD, GBP/USD etc.) sem necessidade - a sessão de
+    // maior liquidez desses pares é a asiática, é nela que a RMI deve
+    // focar a análise. Fora de seg-qui (sex/sáb/dom), sem janela
+    // asiática definida (ver comentário acima, só seg-qui de
+    // propósito), esses pares continuam na janela padrão normal - não
+    // faz sentido tirá-los do único horário disponível nesses dias.
+    const elegivelJanelaAsiaHoje =
         parElegivelJanelaAsia(par) &&
         diaSemana >= 1 &&
         diaSemana <= 4;
 
-    if (!elegivelJanelaAsia)
-        return false;
+    if (elegivelJanelaAsiaHoje) {
 
-    return (
-        minutosDoDia >= JANELA_ASIA_INICIO &&
-        minutosDoDia <= JANELA_ASIA_FIM
-    );
+        return (
+            minutosDoDia >= JANELA_ASIA_INICIO &&
+            minutosDoDia <= JANELA_ASIA_FIM
+        );
+
+    }
+
+    return dentroJanelaPadrao(context);
 
 }
 

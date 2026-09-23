@@ -9696,3 +9696,66 @@ comparáveis) ainda é pequena. Os outros 7 pares continuam sem ajuste,
 travados enquanto mais histórico pós-AJUSTE-003 não se acumula (ver
 `PENDENCIAS-ESTRATEGICAS-RMI.md`).
 --------
+AJUSTE-005 — pares com lastro asiático (JPY/AUD/NZD) passam a operar
+EXCLUSIVAMENTE na janela asiática de seg-qui, não mais também na
+janela padrão (scripts/scanner.js)
+
+Origem: usuário pediu (23/09/2026) pra investigar escalonamento
+automático de pares por horário - a ideia maior era rotacionar entre
+os 20 pares cadastrados em `TODOS_PARES` (`js/config.js`) conforme a
+sessão de mercado fecha/abre, mantendo sempre ~8 pares ativos.
+Investigação encontrou um problema estrutural que bloqueia a ideia
+maior por ora (gate de histórico mínimo é por par - um par novo entra
+com `taxaAcerto=0`, expectativa sempre fortemente negativa, preso num
+ciclo "precisa de operação pra sair do zero, mas só opera se já tiver
+saído do zero" - só o AGRESSIVO, que não bloqueia por expectativa,
+escaparia disso). Registrado em detalhe, com pedido explícito do
+usuário pra não esquecer, em `PENDENCIAS-ESTRATEGICAS-RMI.md` seção 6.
+
+Escopo dividido em duas frentes; só a frente 1 foi implementada agora:
+- **Frente 1 (implementada):** reorganizar a janela dos 8 pares já
+  monitorados, sem mexer no universo de pares.
+- **Frente 2 (NÃO implementada, registrada como pendência):** expandir
+  de fato pro universo de 20 pares com rotação automática, incluindo
+  preencher o vácuo de liquidez das 18h-21h (hoje proposital, ver
+  comentário em `scripts/scanner.js` sobre "otimismo sem base"
+  removido) - depende de resolver o cold-start de histórico acima
+  antes de fazer sentido.
+
+Implementação da frente 1 (`scripts/scanner.js`,
+`parNaJanelaOperacional()`): antes, TODO par testava primeiro a janela
+padrão (07:30-18:00 Brasília) e só caía pra janela asiática
+(21:00-23:59, seg-qui) se estivesse fora dela - ou seja, pares
+JPY/AUD/NZD (exceto GBP/JPY, excluído de propósito por volatilidade)
+tinham acesso às DUAS janelas todo santo dia útil, disputando
+ciclo/chamada de API com os pares que já cobrem bem o horário de
+Londres/NY sem necessidade real (a sessão de maior liquidez desses
+pares É a asiática). Agora: de seg-qui, esses pares checam a janela
+asiática PRIMEIRO e de forma EXCLUSIVA (se são elegíveis nesse dia,
+só operam 21:00-23:59, nunca durante o dia); fora de seg-qui (sex/sáb/
+dom), sem janela asiática definida por regra de negócio já existente,
+continuam na janela padrão normal - não tira o único horário
+disponível deles nesses dias. Pares sem lastro asiático (EUR/USD,
+GBP/USD, USD/CAD, USD/CHF) e GBP/JPY (excluído explícito) não mudam
+em nada.
+
+Validado: teste isolado novo
+(`validate-ajuste005-janela-exclusiva.js`, 15 cenários, já que
+`scripts/scanner.js` não pode ser `require()`ado direto pra teste -
+`main()` roda como efeito colateral do próprio módulo, chamaria
+Firebase de verdade - então o teste copia verbatim as três funções
+puras editadas com `obterAgoraBrasil()` trocado por parâmetro
+mockável). Cobre: par asiático excluído da janela padrão em dia útil
+com janela asiática disponível (novo comportamento); mesmo par
+preservado na janela padrão em dia sem janela asiática (sexta,
+domingo - sem regressão); pares sem lastro asiático e GBP/JPY
+inalterados em todos os cenários (sem regressão); vácuo 18h-21h
+continua sem janela pra ninguém; sábado sem janela pra ninguém.
+15/15 cenários passaram.
+
+Pendente, per CLAUDE.md: validar os primeiros ciclos reais após o
+deploy, especialmente a transição de horário (pares JPY/AUD/NZD
+devem sumir da lista de pares analisados durante o dia útil e voltar
+a aparecer só às 21h). Frente 2 (universo de 20 pares) segue registrada
+como pendência estratégica, sem decisão de implementação.
+--------
