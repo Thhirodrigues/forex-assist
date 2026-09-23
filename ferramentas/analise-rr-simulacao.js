@@ -31,6 +31,18 @@ const MULTIPLICADORES_TP = [1.0, 1.5, 2.0];
 
 const MAX_CANDLES_SIMULACAO = 72; // 6h a 5min/candle - teto pra nao rodar pra sempre
 
+// AJUSTE-003 (commit 8b4a918) forcou timezone=UTC na TwelveData -
+// antes disso, js/checker.js fechava operacoes usando candle com
+// offset de ~10h (bug de timezone), entao o "resultado real" gravado
+// pra operacoes anteriores a este corte NAO E COMPARAVEL contra uma
+// simulacao que busca o candle certo - a prova de fidelidade so faz
+// sentido pra operacoes fechadas DEPOIS do fix. Confirmado por
+// contagem direta: 103 das 142 operacoes ENCERRADAS (72,5%) sao de
+// antes deste corte. A simulacao em si roda pra todas (o bug nao afeta
+// os campos de ENTRADA usados aqui, so o fechamento antigo gravado) -
+// so a comparacao de fidelidade e restrita ao subconjunto confiavel.
+const CORTE_AJUSTE003 = new Date("2026-09-17T11:24:03Z").getTime();
+
 async function buscarCandles(par, apiKey) {
     const url =
         `https://api.twelvedata.com/time_series` +
@@ -200,7 +212,7 @@ async function main() {
 
             const chave = `TP=${mult}xSL`;
             if (!resultadosPorPar[op.par][chave]) {
-                resultadosPorPar[op.par][chave] = { wins: 0, losses: 0, naoDecidido: 0, total: 0, fidelidade: { bateu: 0, naoBateu: 0 } };
+                resultadosPorPar[op.par][chave] = { wins: 0, losses: 0, naoDecidido: 0, total: 0, fidelidade: { bateu: 0, naoBateu: 0, foraDoCorte: 0 } };
             }
             const r = resultadosPorPar[op.par][chave];
             r.total++;
@@ -210,10 +222,18 @@ async function main() {
 
             // Prova de fidelidade: no cenario 1.0x (TP=SL, igual ao
             // combinado original na maioria dos casos), compara com o
-            // resultado real ja gravado.
+            // resultado real ja gravado - SO pras operacoes fechadas
+            // depois do AJUSTE-003 (ver comentario no topo do arquivo);
+            // antes disso o "resultado real" nao e confiavel pra
+            // comparar, entao nem entra na conta de bateu/naoBateu.
             if (mult === 1.0) {
-                if (sim.resultado === op.resultado) r.fidelidade.bateu++;
-                else r.fidelidade.naoBateu++;
+                if (inicio < CORTE_AJUSTE003) {
+                    r.fidelidade.foraDoCorte++;
+                } else if (sim.resultado === op.resultado) {
+                    r.fidelidade.bateu++;
+                } else {
+                    r.fidelidade.naoBateu++;
+                }
             }
         }
     }
@@ -230,7 +250,7 @@ async function main() {
             const expectativaAprox = calcularExpectativa(taxaAcerto, tpUSD * 3, 3);
             console.log(`  ${chave}: n=${r.total} (${decididos} decididos, ${r.naoDecidido} nao decidido em ${MAX_CANDLES_SIMULACAO} candles) | wins=${r.wins} losses=${r.losses} | taxa=${taxaAcerto.toFixed(1)}% | expectativa aprox=${expectativaAprox}`);
             if (chave === "TP=1xSL") {
-                console.log(`    fidelidade vs resultado real gravado: ${r.fidelidade.bateu}/${r.fidelidade.bateu + r.fidelidade.naoBateu} bateram`);
+                console.log(`    fidelidade vs resultado real gravado (so operacoes pos-AJUSTE-003, ${r.fidelidade.foraDoCorte} excluidas por serem de antes): ${r.fidelidade.bateu}/${r.fidelidade.bateu + r.fidelidade.naoBateu} bateram`);
             }
         }
     }
