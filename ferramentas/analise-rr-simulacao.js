@@ -66,12 +66,24 @@ function indiceDesde(candles, alvo) {
     return -1;
 }
 
-// Mesma logica de calcularResultadoOperacao (MUD-03) generalizada pra
-// TP/SL arbitrarios, usando extremos intrabar (high/low reais).
-function simular(direcao, precoEntrada, tpUSD, slUSD, lote, par, cotacaoCruzada, candlesDesde) {
+// Mesma logica de calcularResultadoOperacao (MUD-03/AJUSTE-003)
+// generalizada pra TP/SL arbitrarios, usando extremos intrabar
+// (high/low reais). Replica os DOIS criterios reais de fechamento, na
+// mesma ordem de prioridade de js/checker.js: financeiro primeiro
+// (com desempate pessimista SL-primeiro se a mesma vela bate os dois),
+// pips depois, como fallback - CORRECAO (23/09/2026): a 1a versao
+// desta simulacao so verificava o criterio financeiro, mas SL_PIPS e o
+// motivo de fechamento MAIS COMUM na producao real (24 SL_PIPS vs 7
+// SL_FINANCEIRO na amostra de LOSS desde 17/09) - ignorar esse
+// criterio derrubava a fidelidade da simulacao (so 25-64% de acerto
+// contra o resultado real gravado). Corrigido antes de confiar em
+// qualquer numero desta ferramenta.
+function simular(direcao, precoEntrada, tpUSD, slUSD, tpPips, slPips, lote, par, cotacaoCruzada, candlesDesde) {
 
     let precoMaximo = precoEntrada;
     let precoMinimo = precoEntrada;
+    let maxPipsFavor = 0;
+    let maxPipsContra = 0;
 
     for (let i = 0; i < Math.min(candlesDesde.length, MAX_CANDLES_SIMULACAO); i++) {
 
@@ -82,18 +94,26 @@ function simular(direcao, precoEntrada, tpUSD, slUSD, lote, par, cotacaoCruzada,
         const precoFavoravel = direcao === "BUY" ? precoMaximo : precoMinimo;
         const precoAdverso = direcao === "BUY" ? precoMinimo : precoMaximo;
 
-        const pipsFavor = calcularPips(par, precoEntrada, precoFavoravel, direcao === "BUY");
-        const pipsContra = calcularPips(par, precoEntrada, precoAdverso, direcao === "BUY");
+        const pipsFavorAtual = calcularPips(par, precoEntrada, precoFavoravel, direcao === "BUY");
+        const pipsContraAtual = calcularPips(par, precoEntrada, precoAdverso, direcao === "BUY");
+        maxPipsFavor = Math.max(maxPipsFavor, pipsFavorAtual);
+        maxPipsContra = Math.min(maxPipsContra, pipsContraAtual);
 
-        const lucroFavoravel = pipsFavor * calcularValorPip(lote, par, precoFavoravel, cotacaoCruzada);
-        const lucroAdverso = pipsContra * calcularValorPip(lote, par, precoAdverso, cotacaoCruzada);
+        const lucroFavoravel = pipsFavorAtual * calcularValorPip(lote, par, precoFavoravel, cotacaoCruzada);
+        const lucroAdverso = pipsContraAtual * calcularValorPip(lote, par, precoAdverso, cotacaoCruzada);
 
-        const tpAtingido = lucroFavoravel >= tpUSD;
-        const slAtingido = lucroAdverso <= -Math.abs(slUSD);
+        const tpFinAtingido = lucroFavoravel >= tpUSD;
+        const slFinAtingido = lucroAdverso <= -Math.abs(slUSD);
 
-        if (tpAtingido && slAtingido) return { resultado: "LOSS", candlesAteDecidir: i + 1 };
-        if (tpAtingido) return { resultado: "WIN", candlesAteDecidir: i + 1 };
-        if (slAtingido) return { resultado: "LOSS", candlesAteDecidir: i + 1 };
+        let motivo = null;
+
+        if (tpFinAtingido && slFinAtingido) motivo = "LOSS";
+        else if (tpFinAtingido) motivo = "WIN";
+        else if (slFinAtingido) motivo = "LOSS";
+        else if (maxPipsFavor >= tpPips) motivo = "WIN";
+        else if (maxPipsContra <= -Math.abs(slPips)) motivo = "LOSS";
+
+        if (motivo) return { resultado: motivo, candlesAteDecidir: i + 1 };
 
     }
 
@@ -155,6 +175,7 @@ async function main() {
         if (candlesDesde.length < 2) continue;
 
         const slUSD = Math.abs(Number(op.slUSD) || Number(op.financeiro?.slUSD) || 3);
+        const slPipsOriginal = Math.abs(Number(op.financeiro?.slPips) || 50);
         const lote = Number(op.lote) || 0.02;
         const precoEntrada = Number(op.precoEntrada);
 
@@ -171,7 +192,11 @@ async function main() {
 
         for (const mult of MULTIPLICADORES_TP) {
             const tpUSD = Number((slUSD * mult).toFixed(2));
-            const sim = simular(op.direcao, precoEntrada, tpUSD, slUSD, lote, op.par, cotacaoCruzada, candlesDesde);
+            // TP em pips escalado pelo mesmo multiplicador do TP em $,
+            // a partir do SL em pips original (SL fica fixo nos dois
+            // formatos - so o TP alarga, nos dois formatos igualmente).
+            const tpPips = Number((slPipsOriginal * mult).toFixed(2));
+            const sim = simular(op.direcao, precoEntrada, tpUSD, slUSD, tpPips, slPipsOriginal, lote, op.par, cotacaoCruzada, candlesDesde);
 
             const chave = `TP=${mult}xSL`;
             if (!resultadosPorPar[op.par][chave]) {
