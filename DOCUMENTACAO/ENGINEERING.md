@@ -9759,3 +9759,64 @@ devem sumir da lista de pares analisados durante o dia útil e voltar
 a aparecer só às 21h). Frente 2 (universo de 20 pares) segue registrada
 como pendência estratégica, sem decisão de implementação.
 --------
+AJUSTE-006 — janela asiática deixa de cortar em 23:59, passa a virar
+a meia-noite e ir até 04:00 (scripts/scanner.js)
+
+Origem: usuário perguntou (23/09/2026) se fazia sentido liberar o
+horário da janela asiática além de 23:59 pra acumular mais histórico
+dos pares JPY/AUD/NZD (gargalo documentado em
+`PENDENCIAS-ESTRATEGICAS-RMI.md` seção 6, e agravado pelo AJUSTE-005
+do mesmo dia, que tornou esses pares exclusivos da janela asiática).
+Analisado antes de implementar: o corte em 23:59 nunca teve base em
+dado real - era só um atalho de engenharia (comentário original:
+"simplificada de propósito... evita bug de rollover de dia"). A fonte
+externa já documentada no próprio código (Babypips/Dukascopy) mostra
+que o overlap real Sydney/Tóquio vai até por volta de 04:00 de
+Brasília - o corte em 23:59 perdia justamente o trecho de maior
+liquidez da sessão. Como a conta roda em `SIMULADA` (`CONFIG_PADRAO`,
+comentário AJUSTE-001: "fase de teste atual, sem capital de verdade em
+jogo"), estender o horário não expõe capital automático - só acelera
+o acúmulo de histórico. Ressalva registrada e aceita: a taxa de
+acerto continua pooled por par (não segmentada por sub-horário da
+janela), então misturar 21h-23h59 com 00h-04h pode juntar regimes de
+liquidez diferentes numa estatística só - mesma limitação já conhecida
+("expectativa usa taxa de acerto do par, não do sinal específico",
+`PENDENCIAS-ESTRATEGICAS-RMI.md`), não resolvida aqui, só não piorada
+a ponto de bloquear a decisão.
+
+Implementação (`parNaJanelaOperacional()`): `JANELA_ASIA_FIM` (23:59)
+substituído por `JANELA_ASIA_FIM_MADRUGADA` (04:00 = 4×60). Lógica
+agora tem duas condições pra elegibilidade asiática: `abreJanelaNova`
+(seg-qui, ≥21:00 - igual antes) e `continuaMadrugada` (NOVO: ter-sex,
+≤04:00 - note o deslocamento de +1 dia em relação a abreJanelaNova,
+porque é a CONTINUAÇÃO do dia anterior). Confirmado explicitamente com
+o usuário: quinta 21h→sexta de madrugada CONTINUA valendo (fim de uma
+janela já aberta, não abertura nova) - só abertura NOVA às 21h de
+sexta continua de fora, pelo motivo de sempre (perto do fechamento
+semanal). Cuidado central da implementação: segunda de madrugada
+(continuação hipotética de domingo) tem que ficar de fora, porque
+domingo nunca abre janela asiática nova - por isso o intervalo de dias
+de `continuaMadrugada` é [2,5] (terça a sexta), não [1,4] deslocado
+ingenuamente.
+
+Validado: teste isolado novo
+(`validate-ajuste006-janela-madrugada.js`, 20 cenários, mesmo motivo
+de não poder `require()` o módulo real dos testes anteriores) - inclui
+regressão completa dos 9 cenários mais relevantes do AJUSTE-005 (sem
+mudança) mais 11 cenários novos do rollover: continuação terça/quarta/
+sexta de madrugada dentro do limite; corte exato às 04:00 (03:59
+passa, 04:01 não); vácuo 04:00-07:30 ainda sem janela; sexta de manhã
+cedo cai certo pra janela padrão; e o cenário crítico - segunda de
+madrugada NÃO virar continuação fantasma de domingo. Sábado/domingo
+de madrugada também conferidos (nenhum dos dois abre janela nova, en-
+tão não há continuação possível). GBP/JPY (excluído de propósito) e
+pares sem lastro asiático confirmados sem nenhuma mudança.
+
+Pendente, per CLAUDE.md: validar os primeiros ciclos reais da
+madrugada (00:00-04:00, ter-sex) depois do deploy, e observar se o
+volume de operações dos pares JPY/AUD/NZD nesse intervalo realmente
+acelera o acúmulo de histórico como esperado, sem indício de que o
+regime de liquidez de madrugada é sistematicamente pior que o de
+21h-23h59 (o que justificaria segmentar a estatística por sub-horário
+no futuro, item que fica em aberto, não decidido agora).
+--------

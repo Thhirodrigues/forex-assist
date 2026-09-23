@@ -481,14 +481,19 @@ function dentroJanelaPadrao(context) {
 // entre o fim de Nova York e a abertura de Tóquio - mantê-las na
 // janela era otimismo sem base, não achado de mercado.
 //
-// Janela ainda simplificada de propósito: 21:00–23:59, sem virar a
-// meia-noite (evita bug de rollover de dia) e só de segunda a
-// quinta (sexta à noite já está perto demais do fechamento semanal
-// real do mercado, por volta das 19h de Brasília, pra arriscar abrir
-// operação nova). O overlap real Sydney/Tóquio vai até por volta de
-// 04:00 de Brasília - essa madrugada fica de fora por enquanto (seria
-// preciso tratar virada de dia/semana com cuidado). Ver recomendação
-// registrada em DOCUMENTACAO/ENGINEERING.md (BUG-011).
+// AJUSTE-006 (23/09/2026): janela deixa de cortar em 23:59 - esse
+// corte NUNCA teve base em dado real, era só um atalho de engenharia
+// pra evitar rollover de dia (ver histórico do comentário acima,
+// "seria preciso tratar virada de dia/semana com cuidado" - BUG-011).
+// Passa a virar a meia-noite e ir até 04:00, cobrindo o overlap real
+// Sydney/Tóquio (mesma fonte externa citada acima). Só de seg-qui
+// (sexta à noite continua de fora, perto demais do fechamento
+// semanal) - mas a CONTINUAÇÃO de uma janela aberta quinta à noite
+// até a madrugada de sexta é permitida (é o fim de uma janela que já
+// começou, não abertura nova). Conta roda em SIMULADA (ver
+// CONFIG_PADRAO, sem capital real automático em jogo) - o ganho é
+// acumular histórico mais rápido pros pares JPY/AUD/NZD, que é o
+// gargalo real hoje (ver PENDENCIAS-ESTRATEGICAS-RMI.md seção 6).
 // ===================================================
 
 const MOEDAS_JANELA_ASIA = new Set(["JPY", "AUD", "NZD"]);
@@ -498,7 +503,7 @@ const MOEDAS_JANELA_ASIA = new Set(["JPY", "AUD", "NZD"]);
 const PARES_JANELA_ASIA_EXCLUIDOS = new Set(["GBP/JPY"]);
 
 const JANELA_ASIA_INICIO = 21 * 60;
-const JANELA_ASIA_FIM = 23 * 60 + 59;
+const JANELA_ASIA_FIM_MADRUGADA = 4 * 60;
 
 function parElegivelJanelaAsia(par) {
 
@@ -518,31 +523,53 @@ function parNaJanelaOperacional(par, context) {
 
     const { diaSemana, minutosDoDia } = obterAgoraBrasil();
 
-    // AJUSTE-005 (23/09/2026): de seg-qui, pares com lastro asiático
-    // (JPY/AUD/NZD, exceto GBP/JPY) passam a operar EXCLUSIVAMENTE na
-    // janela asiática - deixam de rodar também na janela padrão
-    // (07:30-18:00) nesses dias. Antes rodavam nas duas, disputando
-    // ciclo/chamada de API com pares que já cobrem bem o horário de
-    // Londres/NY (EUR/USD, GBP/USD etc.) sem necessidade - a sessão de
-    // maior liquidez desses pares é a asiática, é nela que a RMI deve
-    // focar a análise. Fora de seg-qui (sex/sáb/dom), sem janela
-    // asiática definida (ver comentário acima, só seg-qui de
-    // propósito), esses pares continuam na janela padrão normal - não
-    // faz sentido tirá-los do único horário disponível nesses dias.
-    const elegivelJanelaAsiaHoje =
-        parElegivelJanelaAsia(par) &&
-        diaSemana >= 1 &&
-        diaSemana <= 4;
+    const elegivelAsia = parElegivelJanelaAsia(par);
 
-    if (elegivelJanelaAsiaHoje) {
+    if (elegivelAsia) {
 
-        return (
-            minutosDoDia >= JANELA_ASIA_INICIO &&
-            minutosDoDia <= JANELA_ASIA_FIM
-        );
+        // Abre janela nova às 21h de seg-qui (sexta fica de fora,
+        // perto demais do fechamento semanal real do mercado).
+        const abreJanelaNova =
+            diaSemana >= 1 &&
+            diaSemana <= 4 &&
+            minutosDoDia >= JANELA_ASIA_INICIO;
+
+        // AJUSTE-006: continuação até 04:00 do dia SEGUINTE (overlap
+        // Sydney/Tóquio, ver comentário acima) - por isso o intervalo
+        // de dias é deslocado em +1 em relação a abreJanelaNova (2 a
+        // 5, não 1 a 4): terça de madrugada continua a janela aberta
+        // segunda à noite, ..., sexta de madrugada continua a de
+        // quinta à noite. Segunda de madrugada (continuação de
+        // domingo) fica de fora de propósito - domingo nunca abre
+        // janela asiática nova (só a reabertura padrão, 18:00+).
+        const continuaMadrugada =
+            diaSemana >= 2 &&
+            diaSemana <= 5 &&
+            minutosDoDia <= JANELA_ASIA_FIM_MADRUGADA;
+
+        if (abreJanelaNova || continuaMadrugada) {
+            return true;
+        }
+
+        // AJUSTE-005 (23/09/2026): de seg-qui, pares com lastro
+        // asiático (JPY/AUD/NZD, exceto GBP/JPY) operam
+        // EXCLUSIVAMENTE na janela asiática - deixam de cair pra
+        // janela padrão (07:30-18:00) nesses dias, mesmo fora do
+        // horário exato da janela (ex.: durante o dia, ou no vácuo
+        // das 19h-21h). Antes rodavam nas duas, disputando ciclo/
+        // chamada de API com pares que já cobrem bem o horário de
+        // Londres/NY (EUR/USD, GBP/USD etc.) sem necessidade - a
+        // sessão de maior liquidez desses pares é a asiática.
+        if (diaSemana >= 1 && diaSemana <= 4) {
+            return false;
+        }
 
     }
 
+    // Sem janela asiática definida pro dia atual (sex/sáb/dom, ou par
+    // sem lastro asiático) - cai pra janela padrão normal. Preserva o
+    // único horário disponível nesses dias (ex.: sexta de dia,
+    // domingo de reabertura) em vez de tirar o par do ar.
     return dentroJanelaPadrao(context);
 
 }
