@@ -1,0 +1,40 @@
+name: Análise - Simulação de R/R
+
+# Ferramenta de investigação avulsa, NÃO faz parte do pipeline de
+# análise/decisão do produto. Só dispara manualmente (workflow_dispatch),
+# nunca por cron. Roda ferramentas/analise-rr-simulacao.js, que compara
+# a taxa de acerto real (candles OHLC reais da TwelveData) sob TP mais
+# largo (1x/1,5x/2x o SL original) contra o histórico de operações
+# fechadas, pra apoiar a decisão sobre ajustar R/R sem depender só de
+# estimativa teórica.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  simulacao:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Run Simulação
+        env:
+          API_KEY_1: ${{ secrets.TWELVEDATA_KEY_1 }}
+          API_KEY_2: ${{ secrets.TWELVEDATA_KEY_2 }}
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+        run: |
+          node ferramentas/analise-rr-simulacao.js
