@@ -9612,3 +9612,87 @@ atraso pequeno (poucos minutos, não mais ~10h) e acompanhar o próximo
 fechamento real via `result-checker.yml` pra confirmar que o
 comportamento em produção bate com o validado isoladamente.
 --------
+AJUSTE-004 — GBP/USD passa a operar com R/R 1,5:1 (TP mais largo, SL
+igual); corrigida a staleness de expectativa/R-R no cálculo financeiro
+(scripts/moneyManager.js)
+
+Origem: usuário reportou Balanceado/Conservador travados sem gerar
+sinal (22/09/2026). Investigado: taxa de acerto histórica real de
+TODOS os pares está abaixo de 50% com R/R 1:1 (a config sempre gerava
+`tpUSD === slUSD`, de todo ramo de `decidirConfiguracaoMercado()`) - o
+gate de expectativa mínima (PENTE-FINO-004) bloqueia matematicamente
+qualquer sinal nessas condições, não importa a qualidade técnica do
+sinal específico. Confirmado que não é bug: com taxa de acerto abaixo
+de 50% e R/R 1:1, expectativa é estruturalmente negativa.
+
+Ferramenta nova (`ferramentas/analise-rr-simulacao.js`, workflow
+avulso `analise-rr-simulacao.yml`, só `workflow_dispatch`, nunca cron)
+testou empiricamente "TP mais largo ajudaria?" contra candles OHLC
+reais buscados da TwelveData - não contra suposição teórica (que
+assume taxa de acerto constante com TP maior, falso: preço precisa
+percorrer mais distância, taxa de acerto cai). Três rodadas até a
+simulação ficar confiável:
+1. 1ª versão só checava critério financeiro, ignorando TP_PIPS/
+   SL_PIPS (o motivo de fechamento mais comum na prática) - fidelidade
+   contra o resultado real gravado só batia 25-64%.
+2. Corrigido pra replicar os dois critérios reais de `js/checker.js`
+   na ordem certa - fidelidade continuou baixa (27-75%).
+3. Achado real: 103 das 142 operações ENCERRADAS (72,5%) fecharam
+   ANTES do AJUSTE-003 (bug de timezone) - o resultado real delas foi
+   calculado com candle errado, nunca poderia bater contra uma
+   simulação com candle correto. Restrita a fidelidade ao subconjunto
+   pós-fix (39 operações): **82,1% (32/39)**, com 3 pares em 100% e o
+   resto sendo amostras de 1-4 operações (um único caso decide a
+   porcentagem) - considerado confiável o bastante pra decidir.
+
+Resultado da simulação (TP 1x/1,5x/2x o SL, SL fixo): alargar o TP
+**piora** a expectativa na maioria dos pares (AUD/USD, USD/JPY,
+USD/CHF, EUR/JPY) - a queda na taxa de acerto supera o payout maior.
+Só **GBP/USD** mostra melhora real e crescente: expectativa 0,36 (1:1)
+→ 0,75 (1,5:1) → 1,74 (2:1). USD/CAD e EUR/USD já nascem positivos em
+1:1 mas com amostra pequena demais (11-12 operações) pra decidir
+qualquer coisa. Decisão: ajuste restrito a GBP/USD, R/R 1,5:1 (ponto
+validado sem se apoiar no extremo menos testado, 2:1) - não uma
+mudança de R/R geral.
+
+Implementação (`scripts/moneyManager.js`):
+- `decidirConfiguracaoMercado()` ganha o parâmetro `par`; no fim da
+  função (depois dos ramos de ADX/ATR/expectativa), se `par ===
+  "GBP/USD"`, `tpUSD` é recalculado como `slUSD × 1.5` (usando o
+  `slUSD` JÁ DECIDIDO pelos ramos anteriores, não o bruto) - SL nunca
+  muda, só o alvo de lucro alarga.
+- **Bug de staleness corrigido junto** (necessário pra este ajuste
+  funcionar, não é scope creep): `tpPips`/`slPips`/`rewardRisk`/
+  `riscoPercentual`/`expectativa` em `analisarFinanceiro()` eram
+  calculados com o `tpUSD`/`slUSD` BRUTO (antes de
+  `decidirConfiguracaoMercado()` rodar), não com o valor REALMENTE
+  usado. Nunca importou enquanto todo ramo mantinha `tpUSD===slUSD`
+  (a mudança de magnitude não muda o SINAL da expectativa) - mas com
+  R/R≠1 agora existindo pro GBP/USD, usar o valor bruto faria o gate
+  de expectativa (`decisionEngine.js`) ignorar completamente o
+  alargamento, o próprio propósito da mudança. Corrigido: os cinco
+  campos agora são calculados DEPOIS de `decidirConfiguracaoMercado()`,
+  a partir de `decisaoMercado.tpUSD`/`decisaoMercado.slUSD`.
+
+Validado: teste isolado novo (`validate-ajuste004-rr-gbpusd.js`, 10
+cenários) - GBP/USD sai com `tpUSD` 1,5× `slUSD` (SL inalterado),
+`rewardRisk` 1.5, expectativa positiva onde seria negativa em R/R 1:1;
+prova end-to-end contra o gate REAL de produção
+(`decisionEngine.js`'s `avaliarOperacao`, não só
+`validarPerfilFinanceiro` de `moneyManager.js`, que não checa
+expectativa): sinal GBP/USD que seria bloqueado por expectativa
+negativa em R/R 1:1 passa a ser APROVADO com o R/R 1,5:1 corrigido;
+EUR/USD idêntico continua corretamente BLOQUEADO (contraprova de não
+regressão); GBP/USD com ADX baixo (ramo REDUZIR_EXPOSICAO, SL cai pra
+3) alarga o TP a partir do SL JÁ REDUZIDO (4.5), não do bruto; outro
+par (USD/JPY) com ADX baixo continua 3/3 normal, sem nenhum
+alargamento. Suíte completa de `moneyManager.js`/`decisionEngine.js`/
+`pairAnalyzer.js` revalidada sem regressão.
+
+Pendente, per CLAUDE.md: validar os primeiros sinais reais de GBP/USD
+gerados sob o R/R novo antes de considerar isso definitivamente
+resolvido - a amostra que embasou a decisão (28 operações, 10
+comparáveis) ainda é pequena. Os outros 7 pares continuam sem ajuste,
+travados enquanto mais histórico pós-AJUSTE-003 não se acumula (ver
+`PENDENCIAS-ESTRATEGICAS-RMI.md`).
+--------

@@ -618,6 +618,15 @@ function calcularExpectativa(
 //
 // ===================================================
 
+// AJUSTE-004 (23/09/2026): "par" adicionado - necessário pro ajuste de
+// R/R por par logo abaixo. Antes desta mudança, todo par saía sempre
+// com tpUSD===slUSD (R/R 1:1) de todo ramo desta função - simulação
+// contra candle real (ferramentas/analise-rr-simulacao.js) mostrou que
+// GBP/USD tem expectativa positiva e crescente com TP mais largo
+// (SL igual): 0,36 em 1:1, 0,75 em 1,5:1, 1,74 em 2:1 (amostra de 28
+// operações, 10 comparáveis pós-AJUSTE-003). Os outros pares pioram ou
+// ficam mistos com TP mais largo - o ajuste é intencionalmente restrito
+// a este par, não uma mudança de R/R geral.
 function decidirConfiguracaoMercado({
 
     score,
@@ -632,7 +641,9 @@ function decidirConfiguracaoMercado({
 
     tpUSD,
 
-    slUSD
+    slUSD,
+
+    par
 
 }) {
 
@@ -700,6 +711,16 @@ function decidirConfiguracaoMercado({
         configuracao.lote = 0.02;
 
         configuracao.decisao = "EXPECTATIVA_NEGATIVA";
+    }
+
+    // AJUSTE-004: alarga só o TP (SL fica no valor já decidido acima
+    // pelos ramos de ADX/ATR) - mantém o risco por operação igual,
+    // só aumenta o alvo de lucro. R/R 1,5:1, o ponto validado contra
+    // dado real sem se apoiar no extremo menos testado (2:1).
+    if (par === "GBP/USD") {
+
+        configuracao.tpUSD = Number((configuracao.slUSD * 1.5).toFixed(2));
+
     }
 
     return configuracao;
@@ -871,31 +892,12 @@ cotacaoCruzada
             cotacaoCruzada
         );
 
-    const tpPips =
-        calcularTP(
-            tpUSD,
-            valorPip
-        );
-
-    const slPips =
-        calcularSL(
-            slUSD,
-            valorPip
-        );
-
-    const rewardRisk =
-        calcularRiskReward(
-            tpUSD,
-            slUSD
-        );
-
-    const riscoPercentual =
-        calcularRiscoPercentual(
-            banca,
-            slUSD
-        );
-
-    const expectativa =
+    // Expectativa do sinal BRUTO (antes de qualquer ajuste de mercado)
+    // - serve só de entrada informativa pra decidirConfiguracaoMercado
+    // decidir seu próprio rótulo interno (EXPECTATIVA_NEGATIVA/lote
+    // reduzido). NÃO é o valor final usado pelo gate de aprovação -
+    // ver comentário abaixo.
+    const expectativaBruta =
         calcularExpectativa(
             probabilidade,
             tpUSD,
@@ -915,16 +917,59 @@ const decisaoMercado =
 
         atr,
 
-        expectativa,
+        expectativa: expectativaBruta,
 
         lote,
 
         tpUSD,
 
-        slUSD
+        slUSD,
+
+        par
 
     });
-    
+
+    // AJUSTE-004 (23/09/2026): tpPips/slPips/rewardRisk/riscoPercentual/
+    // expectativa precisam refletir o tpUSD/slUSD REALMENTE usados
+    // (decisaoMercado, depois do ajuste por ADX/ATR/expectativa/par) -
+    // antes disto eram calculados com o tpUSD/slUSD BRUTO, de antes do
+    // ajuste. Nunca mudava o resultado enquanto tpUSD sempre saía igual
+    // a slUSD de todo ramo (R/R 1:1) - a diferença de magnitude não
+    // muda o SINAL da expectativa, só rota que o gate confere. Agora
+    // que existe um ramo com R/R != 1 (GBP/USD, ver acima), usar o
+    // valor bruto faria o gate de expectativa ignorar completamente o
+    // ajuste de TP mais largo - o próprio propósito da mudança.
+    const tpPips =
+        calcularTP(
+            decisaoMercado.tpUSD,
+            valorPip
+        );
+
+    const slPips =
+        calcularSL(
+            decisaoMercado.slUSD,
+            valorPip
+        );
+
+    const rewardRisk =
+        calcularRiskReward(
+            decisaoMercado.tpUSD,
+            decisaoMercado.slUSD
+        );
+
+    const riscoPercentual =
+        calcularRiscoPercentual(
+            banca,
+            decisaoMercado.slUSD
+        );
+
+    const expectativa =
+        calcularExpectativa(
+            probabilidade,
+            decisaoMercado.tpUSD,
+            decisaoMercado.slUSD
+        );
+
     const configuracao = {
 
         banca,
