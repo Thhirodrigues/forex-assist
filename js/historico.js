@@ -646,12 +646,55 @@ function mesLabelDe(dataStr) {
 // pra quem quiser voltar pro modo card em algum momento.
 let modoTabela = true;
 
+// AJUSTE-012 (24/09/2026): usuário reportou que a tela demorava ~30s
+// sempre que abria/atualizava (não só na primeira vez - descartando
+// hospedagem/cold-start como causa) - achado real: carregarHistorico()
+// buscava até 300 documentos INTEIROS do Firestore (cada um com
+// indicadores/estatísticas/financeiro/caminhoPrecos aninhados) toda
+// vez, e como a última aba visitada fica salva (localStorage), um
+// refresh comum recarregava direto nessa busca pesada. Pedido do
+// usuário: carregar só hoje e ontem por padrão; dias mais antigos só
+// sob demanda, clicando em "Carregar mais". `diasCarregados` começa
+// em 2 (hoje+ontem) e cresce +1 a cada clique - variável de módulo,
+// mesma vida útil de `modoTabela` (persiste entre trocas de aba na
+// mesma sessão da página, reseta num reload de verdade, que é
+// exatamente o cenário que motivou a mudança).
+let diasCarregados = 2;
+
+// Meia-noite em Brasília, N dias atrás, como epoch ms UTC - usado pra
+// filtrar o histórico por RANGE de timestamp (`where(">=", ...)`,
+// campo único, sem índice composto - mesma cautela de sempre neste
+// projeto contra "FAILED_PRECONDITION: requires an index", ver
+// riskManager.js). Brasília não tem horário de verão desde 2019
+// (GMT-3 fixo), por isso dá pra montar a string ISO com o offset fixo
+// direto, sem precisar de biblioteca de fuso horário.
+function inicioDiaBrasiliaUTCms(diasAtras) {
+  const hojeBrasiliaStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const inicioHoje = new Date(`${hojeBrasiliaStr}T00:00:00-03:00`).getTime();
+  return inicioHoje - diasAtras * 24 * 60 * 60 * 1000;
+}
+
 // Botão manual - alterna entre tabela (padrão) e card. Sempre
 // disponível, independente da orientação/tamanho de tela.
 function alternarModoTabela() {
   modoTabela = !modoTabela;
   carregarHistorico();
 }
+
+// AJUSTE-012 (24/09/2026): amplia a janela carregada em +1 dia e
+// recarrega. Feedback imediato no botão (fica sem clique duplo
+// possível enquanto a busca roda) - mesma preocupação de qualquer
+// outro botão de ação única deste app (ex.: os de definir saldo em
+// js/config.js).
+window.carregarMaisHistorico = function () {
+  const btn = document.getElementById("btnCarregarMaisHistorico");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = "Carregando...";
+  }
+  diasCarregados += 1;
+  carregarHistorico();
+};
 
 function atualizarBotaoModoTabela() {
   const el = document.getElementById("historicoModoToggle");
@@ -1261,10 +1304,16 @@ async function carregarHistorico() {
   if (!lista) return;
 
   try {
+    // AJUSTE-012: range por timestamp (campo único com orderBy no
+    // mesmo campo - não precisa de índice composto) em vez de
+    // .limit(300) fixo. limit(600) aqui é só um teto de segurança bem
+    // folgado (evita busca ilimitada se `diasCarregados` crescer
+    // muito) - na prática, o range de dias é quem decide quanto vem.
     const snapshot = await db
       .collection("historico")
+      .where("timestamp", ">=", inicioDiaBrasiliaUTCms(diasCarregados - 1))
       .orderBy("timestamp", "desc")
-      .limit(300)
+      .limit(600)
       .get();
 
     let wins = 0;
@@ -1379,10 +1428,15 @@ async function carregarHistorico() {
       gruposPorData[dataSinal] += card;
     });
 
-    // Estatísticas do topo: mês corrente, não mais o total misturado
-    // dos últimos 300 (FEATURE-007) - calculado sobre a mesma amostra
-    // já buscada (sem consulta extra), somando as datas cujo mês/ano
-    // batem com hoje.
+    // Estatísticas do topo: calculado sobre a mesma amostra já buscada
+    // (sem consulta extra), somando as datas cujo mês/ano batem com
+    // hoje - preservado de FEATURE-007, mas o RÓTULO precisou mudar
+    // (AJUSTE-012): antes a amostra buscada (até 300 docs) costumava
+    // cobrir o mês inteiro, então "mês corrente" era uma descrição
+    // razoável; agora a amostra é limitada a `diasCarregados` dias -
+    // manter o rótulo "Setembro 2026" enganaria mostrando só 2-3 dias
+    // com cara de mês inteiro. Rótulo passa a descrever o que
+    // realmente está carregado.
     let winsMes = 0;
     let lossesMes = 0;
     Object.keys(statsPorData).forEach((data) => {
@@ -1394,11 +1448,15 @@ async function carregarHistorico() {
     const totalMes = winsMes + lossesMes;
     const taxaMes = totalMes > 0 ? ((winsMes / totalMes) * 100).toFixed(1) : "0";
 
+    const labelPeriodoCarregado = diasCarregados <= 2
+      ? "Hoje e ontem"
+      : `Últimos ${diasCarregados} dias`;
+
     if (stats) {
       stats.innerHTML = `
         <div class="card" style="padding:10px;">
           <div style="font-size:11px; color:#8c95b3; text-align:center; margin-bottom:4px;">
-            ${mesLabelDe(hojeStr)}
+            ${labelPeriodoCarregado}
           </div>
           <div style="text-align:center; font-size:17px; font-weight:bold;">
             ✅ ${winsMes} &nbsp;&nbsp;&nbsp; ❌ ${lossesMes} &nbsp;&nbsp;&nbsp; 🎯 ${taxaMes}%
@@ -1549,7 +1607,15 @@ if (el.style.display === 'none') {
       `;
     });
 
-    lista.innerHTML = finalHtml || '<div class="list-item">Nenhum sinal encontrado.</div>';
+    lista.innerHTML = (finalHtml || '<div class="list-item">Nenhum sinal encontrado.</div>') + `
+      <button
+        id="btnCarregarMaisHistorico"
+        onclick="carregarMaisHistorico()"
+        style="margin-top:12px; width:100%; padding:10px; border:none; border-radius:8px; background:rgba(255,255,255,.06); color:#9adcf9; font-size:12px; cursor:pointer;"
+      >
+        ⬇️ Carregar mais (dia anterior)
+      </button>
+    `;
 
     atualizarBarraComparacao();
     atualizarBotaoModoTabela();
@@ -1748,19 +1814,19 @@ await configRef.update({
 // mostrava PENDENTE).
 //
 // Intervalo NÃO é os 5 segundos do código antigo (comentado, nunca
-// tinha sido ligado) - carregarHistorico() lê até 300 documentos por
-// chamada (.limit(300)), bem mais caro que o polling de 1 documento
-// do status do Scanner em js/expert.js (que já teve que subir de 2s
-// pra 15s por esse mesmo motivo - ver ENGINEERING.md e o comentário
-// lá, "confirmado no console do Firebase: 55 mil leituras/dia contra
-// um teto gratuito de 50 mil"). Aplicar o mesmo 15s aqui seria 300
-// leituras a cada 15s = 72 mil leituras/hora só desta tela. 90
-// segundos ainda é mais frequente que o próprio ciclo do backend (5
-// min), então continua pegando fechamentos reais bem mais rápido que
-// esperar um reload manual, sem multiplicar a mesma cota que acabou
-// de estourar. Mesmo guard de "só enquanto a aba está em primeiro
-// plano e o usuário está de fato na aba Histórico" usado em
-// js/expert.js, pelo mesmo motivo.
+// tinha sido ligado) - mesma cautela de sempre com a cota gratuita do
+// Firestore (já estourou uma vez numa tela diferente, js/expert.js,
+// "confirmado no console do Firebase: 55 mil leituras/dia contra um
+// teto gratuito de 50 mil"). 90 segundos ainda é mais frequente que o
+// próprio ciclo do backend (5 min), então continua pegando
+// fechamentos reais bem mais rápido que esperar um reload manual.
+// AJUSTE-012 (24/09/2026): carregarHistorico() deixou de buscar até
+// 300 documentos fixos - agora busca só `diasCarregados` dias (2 por
+// padrão, hoje+ontem), bem mais barato que antes; esse polling herda
+// a mesma economia automaticamente, sem precisar de nenhuma mudança
+// aqui. Mesmo guard de "só enquanto a aba está em primeiro plano e o
+// usuário está de fato na aba Histórico" usado em js/expert.js, pelo
+// mesmo motivo.
 setInterval(() => {
   if (document.hidden) return;
   if (app.currentTab !== "historico") return;

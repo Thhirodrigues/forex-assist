@@ -10093,3 +10093,66 @@ compartilhada em vez de manter sua própria cópia da regra.
 Validado: `node -c` (sintaxe); conferido que não sobrou nenhuma
 exibição de preço sem passar por `formatarPrecoPar()`.
 --------
+AJUSTE-012 — Histórico carrega só hoje+ontem por padrão, resto sob
+demanda (js/historico.js)
+
+Origem: usuário reportou demora de ~30s TODA VEZ que abre/atualiza o
+app (não só na primeira vez) - descartando hospedagem/cold-start como
+causa raiz (GitHub Pages é CDN estático, sem cold-start; o padrão
+"sempre lento" também não bate com o comportamento típico de Render,
+que só é lento na primeira abertura do dia). Achado real: `carregarHistorico()`
+buscava até 300 documentos INTEIROS do Firestore toda vez que carregava
+(cada um com indicadores/estatísticas/financeiro/caminhoPrecos
+aninhados) - como a última aba visitada fica salva
+(`localStorage`), um refresh comum (e o usuário fica majoritariamente
+no Histórico) recarregava direto nessa busca pesada.
+
+Pedido do usuário: carregar só hoje e ontem por padrão; dias mais
+antigos só sob demanda, clicando em "Carregar mais".
+
+Implementação: `.limit(300)` fixo substituído por
+`.where("timestamp", ">=", inicioDiaBrasiliaUTCms(diasCarregados - 1))`
+(campo único com `orderBy` no mesmo campo - não precisa de índice
+composto, mesma cautela de sempre neste projeto contra
+"FAILED_PRECONDITION: requires an index") + `.limit(600)` como teto de
+segurança bem folgado. `diasCarregados` começa em 2 (hoje+ontem),
+variável de módulo que cresce +1 a cada clique em "Carregar mais"
+(botão novo, `carregarMaisHistorico()`, no fim da lista) - persiste
+entre trocas de aba na mesma sessão da página, reseta só num reload de
+verdade (o cenário que motivou a mudança).
+
+Efeito colateral que precisou de correção: o card de estatísticas do
+topo ("Setembro 2026: 68✅ 112❌ 37,8%") era calculado sobre a MESMA
+amostra buscada (sem consulta extra, característica preservada) - com
+a amostra agora limitada a poucos dias, manter o rótulo de mês inteiro
+ficaria enganoso (mostraria só 2-3 dias com cara de mês completo).
+Rótulo passa a dizer "Hoje e ontem" ou "Últimos N dias", refletindo o
+que de fato está carregado, sem prometer um total que não está ali.
+
+O polling automático de 90s (que já existia, recarrega o Histórico
+sozinho enquanto a aba está em primeiro plano) herda a mesma economia
+automaticamente, sem mudança de código - o comentário que citava os
+números antigos (300 docs, conta de cota) foi atualizado pra não ficar
+desatualizado/enganoso.
+
+Validado: `node -c` (sintaxe). Teste funcional de verdade (tempo real
+de carregamento, comportamento do botão "Carregar mais") fica pro
+usuário confirmar no app - não dá pra medir performance de rede real
+neste ambiente.
+
+**Achado relacionado, NÃO corrigido ainda**: `js/pairInsights.js`'s
+`calcularDesempenhoPorPar()` (usado pela "Sugestão de Agora" do
+Dashboard) busca até **500** documentos inteiros do Firestore - maior
+ainda que o problema do Histórico - toda vez que o Dashboard renderiza
+(inclusive depois de clicar em Iniciar/Parar Scanner, já que
+`app.render()` reconstrói a aba inteira). Diferente do Histórico,
+NÃO dá pra aplicar a mesma janela de dias aqui: essa função calcula
+taxa de acerto por par pra sugerir quais ativar, e precisa de uma
+amostra histórica profunda (mínimo 30 operações por par,
+`OPERACOES_MINIMAS_HISTORICO`) - "hoje e ontem" teria amostra
+praticamente vazia pra a maioria dos pares, quebrando a sugestão. O
+fix certo aqui é outro (cache/memoização da conta, não refazer a busca
+a cada render) - registrado, não implementado, aguardando decisão
+explícita do usuário sobre a abordagem antes de mexer numa
+funcionalidade de sugestão que ninguém pediu pra revisar ainda.
+--------
