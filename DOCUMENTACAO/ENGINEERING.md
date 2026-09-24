@@ -10579,4 +10579,31 @@ rótulo hoje) e do AJUSTE-019 (que trocou radio por checkbox). Sinal de
 cache desatualizado (Service Worker `sw.js` ou HTTP cache do
 navegador) - não confirmado como causa raiz (sem acesso ao dispositivo
 do usuário), comunicado a ele pra confirmar com um refresh forçado.
+CONFIRMADO pelo usuário depois de atualizar: era isso mesmo - perfil
+real é Agressivo, janela Ásia real já ia até às 04:00, checkbox
+funcionando.
+
+AJUSTE-019c (mesmo dia, 2º follow-up): perfil (Agressivo/Balanceado/
+Conservador) exibido no detalhe do sinal
+
+Origem: o usuário esclareceu o pedido do AJUSTE-019b - não era sobre
+JANELA de horário, era sobre PERFIL OPERACIONAL: "quero saber se o
+sinal foi gerado em modo agressivo, balanceado ou conservador".
+Achado ao investigar: esse dado já existia! `perfil` é calculado e
+persistido em todo sinal salvo desde o PENTE-FINO-001 (10/09/2026,
+uppercase - AGRESSIVO/BALANCEADO/CONSERVADOR), só nunca tinha sido
+exibido em lugar nenhum da tela - zero mudança de schema ou de
+`scripts/pairAnalyzer.js` necessária, só exibição.
+
+Implementação: `bannerJanelaOrigem()` (AJUSTE-019b) renomeado pra
+`bannerOrigemSinal()` e ampliado - mostra as duas informações juntas
+numa linha só ("Perfil: 🟢 Agressivo · Janela: 🌏 Ásia (...)"), mesmos
+emojis já usados em `PERFIS_OPERACIONAIS` na tela de Config, pra
+manter consistência visual. Cada metade aparece independente (sinais
+antigos sem `janelaOrigem` ainda mostram o perfil; hipoteticamente o
+inverso também, embora não exista sinal salvo sem `perfil`).
+
+Validado: `node -c`; `grep` confirmando que a função antiga
+(`bannerJanelaOrigem`) não ficou referenciada em lugar nenhum depois
+do rename.
 --------

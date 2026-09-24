@@ -815,23 +815,41 @@ function bannerConfiguracaoAjustada(sinal) {
 
 // AJUSTE-019 (24/09/2026): rótulo de qual janela admitiu o par -
 // campo novo (janelaOrigem), sinais salvos antes desta data não têm
-// esse campo (fica null/undefined, banner não aparece).
+// esse campo (fica null/undefined, parte do banner não aparece).
 const LEGENDA_JANELA_ORIGEM = {
-  asia: "🌏 Sessão Ásia (21:00–04:00) - janela incondicional pra pares JPY/AUD/NZD, independente do modo selecionado na Config",
-  londres: "🇬🇧 Sessão Londres (04:00–13:00)",
-  novaYork: "🇺🇸 Sessão Nova York (10:00–19:00)",
-  personalizado: "⚙️ Horário Personalizado (janela única configurada)"
+  asia: "🌏 Ásia (21:00–04:00, incondicional pra JPY/AUD/NZD - independe do modo selecionado)",
+  londres: "🇬🇧 Londres (04:00–13:00)",
+  novaYork: "🇺🇸 Nova York (10:00–19:00)",
+  personalizado: "⚙️ Personalizado (janela única configurada)"
 };
 
-function bannerJanelaOrigem(sinal) {
+// AJUSTE-019c (24/09/2026): perfil (AGRESSIVO/BALANCEADO/CONSERVADOR)
+// já era persistido em cada sinal desde o PENTE-FINO-001 (10/09/2026),
+// só nunca tinha sido exibido na tela - pedido explícito do usuário
+// depois da dúvida sobre a janela: "quero saber se o sinal foi gerado
+// em modo agressivo, balanceado ou conservador". Mesmos emojis da
+// tela de Config (PERFIS_OPERACIONAIS).
+const LEGENDA_PERFIL = {
+  AGRESSIVO: "🟢 Agressivo",
+  BALANCEADO: "🔵 Balanceado",
+  CONSERVADOR: "🟡 Conservador"
+};
 
-  const origem = sinal.janelaOrigem;
+function bannerOrigemSinal(sinal) {
 
-  if (!origem || !LEGENDA_JANELA_ORIGEM[origem]) return "";
+  const perfilLabel = LEGENDA_PERFIL[sinal.perfil] || null;
+  const janelaLabel = LEGENDA_JANELA_ORIGEM[sinal.janelaOrigem] || null;
+
+  if (!perfilLabel && !janelaLabel) return "";
+
+  const linhas = [
+    perfilLabel ? `Perfil: ${perfilLabel}` : null,
+    janelaLabel ? `Janela: ${janelaLabel}` : null
+  ].filter(Boolean).join(" · ");
 
   return `
     <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:rgba(140,149,179,.10); border:1px solid rgba(140,149,179,.3); font-size:11px; color:#b8c0d8;">
-      🕐 Gerado em: ${LEGENDA_JANELA_ORIGEM[origem]}
+      🕐 Gerado em: ${linhas}
     </div>
   `;
 
@@ -1081,7 +1099,7 @@ ${miniCard("🏁", "SAÍDA", formatarPrecoPar(sinal.precoSaida ?? sinal.precoFec
 
 ${bannerSMC(sinal)}
 
-${bannerJanelaOrigem(sinal)}
+${bannerOrigemSinal(sinal)}
 
 ${botaoFecharManualmente(sinal, docId)}
 
