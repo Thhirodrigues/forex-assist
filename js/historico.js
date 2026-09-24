@@ -39,6 +39,87 @@ function formatarPrecoPar(valor, par) {
   return numero.toFixed(casasDecimais);
 }
 
+// AJUSTE-017 (24/09/2026): cópia deliberada, só das duas fórmulas
+// SEGURAS de calcularValorPip() (scripts/moneyManager.js) - a mesma
+// função que scripts/checker.js usa pra calcular o resultado
+// financeiro de todo fechamento AUTOMÁTICO, a partir de entrada/
+// saída/lote. Usuário perguntou, com razão, por que o fechamento
+// manual não fazia a mesma conta - a resposta é que dá, PARA a
+// maioria dos pares, com uma ressalva real: pares cruzados (nem base
+// nem cotação é USD - EUR/JPY, GBP/JPY, EUR/GBP) precisam de uma
+// cotação cruzada contra USD que só o backend busca (a chave da
+// TwelveData nunca é exposta no navegador, por segurança) e que nunca
+// fica salva no documento pra reaproveitar depois - por isso essa
+// cópia retorna `null` nesse caso, propositalmente, em vez de arris-
+// car um número errado. Retorna valor em USD por pip (não por operação
+// - calcularResultadoManual(), logo abaixo, multiplica pelos pips
+// percorridos).
+function calcularValorPipCliente(lote, par, precoAtual) {
+
+  const numLote = Number(lote);
+  const numPreco = Number(precoAtual);
+
+  if (!Number.isFinite(numLote) || !Number.isFinite(numPreco) || numPreco <= 0) {
+    return null;
+  }
+
+  const ehJPY = String(par || "").includes("JPY");
+  const tamanhoPip = ehJPY ? 0.01 : 0.0001;
+  const tamanhoLotePadrao = 100000;
+
+  const [moedaBase, moedaCotacao] = String(par || "").split("/");
+
+  // USD como moeda base (ex.: USD/JPY, USD/CAD) - pip nasce na moeda
+  // de cotação, converte dividindo pelo preço atual.
+  if (moedaBase === "USD") {
+    return (tamanhoPip * tamanhoLotePadrao * numLote) / numPreco;
+  }
+
+  // USD como moeda de cotação (ex.: EUR/USD, AUD/USD) - pip já nasce
+  // em USD.
+  if (moedaCotacao === "USD") {
+    return tamanhoPip * tamanhoLotePadrao * numLote;
+  }
+
+  // Par cruzado - não dá pra calcular com segurança aqui (ver
+  // comentário acima).
+  return null;
+
+}
+
+// Pips percorridos entre entrada e saída, já considerando a direção
+// (BUY: saída > entrada é favorável; SELL: o inverso) - mesma
+// convenção de scripts/checker.js/js/checker.js.
+function calcularPipsCliente(par, precoEntrada, precoSaida, direcao) {
+
+  const ehJPY = String(par || "").includes("JPY");
+  const tamanhoPip = ehJPY ? 0.01 : 0.0001;
+
+  const diferenca = Number(precoSaida) - Number(precoEntrada);
+
+  const pips = diferenca / tamanhoPip;
+
+  return direcao === "SELL" ? -pips : pips;
+
+}
+
+// Retorna o resultado financeiro estimado (USD) a partir de entrada/
+// saída/lote/par/direção, ou `null` se o par for cruzado (sem como
+// calcular com segurança no navegador - ver calcularValorPipCliente).
+function calcularResultadoManual(par, precoEntrada, precoSaida, direcao, lote) {
+
+  if (![precoEntrada, precoSaida, lote].every(Number.isFinite)) return null;
+
+  const valorPip = calcularValorPipCliente(lote, par, precoSaida);
+
+  if (valorPip == null) return null;
+
+  const pips = calcularPipsCliente(par, precoEntrada, precoSaida, direcao);
+
+  return Number((pips * valorPip).toFixed(2));
+
+}
+
 // Item 1 do pedido do usuário (11/09/2026): comparar sinais do mesmo par
 // lado a lado, usando só os campos que já existem no documento (o
 // checker.js já grava precoAtual/precoMaximo/precoMinimo/maxPipsFavor/
@@ -501,6 +582,18 @@ function botaoFecharManualmente(sinal, docId) {
 // mantendo o campo de resultado financeiro como confirmação final.
 // Troca o botão "Fechei Manualmente" por um mini-formulário no lugar
 // (mesmo container `areaFecharManual-`), sem abrir tela nova.
+// AJUSTE-017 (24/09/2026): usuário perguntou, com razão, por que o
+// fechamento automático calcula o resultado financeiro sozinho
+// (checker.js, a partir de entrada/saída/lote) e o manual não -
+// resposta: pra pares SEM cruzamento (moeda base ou cotação é USD),
+// dá sim pra calcular no navegador com segurança (mesma fórmula do
+// backend, validada 1:1 contra ela - ver
+// validate-ajuste017-calculo-manual.js). O campo de resultado agora é
+// pré-preenchido automaticamente e recalcula ao vivo enquanto o
+// usuário edita entrada/saída - continua editável, pra ele revisar/
+// corrigir antes de confirmar. Só pares cruzados (EUR/JPY, GBP/JPY,
+// EUR/GBP) continuam pedindo o valor manual, com aviso explícito do
+// motivo (ver calcularValorPipCliente).
 window.ativarEdicaoFechamentoManual = function (docId) {
 
   const cache = cacheSinaisHistorico[docId];
@@ -516,20 +609,28 @@ window.ativarEdicaoFechamentoManual = function (docId) {
 
   if (elEntrada) {
     elEntrada.outerHTML =
-      `<input type="number" step="any" id="valorEntrada-${docId}" value="${sinal.precoEntrada ?? ""}" style="${estiloInput}">`;
+      `<input type="number" step="any" id="valorEntrada-${docId}" oninput="recalcularResultadoManual('${docId}')" value="${sinal.precoEntrada ?? ""}" style="${estiloInput}">`;
   }
 
   if (elSaida) {
     const saidaAtual = sinal.precoSaida ?? sinal.precoFechamento ?? sinal.precoEntrada ?? "";
     elSaida.outerHTML =
-      `<input type="number" step="any" id="valorSaida-${docId}" value="${saidaAtual}" style="${estiloInput}">`;
+      `<input type="number" step="any" id="valorSaida-${docId}" oninput="recalcularResultadoManual('${docId}')" value="${saidaAtual}" style="${estiloInput}">`;
   }
+
+  // Par cruzado é fixo (não muda com entrada/saída) - decide de uma
+  // vez o texto do aviso, testando com um preço qualquer só pra saber
+  // se a fórmula recusa (null) ou não.
+  const ehCruzado = calcularValorPipCliente(sinal.lote, sinal.par, 1) == null;
 
   if (elArea) {
     elArea.innerHTML = `
       <div style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:8px; margin-top:4px;">
-        <div style="font-size:10px; color:#999; margin-bottom:4px;">
+        <div id="avisoCalculoManual-${docId}" style="font-size:10px; color:#999; margin-bottom:4px;">
           RESULTADO FINANCEIRO REAL (USD, negativo pra prejuízo)
+          ${ehCruzado
+            ? " - par cruzado, calcule fora e informe (precisa de cotação que só o servidor busca)"
+            : " - calculado automaticamente a partir de entrada/saída, revise antes de confirmar"}
         </div>
         <input
           type="number"
@@ -554,6 +655,40 @@ window.ativarEdicaoFechamentoManual = function (docId) {
         </div>
       </div>
     `;
+  }
+
+  // Já calcula uma vez com os valores pré-preenchidos, sem esperar o
+  // usuário digitar nada.
+  recalcularResultadoManual(docId);
+
+};
+
+// Chamado a cada edição de entrada/saída (oninput) - recalcula e
+// pré-preenche o campo de resultado, quando o par permite (ver
+// calcularResultadoManual). Nunca sobrescreve silenciosamente sem o
+// usuário perceber: o campo continua um <input> normal, editável por
+// cima do valor sugerido.
+window.recalcularResultadoManual = function (docId) {
+
+  const cache = cacheSinaisHistorico[docId];
+  const sinal = cache ? cache.sinal : {};
+
+  const inputEntrada = document.getElementById(`valorEntrada-${docId}`);
+  const inputSaida = document.getElementById(`valorSaida-${docId}`);
+  const inputResultado = document.getElementById(`inputResultadoManual-${docId}`);
+
+  if (!inputEntrada || !inputSaida || !inputResultado) return;
+
+  const resultado = calcularResultadoManual(
+    sinal.par,
+    Number(inputEntrada.value),
+    Number(inputSaida.value),
+    sinal.direcao,
+    sinal.lote
+  );
+
+  if (resultado != null) {
+    inputResultado.value = resultado;
   }
 
 };

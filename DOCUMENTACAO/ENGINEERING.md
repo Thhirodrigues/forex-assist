@@ -10342,3 +10342,43 @@ Validado: `node -c` (sintaxe). Teste funcional (os valores batendo
 com o que o Dashboard mostra pro saldo simulado) fica pro usuário
 confirmar no app.
 --------
+AJUSTE-017 — fechamento manual calcula o resultado financeiro
+automaticamente, pra pares sem cruzamento (js/historico.js)
+
+Origem: usuário questionou, com razão, por que o fechamento manual
+(AJUSTE-015) pedia o resultado em USD digitado à mão, já que o
+fechamento AUTOMÁTICO (`js/checker.js`) calcula isso sozinho a partir
+de entrada/saída/lote. Resposta honesta: dá sim pra fazer o mesmo no
+navegador, PARA a maioria dos pares - só não pros pares cruzados
+(nem base nem cotação é USD: EUR/JPY, GBP/JPY, EUR/GBP), que
+precisam de uma cotação cruzada contra USD que só o backend busca
+(a chave da TwelveData nunca fica exposta no navegador, por
+segurança) e que nunca fica salva no documento original pra
+reaproveitar depois.
+
+Implementação: `calcularValorPipCliente()`/`calcularPipsCliente()`/
+`calcularResultadoManual()` (js/historico.js) são uma cópia
+DELIBERADA, só das duas fórmulas seguras de `calcularValorPip()`
+(scripts/moneyManager.js, a mesma que `checker.js` usa pros
+fechamentos automáticos) - retornam `null` explicitamente pro caso de
+par cruzado, em vez de arriscar inventar um número. Os campos ENTRADA/
+SAÍDA (liberados pelo AJUSTE-015) ganham `oninput` que recalcula o
+campo de Resultado ao vivo enquanto o usuário digita, via
+`recalcularResultadoManual()` - o campo continua um `<input>` normal
+por cima do valor sugerido, o usuário revisa/corrige antes de
+confirmar, nunca é sobrescrito silenciosamente sem ele ver. Pra pares
+cruzados, o aviso no campo muda pra deixar explícito que precisa
+calcular fora e informar manualmente (não finge que também calculou).
+
+Validado: `node -c` (sintaxe) e teste isolado novo
+(`validate-ajuste017-calculo-manual.js`, 14 cenários) - `valorPip`
+batendo EXATAMENTE (`===`, não aproximado) contra a função real do
+backend pra EUR/USD, USD/JPY, AUD/USD, USD/CAD; pares cruzados
+(EUR/JPY, GBP/JPY, EUR/GBP) confirmados retornando `null` no cliente,
+igual o backend real recusa (lança erro) sem `cotacaoCruzada`;
+`calcularResultadoManual()` ponta-a-ponta com BUY/SELL nas duas
+direções (preço a favor e contra), incluindo o caso análogo ao EUR/JPY
+real que motivou o AJUSTE-015 (SELL com preço subindo = resultado
+negativo, mas testado num par sem cruzamento pra poder validar contra
+o backend); entrada inválida (NaN) retorna `null` sem quebrar.
+--------
