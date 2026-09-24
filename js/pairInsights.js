@@ -177,9 +177,43 @@ function classificarDesempenho(taxaAcerto, operacoes) {
 
 }
 
+// AJUSTE-013 (24/09/2026): usuário reportou lentidão em qualquer
+// atualização do Dashboard (inclusive Iniciar/Parar Scanner, que
+// dispara app.render() e reconstrói a aba inteira) - achado real:
+// esta função buscava até 500 documentos inteiros do Firestore TODA
+// VEZ que renderSugestaoAgora() rodava, maior ainda que o problema já
+// corrigido no Histórico (AJUSTE-012). Diferente do Histórico, não dá
+// pra limitar por dias recentes aqui - a taxa de acerto por par
+// precisa de amostra funda (mínimo 30 operações, ver
+// OPERACOES_MINIMAS_HISTORICO acima), "hoje e ontem" deixaria a
+// maioria dos pares sem dado suficiente pra classificar.
+//
+// Fix: cache com TTL de 5min (mesma ordem de grandeza do ciclo real
+// do Scanner, ~5min via pinger externo - não faz sentido recalcular
+// mais rápido que a taxa em que histórico novo pode de fato aparecer).
+// Enquanto o cache está válido, nenhuma leitura nova é feita -
+// qualquer render do Dashboard dentro da janela de 5min reaproveita o
+// mesmo resultado, sem custo de Firestore.
+const CACHE_DESEMPENHO_TTL_MS = 5 * 60 * 1000;
+let cacheDesempenho = { dados: null, calculadoEm: 0 };
+
 async function calcularDesempenhoPorPar() {
 
+    const agora = Date.now();
+
+    if (
+        cacheDesempenho.dados &&
+        (agora - cacheDesempenho.calculadoEm) < CACHE_DESEMPENHO_TTL_MS
+    ) {
+        return cacheDesempenho.dados;
+    }
+
     const desempenho = {};
+
+    // AJUSTE-013: só cacheia em caso de sucesso - uma falha
+    // passageira de rede não pode travar o Dashboard mostrando dado
+    // vazio/desatualizado pelos 5min inteiros do TTL.
+    let sucesso = false;
 
     try {
 
@@ -207,6 +241,8 @@ async function calcularDesempenhoPorPar() {
 
         });
 
+        sucesso = true;
+
     } catch (erro) {
 
         console.error("Erro ao calcular desempenho por par:", erro);
@@ -224,6 +260,10 @@ async function calcularDesempenhoPorPar() {
         item.status = classificarDesempenho(item.taxaAcerto, item.operacoes);
 
     });
+
+    if (sucesso) {
+        cacheDesempenho = { dados: desempenho, calculadoEm: agora };
+    }
 
     return desempenho;
 

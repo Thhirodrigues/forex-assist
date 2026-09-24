@@ -10156,3 +10156,47 @@ a cada render) - registrado, não implementado, aguardando decisão
 explícita do usuário sobre a abordagem antes de mexer numa
 funcionalidade de sugestão que ninguém pediu pra revisar ainda.
 --------
+AJUSTE-013 — cache com TTL na busca de desempenho por par, usada pela
+Sugestão de Agora do Dashboard (js/pairInsights.js)
+
+Origem: continuação direta do AJUSTE-012 - usuário confirmou querer o
+mesmo tipo de correção no Dashboard/fluxo de Iniciar-Parar Scanner.
+`calcularDesempenhoPorPar()` buscava até 500 documentos inteiros do
+Firestore toda vez que rodava (maior que o problema já corrigido no
+Histórico). Diferente de lá, não dava pra limitar por dias recentes -
+a taxa de acerto por par exige amostra funda (mínimo 30 operações,
+`OPERACOES_MINIMAS_HISTORICO`); "hoje e ontem" deixaria a maioria dos
+pares sem dado suficiente pra classificar, quebrando a sugestão.
+
+Implementação: cache em memória (`cacheDesempenho`, variável de
+módulo) com TTL de 5 minutos - mesma ordem de grandeza do ciclo real
+do Scanner (~5min via pinger externo, não o `schedule: */15` do YAML -
+ver `PENDENCIAS-ESTRATEGICAS-RMI.md`), não faz sentido recalcular mais
+rápido que a taxa em que histórico novo de fato pode aparecer.
+Enquanto o cache está válido, `calcularDesempenhoPorPar()` retorna na
+hora, sem nenhuma leitura no Firestore - qualquer render do Dashboard
+dentro da janela de 5min (incluindo depois de Iniciar/Parar Scanner)
+reaproveita o mesmo resultado. Cuidado adicional: só cacheia em caso
+de sucesso (`sucesso = true` só depois do `snapshot.forEach` completar
+sem exceção) - uma falha passageira de rede não pode travar o
+Dashboard mostrando dado vazio pelos 5 minutos inteiros do TTL.
+
+Validado: `node -c` (sintaxe). Teste funcional de verdade (queda real
+no tempo de resposta) fica pro usuário confirmar no app.
+
+**Achado novo, relacionado mas fora do escopo desta mudança**: o
+comentário no topo do próprio arquivo (linhas ~21-27) já avisa que
+`dentroJanelaPadrao`/`parNaJanelaOperacional`/`parElegivelJanelaAsia`
+aqui são uma CÓPIA deliberada da lógica de `scripts/scanner.js`
+(BUG-011, já documentado) - **e essa cópia está desatualizada**: não
+reflete nem o AJUSTE-005 (23/09/2026, exclusividade da janela asiática
+pra pares JPY/AUD/NZD de seg-qui) nem o AJUSTE-006 (mesma data, janela
+asiática virando a meia-noite até 04:00). Efeito prático: a "Sugestão
+de Agora" do Dashboard pode estar recomendando um par como "dentro da
+janela" num horário em que o Scanner real já não analisa mais esse
+par (ou vice-versa) - o Dashboard e o Scanner real podem estar
+mostrando janelas diferentes pro mesmo par agora mesmo. Não corrigido
+nesta mudança (fora do que foi pedido); registrado aqui pra não se
+perder, mesma disciplina de sempre - decisão de prioridade fica para o
+usuário.
+--------
