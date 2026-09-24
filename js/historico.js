@@ -477,35 +477,108 @@ function botaoFecharManualmente(sinal, docId) {
   if (sinal.resultado) return "";
 
   return `
-    <div style="margin-bottom:14px; text-align:center;">
+    <div id="areaFecharManual-${docId}" style="margin-bottom:10px; text-align:center;">
       <button
-        onclick="fecharOperacaoManualmente('${docId}')"
-        style="padding:8px 14px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;"
+        onclick="event.stopPropagation(); ativarEdicaoFechamentoManual('${docId}')"
+        style="padding:6px 12px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:11px; cursor:pointer;"
       >
         🔒 Fechei Manualmente na Corretora
       </button>
       <div style="font-size:10px; color:#8c95b3; margin-top:4px;">
-        Registra o resultado REAL (o que você de fato ganhou/perdeu),
-        em vez de deixar o sistema esperar o TP/SL automático bater.
+        Libera os campos ENTRADA/SAÍDA acima pra editar com o preço real
+        da corretora, em vez de esperar o TP/SL automático bater.
       </div>
     </div>
   `;
 
 }
 
-// AJUSTE-008 (24/09/2026): fecha manualmente uma operação ainda
-// PENDENTE com o resultado financeiro REAL que o usuário teve na
-// corretora. Sem isso, uma operação encerrada na mão (ex.: travou
-// lucro parcial na XM em vez de esperar o TP/SL do sistema) ficava
-// ABERTA pra sempre no Firestore até o checker.js automático bater o
-// TP/SL dele - gravando um resultado que nunca aconteceu de verdade e
-// contaminando silenciosamente a taxa de acerto/expectativa que
-// decisionEngine.js usa pra aprovar sinais futuros (ver CLAUDE.md,
-// "Qualidade de sinal da RMI"). `motivoEncerramento: "MANUAL_CORRETORA"`
-// marca esses casos como distintos dos fechamentos automáticos
-// (SL_FINANCEIRO/TP_FINANCEIRO/SL_PIPS/TP_PIPS), pra dar pra filtrar
-// depois numa análise de qualidade.
-window.fecharOperacaoManualmente = async function (docId) {
+// AJUSTE-015 (24/09/2026): redesenho do fechamento manual (AJUSTE-008)
+// - antes usava prompt()/confirm() nativos só pedindo o resultado em
+// USD; usuário pediu pra em vez disso liberar os próprios campos
+// ENTRADA/SAÍDA (miniCard com id, ver construirDetalheSinal) pra
+// edição in-line, com o preço real que ele lê na corretora (XM),
+// mantendo o campo de resultado financeiro como confirmação final.
+// Troca o botão "Fechei Manualmente" por um mini-formulário no lugar
+// (mesmo container `areaFecharManual-`), sem abrir tela nova.
+window.ativarEdicaoFechamentoManual = function (docId) {
+
+  const cache = cacheSinaisHistorico[docId];
+  const sinal = cache ? cache.sinal : {};
+
+  const elEntrada = document.getElementById(`valorEntrada-${docId}`);
+  const elSaida = document.getElementById(`valorSaida-${docId}`);
+  const elArea = document.getElementById(`areaFecharManual-${docId}`);
+
+  const estiloInput =
+    "width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.2); " +
+    "border-radius:4px; color:#fff; font-size:13px; text-align:center; padding:3px; box-sizing:border-box;";
+
+  if (elEntrada) {
+    elEntrada.outerHTML =
+      `<input type="number" step="any" id="valorEntrada-${docId}" value="${sinal.precoEntrada ?? ""}" style="${estiloInput}">`;
+  }
+
+  if (elSaida) {
+    const saidaAtual = sinal.precoSaida ?? sinal.precoFechamento ?? sinal.precoEntrada ?? "";
+    elSaida.outerHTML =
+      `<input type="number" step="any" id="valorSaida-${docId}" value="${saidaAtual}" style="${estiloInput}">`;
+  }
+
+  if (elArea) {
+    elArea.innerHTML = `
+      <div style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:8px; margin-top:4px;">
+        <div style="font-size:10px; color:#999; margin-bottom:4px;">
+          RESULTADO FINANCEIRO REAL (USD, negativo pra prejuízo)
+        </div>
+        <input
+          type="number"
+          step="any"
+          id="inputResultadoManual-${docId}"
+          placeholder="ex: 3 ou -4.5"
+          style="${estiloInput} margin-bottom:6px; padding:5px;"
+        >
+        <div style="display:flex; gap:8px;">
+          <button
+            onclick="event.stopPropagation(); confirmarFechamentoManual('${docId}')"
+            style="flex:1; padding:6px; border:none; border-radius:6px; background:#1f8a4c; color:#fff; font-size:12px; cursor:pointer;"
+          >
+            ✅ Confirmar
+          </button>
+          <button
+            onclick="event.stopPropagation(); carregarHistorico();"
+            style="flex:1; padding:6px; border:none; border-radius:6px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+};
+
+// AJUSTE-015: mesma disciplina do AJUSTE-008 (motivoEncerramento
+// distinto, Conta Simulada sempre acompanha, Conta Real fica separada
+// no checkbox de sempre) - só a origem dos dados mudou, de prompt()
+// pros campos in-line ativados por ativarEdicaoFechamentoManual()
+// acima. precoEntrada/precoSaida só são gravados se o usuário de fato
+// os editou (Number.isFinite) - não sobrescreve com lixo se o campo
+// ficou vazio por algum motivo.
+window.confirmarFechamentoManual = async function (docId) {
+
+  const inputEntrada = document.getElementById(`valorEntrada-${docId}`);
+  const inputSaida = document.getElementById(`valorSaida-${docId}`);
+  const inputResultado = document.getElementById(`inputResultadoManual-${docId}`);
+
+  const precoEntrada = Number(inputEntrada?.value);
+  const precoSaida = Number(inputSaida?.value);
+  const resultadoFinanceiro = Number(inputResultado?.value);
+
+  if (!Number.isFinite(resultadoFinanceiro)) {
+    alert("Informe o resultado financeiro real (USD) - valor inválido.");
+    return;
+  }
 
   const db = firebase.firestore();
 
@@ -518,21 +591,6 @@ window.fecharOperacaoManualmente = async function (docId) {
   if (!sinal || sinal.resultado) {
     alert("Essa operação já está encerrada - não é possível fechar de novo.");
     carregarHistorico();
-    return;
-  }
-
-  const entrada = prompt(
-    `Fechar ${sinal.par} (${sinal.direcao}) manualmente - informe o resultado ` +
-    `financeiro REAL que você teve na corretora (em USD, use negativo pra ` +
-    `prejuízo). Ex.: 3 ou -4.5`
-  );
-
-  if (entrada === null) return;
-
-  const resultadoFinanceiro = Number(String(entrada).replace(",", "."));
-
-  if (!Number.isFinite(resultadoFinanceiro)) {
-    alert("Valor inválido - informe um número, ex.: 3 ou -4.5");
     return;
   }
 
@@ -553,19 +611,13 @@ window.fecharOperacaoManualmente = async function (docId) {
 
   const config = configDoc.exists ? configDoc.data() : {};
 
-  // Mesma fórmula do fechamento automático de js/checker.js - a Conta
-  // Simulada acompanha TODO sinal fechado, sempre, independente do
-  // tipoConta ativo (ver comentário lá). Marcar como "Operação Real"
-  // (soma na Conta Real de verdade) continua sendo um passo separado,
-  // pelo checkbox que já existe (alternarOperacaoReal) - este botão só
-  // registra o resultado em si.
   const saldoAntes =
     Number(config.saldoSimulado ?? config.saldoInicial ?? 0);
 
   const saldoDepois =
     Number((saldoAntes + resultadoFinanceiro).toFixed(2));
 
-  await docRef.update({
+  const atualizacao = {
 
     status: "ENCERRADA",
 
@@ -583,7 +635,16 @@ window.fecharOperacaoManualmente = async function (docId) {
 
     fimOperacao: Date.now()
 
-  });
+  };
+
+  if (Number.isFinite(precoEntrada)) atualizacao.precoEntrada = precoEntrada;
+
+  if (Number.isFinite(precoSaida)) {
+    atualizacao.precoSaida = precoSaida;
+    atualizacao.precoFechamento = precoSaida;
+  }
+
+  await docRef.update(atualizacao);
 
   await configRef.update({
 
@@ -818,163 +879,48 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
 // Operação Real) - extraído do template do card pra ser reutilizado
 // também nas linhas da tabela (mesmo conteúdo, containers diferentes
 // em volta: <div> dentro do card, <td colspan> dentro da tabela).
+// AJUSTE-015 (24/09/2026): mini-card compacto, reusado em todas as
+// grades 3-por-linha do detalhe do sinal - altura reduzida pela
+// metade (padding 6px em vez de 10-12px, valor 15px em vez de
+// 18-24px) por pedido do usuário. `idAttr` opcional (ex:
+// `id="valorEntrada-123"`) permite trocar o conteúdo do valor depois,
+// via JS, sem reconstruir o card inteiro - usado pelo fechamento
+// manual pra virar campo editável no lugar.
+function miniCard(emoji, label, valorHtml, cor, idAttr) {
+  return `
+    <div style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:6px; text-align:center;">
+      <div style="font-size:10px; color:#999;">${emoji} ${label}</div>
+      <div ${idAttr || ""} style="margin-top:2px; font-size:15px; font-weight:bold; color:${cor || "#fff"};">${valorHtml}</div>
+    </div>
+  `;
+}
+
 function construirDetalheSinal(sinal, docId, estaAberto) {
   const detalheId = `detalhe-${docId}`;
 
+  // AJUSTE-015: layout reorganizado em grades de 3 por linha (pedido
+  // do usuário) - linha 1 EMA9/EMA21/EMA200, linha 2 RSI/Entrada/
+  // Saída. Entrada e Saída ganham IDs (`valorEntrada-`/`valorSaida-`)
+  // pra virarem campo editável no fechamento manual, sem precisar
+  // reconstruir o resto do card.
+  const gradeAberta = `<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px;">`;
+
   return `
           <div id="${detalheId}" style="display: ${estaAberto ? 'block' : 'none'}; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#8c95b3;">
-            <div style="
-display:grid;
-grid-template-columns:repeat(2,1fr);
-gap:10px;
-margin-bottom:14px;
-">
 
-<div style="
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-border-radius:8px;
-padding:10px;
-text-align:center;
-">
-
-<div style="font-size:11px;color:#999;">
-📉 RSI
+${gradeAberta}
+${miniCard("📈", "EMA 9", formatarPrecoPar(sinal.indicadores?.ema9 ?? sinal.ema9, sinal.par))}
+${miniCard("📊", "EMA 21", formatarPrecoPar(sinal.indicadores?.ema21 ?? sinal.ema21, sinal.par))}
+${miniCard("🏠", "EMA 200", formatarPrecoPar(sinal.indicadores?.ema200 ?? sinal.ema200, sinal.par))}
 </div>
 
-<div style="
-font-size:20px;
-font-weight:bold;
-color:#4fc3f7;
-">
-${(sinal.indicadores?.rsi ?? sinal.rsi) != null ? Number(sinal.indicadores?.rsi ?? sinal.rsi).toFixed(2) : "--"}
-</div>
-
-</div>
-
-<div style="
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-border-radius:8px;
-padding:10px;
-text-align:center;
-">
-
-<div style="font-size:11px;color:#999;">
-📈 EMA 9
-</div>
-
-<div style="
-font-size:18px;
-font-weight:bold;
-color:#ffffff;
-">
-${formatarPrecoPar(sinal.indicadores?.ema9 ?? sinal.ema9, sinal.par)}
-</div>
-
-</div>
-
-<div style="
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-border-radius:8px;
-padding:10px;
-text-align:center;
-">
-
-<div style="font-size:11px;color:#999;">
-📊 EMA 21
-</div>
-
-<div style="
-font-size:18px;
-font-weight:bold;
-color:#ffffff;
-">
-${formatarPrecoPar(sinal.indicadores?.ema21 ?? sinal.ema21, sinal.par)}
-</div>
-
-</div>
-
-<div style="
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-border-radius:8px;
-padding:10px;
-text-align:center;
-">
-
-<div style="font-size:11px;color:#999;">
-🏠 EMA 200
-</div>
-
-<div style="
-font-size:18px;
-font-weight:bold;
-color:#ffffff;
-">
-${formatarPrecoPar(sinal.indicadores?.ema200 ?? sinal.ema200, sinal.par)}
-</div>
-
-</div>
-
+${gradeAberta}
+${miniCard("📉", "RSI", (sinal.indicadores?.rsi ?? sinal.rsi) != null ? Number(sinal.indicadores?.rsi ?? sinal.rsi).toFixed(2) : "--", "#4fc3f7")}
+${miniCard("💰", "ENTRADA", formatarPrecoPar(sinal.precoEntrada, sinal.par), "#fff", `id="valorEntrada-${docId}"`)}
+${miniCard("🏁", "SAÍDA", formatarPrecoPar(sinal.precoSaida ?? sinal.precoFechamento, sinal.par), "#fff", `id="valorSaida-${docId}"`)}
 </div>
 
 ${bannerSMC(sinal)}
-
-<div style="
-display:flex;
-gap:10px;
-margin-bottom:14px;
-">
-
-<div style="
-flex:1;
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-border-radius:8px;
-padding:10px;
-text-align:center;
-">
-
-<div style="font-size:11px;color:#999;">
-💰 ENTRADA
-</div>
-
-<div style="
-font-size:18px;
-font-weight:bold;
-color:#fff;
-">
-${formatarPrecoPar(sinal.precoEntrada, sinal.par)}
-</div>
-
-</div>
-
-<div style="
-flex:1;
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-border-radius:8px;
-padding:10px;
-text-align:center;
-">
-
-<div style="font-size:11px;color:#999;">
-🏁 SAÍDA
-</div>
-
-<div style="
-font-size:18px;
-font-weight:bold;
-color:#fff;
-">
-${formatarPrecoPar(sinal.precoSaida ?? sinal.precoFechamento, sinal.par)}
-</div>
-
-</div>
-
-</div>
 
 ${botaoFecharManualmente(sinal, docId)}
 
@@ -985,183 +931,51 @@ ${sinal.status === "ENCERRADA" ? renderizarCaminhoPrecos(sinal) : ""}
     <div style="
         font-weight:bold;
         color:#9aa4b5;
-        margin-bottom:12px;
+        margin-bottom:8px;
     ">
         ⚙️ Configuração Utilizada
     </div>
 
     ${bannerConfiguracaoAjustada(sinal)}
 
-    <div style="
-        text-align:center;
-        margin-bottom:14px;
-    ">
-
-        <div style="
-            font-size:12px;
-            color:#999;
-        ">
-            LOTE
-        </div>
-
-        <div style="
-            font-size:22px;
-            font-weight:bold;
-            color:#fff;
-        ">
-            ${sinal.lote}
-        </div>
-
-    </div>
-
-    <div style="
-display:flex;
-gap:12px;
-margin-bottom:16px;
-">
-
-<div style="
-flex:1;
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-border-radius:8px;
-padding:10px;
-text-align:center;
-">
-
-<div style="
-font-size:11px;
-color:#999;
-">
-🎯 TP
-</div>
-
-<div style="
-font-size:20px;
-font-weight:bold;
-color:#00d26a;
-">
-$${sinal.tpUSD}
-</div>
-
-</div>
-
-<div style="
-flex:1;
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-border-radius:8px;
-padding:10px;
-text-align:center;
-">
-
-<div style="
-font-size:11px;
-color:#999;
-">
-🛑 SL
-</div>
-
-<div style="
-font-size:20px;
-font-weight:bold;
-color:#ff5252;
-">
-$${sinal.slUSD}
-</div>
-
-</div>
-
-</div>
-
+    ${gradeAberta}
+    ${miniCard("📦", "LOTE", sinal.lote)}
+    ${miniCard("🎯", "TP", `$${sinal.tpUSD}`, "#00d26a")}
+    ${miniCard("🛑", "SL", `$${sinal.slUSD}`, "#ff5252")}
     </div>
 
     <!-- CONTROLE FINANCEIRO -->
 
-<div style="
-display:grid;
-grid-template-columns:repeat(2,1fr);
-gap:12px;
-margin:18px 0;
-">
-
-<div style="
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-border-radius:10px;
-padding:12px;
-text-align:center;
-">
-
-<div style="
-font-size:11px;
-color:#888;
-letter-spacing:1px;
-">
-💼 SALDO ANTES
-</div>
-
-<div style="
-margin-top:8px;
-font-size:22px;
-font-weight:bold;
-color:#b0b0b0;
-">
-
-${sinal.saldoAntes == null
-? "--"
-: "$" + Number(sinal.saldoAntes).toFixed(2)}
-
-</div>
-
-</div>
-
-<div style="
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-border-radius:10px;
-padding:12px;
-text-align:center;
-">
-
-<div style="
-font-size:11px;
-color:#888;
-letter-spacing:1px;
-">
-💰 SALDO DEPOIS
-</div>
-
-<div style="
-margin-top:8px;
-font-size:22px;
-font-weight:bold;
-color:${
-sinal.saldoDepois > sinal.saldoAntes
-? "#00d26a"
-: sinal.saldoDepois < sinal.saldoAntes
-? "#ff5252"
-: "#ffffff"
-};
-">
-
-${sinal.saldoDepois == null
-? "--"
-: "$" + Number(sinal.saldoDepois).toFixed(2)}
-
-</div>
-
-</div>
-
-</div>
+    ${gradeAberta}
+    ${miniCard(
+        "💼",
+        "SALDO ANTES",
+        sinal.saldoAntes == null ? "--" : "$" + Number(sinal.saldoAntes).toFixed(2),
+        "#b0b0b0"
+    )}
+    ${miniCard(
+        "📊",
+        "RESULTADO",
+        (sinal.resultadoFinanceiro ?? sinal.lucroEstimado) == null
+            ? "--"
+            : `${(sinal.resultadoFinanceiro ?? sinal.lucroEstimado) >= 0 ? "+" : ""}$${Number(sinal.resultadoFinanceiro ?? sinal.lucroEstimado).toFixed(2)}`,
+        sinal.resultado === "WIN" ? "#00d26a" : sinal.resultado === "LOSS" ? "#ff5252" : "#fff"
+    )}
+    ${miniCard(
+        "💰",
+        "SALDO DEPOIS",
+        sinal.saldoDepois == null ? "--" : "$" + Number(sinal.saldoDepois).toFixed(2),
+        sinal.saldoDepois > sinal.saldoAntes ? "#00d26a" : sinal.saldoDepois < sinal.saldoAntes ? "#ff5252" : "#fff"
+    )}
+    </div>
 
     <label style="
 display:flex;
 justify-content:space-between;
 align-items:center;
 cursor:pointer;
-margin-top:16px;
-padding-top:10px;
+margin-top:10px;
+padding-top:8px;
 border-top:1px solid rgba(255,255,255,.10);
 ">
 
@@ -1180,59 +994,6 @@ ${sinal.status !== "ENCERRADA"
     ? '<div style="font-size:11px;color:#999;margin-top:4px;">Disponível após o encerramento da operação</div>'
     : ""}
 
-            ${sinal.movimentoPips !== undefined ? `
-              <div style="margin-top:10px; padding:8px; border-radius:4px; background:rgba(255,255,255,0.05); text-align:center; font-weight:bold;">
-                <div style="color:${sinal.resultado === 'WIN' ? '#00ff88' : (sinal.resultado === 'LOSS' ? '#ff4444' : '#8c95b3')};">
-                  VARIAÇÃO: ${sinal.movimentoPips > 0 ? '+' : ''}${sinal.movimentoPips} PIPS
-                </div>
-                ${sinal.lucroEstimado !== undefined ? `
-
-               <div style="
-margin-top:12px;
-padding:12px;
-border-radius:8px;
-background:${
-    sinal.resultado === "WIN"
-        ? "rgba(0,210,106,.12)"
-        : sinal.resultado === "LOSS"
-            ? "rgba(255,82,82,.12)"
-            : "rgba(255,255,255,.05)"
-};
-text-align:center;
-">
-
-<div style="
-font-size:11px;
-color:#999;
-letter-spacing:1px;
-">
-
-RESULTADO FINANCEIRO
-
-</div>
-
-<div style="
-font-size:24px;
-font-weight:bold;
-color:${
-    sinal.resultado === "WIN"
-        ? "#00d26a"
-        : sinal.resultado === "LOSS"
-            ? "#ff5252"
-            : "#ffffff"
-};
-">
-
-${sinal.resultadoFinanceiro ??
-(sinal.lucroEstimado >= 0 ? "+" : "") + "$" + sinal.lucroEstimado.toFixed(2)}
-
-</div>
-
-</div>
-
-                ` : ''}
-              </div>
-            ` : ''}
           </div>
         `;
 }
@@ -1359,9 +1120,19 @@ async function carregarHistorico() {
           ? dataObj.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
           : "Data Indefinida";
 
-      if (!statsPorData[dataSinal]) statsPorData[dataSinal] = { wins: 0, losses: 0 };
+      // AJUSTE-016 (24/09/2026): soma financeira por dia, junto de
+      // wins/losses - pedido do usuário pra mostrar quanto foi
+      // ganho/perdido no dia, igual o Dashboard já mostra pro saldo
+      // simulado. Soma resultadoFinanceiro (ou lucroEstimado, sinais
+      // antigos) de toda operação encerrada, independente de WIN/LOSS -
+      // é o valor real que entrou/saiu, não uma contagem.
+      if (!statsPorData[dataSinal]) statsPorData[dataSinal] = { wins: 0, losses: 0, financeiro: 0 };
       if (sinal.resultado === "WIN") statsPorData[dataSinal].wins++;
       if (sinal.resultado === "LOSS") statsPorData[dataSinal].losses++;
+      if (sinal.resultado === "WIN" || sinal.resultado === "LOSS") {
+        const valorFechado = Number(sinal.resultadoFinanceiro ?? sinal.lucroEstimado);
+        if (Number.isFinite(valorFechado)) statsPorData[dataSinal].financeiro += valorFechado;
+      }
 
       const isCooldown = sinal.status === "COOLDOWN" || sinal.origem === "cooldown";
 
@@ -1437,16 +1208,25 @@ async function carregarHistorico() {
     // manter o rótulo "Setembro 2026" enganaria mostrando só 2-3 dias
     // com cara de mês inteiro. Rótulo passa a descrever o que
     // realmente está carregado.
+    // AJUSTE-016: soma de TODO statsPorData, sem filtrar por mês - o
+    // filtro de mês (`mesChaveDe`) fazia sentido quando a busca já
+    // vinha limitada a até 300 docs que podiam ultrapassar o mês
+    // corrente (FEATURE-007); desde o AJUSTE-012 a busca em si já é
+    // limitada a `diasCarregados` dias, então filtrar de novo por mês
+    // só cortaria dado errado perto da virada do mês (ex.: "últimos 3
+    // dias" incluindo 1 dia do mês anterior - o filtro antigo
+    // descartaria esse dia da conta, inconsistente com o rótulo).
     let winsMes = 0;
     let lossesMes = 0;
+    let financeiroMes = 0;
     Object.keys(statsPorData).forEach((data) => {
-      if (mesChaveDe(data) === mesChaveDe(hojeStr)) {
-        winsMes += statsPorData[data].wins;
-        lossesMes += statsPorData[data].losses;
-      }
+      winsMes += statsPorData[data].wins;
+      lossesMes += statsPorData[data].losses;
+      financeiroMes += statsPorData[data].financeiro;
     });
     const totalMes = winsMes + lossesMes;
     const taxaMes = totalMes > 0 ? ((winsMes / totalMes) * 100).toFixed(1) : "0";
+    const financeiroMesFormatado = `${financeiroMes >= 0 ? "+" : "-"}$${Math.abs(financeiroMes).toFixed(2)}`;
 
     const labelPeriodoCarregado = diasCarregados <= 2
       ? "Hoje e ontem"
@@ -1460,6 +1240,9 @@ async function carregarHistorico() {
           </div>
           <div style="text-align:center; font-size:17px; font-weight:bold;">
             ✅ ${winsMes} &nbsp;&nbsp;&nbsp; ❌ ${lossesMes} &nbsp;&nbsp;&nbsp; 🎯 ${taxaMes}%
+          </div>
+          <div style="text-align:center; font-size:14px; font-weight:bold; margin-top:4px; color:${financeiroMes >= 0 ? "#00d26a" : "#ff5252"};">
+            💵 ${financeiroMesFormatado}
           </div>
           <button id="btnMinimizarTudo" style="margin-top:10px; width:100%; padding:8px; border:none; border-radius:8px; background:#132852; color:white; font-size:13px; cursor:pointer;">
             Minimizar Tudo
@@ -1498,6 +1281,10 @@ async function carregarHistorico() {
       const lossesDoMes = datasDoMes.reduce((soma, data) => soma + statsPorData[data].losses, 0);
       const totalDoMes = winsDoMes + lossesDoMes;
       const taxaDoMes = totalDoMes > 0 ? ((winsDoMes / totalDoMes) * 100).toFixed(1) : "0";
+      // AJUSTE-016: mesma regra - todo placar mostra o valor
+      // ganho/perdido no final.
+      const financeiroDoMes = datasDoMes.reduce((soma, data) => soma + statsPorData[data].financeiro, 0);
+      const financeiroDoMesFormatado = `${financeiroDoMes >= 0 ? "+" : "-"}$${Math.abs(financeiroDoMes).toFixed(2)}`;
 
       const mesContemHoje = chaveMes === mesChaveDe(hojeStr);
       const mesContemDestaque =
@@ -1514,6 +1301,8 @@ async function carregarHistorico() {
         const placarDia = statsPorData[data];
         const totalDia = placarDia.wins + placarDia.losses;
         const taxaDia = totalDia > 0 ? ((placarDia.wins / totalDia) * 100).toFixed(1) : "0";
+        // AJUSTE-016: valor ganho/perdido no dia, igual ao Dashboard.
+        const financeiroDiaFormatado = `${placarDia.financeiro >= 0 ? "+" : "-"}$${Math.abs(placarDia.financeiro).toFixed(2)}`;
 
         const temSinalDestacado =
           app.sinalParaDestacar &&
@@ -1571,7 +1360,7 @@ async function carregarHistorico() {
 
       style="padding:10px 12px; font-size:12px; color:#8c95b3; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.03);">
      <span><span class="seta-grupo" style="margin-right:8px;">${mostrarDia ? "▼" : "▶"}</span>${label}</span>
-     <span style="font-weight:normal;">✅ ${placarDia.wins} ❌ ${placarDia.losses} 🎯 ${taxaDia}%</span>
+     <span style="font-weight:normal;">✅ ${placarDia.wins} ❌ ${placarDia.losses} 🎯 ${taxaDia}% 💵 ${financeiroDiaFormatado}</span>
       </div>
       <div id="data${idData}" style="display: ${mostrarDia ? 'block' : 'none'}; padding:${modoTabela ? '0' : '10px'};">
         ${conteudoDia}
@@ -1598,7 +1387,7 @@ if (el.style.display === 'none') {
 
     style="padding:12px; font-size:13px; color:#e0e6f5; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.06);">
    <span><span class="seta-grupo" style="margin-right:8px;">${mostrarMes ? "▼" : "▶"}</span>${labelMes}</span>
-   <span style="font-weight:normal; font-size:12px;">${mesContemHoje ? "" : `✅ ${winsDoMes} ❌ ${lossesDoMes} 🎯 ${taxaDoMes}%`}</span>
+   <span style="font-weight:normal; font-size:12px;">${mesContemHoje ? "" : `✅ ${winsDoMes} ❌ ${lossesDoMes} 🎯 ${taxaDoMes}% 💵 ${financeiroDoMesFormatado}`}</span>
     </div>
     <div id="mes${idMes}" style="display: ${mostrarMes ? 'block' : 'none'}; padding:8px;">
       ${diasHtml}

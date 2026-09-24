@@ -10256,3 +10256,89 @@ funcionando no Dashboard, sem regressão no Cooldowns Hoje/Modo
 Atual/Desempenho que já viviam ali) fica pro usuário confirmar no
 app.
 --------
+AJUSTE-015 — detalhe do sinal reorganizado em grades de 3 colunas,
+altura reduzida pela metade, fechamento manual vira edição in-line dos
+campos ENTRADA/SAÍDA (js/historico.js)
+
+Origem: usuário comparou lado a lado a XM (com o preço real de mercado
+visível, ex. AUD/USD) e o app, e pediu três mudanças no card de
+detalhe do sinal:
+
+1. Layout em 3 colunas por linha em vez de 2, mais estreito: EMA9/
+   EMA21/EMA200 numa linha, RSI/Entrada/Saída na linha seguinte, SMC
+   como mensagem (não é um número, fica como banner de sempre).
+   Configuração Utilizada também vira 3 colunas: Lote/TP/SL numa
+   linha, Saldo Antes/Resultado (campo NOVO)/Saldo Depois na
+   seguinte.
+2. Cards mais baixos - padding e fonte reduzidos pela metade
+   (`miniCard()`, função nova reutilizada em todas as grades, evita
+   repetir o mesmo bloco de CSS 9 vezes como antes).
+3. Fechamento manual (AJUSTE-008) redesenhado: em vez de `prompt()`
+   pedindo só o resultado em USD, o botão "Fechei Manualmente"
+   agora LIBERA os próprios campos ENTRADA/SAÍDA pra edição in-line
+   (viram `<input>` no lugar do texto, com o valor atual pré-
+   preenchido) - o usuário digita o preço real que vê na corretora
+   direto ali, sem abrir outra tela. Campo de Resultado Financeiro
+   (USD) continua existindo como confirmação final (decisão
+   deliberada: NÃO calcular o $ a partir da diferença de preço no
+   navegador - pares cruzados tipo EUR/JPY precisam de cotação
+   cruzada pra converter pip em dólar corretamente,
+   scripts/moneyManager.js já faz isso no backend; replicar essa
+   conta no cliente arriscava um número de dinheiro errado por
+   simplificação, contra a disciplina de qualidade de sinal do
+   CLAUDE.md - mais seguro pedir o valor que o usuário já vê pronto
+   na tela da corretora).
+
+Campo novo "Resultado" (entre Saldo Antes e Saldo Depois): mostra
+`sinal.resultadoFinanceiro` (com fallback pra `lucroEstimado`, sinais
+antigos) - substitui o bloco legado que só aparecia condicionado a
+`movimentoPips`/`lucroEstimado` (campos de um schema anterior,
+raramente presentes em sinais atuais) por um campo sempre visível,
+igual os outros.
+
+`ativarEdicaoFechamentoManual()`/`confirmarFechamentoManual()`
+substituem a função antiga (`fecharOperacaoManualmente`, removida) -
+mesma disciplina de sempre (motivoEncerramento MANUAL_CORRETORA,
+saldoSimulado atualizado com a mesma fórmula do checker.js real,
+Conta Real continua sendo um passo separado pelo checkbox já
+existente). `precoEntrada`/`precoSaida` só são sobrescritos se o
+usuário de fato editou o campo (guard `Number.isFinite`).
+
+Validado: `node -c` (sintaxe); `grep` confirmando nenhuma referência
+solta ao nome antigo da função depois do rename. Teste visual de
+verdade (as 3 colunas, a edição in-line funcionando de ponta a ponta)
+fica pro usuário confirmar no app.
+--------
+AJUSTE-016 — todo placar (card do topo, cabeçalho de mês, cabeçalho de
+dia) passa a mostrar o valor ganho/perdido no final (js/historico.js)
+
+Origem: mesma mensagem do AJUSTE-015 - usuário pediu que, em qualquer
+lugar que já mostra ✅wins/❌losses/🎯taxa, apareça também o valor em
+dólar ganho ou perdido daquele período, igual o Dashboard já mostra
+pro saldo simulado. Regra explícita: ao carregar mais dias
+(AJUSTE-012), o total do card do topo acompanha - "últimos 3 dias"
+mostra o valor dos últimos 3, "últimos 7" o valor dos últimos 7, e
+assim por diante.
+
+`statsPorData[data]` ganha um terceiro campo, `financeiro` - soma
+`resultadoFinanceiro` (ou `lucroEstimado`, sinais antigos) de toda
+operação ENCERRADA daquele dia, independente de WIN/LOSS (é o valor
+real que entrou ou saiu, não uma contagem). Aplicado nos três lugares
+que já mostravam placar: o card do topo (soma de todo o período
+carregado), o cabeçalho de cada grupo de mês, e o cabeçalho de cada
+grupo de dia.
+
+Correção lateral necessária: o card do topo somava só os dias cujo
+mês batia com o mês corrente (`mesChaveDe`) - fazia sentido quando a
+busca vinha de até 300 documentos que podiam ultrapassar um mês
+inteiro (antes do AJUSTE-012); hoje a busca já é limitada a
+`diasCarregados` dias, então esse filtro de mês só cortaria dado
+errado perto da virada do mês (ex.: "últimos 3 dias" incluindo 1 dia
+do mês anterior seria descartado da conta, inconsistente com o
+rótulo "Últimos 3 dias"). Removido - agora soma tudo que está
+carregado, sem filtro de mês.
+
+Validado: `node -c` (sintaxe). Teste funcional (os valores batendo
+com o que o Dashboard mostra pro saldo simulado) fica pro usuário
+confirmar no app.
+--------
