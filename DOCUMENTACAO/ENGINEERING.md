@@ -10645,3 +10645,131 @@ navegador disponível nesta sessão). Pendente, per CLAUDE.md: usuário
 confirmar no celular real se o header para de travar depois de girar,
 sem precisar de refresh manual.
 --------
+AJUSTE-021 — aba nova "Resultados" (placar/filtros/comparação),
+Histórico vira só monitoramento (js/resultados.js NOVO, js/historico.js,
+js/app.js, index.html)
+
+Origem: usuário testando o perfil Conservador pediu mais agilidade no
+Histórico pra acompanhar sinais recebidos ("Histórico ficaria só para
+receber e verificar sinais"). Discussão de escopo em 3 rodadas antes
+de implementar (per disciplina deste projeto de não tocar em UI de
+análise sem confirmar o design primeiro): (1) proposta inicial do
+usuário foi criar a aba só pra isolar a lentidão de uma consulta
+pesada; (2) investigação mostrou que a lentidão real (Dashboard,
+"Desempenho") vem de `contarPorResultado()` em js/desempenho.js
+recalculando WIN/LOSS/total do zero a cada render (fallback de até
+500 docs quando `.count()` falha) - sinalizado como a causa raiz de
+verdade, ainda NÃO corrigida (fica pendente, não fazia parte deste
+pedido); (3) usuário refinou o pedido: não é só isolar lentidão, é uma
+separação de responsabilidade de propósito - Histórico = monitorar
+sinais recebidos (rápido, day-windowed), Resultados = analisar
+performance (placar, filtros por par/direção/perfil, comparação de
+sinais, "lotes"), com o usuário ciente e aceitando que Resultados
+carrega mais devagar por concentrar mais dado ali.
+
+Implementação:
+
+1. **js/historico.js** (trimmed): removida a feature de comparação de
+   sinais inteira (`sinaisComparacaoSelecionados`, `atualizarBarraComparacao`,
+   `alternarSelecaoComparacao`, `limparSelecaoComparacao`, `fecharComparacao`,
+   `reavaliarDicaGirar`, `alternarExpandirComparacao`, `abrirComparacao`,
+   containers `historicoComparacao`/`barraComparacao`, coluna "Cmp" da
+   tabela) - moveu pra Resultados. Removido o card de estatísticas do
+   topo (`winsMes`/`lossesMes`/`financeiroMes`) e os números de
+   placar (✅/❌/🎯/💵) dos cabeçalhos de dia/mês - viram só navegação
+   (label, sem número), placar de verdade agora só em Resultados.
+   `cacheSinaisHistorico` continua aqui (usado pelo fechamento manual,
+   que continua sendo ação do Histórico) - também é escrito por
+   js/resultados.js, mesmo cache compartilhado entre as duas telas
+   (chave = docId Firestore, sem risco de colisão). Duas funções
+   extraídas pra reuso: `extrairDataObjSinal(sinal)` (parsing de
+   timestamp/horario/data, antes só dentro de `carregarHistorico()`) e
+   `construirLinhaTabela()` ganhou o parâmetro opcional `comCmp` (só
+   Resultados passa `true`, pra reusar a MESMA linha de tabela com a
+   coluna de comparação de volta, sem duplicar HTML/lógica em dois
+   arquivos). `alternarOperacaoReal()` agora chama uma função nova,
+   `atualizarTelaAposOperacaoReal()`, que atualiza a lista que
+   realmente estiver na tela (Histórico OU Resultados - o checkbox
+   "Operação Real" é o mesmo elemento reusado nas duas).
+
+2. **js/resultados.js** (NOVO): aba de análise. Filtros: Período
+   (Hoje/7 dias/30 dias/Tudo), Par (dropdown de `TODOS_PARES`,
+   js/config.js), Direção (Compra/Venda) e Perfil (Agressivo/
+   Balanceado/Conservador - direto relevante pro teste em andamento).
+   Decisão deliberada de arquitetura: os filtros de par/direção/perfil
+   são aplicados CLIENT-SIDE (depois de buscar o período pelo Firestore),
+   não via `.where()` do Firestore - só o período usa
+   `.where("timestamp", ...)` + `.orderBy("timestamp")` (campo único,
+   mesmo padrão de sempre deste projeto, nunca precisa de índice
+   composto). Combinar múltiplos `.where()` de igualdade com um range +
+   orderBy exigiria um índice composto DIFERENTE pra cada combinação de
+   filtro que o usuário escolhesse - complexidade e fragilidade
+   desnecessárias. O custo aceito é ler mais documentos do que o
+   estritamente necessário pra um filtro estreito (ex.: filtrar só
+   EUR/USD ainda lê os outros pares do período inteiro) - exatamente o
+   tradeoff que o usuário confirmou aceitar ("estou ciente que o
+   carregamento vai ser um pouco mais demorado"). Teto de segurança
+   `LIMITE_RESULTADOS = 2000` documentos por período (igual ao padrão
+   `aproximado`/truncamento já usado em js/desempenho.js), com aviso
+   na tela se for atingido.
+
+   Reusa (sem duplicar) várias funções de js/historico.js:
+   `formatarPrecoPar`, `construirLinhaTabela` (com `comCmp: true`),
+   `construirDetalheSinal`, `miniCard`, `LEGENDA_PERFIL`,
+   `extrairDataObjSinal`, `inicioDiaBrasiliaUTCms`, `mesChaveDe`/
+   `mesLabelDe`, `cacheSinaisHistorico`, `obterSinaisAbertos`/
+   `salvarSinalAberto`/`removerSinalAberto`, `alternarOperacaoReal` -
+   possível porque `js/historico.js` carrega ANTES deste arquivo (ver
+   `index.html`), tudo global (sem módulos ES, mesmo padrão do resto
+   do app). Placar (✅/❌/🎯/💵) por período total, por mês e por dia,
+   igual ao que existia no Histórico antes desta mudança - só que
+   calculado sobre o conjunto JÁ FILTRADO, refletindo exatamente o que
+   está sendo mostrado. Comparação de sinais migrada inteira (mesmos
+   nomes de função, containers novos `resultadosComparacao`/
+   `barraComparacaoResultados`).
+
+   Interpretação registrada (não 100% explícita no pedido): "lotes"
+   foi entendido como o campo LOTE já visível ao expandir o detalhe do
+   sinal (miniCard existente, reusado via `construirDetalheSinal`) -
+   não uma feature nova separada. Se o usuário quis dizer outra coisa
+   (ex.: filtro por tamanho de lote, ou agrupamento por lote), fica
+   como pendência a esclarecer.
+
+3. **js/app.js**: nova aba no switch (`case "resultados"`), botão de
+   navegação na ORDEM pedida pelo usuário (Dashboard, Histórico,
+   Resultados, Config, Manual - Manual saiu do meio, foi pro fim), e o
+   gatilho de carregamento (`setTimeout` chamando `carregarResultados()`)
+   no mesmo padrão das outras abas.
+
+4. **index.html**: `<script src="js/resultados.js">` adicionado depois
+   de `js/config.js` (precisa de `TODOS_PARES`) e antes de `js/app.js`
+   (que referencia `resultadosView`/`carregarResultados`).
+
+Achado registrado, NÃO corrigido nesta mudança (fora de escopo,
+guardado pra decisão futura): a lentidão real do Dashboard vem de
+`contarPorResultado()` (js/desempenho.js) recalculando WIN/LOSS/total
+do zero a cada render - o fallback de `.limit(500)` quando `.count()`
+falha é o "mais de 500" que o usuário citou. Correção ideal seria um
+contador incremental (`winsTotal`/`lossesTotal` como campos em
+`configuracoes/geral`, atualizados a cada fechamento) em vez de
+recalcular sempre - conversa registrada, usuário priorizou a aba
+Resultados primeiro.
+
+Validado: `node -c` nos 5 arquivos tocados (js/historico.js,
+js/resultados.js, js/app.js, js/config.js, js/desempenho.js - os dois
+últimos só re-checados, não alterados nesta mudança). `grep` completo
+por referências pendentes aos elementos/funções removidos do Histórico
+(`historicoComparacao`, `barraComparacao` sozinho, `sinaisComparacaoSelecionados`,
+`abrirComparacao`, `chk-comparar`, `historicoStats`) - zero ocorrências
+fora de comentários. Conferência manual de todo par
+id/getElementById entre `resultadosView()` e as funções que os
+consomem (`resultadosLista`, `resultadosStats`, `resultadosComparacao`,
+`barraComparacaoResultados`, `barraComparacaoResultadosTexto`).
+
+Pendente, per CLAUDE.md (sem browser real neste ambiente): validação
+end-to-end na tela de verdade - a aba nunca foi aberta num navegador
+real a partir daqui. Também pendente: corrigir a causa raiz da
+lentidão do Dashboard (contador incremental, ver acima); esclarecer
+com o usuário o que "lotes" deveria significar, caso a interpretação
+registrada acima não seja a pretendida.
+--------

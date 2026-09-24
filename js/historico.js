@@ -1,20 +1,24 @@
+// AJUSTE-021 (24/09/2026): Histórico passa a ser só monitoramento
+// (receber/verificar/fechar manualmente sinais recentes) - pedido do
+// usuário depois do teste do perfil Conservador ("preciso de mais
+// agilidade no Histórico pra acompanhar sinais... Histórico ficaria
+// só para receber e verificar sinais"). Placar/estatísticas por
+// período, comparação de sinais e filtros (par/direção/perfil) saem
+// daqui e viram a aba nova "Resultados" (js/resultados.js) - mesma
+// separação de responsabilidade que scripts/scanner.js já tem entre
+// "gerar sinal" e "analisar histórico". `historicoComparacao`/
+// `barraComparacao` (feature de comparar sinais lado a lado) e o
+// card de estatísticas foram removidos daqui, não só escondidos -
+// ver js/resultados.js pra onde foram.
 function historicoView() {
   return `
     <div class="card">
       <div id="historicoHeader" style="position:sticky; top:0; z-index:999; background:#081733; padding-bottom:10px;">
         <div class="card-title">Histórico de Sinais</div>
         <div id="historicoModoToggle" style="margin-bottom:10px;"></div>
-        <div id="historicoStats" style="margin-bottom:15px;">Carregando estatísticas...</div>
+        <div id="historicoAcoes" style="margin-bottom:10px;"></div>
       </div>
       <div id="historicoLista">Carregando histórico...</div>
-      <div id="historicoComparacao" style="display:none;"></div>
-    </div>
-    <div id="barraComparacao" style="display:none; position:fixed; left:12px; right:12px; bottom:64px; z-index:1000; background:#132852; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:10px 14px; align-items:center; justify-content:space-between; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,.4);">
-      <span id="barraComparacaoTexto" style="font-size:12px; color:#e0e6f5;"></span>
-      <div style="display:flex; gap:8px;">
-        <button onclick="limparSelecaoComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;">Limpar</button>
-        <button onclick="abrirComparacao()" style="padding:6px 12px; border:none; border-radius:8px; background:#4fc3f7; color:#081733; font-weight:bold; font-size:12px; cursor:pointer;">Comparar</button>
-      </div>
     </div>
   `;
 }
@@ -120,253 +124,13 @@ function calcularResultadoManual(par, precoEntrada, precoSaida, direcao, lote) {
 
 }
 
-// Item 1 do pedido do usuário (11/09/2026): comparar sinais do mesmo par
-// lado a lado, usando só os campos que já existem no documento (o
-// checker.js já grava precoAtual/precoMaximo/precoMinimo/maxPipsFavor/
-// maxPipsContra/resultadoFinanceiro a cada ciclo, tanto pra sinais
-// ABERTA quanto ENCERRADA - nenhuma captura nova precisou ser criada).
-// Seleção livre (sem limite), restrita ao mesmo par, numa seção nova
-// dentro do próprio Histórico (não modal) pra caber melhor girando o
-// celular (tabela com overflow-x:auto).
-const sinaisComparacaoSelecionados = new Set();
+// AJUSTE-021 (24/09/2026): comparação de sinais (seleção/tabela lado a
+// lado) mudou de arquivo - ver js/resultados.js `abrirComparacao()` e
+// companhia. `cacheSinaisHistorico` continua aqui (usado pelo
+// fechamento manual, que fica no Histórico) e também é escrito por
+// js/resultados.js (mesmo cache, chave = docId, sem conflito - ver
+// comentário lá).
 let cacheSinaisHistorico = {};
-
-function atualizarBarraComparacao() {
-  const barra = document.getElementById("barraComparacao");
-  if (!barra) return;
-
-  const total = sinaisComparacaoSelecionados.size;
-
-  if (total === 0) {
-    barra.style.display = "none";
-    return;
-  }
-
-  barra.style.display = "flex";
-  document.getElementById("barraComparacaoTexto").innerHTML =
-    `${total} selecionado${total > 1 ? "s" : ""}`;
-}
-
-function alternarSelecaoComparacao(checkbox, id) {
-  const par = checkbox.dataset.par;
-
-  if (checkbox.checked) {
-
-    const paresJaSelecionados = new Set(
-      [...sinaisComparacaoSelecionados]
-        .map((idSelecionado) => cacheSinaisHistorico[idSelecionado]?.sinal.par)
-        .filter(Boolean)
-    );
-
-    if (paresJaSelecionados.size > 0 && !paresJaSelecionados.has(par)) {
-      alert(
-        `Só é possível comparar sinais do mesmo par. Você já tem ${[...paresJaSelecionados][0]} ` +
-        `selecionado - desmarque antes de escolher um ${par}.`
-      );
-      checkbox.checked = false;
-      return;
-    }
-
-    sinaisComparacaoSelecionados.add(id);
-
-  } else {
-
-    sinaisComparacaoSelecionados.delete(id);
-
-  }
-
-  atualizarBarraComparacao();
-}
-
-function limparSelecaoComparacao() {
-  sinaisComparacaoSelecionados.clear();
-  document.querySelectorAll(".chk-comparar").forEach((el) => (el.checked = false));
-  atualizarBarraComparacao();
-  fecharComparacao();
-}
-
-function fecharComparacao() {
-  const comparacao = document.getElementById("historicoComparacao");
-  const lista = document.getElementById("historicoLista");
-  const stats = document.getElementById("historicoStats");
-
-  if (comparacao) comparacao.style.display = "none";
-  if (lista) lista.style.display = "block";
-  if (stats) stats.style.display = "block";
-
-  atualizarBarraComparacao();
-}
-
-// A dica de rotação só faz sentido quando a tabela realmente não cabe
-// na tela - sem essa checagem, ela continuava aparecendo mesmo depois
-// de girar o celular (ou expandir) e a tabela já caber inteira.
-// Função de módulo (não mais fechada dentro de abrirComparacao) pra
-// poder ser chamada também por alternarExpandirComparacao() e pelo
-// listener de resize.
-function reavaliarDicaGirar() {
-  const wrapper = document.getElementById("comparacaoScrollWrapper");
-  const dica = document.getElementById("comparacaoDicaGirar");
-  if (wrapper && dica) {
-    dica.style.display = wrapper.scrollWidth > wrapper.clientWidth ? "block" : "none";
-  }
-}
-
-// Usuário pediu um equivalente, pro computador, do "gire o celular" -
-// no desktop não existe rotação física, então isso vira um botão
-// manual: expande a seção de comparação pra tela cheia (position:fixed
-// cobrindo a viewport), ganhando toda a largura disponível sem
-// depender da janela do navegador estar larga o bastante. Funciona
-// igual em qualquer dispositivo - reduz também a dependência da
-// rotação real do celular (que teve comportamento inconsistente em
-// teste real, ver ENGINEERING.md).
-function alternarExpandirComparacao() {
-  const comparacao = document.getElementById("historicoComparacao");
-  const btn = document.getElementById("btnExpandirComparacao");
-  if (!comparacao) return;
-
-  const expandido = comparacao.dataset.expandido === "true";
-
-  if (expandido) {
-    comparacao.style.position = "";
-    comparacao.style.inset = "";
-    comparacao.style.zIndex = "";
-    comparacao.style.background = "";
-    comparacao.style.overflow = "";
-    comparacao.style.padding = "";
-    comparacao.dataset.expandido = "false";
-    if (btn) btn.innerHTML = "⤢ Expandir";
-  } else {
-    comparacao.style.position = "fixed";
-    comparacao.style.inset = "0";
-    comparacao.style.zIndex = "2000";
-    comparacao.style.background = "#081733";
-    comparacao.style.overflow = "auto";
-    comparacao.style.padding = "16px";
-    comparacao.dataset.expandido = "true";
-    if (btn) btn.innerHTML = "⤡ Recolher";
-  }
-
-  reavaliarDicaGirar();
-}
-
-function abrirComparacao() {
-  const sinais = [...sinaisComparacaoSelecionados]
-    .map((id) => cacheSinaisHistorico[id])
-    .filter(Boolean)
-    .sort((a, b) => (b.dataObj?.getTime() || 0) - (a.dataObj?.getTime() || 0));
-
-  if (sinais.length < 2) {
-    alert("Selecione pelo menos 2 sinais do mesmo par pra comparar.");
-    return;
-  }
-
-  const comparacao = document.getElementById("historicoComparacao");
-  const lista = document.getElementById("historicoLista");
-  const stats = document.getElementById("historicoStats");
-  if (!comparacao) return;
-
-  // Reseta qualquer estado de "expandido" deixado de uma comparação
-  // anterior - o innerHTML é reconstruído abaixo, mas o próprio
-  // elemento `comparacao` (e seu style/dataset inline) persiste entre
-  // aberturas.
-  comparacao.removeAttribute("style");
-  comparacao.dataset.expandido = "false";
-
-  const par = sinais[0].sinal.par;
-
-  const linhas = sinais.map(({ sinal, dataObj }) => {
-    const horario = dataObj
-      ? dataObj.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 17)
-      : "--";
-
-    const statusLabel =
-      sinal.resultado === "WIN" ? "✅ WIN"
-      : sinal.resultado === "LOSS" ? "❌ LOSS"
-      : "⏳ PENDENTE";
-
-    const usd = sinal.resultadoFinanceiro;
-    const usdFormatado = usd == null ? "--" : `${usd >= 0 ? "+" : "-"}$${Math.abs(Number(usd)).toFixed(2)}`;
-
-    // AJUSTE-002 (17/09/2026): a cor era decidida só pelo SINAL do
-    // número (usd >= 0), independente do rótulo WIN/LOSS - as duas
-    // lógicas podiam discordar (ex.: um sinal que fechou por SL_PIPS
-    // pode registrar um resultadoFinanceiro final positivo por
-    // coincidência de onde a vela fechou, mesmo o resultado sendo
-    // LOSS de verdade - usuário reportou ver "+$0,74" em verde do lado
-    // de um "❌ LOSS", com razão pra estranhar). Pra um sinal já
-    // ENCERRADA, a cor agora segue o resultado (fonte da verdade de
-    // WIN/LOSS), nunca o sinal do número. Só usa o sinal do número
-    // pra sinal ainda PENDENTE, onde é legitimamente um P&L flutuante
-    // em tempo real, sem resultado definido ainda.
-    const usdCor = usd == null
-        ? "#fff"
-        : sinal.resultado === "WIN" ? "#00d26a"
-        : sinal.resultado === "LOSS" ? "#ff5252"
-        : (usd >= 0 ? "#00d26a" : "#ff5252");
-
-    return `
-      <tr>
-        <td style="padding:8px; white-space:nowrap;">${horario}</td>
-        <td style="padding:8px; white-space:nowrap;">${(sinal.direcao || "-").replace("CALL", "COMPRA").replace("PUT", "VENDA").replace("BUY", "COMPRA").replace("SELL", "VENDA")}</td>
-        <td style="padding:8px; white-space:nowrap;">${statusLabel}</td>
-        <td style="padding:8px; text-align:right;">${formatarPrecoPar(sinal.precoEntrada, sinal.par)}</td>
-        <td style="padding:8px; text-align:right;">${sinal.precoAtual ?? "--"}</td>
-        <td style="padding:8px; text-align:right; color:#00d26a;">${sinal.maxPipsFavor != null ? Number(sinal.maxPipsFavor).toFixed(1) : "--"}</td>
-        <td style="padding:8px; text-align:right; color:#ff5252;">${sinal.maxPipsContra != null ? Number(sinal.maxPipsContra).toFixed(1) : "--"}</td>
-        <td style="padding:8px; text-align:right; font-weight:bold; color:${usdCor};">${usdFormatado}</td>
-      </tr>
-    `;
-  }).join("");
-
-  comparacao.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">
-      <div style="font-weight:bold; font-size:14px;">🔍 Comparando ${sinais.length} sinais - ${par}</div>
-      <div style="display:flex; gap:8px; flex-shrink:0;">
-        <button id="btnExpandirComparacao" onclick="alternarExpandirComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(79,195,247,.15); color:#9adcf9; font-size:12px; cursor:pointer;">⤢ Expandir</button>
-        <button onclick="fecharComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;">← Voltar</button>
-      </div>
-    </div>
-    <div id="comparacaoScrollWrapper" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-      <table style="border-collapse:collapse; width:100%; min-width:520px; font-size:12px;">
-        <thead>
-          <tr style="background:rgba(255,255,255,.06); text-align:left;">
-            <th style="padding:8px;">Horário</th>
-            <th style="padding:8px;">Direção</th>
-            <th style="padding:8px;">Status</th>
-            <th style="padding:8px; text-align:right;">Entrada</th>
-            <th style="padding:8px; text-align:right;">Atual</th>
-            <th style="padding:8px; text-align:right;">Favor</th>
-            <th style="padding:8px; text-align:right;">Contra</th>
-            <th style="padding:8px; text-align:right;">USD</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${linhas}
-        </tbody>
-      </table>
-    </div>
-    <div id="comparacaoDicaGirar" style="display:none; font-size:10px; color:#8c95b3; margin-top:8px; text-align:center;">
-      Gire o celular ou toque em "⤢ Expandir" pra ver a tabela inteira mais confortável.
-    </div>
-  `;
-
-  if (lista) lista.style.display = "none";
-  if (stats) stats.style.display = "none";
-  comparacao.style.display = "block";
-
-  const barra = document.getElementById("barraComparacao");
-  if (barra) barra.style.display = "none";
-
-  // Reavaliada de novo a cada resize (rotação do celular, ou a janela
-  // do navegador sendo redimensionada) enquanto a comparação estiver
-  // aberta - listener antigo removido antes pra não empilhar um por
-  // comparação aberta.
-  if (window._removerListenerDicaGirar) window._removerListenerDicaGirar();
-  window.addEventListener("resize", reavaliarDicaGirar);
-  window._removerListenerDicaGirar = () => window.removeEventListener("resize", reavaliarDicaGirar);
-
-  reavaliarDicaGirar();
-}
 
 // Gerenciar estado de sinais abertos com persistência blindada
 function obterSinaisAbertos() {
@@ -912,6 +676,32 @@ function inicioDiaBrasiliaUTCms(diasAtras) {
   return inicioHoje - diasAtras * 24 * 60 * 60 * 1000;
 }
 
+// AJUSTE-021 (24/09/2026): extraída de dentro de carregarHistorico()
+// pra ser reusada por js/resultados.js também (mesmo parsing de
+// timestamp/horario/data que já existia, sem duplicar).
+function extrairDataObjSinal(sinal) {
+  let dataObj = null;
+
+  if (sinal.timestamp) {
+    let ts = sinal.timestamp;
+    if (ts.toDate) ts = ts.toDate();
+    else if (typeof ts === "number" && ts < 1000000000000) ts = ts * 1000;
+
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) dataObj = d;
+  }
+
+  if (!dataObj && (sinal.horario || sinal.data)) {
+    const str = sinal.horario || sinal.data;
+    const partes = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (partes) {
+      dataObj = new Date(partes[3], partes[2] - 1, partes[1]);
+    }
+  }
+
+  return dataObj;
+}
+
 // Botão manual - alterna entre tabela (padrão) e card. Sempre
 // disponível, independente da orientação/tamanho de tela.
 function alternarModoTabela() {
@@ -975,7 +765,12 @@ function formatarDuracaoMs(ms) {
 // colspan em vez do card inteiro) - e o clique pra expandir usa o
 // mesmo listener genérico de [data-sinal-id] já existente, sem
 // duplicar lógica.
-function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, detalheHtml) {
+// AJUSTE-021 (24/09/2026): ganhou o parâmetro opcional `comCmp` - a
+// coluna de comparação (checkbox "Cmp") foi removida do Histórico
+// (mudou pra Resultados, ver js/resultados.js), mas o resto da linha é
+// idêntico nas duas telas - reusar esta mesma função de lá, passando
+// `comCmp: true`, evita duplicar HTML/lógica em dois arquivos.
+function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, detalheHtml, comCmp) {
   const horario = dataObj
     ? dataObj.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 5)
     : "--:--";
@@ -1035,6 +830,7 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
           ${sinal.status !== "ENCERRADA" ? "disabled" : ""}
           onchange="alternarOperacaoReal('${docId}', this.checked);">
       </td>
+      ${comCmp ? `
       <td style="padding:8px; text-align:center;" onclick="event.stopPropagation();">
         ${!isCooldown ? `
           <input type="checkbox" class="chk-comparar" data-par="${sinal.par || ""}"
@@ -1042,9 +838,10 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
             onchange="alternarSelecaoComparacao(this, '${docId}')" title="Selecionar pra comparar">
         ` : ""}
       </td>
+      ` : ""}
     </tr>
     <tr>
-      <td colspan="10" style="padding:0; border:none;">
+      <td colspan="${comCmp ? 10 : 9}" style="padding:0; border:none;">
         ${detalheHtml}
       </td>
     </tr>
@@ -1240,7 +1037,7 @@ function aplicarModoCompactoSeNecessario() {
 
 async function carregarHistorico() {
   const lista = document.getElementById("historicoLista");
-  const stats = document.getElementById("historicoStats");
+  const acoes = document.getElementById("historicoAcoes");
   if (!lista) return;
 
   try {
@@ -1256,62 +1053,20 @@ async function carregarHistorico() {
       .limit(600)
       .get();
 
-    let wins = 0;
-    let losses = 0;
     const gruposPorData = {};
 
-    // FEATURE-007 (09/09/2026): estatística por dia/mês, além do total
-    // global dos últimos 300 - antes só existia um total único
-    // misturando tudo.
-    const statsPorData = {};
-
     const hojeStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-    const mesAtualStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", month: "2-digit", year: "numeric" });
     const sinaisAbertos = obterSinaisAbertos();
 
     cacheSinaisHistorico = {};
 
     snapshot.forEach((doc) => {
       const sinal = doc.data();
-      let dataObj = null;
-
-      if (sinal.timestamp) {
-          let ts = sinal.timestamp;
-          if (ts.toDate) ts = ts.toDate();
-          else if (typeof ts === "number" && ts < 1000000000000) ts = ts * 1000;
-          
-          const d = new Date(ts);
-          if (!isNaN(d.getTime())) dataObj = d;
-      }
-
-      if (!dataObj && (sinal.horario || sinal.data)) {
-          const str = sinal.horario || sinal.data;
-          const partes = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-          if (partes) {
-              dataObj = new Date(partes[3], partes[2] - 1, partes[1]);
-          }
-      }
-
-      if (sinal.resultado === "WIN") wins++;
-      if (sinal.resultado === "LOSS") losses++;
+      const dataObj = extrairDataObjSinal(sinal);
 
       const dataSinal = dataObj
           ? dataObj.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
           : "Data Indefinida";
-
-      // AJUSTE-016 (24/09/2026): soma financeira por dia, junto de
-      // wins/losses - pedido do usuário pra mostrar quanto foi
-      // ganho/perdido no dia, igual o Dashboard já mostra pro saldo
-      // simulado. Soma resultadoFinanceiro (ou lucroEstimado, sinais
-      // antigos) de toda operação encerrada, independente de WIN/LOSS -
-      // é o valor real que entrou/saiu, não uma contagem.
-      if (!statsPorData[dataSinal]) statsPorData[dataSinal] = { wins: 0, losses: 0, financeiro: 0 };
-      if (sinal.resultado === "WIN") statsPorData[dataSinal].wins++;
-      if (sinal.resultado === "LOSS") statsPorData[dataSinal].losses++;
-      if (sinal.resultado === "WIN" || sinal.resultado === "LOSS") {
-        const valorFechado = Number(sinal.resultadoFinanceiro ?? sinal.lucroEstimado);
-        if (Number.isFinite(valorFechado)) statsPorData[dataSinal].financeiro += valorFechado;
-      }
 
       const isCooldown = sinal.status === "COOLDOWN" || sinal.origem === "cooldown";
 
@@ -1337,17 +1092,6 @@ async function carregarHistorico() {
             </span>
             <span style="display:flex; align-items:center; gap:8px;">
               <span>${isCooldown ? "COOLDOWN" : (sinal.resultado === "WIN" ? "✅ WIN" : sinal.resultado === "LOSS" ? "❌ LOSS" : "⏳ PENDENTE")}</span>
-              ${!isCooldown ? `
-                <input
-                  type="checkbox"
-                  class="chk-comparar"
-                  data-par="${sinal.par || ""}"
-                  ${sinaisComparacaoSelecionados.has(doc.id) ? "checked" : ""}
-                  onclick="event.stopPropagation();"
-                  onchange="alternarSelecaoComparacao(this, '${doc.id}')"
-                  title="Selecionar pra comparar"
-                >
-              ` : ""}
             </span>
           </div>
           <div style="margin-top:4px; font-size:12px; color:#8c95b3;">
@@ -1378,62 +1122,21 @@ async function carregarHistorico() {
       gruposPorData[dataSinal] += card;
     });
 
-    // Estatísticas do topo: calculado sobre a mesma amostra já buscada
-    // (sem consulta extra), somando as datas cujo mês/ano batem com
-    // hoje - preservado de FEATURE-007, mas o RÓTULO precisou mudar
-    // (AJUSTE-012): antes a amostra buscada (até 300 docs) costumava
-    // cobrir o mês inteiro, então "mês corrente" era uma descrição
-    // razoável; agora a amostra é limitada a `diasCarregados` dias -
-    // manter o rótulo "Setembro 2026" enganaria mostrando só 2-3 dias
-    // com cara de mês inteiro. Rótulo passa a descrever o que
-    // realmente está carregado.
-    // AJUSTE-016: soma de TODO statsPorData, sem filtrar por mês - o
-    // filtro de mês (`mesChaveDe`) fazia sentido quando a busca já
-    // vinha limitada a até 300 docs que podiam ultrapassar o mês
-    // corrente (FEATURE-007); desde o AJUSTE-012 a busca em si já é
-    // limitada a `diasCarregados` dias, então filtrar de novo por mês
-    // só cortaria dado errado perto da virada do mês (ex.: "últimos 3
-    // dias" incluindo 1 dia do mês anterior - o filtro antigo
-    // descartaria esse dia da conta, inconsistente com o rótulo).
-    let winsMes = 0;
-    let lossesMes = 0;
-    let financeiroMes = 0;
-    Object.keys(statsPorData).forEach((data) => {
-      winsMes += statsPorData[data].wins;
-      lossesMes += statsPorData[data].losses;
-      financeiroMes += statsPorData[data].financeiro;
-    });
-    const totalMes = winsMes + lossesMes;
-    const taxaMes = totalMes > 0 ? ((winsMes / totalMes) * 100).toFixed(1) : "0";
-    const financeiroMesFormatado = `${financeiroMes >= 0 ? "+" : "-"}$${Math.abs(financeiroMes).toFixed(2)}`;
-
-    const labelPeriodoCarregado = diasCarregados <= 2
-      ? "Hoje e ontem"
-      : `Últimos ${diasCarregados} dias`;
-
-    if (stats) {
-      stats.innerHTML = `
-        <div class="card" style="padding:10px;">
-          <div style="font-size:11px; color:#8c95b3; text-align:center; margin-bottom:4px;">
-            ${labelPeriodoCarregado}
-          </div>
-          <div style="text-align:center; font-size:17px; font-weight:bold;">
-            ✅ ${winsMes} &nbsp;&nbsp;&nbsp; ❌ ${lossesMes} &nbsp;&nbsp;&nbsp; 🎯 ${taxaMes}%
-          </div>
-          <div style="text-align:center; font-size:14px; font-weight:bold; margin-top:4px; color:${financeiroMes >= 0 ? "#00d26a" : "#ff5252"};">
-            💵 ${financeiroMesFormatado}
-          </div>
-          <button id="btnMinimizarTudo" style="margin-top:10px; width:100%; padding:8px; border:none; border-radius:8px; background:#132852; color:white; font-size:13px; cursor:pointer;">
-            Minimizar Tudo
-          </button>
-        </div>
+    // AJUSTE-021 (24/09/2026): placar/estatísticas por período saíram
+    // daqui - ver js/resultados.js. O Histórico mantém só o
+    // agrupamento por mês/dia como navegação (sem números de
+    // resultado), mais o botão "Minimizar Tudo".
+    if (acoes) {
+      acoes.innerHTML = `
+        <button id="btnMinimizarTudo" style="width:100%; padding:8px; border:none; border-radius:8px; background:#132852; color:white; font-size:13px; cursor:pointer;">
+          Minimizar Tudo
+        </button>
       `;
     }
 
-    // Renderização dos Grupos: mês -> dia, cada um com seu próprio
-    // placar (FEATURE-007). A lista de sinais em si continua limitada
-    // aos últimos 300 (mesma consulta de sempre) - meses mais antigos
-    // que essa janela simplesmente não aparecem aqui.
+    // Renderização dos Grupos: mês -> dia, só como navegação (sem
+    // placar - ver AJUSTE-021 acima). A lista de sinais em si continua
+    // limitada a `diasCarregados` dias (mesma consulta de sempre).
     let finalHtml = "";
 
     const datasOrdenadas = Object.keys(gruposPorData).sort((a, b) => {
@@ -1456,15 +1159,6 @@ async function carregarHistorico() {
       const labelMes = mesLabelDe(datasDoMes[0]);
       const idMes = chaveMes.replaceAll("/", "");
 
-      const winsDoMes = datasDoMes.reduce((soma, data) => soma + statsPorData[data].wins, 0);
-      const lossesDoMes = datasDoMes.reduce((soma, data) => soma + statsPorData[data].losses, 0);
-      const totalDoMes = winsDoMes + lossesDoMes;
-      const taxaDoMes = totalDoMes > 0 ? ((winsDoMes / totalDoMes) * 100).toFixed(1) : "0";
-      // AJUSTE-016: mesma regra - todo placar mostra o valor
-      // ganho/perdido no final.
-      const financeiroDoMes = datasDoMes.reduce((soma, data) => soma + statsPorData[data].financeiro, 0);
-      const financeiroDoMesFormatado = `${financeiroDoMes >= 0 ? "+" : "-"}$${Math.abs(financeiroDoMes).toFixed(2)}`;
-
       const mesContemHoje = chaveMes === mesChaveDe(hojeStr);
       const mesContemDestaque =
         app.sinalParaDestacar &&
@@ -1477,11 +1171,6 @@ async function carregarHistorico() {
         const idData = data.replaceAll("/", "");
         const isHoje = data === hojeStr;
         const label = isHoje ? `HOJE (${data})` : data;
-        const placarDia = statsPorData[data];
-        const totalDia = placarDia.wins + placarDia.losses;
-        const taxaDia = totalDia > 0 ? ((placarDia.wins / totalDia) * 100).toFixed(1) : "0";
-        // AJUSTE-016: valor ganho/perdido no dia, igual ao Dashboard.
-        const financeiroDiaFormatado = `${placarDia.financeiro >= 0 ? "+" : "-"}$${Math.abs(placarDia.financeiro).toFixed(2)}`;
 
         const temSinalDestacado =
           app.sinalParaDestacar &&
@@ -1510,7 +1199,6 @@ async function carregarHistorico() {
                     <th style="padding:6px 8px; text-align:right;">Contra</th>
                     <th style="padding:6px 8px; text-align:right;">Resultado Financeiro</th>
                     <th style="padding:6px 8px; text-align:center;">Operação Real</th>
-                    <th style="padding:6px 8px; text-align:center;">Cmp</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1539,7 +1227,6 @@ async function carregarHistorico() {
 
       style="padding:10px 12px; font-size:12px; color:#8c95b3; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.03);">
      <span><span class="seta-grupo" style="margin-right:8px;">${mostrarDia ? "▼" : "▶"}</span>${label}</span>
-     <span style="font-weight:normal;">✅ ${placarDia.wins} ❌ ${placarDia.losses} 🎯 ${taxaDia}% 💵 ${financeiroDiaFormatado}</span>
       </div>
       <div id="data${idData}" style="display: ${mostrarDia ? 'block' : 'none'}; padding:${modoTabela ? '0' : '10px'};">
         ${conteudoDia}
@@ -1566,7 +1253,6 @@ if (el.style.display === 'none') {
 
     style="padding:12px; font-size:13px; color:#e0e6f5; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.06);">
    <span><span class="seta-grupo" style="margin-right:8px;">${mostrarMes ? "▼" : "▶"}</span>${labelMes}</span>
-   <span style="font-weight:normal; font-size:12px;">${mesContemHoje ? "" : `✅ ${winsDoMes} ❌ ${lossesDoMes} 🎯 ${taxaDoMes}% 💵 ${financeiroDoMesFormatado}`}</span>
     </div>
     <div id="mes${idMes}" style="display: ${mostrarMes ? 'block' : 'none'}; padding:8px;">
       ${diasHtml}
@@ -1585,7 +1271,6 @@ if (el.style.display === 'none') {
       </button>
     `;
 
-    atualizarBarraComparacao();
     atualizarBotaoModoTabela();
     aplicarModoCompactoSeNecessario();
 
@@ -1657,6 +1342,20 @@ if (el.style.display === 'none') {
   }
 }
 
+// AJUSTE-021 (24/09/2026): alternarOperacaoReal() agora pode ser
+// chamada tanto do Histórico quanto de Resultados (js/resultados.js
+// reusa construirLinhaTabela, que inclui o mesmo checkbox) - refresca
+// só a lista que estiver de fato na tela, sem depender de qual aba
+// chamou.
+function atualizarTelaAposOperacaoReal() {
+  if (document.getElementById("historicoLista") && typeof carregarHistorico === "function") {
+    carregarHistorico();
+  }
+  if (document.getElementById("resultadosLista") && typeof carregarResultados === "function") {
+    carregarResultados();
+  }
+}
+
 window.alternarOperacaoReal = async function (id, marcado) {
 
     const db = firebase.firestore();
@@ -1712,7 +1411,7 @@ window.alternarOperacaoReal = async function (id, marcado) {
 const configDoc = await configRef.get();
 
 if (!configDoc.exists) {
-    carregarHistorico();
+    atualizarTelaAposOperacaoReal();
     return;
 }
 
@@ -1740,7 +1439,7 @@ if (marcado && Number(sinal.slUSD || 0) > saldoReal) {
         `de marcar.`
     );
 
-    carregarHistorico();
+    atualizarTelaAposOperacaoReal();
     return;
 
 }
@@ -1770,8 +1469,8 @@ await configRef.update({
     saldoReal
 
 });
-  
-    carregarHistorico();
+
+    atualizarTelaAposOperacaoReal();
 
 };
 

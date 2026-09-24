@@ -59,6 +59,13 @@ localStorage.getItem("ultimaAba")
                 content = historicoView();
                 break;
 
+            // AJUSTE-021 (24/09/2026): aba nova - resultados/placar/
+            // comparação de sinais, separada do Histórico (que fica só
+            // monitoramento). Ver js/resultados.js.
+            case "resultados":
+                content = resultadosView();
+                break;
+
             case "manual":
                 content = manualView();
                 break;
@@ -90,12 +97,16 @@ localStorage.getItem("ultimaAba")
                 Histórico
             </button>
 
-            <button class="nav-btn ${this.currentTab==="manual"?"nav-active":""}" data-tab="manual">
-                Manual
+            <button class="nav-btn ${this.currentTab==="resultados"?"nav-active":""}" data-tab="resultados">
+                Resultados
             </button>
 
             <button class="nav-btn ${this.currentTab==="config"?"nav-active":""}" data-tab="config">
                 Config
+            </button>
+
+            <button class="nav-btn ${this.currentTab==="manual"?"nav-active":""}" data-tab="manual">
+                Manual
             </button>
 
         </div>
@@ -130,6 +141,18 @@ localStorage.getItem("ultimaAba")
 
         if (typeof carregarHistorico === "function") {
             carregarHistorico();
+        }
+
+    }, 100);
+
+        }
+
+        if (this.currentTab === "resultados") {
+
+    setTimeout(() => {
+
+        if (typeof carregarResultados === "function") {
+            carregarResultados();
         }
 
     }, 100);
