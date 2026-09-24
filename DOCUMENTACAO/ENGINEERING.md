@@ -10200,3 +10200,59 @@ nesta mudança (fora do que foi pedido); registrado aqui pra não se
 perder, mesma disciplina de sempre - decisão de prioridade fica para o
 usuário.
 --------
+AJUSTE-014 — aba Scanner removida (botão migra pro Dashboard),
+Sugestão de Agora desativada por ora (js/app.js, js/expert.js,
+js/scanner.js removido, index.html)
+
+Origem: pedido do usuário, na sequência direta do AJUSTE-013. Duas
+mudanças de simplificação da interface:
+
+1. **Aba Scanner removida.** Tinha "Última Análise" (não batia com o
+   Histórico) e "Próxima Análise" - usuário avaliou que não
+   acrescentava informação, só o botão Iniciar/Parar valia manter.
+   Botão migrado pro card "Scanner Status" já existente no Dashboard
+   (`js/expert.js`), que já lia o mesmo documento
+   (`scanner/status`) - o estado dos botões (disabled conforme
+   `dados.ativo`) passou a ser atualizado pelo MESMO polling de 15s
+   que já existia ali, sem consulta nova. `verificarResetDiario()` e
+   os handlers de clique migraram junto (únicos lugares que os
+   usavam, conferido antes de apagar `js/scanner.js`). Efeito
+   colateral bom: elimina um poller de 15s duplicado (a aba antiga e
+   o Dashboard liam o MESMO documento cada um no seu próprio
+   intervalo).
+
+   Cuidado de compatibilidade: quem tinha `"scanner"` salvo como
+   última aba em `localStorage` (de uma sessão anterior) cairia numa
+   aba que não existe mais - `app.js`'s `render()` normaliza esse
+   valor pra `"dashboard"` automaticamente (e já corrige o que está
+   salvo), evitando tela em branco na próxima visita.
+
+2. **"Sugestão de Agora" desativada no Dashboard** (não apagada) -
+   usuário: "por enquanto estamos trabalhando com pares fixos, quando
+   chegar o momento que conseguirmos trabalhar com todos os pares...
+   vai fazer mais sentido esse card". `renderSugestaoAgora()` parou de
+   ser chamada em `app.js`, mas `js/pairInsights.js` continua
+   carregado e intacto (inclusive o cache do AJUSTE-013) - reativar é
+   só voltar a chamar a função, quando a expansão de universo de pares
+   (`PENDENCIAS-ESTRATEGICAS-RMI.md`, seção 6) sair do papel.
+
+**Decisão explícita tomada, NÃO implementada ainda**: o usuário tinha
+confirmado atualizar a cópia desatualizada da lógica de janela em
+`pairInsights.js` (ver achado registrado no AJUSTE-013) antes de pedir
+essas duas remoções na mesma mensagem. Como o card que usa essa lógica
+está sendo desativado agora, corrigir a cópia teria efeito zero
+imediato (nada renderiza ela) e a lógica toda provavelmente vai
+precisar de um redesenho maior quando "Sugestão de Agora" for
+reativada pro universo completo de pares (a mesma pendência do
+AJUSTE-005/006/007's discussão de rotação por sessão). Adiado por
+julgamento próprio, comunicado ao usuário - não é a mesma coisa que
+"decidido não fazer": fica registrado que ele confirmou querer, só o
+timing mudou.
+
+Validado: `node -c` em `app.js`/`expert.js`; `grep` confirmando
+nenhuma referência solta a `scannerView`/ids da aba removida depois de
+apagar `js/scanner.js`. Teste visual de verdade (os dois botões
+funcionando no Dashboard, sem regressão no Cooldowns Hoje/Modo
+Atual/Desempenho que já viviam ali) fica pro usuário confirmar no
+app.
+--------

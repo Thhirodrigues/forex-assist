@@ -34,6 +34,17 @@ localStorage.getItem("ultimaAba")
 
     render(){
 
+        // AJUSTE-014 (24/09/2026): aba "Scanner" removida (botão
+        // Iniciar/Parar migrou pro Dashboard, ver js/expert.js) -
+        // quem tiver "scanner" salvo em localStorage de uma sessão
+        // anterior cairia numa aba que não existe mais (tela em
+        // branco). Normaliza pra "dashboard" e já corrige o valor
+        // salvo, pra não repetir o problema na próxima visita.
+        if (this.currentTab === "scanner") {
+            this.currentTab = "dashboard";
+            localStorage.setItem("ultimaAba", "dashboard");
+        }
+
         const app = document.getElementById("app");
 
         let content = "";
@@ -42,10 +53,6 @@ localStorage.getItem("ultimaAba")
 
             case "dashboard":
                 content = dashboardView();
-                break;
-
-            case "scanner":
-                content = scannerView();
                 break;
 
             case "historico":
@@ -79,10 +86,6 @@ localStorage.getItem("ultimaAba")
                 Dashboard
             </button>
 
-            <button class="nav-btn ${this.currentTab==="scanner"?"nav-active":""}" data-tab="scanner">
-                Scanner
-            </button>
-
             <button class="nav-btn ${this.currentTab==="historico"?"nav-active":""}" data-tab="historico">
                 Histórico
             </button>
@@ -101,9 +104,13 @@ localStorage.getItem("ultimaAba")
 
     setTimeout(() => {
 
-        if (typeof renderSugestaoAgora === "function") {
-            renderSugestaoAgora();
-        }
+        // AJUSTE-014 (24/09/2026): "Sugestão de Agora" removida do
+        // Dashboard por pedido do usuário - com pares fixos (não o
+        // universo completo), o card não agrega valor agora. Lógica
+        // (js/pairInsights.js, incluindo o cache do AJUSTE-013) fica
+        // intacta, só não é mais chamada - reativar quando o app
+        // passar a rotacionar entre todos os pares (ver
+        // PENDENCIAS-ESTRATEGICAS-RMI.md, seção 6).
 
         if (typeof renderModoAtual === "function") {
             renderModoAtual();

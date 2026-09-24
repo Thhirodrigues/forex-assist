@@ -1,3 +1,13 @@
+// AJUSTE-014 (24/09/2026): aba "Scanner" separada (antes em
+// js/scanner.js) removida por pedido do usuário - a "Última Análise"
+// que só existia lá não batia com o Histórico e não acrescentava
+// informação nenhuma, e o card "Scanner Status" já existente aqui no
+// Dashboard cobria o essencial. Botão Iniciar/Parar movido pra dentro
+// deste card - único pedaço da aba antiga que valia manter.
+// `verificarResetDiario()` (zera contadores diários quando muda o
+// dia) e os handlers de clique também migraram pra cá, únicos lugares
+// que os usavam. js/scanner.js foi apagado (nada mais o referenciava
+// fora do próprio arquivo, conferido antes de remover).
 function dashboardView() {
 
     return `
@@ -6,13 +16,23 @@ function dashboardView() {
         <div id="scannerStatus" class="signal wait">
             Carregando...
         </div>
-    </div>
 
-    <div class="card">
-        <div class="card-title">Sugestão de Agora</div>
-        <div id="sugestaoAgora">
-            Carregando...
-        </div>
+        <button
+            class="button start-btn"
+            id="startScanner"
+            style="margin-top:10px;">
+
+            Iniciar Scanner
+
+        </button>
+
+        <button
+            class="button stop-btn"
+            id="stopScanner">
+
+            Parar Scanner
+
+        </button>
     </div>
 
     <div class="card">
@@ -131,6 +151,16 @@ setInterval(async () => {
                 ? "🟢 Online"
                 : "🔴 Parado";
 
+        // AJUSTE-014: estado dos botões Iniciar/Parar (migrado de
+        // js/scanner.js, mesma lógica de sempre) - atualizado junto
+        // do mesmo polling que já lê este documento, sem consulta
+        // extra.
+        const startBtn = document.getElementById("startScanner");
+        const stopBtn = document.getElementById("stopScanner");
+
+        if (startBtn) startBtn.disabled = Boolean(dados.ativo);
+        if (stopBtn) stopBtn.disabled = !dados.ativo;
+
         document.getElementById(
             "cooldownsHoje"
         ).innerHTML =
@@ -146,3 +176,93 @@ setInterval(async () => {
     }
 
 }, 15000);
+
+// AJUSTE-014 (24/09/2026): migrado de js/scanner.js (aba removida) -
+// única lógica que valia manter de lá.
+async function verificarResetDiario() {
+
+    const hoje = new Date().toLocaleDateString("pt-BR");
+
+    const statusRef = db.collection("scanner").doc("status");
+
+    const statusDoc = await statusRef.get();
+
+    const status = statusDoc.data() || {};
+
+    if (status.ultimaData !== hoje) {
+
+        await statusRef.set({
+
+            sinaisHoje: 0,
+
+            cooldownsHoje: 0,
+
+            ultimaData: hoje
+
+        }, {
+            merge: true
+        });
+
+    }
+
+}
+
+document.addEventListener("click", async (e) => {
+
+    if (e.target.id === "startScanner") {
+
+        try {
+
+            await verificarResetDiario();
+
+            await db
+                .collection("scanner")
+                .doc("status")
+                .set({
+
+                    ativo: true
+
+                }, {
+
+                    merge: true
+
+                });
+
+        } catch (erro) {
+
+            console.log("Erro Firebase:", erro);
+
+        }
+
+        app.render();
+
+    }
+
+    if (e.target.id === "stopScanner") {
+
+        try {
+
+            await db
+                .collection("scanner")
+                .doc("status")
+                .set({
+
+                    ativo: false
+
+                }, {
+
+                    merge: true
+
+                });
+
+        } catch (erro) {
+
+            console.log("Erro Firebase:", erro);
+
+        }
+
+        app.render();
+
+    }
+
+});
