@@ -487,7 +487,13 @@ const decisao = avaliarOperacao({
     // ver statisticsEngine.js). Agora usa a contagem por SCORE. Fallback
     // pro comportamento antigo (?? estatisticas.operacoes) se o campo
     // faltar por qualquer motivo, em vez de quebrar.
-    operacoesHistoricas: estatisticas.operacoesElegiveis ?? estatisticas.operacoes
+    operacoesHistoricas: estatisticas.operacoesElegiveis ?? estatisticas.operacoes,
+
+    // AJUSTE-009 (24/09/2026): decisionEngine.js's avaliarOperacao()
+    // passa a vetar RSI extremo contra a direção do sinal - precisa do
+    // valor numérico do RSI, que já era calculado aqui mas nunca era
+    // repassado pra essa chamada.
+    rsi: rsiAtual
 
 });
 

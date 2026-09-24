@@ -82,8 +82,12 @@ próximo passo em aberto, para decisão explícita antes de qualquer
 implementação — mesma disciplina já aplicada ao `BACKLOG-E-VISAO.md`.
 
 1. **Veto de RSI extremo** (bloquear, não só penalizar, RSI>72-75 em BUY e
-   RSI<25-28 em SELL) — o achado mais concreto e acionável dos relatórios,
-   ainda não implementado.
+   RSI<25-28 em SELL) — o achado mais concreto e acionável dos relatórios.
+   **RESOLVIDO em 24/09/2026 (AJUSTE-009, `ENGINEERING.md`)**: implementado
+   em `decisionEngine.js`, limiares 73/27, vale igual pros três perfis,
+   validado com 14 cenários isolados. Motivado por um caso real (EUR/JPY
+   SELL, RSI 19.33). Pendente validar contra ciclos reais e ajustar
+   limiares com dado próprio quando houver amostra.
 2. **Modelar spread** na expectativa/aprovação, mesmo que como constante
    por par.
 3. **Decidir o destino de `riskEngine.js` e `positionSizing.js`** — ambos

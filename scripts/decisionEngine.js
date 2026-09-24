@@ -235,6 +235,70 @@ function avaliarOperacao(resultado) {
 
     }
 
+    // AJUSTE-009 (24/09/2026): veto de RSI extremo - achado #1 dos
+    // relatórios de auditoria estratégica (13/09/2026, arquivados em
+    // PENDENCIAS-ESTRATEGICAS-RMI.md), motivado por um caso real
+    // (EUR/JPY SELL, 23/09/2026, RSI 19.33 - vendendo bem depois do
+    // fundo do movimento, "entrada tardia"). Antes disto, RSI só
+    // descontava/bonificava score (analisarRSI() em marketAnalyzer.js)
+    // - nunca bloqueava, mesmo em extremo claro. Comprar com RSI já
+    // muito sobrecomprado, ou vender com RSI já muito sobrevendido, é
+    // perseguir um movimento que já foi longe demais.
+    //
+    // BLOQUEIA de verdade (SEM_VIABILIDADE), igual pros três perfis -
+    // diferente da expectativa/risco financeiro (que variam por
+    // tolerância a risco, PENTE-FINO-004/FEATURE-010 acima): isso não
+    // é sobre quanto risco o perfil aceita, é sobre o sinal técnico
+    // contradizer a própria direção que está propondo. Limiares (73/27)
+    // são o meio da faixa sugerida pelos relatórios (72-75 sobrecomprado,
+    // 25-28 sobrevendido) - escolha inicial, sem validação empírica
+    // própria ainda (mesma ressalva de sempre: ajustar com dado real
+    // depois que houver amostra).
+    const RSI_VETO_SOBRECOMPRADO = 73;
+    const RSI_VETO_SOBREVENDIDO = 27;
+
+    const rsiNumerico = Number(resultado.rsi);
+
+    if (Number.isFinite(rsiNumerico)) {
+
+        if (tendencia === "ALTA" && rsiNumerico > RSI_VETO_SOBRECOMPRADO) {
+
+            justificativas.push("RSI sobrecomprado - veto de entrada tardia");
+
+            return {
+                aprovado: false,
+                status: "SEM_VIABILIDADE",
+                direcao: "NONE",
+                motivo: `RSI (${rsiNumerico.toFixed(2)}) já sobrecomprado (acima de ${RSI_VETO_SOBRECOMPRADO}) para comprar - risco de entrada tardia, movimento já esticado`,
+                score,
+                qualidade,
+                tendencia,
+                confianca,
+                justificativas
+            };
+
+        }
+
+        if (tendencia === "BAIXA" && rsiNumerico < RSI_VETO_SOBREVENDIDO) {
+
+            justificativas.push("RSI sobrevendido - veto de entrada tardia");
+
+            return {
+                aprovado: false,
+                status: "SEM_VIABILIDADE",
+                direcao: "NONE",
+                motivo: `RSI (${rsiNumerico.toFixed(2)}) já sobrevendido (abaixo de ${RSI_VETO_SOBREVENDIDO}) para vender - risco de entrada tardia, movimento já esticado`,
+                score,
+                qualidade,
+                tendencia,
+                confianca,
+                justificativas
+            };
+
+        }
+
+    }
+
     // PENTE-FINO-002 (10/09/2026): comparava `qualidade` (categoria
     // pelo SCORE final - INSTITUCIONAL/FORTE/BOA/ACEITAVEL/CONFLITO,
     // de marketAnalyzer.js's classificarQualidade()) contra "LATERAL",

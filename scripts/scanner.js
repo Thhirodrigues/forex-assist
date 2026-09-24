@@ -905,6 +905,23 @@ async function tratarResultado(
 
     break;
 
+        // AJUSTE-009 (24/09/2026): SEM_VIABILIDADE não tinha case
+        // próprio - caía no default abaixo, incrementando
+        // `erros` e logando "Erro interno" pra um bloqueio real e
+        // esperado (histórico insuficiente, expectativa negativa, ou
+        // agora também o veto de RSI extremo), não um erro de
+        // execução de verdade. Mesmo bug já identificado numa sessão
+        // anterior (nunca confirmado/corrigido até agora) - fica mais
+        // importante corrigir agora que o veto de RSI passa a usar
+        // esse mesmo status com frequência maior.
+        case "SEM_VIABILIDADE":
+
+    context.estatisticas.semSinal++;
+
+    console.log(`Resultado..........Sem viabilidade (${resultado.motivo || "motivo não informado"})`);
+
+    break;
+
         default:
 
     context.estatisticas.erros++;

@@ -9971,3 +9971,61 @@ o primeiro uso real do botão de fechamento manual (o usuário já tem um
 caso real esperando - o próprio EUR/JPY que motivou esta mudança) e
 confirmar se a rotação melhorou no celular dele.
 --------
+AJUSTE-009 — veto de RSI extremo (entrada tardia), item #1 das
+pendências estratégicas, implementado (scripts/decisionEngine.js,
+scripts/pairAnalyzer.js, scripts/scanner.js)
+
+Origem: usuário identificou "entrada tardia" como preocupação,
+analisando o mesmo sinal real de EUR/JPY SELL (23/09/2026, RSI 19.33)
+- bate exatamente com o achado #1, já registrado e priorizado, dos
+dois relatórios de auditoria estratégica de 13/09/2026
+(`PENDENCIAS-ESTRATEGICAS-RMI.md`, seção 5): "RSI nunca veta direção -
+só desconta score" / "Veto de RSI extremo... o achado mais concreto e
+acionável". Usuário confirmou avançar agora.
+
+Implementação (`decisionEngine.js`'s `avaliarOperacao()`): novo gate,
+inserido depois do gate de expectativa e antes do gate de tendência
+COMPRESSAO/CONFLITO. BLOQUEIA (`SEM_VIABILIDADE`) quando BUY (tendência
+ALTA) tem RSI>73 (sobrecomprado) OU quando SELL (tendência BAIXA) tem
+RSI<27 (sobrevendido). Limiares no meio da faixa sugerida pelos
+relatórios (72-75 sobrecomprado, 25-28 sobrevendido) - escolha inicial
+sem validação empírica própria ainda, mesma ressalva de sempre.
+Decisão de design explícita: o veto vale **igual pros três perfis**,
+diferente da expectativa/risco financeiro (que variam por tolerância a
+risco) - a lógica é que RSI extremo contradiz a própria direção que o
+sinal está propondo, não é uma questão de quanto risco o perfil
+aceita. `pairAnalyzer.js` precisou passar `rsi: rsiAtual` (já
+calculado, nunca repassado pra `avaliarOperacao()` antes).
+
+Companheiro necessário: `scanner.js`'s switch de status->log nunca
+tinha `case` pra `SEM_VIABILIDADE` (bug já identificado numa sessão
+anterior, nunca corrigido) - caía no `default`, incrementando
+`erros` e logando "Erro interno" pra um bloqueio esperado (histórico
+insuficiente, expectativa negativa, e agora também o veto de RSI).
+Como o veto novo usa esse mesmo status com frequência bem maior que os
+outros dois motivos, corrigido agora: `case` próprio, conta como
+`semSinal` (não `erros`) e loga o motivo real
+(`resultado.motivo`) em vez do rótulo genérico.
+
+Validado: teste isolado novo (`validate-ajuste009-rsi-veto.js`, 14
+cenários) - reproduz o caso real (SELL RSI=19.33, bloqueado); BUY
+RSI=80 bloqueado; BUY/SELL com RSI normal aprovados normalmente;
+limites exatos conferidos (73/27 NÃO vetam, só estritamente acima/
+abaixo veta); veto confirmado idêntico nos três perfis (agressivo/
+balanceado/conservador); RSI ausente não quebra nem veta (guard
+`Number.isFinite`); contraprovas de não-regressão - score insuficiente
+continua bloqueando sem interferência do veto novo, expectativa
+negativa no agressivo continua só avisando (PENTE-FINO-004 preservado).
+
+`PENDENCIAS-ESTRATEGICAS-RMI.md` atualizado: item #1 da lista de
+prioridade combinada marcado como RESOLVIDO, com esta entrada como
+evidência.
+
+Pendente, per CLAUDE.md: validar os primeiros ciclos reais - quantos
+sinais que antes seriam aprovados agora ficam de fora por RSI extremo,
+e se isso reduz de fato o padrão de "entrada tardia" que motivou a
+mudança. Limiares (73/27) não foram validados contra dado histórico
+próprio - só contra a faixa sugerida pelos relatórios - candidato a
+ajuste fino quando houver amostra de sinais vetados/não-vetados
+suficiente pra comparar.
+--------
