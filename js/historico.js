@@ -1800,3 +1800,58 @@ setInterval(() => {
   if (app.currentTab !== "historico") return;
   carregarHistorico();
 }, 90000);
+
+// AJUSTE-020 (24/09/2026): #historicoHeader usa position:sticky (título +
+// botão "Ver como lista" + placar, fixos no topo enquanto rola a lista
+// embaixo). Usuário reportou que, ao girar o celular, o header "trava"
+// sobrepondo a lista, só destravando com um refresh manual da página -
+// bug conhecido de alguns navegadores Android (Chrome/WebView), que não
+// recalculam a posição do elemento sticky sozinhos depois de uma mudança
+// de viewport (orientação/rotação), só depois de algum reflow forçado.
+//
+// NÃO é o mesmo problema do AJUSTE-008/010 (troca cartão↔tabela por
+// orientação) - aquele mecanismo foi removido de propósito porque deixou
+// de fazer sentido (tabela/lista já é o padrão permanente, em qualquer
+// orientação). Este aqui é só um empurrão de CSS (reflow), sem trocar
+// modo nenhum e sem tocar no Firestore - não reusa o polling de 90s
+// acima nem o dispara fora de hora.
+function forcarReflowHeaderHistorico() {
+  const header = document.getElementById("historicoHeader");
+  if (!header) return;
+
+  // Truque padrão pra forçar o navegador a recalcular o layout sticky:
+  // tira do fluxo normal, lê uma propriedade de layout (isso obriga o
+  // navegador a recalcular ali, "void" só descarta o valor), devolve.
+  header.style.position = "static";
+  void header.offsetHeight;
+  header.style.position = "sticky";
+}
+
+let debounceRotacaoHistoricoTimer = null;
+
+function aoRotacionarTelaHistorico() {
+  if (app.currentTab !== "historico") return;
+
+  if (debounceRotacaoHistoricoTimer) {
+    clearTimeout(debounceRotacaoHistoricoTimer);
+  }
+
+  // Debounce curto (mesmo valor usado no AJUSTE-008 pra este mesmo tipo
+  // de evento) - dá tempo do navegador terminar de recalcular as
+  // dimensões da rotação antes de forçar o reflow.
+  debounceRotacaoHistoricoTimer = setTimeout(
+    forcarReflowHeaderHistorico,
+    150
+  );
+}
+
+window.addEventListener("orientationchange", aoRotacionarTelaHistorico);
+
+// Fallback: alguns navegadores não disparam mais o evento legado acima,
+// só a API screen.orientation (quando disponível).
+if (window.screen && window.screen.orientation) {
+  window.screen.orientation.addEventListener(
+    "change",
+    aoRotacionarTelaHistorico
+  );
+}

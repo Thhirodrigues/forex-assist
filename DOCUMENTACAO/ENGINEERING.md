@@ -10607,3 +10607,41 @@ Validado: `node -c`; `grep` confirmando que a função antiga
 (`bannerJanelaOrigem`) não ficou referenciada em lugar nenhum depois
 do rename.
 --------
+AJUSTE-020 — corrige header sticky "travado" ao girar o celular na
+tela de Histórico (js/historico.js)
+
+Origem: usuário reportou precisar de refresh manual da página depois
+de girar o celular no Histórico, achando que era sobre o modo
+cartão/lista (que já tinha sido investigado e descartado - ver
+conversa do mesmo dia). Print real mostrou o problema verdadeiro: o
+`#historicoHeader` (título + botão "Ver como lista" + placar,
+`position:sticky; top:0`) fica visualmente travado no lugar errado,
+sobrepondo a lista de sinais, só destravando com o refresh manual -
+bug conhecido de `position:sticky` em alguns navegadores Android
+(Chrome/WebView), que não recalculam a posição sticky sozinhos depois
+de uma mudança de viewport (rotação), só depois de algum reflow
+forçado.
+
+IMPORTANTE - não confundir com o mecanismo do AJUSTE-008/010 (troca
+automática cartão↔tabela por orientação, removido de propósito porque
+tabela/lista virou padrão permanente): aquele problema já não existe
+mais, é outro completamente diferente, descoberto só depois de pedir
+o print pro usuário pra não regredir uma decisão já tomada.
+
+Implementação: `forcarReflowHeaderHistorico()` - truque padrão de CSS
+(tira o elemento de `position:sticky`, lê `offsetHeight` forçando o
+navegador a recalcular layout ali, devolve pra `sticky`). Disparado
+por `aoRotacionarTelaHistorico()`, ligado no evento `orientationchange`
+e, como fallback, no `screen.orientation.addEventListener("change", ...)`
+pra navegadores que não disparam mais o evento legado. Debounce de
+150ms (mesmo valor usado no AJUSTE-008 pro mesmo tipo de evento), só
+age se `app.currentTab === "historico"`. NÃO dispara `carregarHistorico()`
+nem nenhuma leitura no Firestore - é só um empurrão de CSS, custo zero
+de quota.
+
+Validado: `node -c`. NÃO validado em dispositivo real - este ambiente
+não tem browser/emulador conectado (sem ferramenta de controle de
+navegador disponível nesta sessão). Pendente, per CLAUDE.md: usuário
+confirmar no celular real se o header para de travar depois de girar,
+sem precisar de refresh manual.
+--------
