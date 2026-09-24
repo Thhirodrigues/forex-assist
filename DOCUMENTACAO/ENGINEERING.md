@@ -10029,3 +10029,41 @@ próprio - só contra a faixa sugerida pelos relatórios - candidato a
 ajuste fino quando houver amostra de sinais vetados/não-vetados
 suficiente pra comparar.
 --------
+AJUSTE-010 — tabela compacta vira o modo padrão do Histórico, não só
+girando a tela (js/historico.js)
+
+Origem: usuário achou os cards do Histórico grandes demais, com
+rolagem excessiva pra comparar muitos sinais ("como trabalhamos com
+muita informação de comparativo, precisa estar tudo num campo
+visual"). Perguntado sobre o formato preferido (tabela compacta densa
+vs. cards mais enxutos vs. referência própria) - escolheu tabela
+compacta densa.
+
+Achado ao investigar: essa tabela **já existia**, construída na
+rodada de 11/09/2026 (colunas Horário/Par/Direção/Tempo/Resultado/
+Favor/Contra/Resultado Financeiro/Operação Real/Cmp, agrupada por dia,
+com modo compacto pra tela baixa) - só ficava escondida atrás da
+orientação da tela (só aparecia em paisagem) ou de um botão manual,
+com cards como padrão. Em vez de construir do zero, só trocado o
+padrão: `modoTabela` passa a nascer `true` (era `false`, sobrescrito
+por `matchMedia` no primeiro carregamento). Reaproveita código já
+testado, risco bem menor que uma tela nova.
+
+Efeito colateral direto, resolvendo o AJUSTE-008 de raiz: como a
+tabela agora é sempre o modo ativo, não existe mais nada pra "trocar"
+numa rotação de tela - o pedido de "virar e já ficar em lista" deixa
+de fazer sentido como problema separado. Por isso a detecção de
+orientação inteira (a função `inicializarDeteccaoOrientacao`, com os
+fallbacks de `resize`/`screen.orientation` que o próprio AJUSTE-008
+tinha acabado de reforçar horas antes) foi **removida**, não deixada
+desativada - ela forçaria de volta pro card em tela retrato, brigando
+com o novo padrão. Botão manual (`alternarModoTabela`) continua
+existindo, sem mudança, pra quem quiser voltar pro card em algum
+momento.
+
+Validado: `node -c` (sintaxe); conferido que os 5 pontos do código que
+ramificam em `modoTabela` (renderização das linhas, conteúdo por dia,
+padding, rótulo do botão, modo compacto) continuam intactos, só a
+variável inicial mudou - o teste funcional de verdade é visual, fica
+pro usuário confirmar no app.
+--------

@@ -610,70 +610,23 @@ function mesLabelDe(dataStr) {
   return `${NOMES_MES[Number(mm) - 1]} ${aaaa}`;
 }
 
-// Pedido do usuário (11/09/2026, segunda rodada): o Histórico virar
-// tabela (parecido com uma referência que ele mandou - colunas
-// Horário/Par/Direção/Tempo/Resultado/Resultado Financeiro/Operação
-// Real, agrupado por dia) quando o celular for girado pra paisagem, ou
-// via um botão manual (equivalente no computador, que não tem como
-// girar fisicamente).
-let modoTabela = false;
-let deteccaoOrientacaoInicializada = false;
+// AJUSTE-010 (24/09/2026): tabela (colunas Horário/Par/Direção/Tempo/
+// Resultado/Favor/Contra/Resultado Financeiro/Operação Real/Cmp) passa
+// a ser o modo PADRÃO sempre, não só girando o celular pra paisagem -
+// pedido do usuário depois de comparar as duas telas ("muita
+// informação de comparativo, precisa estar tudo num campo visual",
+// rolagem excessiva no modo card). Isso também resolve de raiz o
+// pedido anterior (AJUSTE-008) de "virar a tela e já ficar em lista
+// sozinho" - se a tabela já é sempre o modo ativo, não existe mais
+// nada pra trocar na rotação. Por isso a detecção de orientação
+// inteira (matchMedia + fallbacks de resize/screen.orientation do
+// AJUSTE-008) foi removida - forçaria de volta pro card em telas
+// retrato, brigando com o novo padrão. Botão manual continua existindo
+// pra quem quiser voltar pro modo card em algum momento.
+let modoTabela = true;
 
-// Detecção real de orientação via matchMedia - mecanismo nativo do CSS
-// pra isso, dispara só quando a orientação de fato muda (mais
-// confiável que ficar comparando window.innerWidth a cada resize).
-// Registrado uma única vez (guard) porque historicoView() é
-// recarregado toda vez que o usuário entra na aba Histórico.
-// AJUSTE-008 (24/09/2026): usuário reportou que, no celular, o evento
-// "change" do matchMedia às vezes não dispara (ou dispara com o
-// viewport ainda no tamanho antigo) na hora exata da rotação - alguns
-// navegadores móveis são conhecidos por isso, principalmente no
-// primeiro rebind depois de trocar de aba do app. Reforçado com dois
-// fallbacks redundantes, sem tirar o mecanismo original: (1) listener
-// de "resize" (dispara em qualquer mudança de viewport, não só
-// orientação "de verdade" - por isso relê mq.matches em vez de supor)
-// e (2) um pequeno debounce (150ms) antes de reler mq.matches, pra dar
-// tempo do navegador terminar de recalcular as dimensões depois da
-// rotação física (leitura em cima da hora pode pegar o valor antigo).
-// Os três caminhos (change nativo, resize, e o botão manual já
-// existente) convergem pro mesmo `aplicarOrientacaoAtual()`, que só
-// re-renderiza se o valor realmente mudou - não recarrega à toa.
-function inicializarDeteccaoOrientacao() {
-  if (deteccaoOrientacaoInicializada) return;
-  deteccaoOrientacaoInicializada = true;
-
-  if (typeof window.matchMedia !== "function") return;
-
-  const mq = window.matchMedia("(orientation: landscape)");
-  modoTabela = mq.matches;
-
-  let debounceId = null;
-
-  function aplicarOrientacaoAtual() {
-    const novoValor = mq.matches;
-    if (novoValor === modoTabela) return;
-    modoTabela = novoValor;
-    carregarHistorico();
-  }
-
-  function aplicarComDebounce() {
-    clearTimeout(debounceId);
-    debounceId = setTimeout(aplicarOrientacaoAtual, 150);
-  }
-
-  mq.addEventListener("change", aplicarComDebounce);
-
-  window.addEventListener("resize", aplicarComDebounce);
-
-  if (window.screen && window.screen.orientation && window.screen.orientation.addEventListener) {
-    window.screen.orientation.addEventListener("change", aplicarComDebounce);
-  }
-}
-
-// Botão manual - equivalente no computador de "virar o celular" (não
-// existe rotação física em desktop). Sempre disponível, independente
-// da orientação atual, e também serve de reforço no celular caso a
-// detecção automática não dispare em algum navegador específico.
+// Botão manual - alterna entre tabela (padrão) e card. Sempre
+// disponível, independente da orientação/tamanho de tela.
 function alternarModoTabela() {
   modoTabela = !modoTabela;
   carregarHistorico();
@@ -1285,8 +1238,6 @@ async function carregarHistorico() {
   const lista = document.getElementById("historicoLista");
   const stats = document.getElementById("historicoStats");
   if (!lista) return;
-
-  inicializarDeteccaoOrientacao();
 
   try {
     const snapshot = await db
