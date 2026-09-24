@@ -10067,3 +10067,29 @@ padding, rótulo do botão, modo compacto) continuam intactos, só a
 variável inicial mudou - o teste funcional de verdade é visual, fica
 pro usuário confirmar no app.
 --------
+AJUSTE-011 — casas decimais do preço seguem a convenção do par
+(JPY=3, outros=5) em vez do bruto sem formatação (js/historico.js)
+
+Origem: usuário notou preços de entrada com quantidade de casas
+decimais inconsistente entre sinais (ex: "179,75494", 5 casas, num par
+JPY). Causa: o preço bruto vem da TwelveData sem nenhum arredondamento
+na exibição - cada sinal aparecia com quantas casas o candle daquele
+ciclo trouxe, sem regra nenhuma. Os CÁLCULOS de pip/lucro já estavam
+corretos (scripts/moneyManager.js já usa `tamanhoPip = ehJPY ? 0.01 :
+0.0001` internamente) - o problema era só na exibição.
+
+Convenção real do mercado Forex: pares com JPY cotam com 3 casas
+decimais (pip = 2ª casa, 3ª é a "pipette" - fração de pip); pares sem
+JPY cotam com 5 (pip = 4ª casa, 5ª é a pipette). Essa regra já existia
+LOCALIZADA dentro de `renderizarCaminhoPrecos()` (usada só pro gráfico
+de caminho de preço) - extraída pra uma função compartilhada nova,
+`formatarPrecoPar(valor, par)`, no topo do arquivo, e aplicada em
+todo lugar que antes mostrava o valor bruto sem formatação: preço de
+entrada (linha da tabela e card de detalhe), preço de saída, e os três
+EMAs no card de detalhe (antes fixos em 5 casas sempre, mesmo em par
+JPY). `renderizarCaminhoPrecos()` passou a chamar a função
+compartilhada em vez de manter sua própria cópia da regra.
+
+Validado: `node -c` (sintaxe); conferido que não sobrou nenhuma
+exibição de preço sem passar por `formatarPrecoPar()`.
+--------

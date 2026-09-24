@@ -19,6 +19,26 @@ function historicoView() {
   `;
 }
 
+// AJUSTE-011 (24/09/2026): usuário notou preços de entrada com
+// quantidade de casas decimais inconsistente entre sinais (ex:
+// "179,75494" num par JPY) - a causa é que o preço bruto vem da
+// TwelveData sem nenhum arredondamento aplicado na exibição, cada
+// sinal com quantas casas o candle daquele ciclo trouxe. Convenção
+// real do mercado Forex (já usada internamente por
+// scripts/moneyManager.js pra calcular pip: `tamanhoPip = ehJPY ?
+// 0.01 : 0.0001`): pares com JPY cotam com 3 casas decimais (o pip é
+// a 2ª casa, a 3ª é a "pipette" - fração de pip); pares sem JPY cotam
+// com 5 (o pip é a 4ª casa, a 5ª é a pipette). Esta função centraliza
+// essa regra - antes só existia localizada dentro de
+// renderizarCaminhoPrecos() (ver uso abaixo), duplicada se cada lugar
+// decidisse formatar do seu jeito.
+function formatarPrecoPar(valor, par) {
+  const numero = Number(valor);
+  if (!Number.isFinite(numero)) return "--";
+  const casasDecimais = String(par || "").includes("JPY") ? 3 : 5;
+  return numero.toFixed(casasDecimais);
+}
+
 // Item 1 do pedido do usuário (11/09/2026): comparar sinais do mesmo par
 // lado a lado, usando só os campos que já existem no documento (o
 // checker.js já grava precoAtual/precoMaximo/precoMinimo/maxPipsFavor/
@@ -208,7 +228,7 @@ function abrirComparacao() {
         <td style="padding:8px; white-space:nowrap;">${horario}</td>
         <td style="padding:8px; white-space:nowrap;">${(sinal.direcao || "-").replace("CALL", "COMPRA").replace("PUT", "VENDA").replace("BUY", "COMPRA").replace("SELL", "VENDA")}</td>
         <td style="padding:8px; white-space:nowrap;">${statusLabel}</td>
-        <td style="padding:8px; text-align:right;">${sinal.precoEntrada ?? "--"}</td>
+        <td style="padding:8px; text-align:right;">${formatarPrecoPar(sinal.precoEntrada, sinal.par)}</td>
         <td style="padding:8px; text-align:right;">${sinal.precoAtual ?? "--"}</td>
         <td style="padding:8px; text-align:right; color:#00d26a;">${sinal.maxPipsFavor != null ? Number(sinal.maxPipsFavor).toFixed(1) : "--"}</td>
         <td style="padding:8px; text-align:right; color:#ff5252;">${sinal.maxPipsContra != null ? Number(sinal.maxPipsContra).toFixed(1) : "--"}</td>
@@ -343,8 +363,9 @@ function renderizarCaminhoPrecos(sinal) {
   const altura = 90;
   const pad = 6;
 
-  const casasDecimais = String(sinal.par || "").includes("JPY") ? 3 : 5;
-  const formatarPreco = (v) => Number(v).toFixed(casasDecimais);
+  // AJUSTE-011: reusa formatarPrecoPar() (topo do arquivo) em vez de
+  // duplicar a regra JPY=3/outros=5 aqui.
+  const formatarPreco = (v) => formatarPrecoPar(v, sinal.par);
 
   const pontos = caminho.map((p, i) => {
     const x = pad + (i / (caminho.length - 1)) * (largura - pad * 2);
@@ -805,7 +826,7 @@ font-size:18px;
 font-weight:bold;
 color:#ffffff;
 ">
-${(sinal.indicadores?.ema9 ?? sinal.ema9) != null ? Number(sinal.indicadores?.ema9 ?? sinal.ema9).toFixed(5) : "--"}
+${formatarPrecoPar(sinal.indicadores?.ema9 ?? sinal.ema9, sinal.par)}
 </div>
 
 </div>
@@ -827,7 +848,7 @@ font-size:18px;
 font-weight:bold;
 color:#ffffff;
 ">
-${(sinal.indicadores?.ema21 ?? sinal.ema21) != null ? Number(sinal.indicadores?.ema21 ?? sinal.ema21).toFixed(5) : "--"}
+${formatarPrecoPar(sinal.indicadores?.ema21 ?? sinal.ema21, sinal.par)}
 </div>
 
 </div>
@@ -849,7 +870,7 @@ font-size:18px;
 font-weight:bold;
 color:#ffffff;
 ">
-${(sinal.indicadores?.ema200 ?? sinal.ema200) != null ? Number(sinal.indicadores?.ema200 ?? sinal.ema200).toFixed(5) : "--"}
+${formatarPrecoPar(sinal.indicadores?.ema200 ?? sinal.ema200, sinal.par)}
 </div>
 
 </div>
@@ -882,7 +903,7 @@ font-size:18px;
 font-weight:bold;
 color:#fff;
 ">
-${sinal.precoEntrada ?? "--"}
+${formatarPrecoPar(sinal.precoEntrada, sinal.par)}
 </div>
 
 </div>
@@ -905,7 +926,7 @@ font-size:18px;
 font-weight:bold;
 color:#fff;
 ">
-${sinal.precoSaida ?? sinal.precoFechamento ?? "--"}
+${formatarPrecoPar(sinal.precoSaida ?? sinal.precoFechamento, sinal.par)}
 </div>
 
 </div>
