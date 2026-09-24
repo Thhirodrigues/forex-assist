@@ -1,0 +1,35 @@
+name: Ativar SMC (configuracoes/geral)
+
+# Ferramenta administrativa avulsa, NÃO faz parte do pipeline de
+# análise/decisão do produto. Só dispara manualmente (workflow_dispatch),
+# nunca por cron. Roda ferramentas/ativar-smc.js, que liga
+# configuracoes/geral.smcAtivo=true no Firestore (AJUSTE-007,
+# 24/09/2026) - ação administrativa única, não precisa rodar de novo
+# depois que a tela de Config passar a controlar esse campo.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ativar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Ativar SMC
+        run: |
+          node ferramentas/ativar-smc.js

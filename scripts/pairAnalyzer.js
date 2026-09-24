@@ -613,6 +613,19 @@ const analise = {
 
     pesoHistorico: qualidade.pesoHistorico,
 
+    // AJUSTE-007 (24/09/2026): calcularQualidade() já devolvia
+    // smcDetectado/smcScore desde o MUD-05 (17/09/2026), mas nunca
+    // eram copiados pro objeto `analise` salvo no Firestore - o bônus/
+    // penalidade de ±3 já influenciava scoreFinal corretamente, só o
+    // DETALHE (qual order block, direção, se o preço estava na zona)
+    // nunca ficava visível em lugar nenhum depois de salvo. Sem
+    // efeito quando a flag smcAtivo está desligada ou nenhum OB
+    // relevante foi encontrado (smcDetectado fica null, smcScore 0 -
+    // mesmo shape de sempre, só que agora persistido).
+    smcDetectado: qualidade.smcDetectado,
+
+    smcScore: qualidade.smcScore,
+
     estatisticas,
 
     financeiro,

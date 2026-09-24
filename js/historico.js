@@ -402,6 +402,50 @@ function renderizarCaminhoPrecos(sinal) {
 
 }
 
+// AJUSTE-007 (24/09/2026): mostra o order block (SMC) que influenciou
+// o score deste sinal, quando houve um - scripts/pairAnalyzer.js só
+// passou a persistir smcDetectado/smcScore no documento salvo a
+// partir desta mudança (existiam desde o MUD-05, 17/09/2026, mas só
+// afetavam o score, nunca ficavam visíveis depois de salvo). Sinais
+// salvos ANTES desta mudança, ou com a flag smcAtivo desligada, ou
+// sem nenhum order block relevante detectado no momento, não têm
+// `smcDetectado` - não renderiza nada nesses casos, não é erro.
+function bannerSMC(sinal) {
+
+  if (!sinal.smcDetectado) return "";
+
+  const { direcao, naZona } = sinal.smcDetectado;
+
+  const score = Number(sinal.smcScore) || 0;
+
+  const corFundo = score > 0
+    ? "rgba(0,210,106,.10)"
+    : score < 0
+    ? "rgba(255,82,82,.10)"
+    : "rgba(255,255,255,.04)";
+
+  const corBorda = score > 0
+    ? "rgba(0,210,106,.3)"
+    : score < 0
+    ? "rgba(255,82,82,.3)"
+    : "rgba(255,255,255,.08)";
+
+  const corTexto = score > 0
+    ? "#8fd6b0"
+    : score < 0
+    ? "#ff9e9e"
+    : "#8c95b3";
+
+  const sinalScore = score > 0 ? "+" : "";
+
+  return `
+    <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:${corFundo}; border:1px solid ${corBorda}; font-size:11px; color:${corTexto};">
+      🧠 SMC: Order Block de ${direcao} detectado${naZona ? " (preço na zona)" : " (fora da zona)"}${score !== 0 ? ` — ${sinalScore}${score} no score` : ""}
+    </div>
+  `;
+
+}
+
 function bannerConfiguracaoAjustada(sinal) {
 
   const decisao = sinal.financeiro?.decisaoMercado?.decisao;
@@ -699,6 +743,8 @@ ${(sinal.indicadores?.ema200 ?? sinal.ema200) != null ? Number(sinal.indicadores
 </div>
 
 </div>
+
+${bannerSMC(sinal)}
 
 <div style="
 display:flex;

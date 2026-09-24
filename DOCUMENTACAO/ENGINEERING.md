@@ -9820,3 +9820,90 @@ regime de liquidez de madrugada é sistematicamente pior que o de
 21h-23h59 (o que justificaria segmentar a estatística por sub-horário
 no futuro, item que fica em aberto, não decidido agora).
 --------
+AJUSTE-007 — SMC (order block) ligado em produção, persistido no
+sinal salvo e controlável pela tela de Config (scripts/pairAnalyzer.js,
+js/config.js, js/historico.js, ferramentas/ativar-smc.js)
+
+Origem: usuário achou (24/09/2026) que o SMC já estava em uso na
+análise de hoje. Conferido no código antes de aceitar a afirmação
+(disciplina do CLAUDE.md): a flag `smcAtivo` (MUD-05, 17/09/2026)
+sempre nasceu DESLIGADA por padrão e nunca teve campo nenhum na tela
+de Config - só dava pra ligar escrevendo direto no Firestore via
+Console. Chequei dois logs reais do dia (um do horário do pedido, um
+do meio do dia) procurando a linha `"SMC.............."` (só aparece
+com a flag ligada) - não apareceu em nenhum dos dois, embora nos dois
+casos os pares tenham parado no cooldown antes de chegar nesse ponto
+do código (não é prova conclusiva de que estava desligado, só ausência
+de evidência de que estava ligado). Reportado ao usuário como correção,
+não como validação da observação dele. Pedido explícito depois:
+"deve ficar ligado como parte da análise" + expor controle na tela de
+Config + mostrar o resultado nos detalhes do sinal.
+
+Também esclarecida a pergunta "tem outros critérios de análise [SMC]
+também não tem?": só Order Blocks foi implementado no MUD-05 - a
+especificação original incluía Liquidity Sweeps e Fair Value Gaps
+(FVG), deliberadamente fora de escopo dessa primeira rodada ("da
+espec, não reaberto"). Não implementados agora, seguem registrados
+como pendência.
+
+Quatro mudanças:
+
+1. **Bug de visibilidade corrigido** (`scripts/pairAnalyzer.js`):
+   `calcularQualidade()` já devolvia `smcDetectado`/`smcScore` desde o
+   MUD-05 - o bônus/penalidade de ±3 já influenciava `scoreFinal`
+   corretamente, mas os dois campos nunca eram copiados pro objeto
+   `analise`/`operacao` salvo no Firestore. O SMC já afetava o score
+   há uma semana sem deixar rastro visível de QUAL order block, em
+   qual direção, ou se o preço estava na zona - só dava pra inferir
+   pela diferença no score, não pra confirmar diretamente. Corrigido:
+   os dois campos agora entram no documento salvo, mesmo shape de
+   sempre (`null`/`0` quando a flag está desligada ou nenhum OB
+   relevante foi encontrado - sem mudança de comportamento nesse
+   caso).
+
+2. **Controle exposto na tela de Config** (`js/config.js`): novo card
+   "🧠 Análise Institucional (SMC)" com checkbox `cfgSmcAtivo`, padrão
+   **ligado** (`smcAtivo: true` em `configuracaoPadrao()` - já validado
+   com 21 cenários isolados desde o MUD-05, camada secundária que
+   nunca decide sozinha). Lido em `obterConfiguracoesTela()` e gravado
+   em `configuracoes/geral` junto do resto da configuração, no mesmo
+   clique de "Salvar Configurações" que já existia - não precisa de
+   fluxo novo.
+
+3. **Detalhe do sinal mostra o SMC** (`js/historico.js`): nova função
+   `bannerSMC()`, chamada em `construirDetalheSinal()` logo após o
+   grid de RSI/EMAs - mostra a direção do order block, se o preço
+   estava na zona, e o pontos (+3/-3) aplicado ao score, com cor
+   verde/vermelha conforme o sinal do score. Não renderiza nada quando
+   `sinal.smcDetectado` é `null` (sinal salvo antes desta mudança, flag
+   desligada, ou nenhum OB relevante encontrado naquele ciclo) - sem
+   quebrar sinais antigos.
+
+4. **Ativação real em produção** (`ferramentas/ativar-smc.js` +
+   `.github/workflows/ativar-smc.yml`): ferramenta administrativa
+   avulsa, só `workflow_dispatch`, mesmo padrão de
+   `analise-rr-simulacao.js` - escreve `smcAtivo: true` em
+   `configuracoes/geral` (Firebase Admin com o secret já usado pelos
+   workflows de produção) e confirma lendo de volta antes de retornar
+   sucesso. Necessária porque este ambiente de código não tem
+   credencial de Firestore pra escrever direto (ver CLAUDE.md) - editar
+   `js/config.js` sozinho não muda o valor já gravado no banco, só
+   controla saves futuros feitos pela tela.
+
+Validado: teste isolado novo
+(`validate-ajuste007-smc-persistencia.js`, 2 cenários) - isola só a
+FIAÇÃO da mudança #1 (a detecção de order block em si já tem os 21
+cenários do MUD-05, não repetidos aqui): com `calcularQualidade()`
+mockado devolvendo `smcDetectado`/`smcScore` definidos, confirma que
+`analisarPar()` copia os dois valores pro documento que
+`salvarOperacao()` recebe; contraprova com `smcDetectado: null`/
+`smcScore: 0` (flag desligada) confirma que o resto do documento
+(`tpUSD`/`slUSD` etc.) continua salvando normalmente, sem regressão.
+
+Pendente, per CLAUDE.md: rodar o workflow `ativar-smc.yml` uma vez pra
+ligar de fato em produção, e validar o primeiro ciclo real depois
+(linha `"SMC.............."` aparecendo no log de algum par elegível,
+fora de cooldown, com a flag confirmada ligada). Liquidity Sweeps e
+Fair Value Gaps (FVG) seguem fora de escopo, registrados aqui como
+pendência, não implementados.
+--------

@@ -110,6 +110,16 @@ function configuracaoPadrao() {
 
     saldoInicial: 1000,
 
+    // AJUSTE-007 (24/09/2026): scripts/pairAnalyzer.js lê
+    // configuracao.smcAtivo pra decidir se roda a detecção de order
+    // block (MUD-05, 17/09/2026) - até aqui essa flag só existia no
+    // Firestore, sem nenhum campo nesta tela (só dava pra ligar
+    // escrevendo direto no Console do Firebase). Padrão ligado: já
+    // validado com 21 cenários isolados antes de existir controle de
+    // tela nenhum, camada secundária que nunca decide sozinha (±3 no
+    // score, só quando o preço está na zona do order block).
+    smcAtivo: true,
+
     pares: [
 
         "EUR/USD",
@@ -473,6 +483,46 @@ step="1"
 value="${config.sl}"
 
 style="width:100%;">
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="card-title">
+
+🧠 Análise Institucional (SMC)
+
+</div>
+
+<div class="list-item">
+
+    <label>
+
+        <input
+
+            type="checkbox"
+
+            id="cfgSmcAtivo"
+
+            ${config.smcAtivo ? "checked" : ""}
+
+        >
+
+        Detectar Order Blocks (Smart Money Concepts)
+
+    </label>
+
+    <div style="font-size:11px; color:#8c95b3; margin-top:6px;">
+
+        Camada secundária de confirmação - nunca aprova nem reprova um
+        sinal sozinha. Quando o preço está na zona de um order block
+        recente, soma ou subtrai até 3 pontos no score (a favor se o
+        OB está na mesma direção do sinal, contra se está na direção
+        oposta). Sem order block relevante, não muda nada.
+
+    </div>
 
 </div>
 
@@ -1108,6 +1158,14 @@ janelaSeguranca: Number(
 
             ).value,
 
+        smcAtivo:
+
+            document.getElementById(
+
+                "cfgSmcAtivo"
+
+            )?.checked ?? true,
+
         saldoInicial:
 
             Number(
@@ -1301,7 +1359,8 @@ function bindConfigEvents() {
                         sl: config.sl,
                         pares: config.pares,
                         tipoConta: config.conta === "real" ? "REAL" : "SIMULADA",
-                        saldoInicial: config.saldoInicial
+                        saldoInicial: config.saldoInicial,
+                        smcAtivo: config.smcAtivo
 
                     }, {
                         merge: true
