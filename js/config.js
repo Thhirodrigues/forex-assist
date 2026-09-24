@@ -83,11 +83,6 @@ function configuracaoPadrao() {
     // ver PRESETS_HORARIO/horarioDoPreset() mais abaixo.
     presetHorario: "personalizado",
 
-    // Só tem efeito quando presetHorario === "asia": estende o fim da
-    // janela pra 04:00 do dia seguinte (atravessa a meia-noite - ver
-    // suporte a isso em scripts/scanner.js's dentroJanelaPadrao()).
-    asiaMadrugada: false,
-
     horarioInicio: "07:30",
 
     horarioFim: "18:00",
@@ -758,28 +753,31 @@ function avisoSugestaoAplicada() {
 // Babypips/Dukascopy (ver FEATURE-001 em ENGINEERING.md).
 // ======================================================
 
+// AJUSTE-018 (24/09/2026): preset "asia" corrigido pra refletir o
+// horário REAL (usuário: "no horário asiático deve ficar o horário
+// que ele funciona realmente, até às 4") - antes ia só até 23:59,
+// exigindo um checkbox extra ("Operar também de madrugada") pra
+// cobrir o resto do overlap Sydney/Tóquio. Removido o checkbox: a
+// janela até 04:00 (atravessando a meia-noite, suportado desde sempre
+// por horarioDoPreset()/duracaoJanelaPadraoMinutos() - mesmo padrão
+// do AJUSTE-006 no scanner.js real) passa a ser o próprio preset, sem
+// opt-in.
 const PRESETS_HORARIO = {
 
     londres: { horarioInicio: "04:00", horarioFim: "13:00" },
 
     novaYork: { horarioInicio: "10:00", horarioFim: "19:00" },
 
-    // "Ásia" sem madrugada fica só na sessão da noite (21h-23h59,
-    // mesmo horário da janela adicional automática por par do
-    // BUG-011 - aqui é a janela PADRÃO, vale pra TODOS os pares
-    // monitorados, não só JPY/AUD/NZD).
-    asia: { horarioInicio: "21:00", horarioFim: "23:59" },
-
-    // Com madrugada: atravessa a meia-noite, cobre o resto do overlap
-    // Sydney/Tóquio (até por volta das 04:00 de Brasília).
-    asiaMadrugada: { horarioInicio: "21:00", horarioFim: "04:00" }
+    // Janela PADRÃO vale pra TODOS os pares monitorados quando
+    // selecionada (diferente da janela adicional automática só pra
+    // JPY/AUD/NZD do AJUSTE-005/006 em scripts/scanner.js - mesma
+    // regra de negócio, duplicação deliberada, ver BUG-011). Vai até
+    // 04:00 do dia seguinte, cobrindo o overlap Sydney/Tóquio.
+    asia: { horarioInicio: "21:00", horarioFim: "04:00" }
 
 };
 
-function horarioDoPreset(preset, madrugada) {
-
-    if (preset === "asia" && madrugada)
-        return PRESETS_HORARIO.asiaMadrugada;
+function horarioDoPreset(preset) {
 
     return PRESETS_HORARIO[preset] || null;
 
@@ -790,7 +788,7 @@ function renderizarPresetHorario(config) {
     const opcoes = [
         { id: "londres", label: "🇬🇧 Mercado de Londres (04:00–13:00)" },
         { id: "novaYork", label: "🇺🇸 Mercado de Nova York (10:00–19:00)" },
-        { id: "asia", label: "🌏 Mercado Asiático (21:00–23:59)" },
+        { id: "asia", label: "🌏 Mercado Asiático (21:00–04:00)" },
         { id: "personalizado", label: "⚙️ Personalizado (definir manualmente abaixo)" }
     ];
 
@@ -813,20 +811,6 @@ function renderizarPresetHorario(config) {
                     ${opcao.label}
                 </label>
             `).join("")}
-
-            <div
-                id="cfgAsiaMadrugadaWrapper"
-                style="margin:4px 0 4px 24px; ${config.presetHorario === "asia" ? "" : "display:none;"}"
-            >
-                <label>
-                    <input
-                        type="checkbox"
-                        id="cfgAsiaMadrugada"
-                        ${config.asiaMadrugada ? "checked" : ""}
-                    >
-                    Operar também de madrugada (00:00–04:00 de Brasília)
-                </label>
-            </div>
 
         </div>
     `;
@@ -1068,14 +1052,6 @@ function obterConfiguracoesTela() {
 
             "personalizado",
 
-        asiaMadrugada:
-
-            document.getElementById(
-
-                "cfgAsiaMadrugada"
-
-            )?.checked || false,
-
         delay:
 
             Number(
@@ -1216,15 +1192,8 @@ function bindConfigEvents() {
             document.querySelector('.cfgPresetHorario:checked')?.value ||
             "personalizado";
 
-        const madrugadaEl = document.getElementById("cfgAsiaMadrugada");
-        const wrapperMadrugada = document.getElementById("cfgAsiaMadrugadaWrapper");
         const inicioEl = document.getElementById("cfgInicio");
         const fimEl = document.getElementById("cfgFim");
-
-        if (wrapperMadrugada) {
-            wrapperMadrugada.style.display =
-                presetSelecionado === "asia" ? "block" : "none";
-        }
 
         if (presetSelecionado === "personalizado") {
             if (inicioEl) inicioEl.disabled = false;
@@ -1232,7 +1201,7 @@ function bindConfigEvents() {
             return;
         }
 
-        const horario = horarioDoPreset(presetSelecionado, madrugadaEl?.checked);
+        const horario = horarioDoPreset(presetSelecionado);
 
         if (!horario) return;
 
@@ -1273,15 +1242,6 @@ function bindConfigEvents() {
             atualizarConsumoApi();
         };
     });
-
-    const madrugadaEl = document.getElementById("cfgAsiaMadrugada");
-
-    if (madrugadaEl) {
-        madrugadaEl.onchange = () => {
-            aplicarPresetNaTela();
-            atualizarConsumoApi();
-        };
-    }
 
     document.querySelectorAll(".cfgPar").forEach((checkbox) => {
         checkbox.onchange = atualizarConsumoApi;
@@ -1349,7 +1309,6 @@ function bindConfigEvents() {
                         delay: config.delay,
                         cooldown: config.cooldown,
                         presetHorario: config.presetHorario,
-                        asiaMadrugada: config.asiaMadrugada,
                         horarioInicio: config.horarioInicio,
                         horarioFim: config.horarioFim,
                         janelaSeguranca: config.janelaSeguranca,

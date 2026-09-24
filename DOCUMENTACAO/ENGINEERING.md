@@ -10382,3 +10382,56 @@ real que motivou o AJUSTE-015 (SELL com preço subindo = resultado
 negativo, mas testado num par sem cruzamento pra poder validar contra
 o backend); entrada inválida (NaN) retorna `null` sem quebrar.
 --------
+AJUSTE-018 — preset "Mercado Asiático" da tela de Config corrigido pra
+refletir o horário real (até 04:00), checkbox redundante removido
+(js/config.js)
+
+Origem: usuário reportou, olhando a tela de Config, que o preset
+"Mercado Asiático (21:00–23:59)" não batia com o horário real de
+funcionamento ("se não me engano até às 4"). Confirmado: o preset
+`asia` em `PRESETS_HORARIO` ia só até 23:59 por padrão, exigindo um
+checkbox extra ("Operar também de madrugada") marcado à parte pra
+cobrir o resto do overlap Sydney/Tóquio (até ~04:00) - o mesmo horário
+que o scanner real já usa desde o AJUSTE-006 (23/09/2026) pra sua
+própria janela asiática (JPY/AUD/NZD).
+
+Removido o passo extra: `PRESETS_HORARIO.asia` passa a ser
+`{horarioInicio: "21:00", horarioFim: "04:00"}` diretamente - o
+checkbox `asiaMadrugada` (config, UI, `obterConfiguracoesTela()`,
+payload salvo no Firestore, listener de evento) foi removido por
+inteiro, não só desativado, por ficar redundante. `horarioDoPreset()`
+perde o parâmetro `madrugada`, sem uso depois da simplificação.
+Rótulo do preset atualizado pra "(21:00–04:00)". A virada de meia-
+noite já era suportada de antes por `duracaoJanelaPadraoMinutos()`
+(usada no card de consumo estimado de API) e por
+`dentroJanelaPadrao()` no scanner real - nenhuma lógica de rollover
+nova precisou ser escrita.
+
+Nota: este preset controla a janela PADRÃO da Config (vale pra TODOS
+os pares monitorados, se selecionado) - é uma configuração
+INDEPENDENTE da janela asiática automática só pra JPY/AUD/NZD do
+AJUSTE-005/006 em `scripts/scanner.js` (mesma regra de negócio,
+duplicação deliberada documentada desde o BUG-011). As duas já
+concordam no horário (21:00-04:00) depois desta correção, mas
+continuam sendo dois mecanismos diferentes - um dá pra ligar por
+qualquer par via Config, o outro é automático e exclusivo dos três
+pares JPY/AUD/NZD.
+
+Validado: `node -c` (sintaxe); `grep` confirmando zero referências
+remanescentes a `asiaMadrugada`/`cfgAsiaMadrugada` depois da remoção;
+checagem manual via Node (fora do navegador, só a lógica pura) -
+`horarioDoPreset("asia")` devolve `{21:00, 04:00}` e
+`duracaoJanelaPadraoMinutos()` calcula 420 minutos (7h) corretamente
+pra essa janela que atravessa a meia-noite.
+
+Pendente, per pedido do usuário na mesma mensagem: trocar os radio
+buttons de preset por checkbox, permitindo selecionar múltiplos
+horários simultaneamente (ex.: Londres + Nova York + Ásia juntos) ou
+só Personalizado. NÃO implementado ainda - muda o modelo de dado
+(`horarioInicio`/`horarioFim` como par único vira precisar suportar
+múltiplas janelas) e toca a leitura real de `scripts/scanner.js`
+(`dentroJanelaPadrao`), não só a tela de Config. Perguntas de escopo
+enviadas ao usuário antes de implementar (mesclar janelas sobrepostas
+vs. manter várias janelas separadas com vácuo entre elas;
+Personalizado combinável com os presets ou exclusivo).
+--------
