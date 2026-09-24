@@ -380,7 +380,12 @@ function mercadoAberto() {
 // se um par pode operar agora.
 // ===================================================
 
-function dentroJanelaPadrao(context) {
+// AJUSTE-019 (24/09/2026): extraído de dentro de dentroJanelaPadrao()
+// pra virar uma função genérica, reutilizável pelas janelas fixas de
+// Londres/Nova York (ver SESSAO_LONDRES/SESSAO_NOVA_YORK mais abaixo).
+// Lógica de dia da semana/virada de meia-noite idêntica à de sempre -
+// nenhum comportamento mudou pra quem usa o modo Personalizado.
+function dentroDeJanela(horarioInicio, horarioFim, janelaSeguranca, context) {
 
     const { diaSemana, minutosDoDia } = obterAgoraBrasil();
 
@@ -394,14 +399,12 @@ function dentroJanelaPadrao(context) {
     }
 
     const [horaInicio, minutoInicio] =
-        context.configuracao
-            .horarioInicio
+        horarioInicio
             .split(":")
             .map(Number);
 
     const [horaFim, minutoFim] =
-        context.configuracao
-            .horarioFim
+        horarioFim
             .split(":")
             .map(Number);
 
@@ -414,11 +417,8 @@ function dentroJanelaPadrao(context) {
     // Janela de segurança: para de abrir operações X minutos
     // antes do horário de fim configurado, para não iniciar uma
     // operação sem tempo de desenvolver antes do encerramento.
-    const janelaSeguranca =
-        Number(context.configuracao.janelaSeguranca) || 0;
-
     const fimComSeguranca =
-        fim - janelaSeguranca;
+        fim - (Number(janelaSeguranca) || 0);
 
     // Janela normal (não atravessa a meia-noite): mesma lógica de
     // sempre.
@@ -449,6 +449,20 @@ function dentroJanelaPadrao(context) {
         minutosDoDia <= fimComSeguranca;
 
     return comecaANoite || continuaNaMadrugada;
+
+}
+
+// Janela PADRÃO (modo Personalizado - único horário livre configurado
+// pelo usuário, vale pra todos os pares). Mantida como wrapper fino
+// sobre dentroDeJanela() pra não quebrar nenhum chamador existente.
+function dentroJanelaPadrao(context) {
+
+    return dentroDeJanela(
+        context.configuracao.horarioInicio,
+        context.configuracao.horarioFim,
+        context.configuracao.janelaSeguranca,
+        context
+    );
 
 }
 
@@ -519,58 +533,164 @@ function parElegivelJanelaAsia(par) {
 
 }
 
-function parNaJanelaOperacional(par, context) {
+// Checagem BRUTA da janela asiática (Mon-Thu 21:00 -> Ter-Sex 04:00),
+// sem nenhum fallback pra outra janela - extraída de
+// parNaJanelaOperacional() pro modo por sessões (AJUSTE-019) poder
+// reusar exatamente a mesma regra de horário/dia da semana que o modo
+// Personalizado já usava internamente pra Ásia.
+function dentroJanelaAsiaBruta() {
 
     const { diaSemana, minutosDoDia } = obterAgoraBrasil();
+
+    // Abre janela nova às 21h de seg-qui (sexta fica de fora,
+    // perto demais do fechamento semanal real do mercado).
+    const abreJanelaNova =
+        diaSemana >= 1 &&
+        diaSemana <= 4 &&
+        minutosDoDia >= JANELA_ASIA_INICIO;
+
+    // AJUSTE-006: continuação até 04:00 do dia SEGUINTE (overlap
+    // Sydney/Tóquio, ver comentário acima) - por isso o intervalo
+    // de dias é deslocado em +1 em relação a abreJanelaNova (2 a
+    // 5, não 1 a 4): terça de madrugada continua a janela aberta
+    // segunda à noite, ..., sexta de madrugada continua a de
+    // quinta à noite. Segunda de madrugada (continuação de
+    // domingo) fica de fora de propósito - domingo nunca abre
+    // janela asiática nova (só a reabertura padrão, 18:00+).
+    const continuaMadrugada =
+        diaSemana >= 2 &&
+        diaSemana <= 5 &&
+        minutosDoDia <= JANELA_ASIA_FIM_MADRUGADA;
+
+    return abreJanelaNova || continuaMadrugada;
+
+}
+
+// ===================================================
+// JANELAS FIXAS — SESSÕES DE LONDRES E NOVA YORK
+// ---------------------------------------------------
+// AJUSTE-019 (24/09/2026): mesma ideia da janela asiática (moeda
+// define elegibilidade, não uma lista fixa de pares), pros outros dois
+// mercados. Horários iguais aos presets já existentes na tela de
+// Config (js/config.js PRESETS_HORARIO) - duplicação deliberada, mesmo
+// padrão do BUG-011 (Node aqui, browser lá).
+//
+// Só entram em jogo quando o usuário marca pelo menos uma sessão na
+// tela de Config (configuracao.sessoesAtivas não vazio) - com o modo
+// Personalizado (sessoesAtivas vazio/ausente), o comportamento é
+// idêntico ao de sempre: uma janela única, sem restrição de par por
+// sessão. Ver parNaJanelaOperacional() abaixo.
+// ===================================================
+
+const SESSAO_LONDRES = { horarioInicio: "04:00", horarioFim: "13:00" };
+const SESSAO_NOVA_YORK = { horarioInicio: "10:00", horarioFim: "19:00" };
+
+const MOEDAS_SESSAO_LONDRES = new Set(["EUR", "GBP", "CHF"]);
+const MOEDAS_SESSAO_NOVA_YORK = new Set(["USD", "CAD"]);
+
+function parElegivelSessaoLondres(par) {
+
+    const [moedaBase, moedaCotada] = par.split("/");
+
+    return (
+        MOEDAS_SESSAO_LONDRES.has(moedaBase) ||
+        MOEDAS_SESSAO_LONDRES.has(moedaCotada)
+    );
+
+}
+
+function parElegivelSessaoNovaYork(par) {
+
+    const [moedaBase, moedaCotada] = par.split("/");
+
+    return (
+        MOEDAS_SESSAO_NOVA_YORK.has(moedaBase) ||
+        MOEDAS_SESSAO_NOVA_YORK.has(moedaCotada)
+    );
+
+}
+
+function parNaJanelaOperacional(par, context) {
+
+    const sessoesAtivas = context.configuracao.sessoesAtivas || [];
+
+    // Modo por sessões: só entra em vigor se o usuário marcou pelo
+    // menos um checkbox na tela de Config. Ausente/vazio (todo mundo
+    // que ainda não tocou nesse controle novo, ou escolheu
+    // Personalizado de propósito) = comportamento INALTERADO.
+    const modoSessoes = sessoesAtivas.length > 0;
 
     const elegivelAsia = parElegivelJanelaAsia(par);
 
     if (elegivelAsia) {
 
-        // Abre janela nova às 21h de seg-qui (sexta fica de fora,
-        // perto demais do fechamento semanal real do mercado).
-        const abreJanelaNova =
-            diaSemana >= 1 &&
-            diaSemana <= 4 &&
-            minutosDoDia >= JANELA_ASIA_INICIO;
+        // AJUSTE-005/006 preservado, inclusive no modo Personalizado:
+        // a janela asiática SEMPRE foi incondicional ali, independente
+        // do preset de horário escolhido (é uma regra de negócio fixa,
+        // nunca esteve amarrada a presetHorario/horarioInicio/
+        // horarioFim). Não regredir isso pra quem não usa o novo modo
+        // por sessões é o motivo de "!modoSessoes" vir primeiro aqui.
+        //
+        // No modo por sessões (AJUSTE-019), passa a depender do
+        // checkbox "Ásia" estar marcado - sem isso o checkbox seria
+        // decorativo, e o usuário confirmou explicitamente que quer
+        // controle real (Q1/Q2 da conversa de 24/09/2026).
+        const asiaHabilitada =
+            !modoSessoes || sessoesAtivas.includes("asia");
 
-        // AJUSTE-006: continuação até 04:00 do dia SEGUINTE (overlap
-        // Sydney/Tóquio, ver comentário acima) - por isso o intervalo
-        // de dias é deslocado em +1 em relação a abreJanelaNova (2 a
-        // 5, não 1 a 4): terça de madrugada continua a janela aberta
-        // segunda à noite, ..., sexta de madrugada continua a de
-        // quinta à noite. Segunda de madrugada (continuação de
-        // domingo) fica de fora de propósito - domingo nunca abre
-        // janela asiática nova (só a reabertura padrão, 18:00+).
-        const continuaMadrugada =
-            diaSemana >= 2 &&
-            diaSemana <= 5 &&
-            minutosDoDia <= JANELA_ASIA_FIM_MADRUGADA;
-
-        if (abreJanelaNova || continuaMadrugada) {
+        if (asiaHabilitada && dentroJanelaAsiaBruta()) {
             return true;
         }
 
-        // AJUSTE-005 (23/09/2026): de seg-qui, pares com lastro
-        // asiático (JPY/AUD/NZD, exceto GBP/JPY) operam
-        // EXCLUSIVAMENTE na janela asiática - deixam de cair pra
-        // janela padrão (07:30-18:00) nesses dias, mesmo fora do
-        // horário exato da janela (ex.: durante o dia, ou no vácuo
-        // das 19h-21h). Antes rodavam nas duas, disputando ciclo/
-        // chamada de API com pares que já cobrem bem o horário de
-        // Londres/NY (EUR/USD, GBP/USD etc.) sem necessidade - a
-        // sessão de maior liquidez desses pares é a asiática.
+        const { diaSemana } = obterAgoraBrasil();
+
+        // Exclusividade Mon-Thu preservada nos dois modos: fora da
+        // janela asiática nesses dias, o par NUNCA cai pra Londres/NY
+        // nem pra janela padrão (mesmo comportamento de sempre).
         if (diaSemana >= 1 && diaSemana <= 4) {
             return false;
         }
 
     }
 
-    // Sem janela asiática definida pro dia atual (sex/sáb/dom, ou par
-    // sem lastro asiático) - cai pra janela padrão normal. Preserva o
-    // único horário disponível nesses dias (ex.: sexta de dia,
-    // domingo de reabertura) em vez de tirar o par do ar.
-    return dentroJanelaPadrao(context);
+    // Fora da exclusividade Mon-Thu da Ásia (sex/sáb/dom), ou par sem
+    // nenhum lastro asiático: modo Personalizado cai na janela única
+    // configurada, exatamente como sempre.
+    if (!modoSessoes) {
+        return dentroJanelaPadrao(context);
+    }
+
+    // Modo por sessões: Londres/Nova York, cada um com sua própria
+    // janela fixa e elegibilidade por moeda (ver comentário acima).
+    if (
+        sessoesAtivas.includes("londres") &&
+        parElegivelSessaoLondres(par) &&
+        dentroDeJanela(
+            SESSAO_LONDRES.horarioInicio,
+            SESSAO_LONDRES.horarioFim,
+            context.configuracao.janelaSeguranca,
+            context
+        )
+    ) {
+        return true;
+    }
+
+    if (
+        sessoesAtivas.includes("novaYork") &&
+        parElegivelSessaoNovaYork(par) &&
+        dentroDeJanela(
+            SESSAO_NOVA_YORK.horarioInicio,
+            SESSAO_NOVA_YORK.horarioFim,
+            context.configuracao.janelaSeguranca,
+            context
+        )
+    ) {
+        return true;
+    }
+
+    // Par sem nenhuma sessão marcada que o inclua (ex.: EUR/GBP com só
+    // "Nova York" marcada) - fica de fora, de propósito.
+    return false;
 
 }
 
@@ -701,7 +821,13 @@ function imprimirCabecalho(context) {
     console.log(`Candles.............${context.configuracao.candles}`);
     console.log(`Delay...............${context.configuracao.delay} ms`);
     console.log(`Cooldown............${context.configuracao.cooldown} min`);
-    console.log(`Horário.............${context.configuracao.horarioInicio} - ${context.configuracao.horarioFim}`);
+    const sessoesAtivasLog = context.configuracao.sessoesAtivas || [];
+
+    console.log(
+        sessoesAtivasLog.length > 0
+            ? `Horário.............Sessões: ${sessoesAtivasLog.join(", ")}`
+            : `Horário.............${context.configuracao.horarioInicio} - ${context.configuracao.horarioFim} (Personalizado)`
+    );
 
     console.log("========================================");
 
@@ -1271,8 +1397,20 @@ process.exit(0);
 // ===================================================
 // INICIALIZAÇÃO
 // ===================================================
-
-main();
+//
+// AJUSTE-019 (24/09/2026): guard adicionado - main() só roda
+// automaticamente quando este arquivo é executado DIRETAMENTE
+// (`node scripts/scanner.js`, exatamente como forex-scanner-real.yml
+// já faz - nenhuma mudança de comportamento em produção). Antes,
+// main() rodava incondicionalmente mesmo se este arquivo fosse
+// require()ado por outro script (ex.: uma ferramenta de validação) -
+// descoberto ao escrever testes isolados pra AJUSTE-019 que precisavam
+// requerer o módulo real: sem este guard, qualquer require() daqui,
+// com credenciais reais presentes, dispararia um ciclo de scanner de
+// verdade como efeito colateral silencioso de um import.
+if (require.main === module) {
+    main();
+}
 
 // ===================================================
 // EXPORTAÇÃO
@@ -1286,7 +1424,19 @@ module.exports = {
 
     validarExecucao,
 
-    executarScanner
+    executarScanner,
+
+    // AJUSTE-019 (24/09/2026): expostos só pra validação isolada
+    // (ferramentas/scratchpad) poder testar a lógica REAL de janela
+    // operacional/sessões, sem duplicar a regra numa cópia.
+    obterAgoraBrasil,
+    dentroDeJanela,
+    dentroJanelaPadrao,
+    dentroJanelaAsiaBruta,
+    parElegivelJanelaAsia,
+    parElegivelSessaoLondres,
+    parElegivelSessaoNovaYork,
+    parNaJanelaOperacional
 
 };
 

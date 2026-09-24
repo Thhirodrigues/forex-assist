@@ -10435,3 +10435,106 @@ enviadas ao usuário antes de implementar (mesclar janelas sobrepostas
 vs. manter várias janelas separadas com vácuo entre elas;
 Personalizado combinável com os presets ou exclusivo).
 --------
+AJUSTE-019 — "Janela de Horário" vira modo por SESSÕES (checkbox,
+múltiplas simultâneas), com filtro de pares por moeda em Londres/Nova
+York além da Ásia já existente (js/config.js, scripts/scanner.js)
+
+Origem: pendência aberta no AJUSTE-018. Depois de 3 rodadas de
+clarificação com o usuário (radios → checkbox; comportamento no
+"buraco" entre sessões não-adjacentes; classificação de pares por
+sessão), o requisito confirmado ficou bem mais amplo do que "trocar
+radio por checkbox": cada sessão (Londres/Nova York/Ásia) passa a ter
+sua PRÓPRIA janela fixa de horário E seus PRÓPRIOS pares elegíveis
+(por moeda) - um par só opera numa sessão marcada se pertencer a ela.
+Se as sessões marcadas não são adjacentes (ex.: Londres + Ásia sem
+Nova York, buraco das 13h às 21h), o scanner fica parado nesse
+intervalo - decisão explícita do usuário, sem tentar preencher o
+vácuo. "Personalizado" continua existindo como alternativa EXCLUSIVA
+(não combinável com as sessões) - a janela livre de sempre.
+
+Implementação (`scripts/scanner.js`, o GATE real de produção):
+`dentroJanelaPadrao()` foi fatiada numa função genérica
+`dentroDeJanela(horarioInicio, horarioFim, janelaSeguranca, context)`
+reutilizável, mantendo 100% da lógica de dia da semana/virada de
+meia-noite que já existia (sábado nunca opera, domingo só a partir das
+18h, atravessar meia-noite igual à janela asiática). Duas janelas
+fixas novas, mesmos horários dos presets antigos: `SESSAO_LONDRES`
+(04:00-13:00) e `SESSAO_NOVA_YORK` (10:00-19:00), com elegibilidade
+por moeda (`MOEDAS_SESSAO_LONDRES = EUR/GBP/CHF`,
+`MOEDAS_SESSAO_NOVA_YORK = USD/CAD`) no mesmo padrão que a Ásia já
+usava (`MOEDAS_JANELA_ASIA`, AJUSTE-005). `parNaJanelaOperacional()`
+reescrita com uma regra central: **par com lastro asiático
+(JPY/AUD/NZD, exceto GBP/JPY) preserva a exclusividade Mon-Thu do
+AJUSTE-005/006 nos dois modos** - a diferença é que, no modo
+Personalizado (`configuracao.sessoesAtivas` vazio/ausente - é o que
+TODO usuário existente tem hoje, campo novo), essa janela asiática
+continua INCONDICIONAL, exatamente como sempre foi (nunca esteve
+amarrada a nenhum preset da tela). Só no modo por sessões (usuário
+marcou 1+ checkbox) é que passa a depender do checkbox "Ásia" estar
+marcado - do contrário o checkbox seria decorativo, e dar controle
+real era justamente o pedido. Este é o ponto mais delicado do ajuste:
+a primeira versão implementada tinha um bug real de regressão aqui
+(a janela asiática incondicional teria virado condicional também pra
+quem nunca tocou no checkbox novo) - pego e corrigido ANTES de
+qualquer commit, ao escrever os testes isolados abaixo.
+
+GBP/JPY (única exceção explícita da Ásia) passa a ser elegível pra
+Londres (tem GBP) - mudança de comportamento CONFIRMADA
+explicitamente com o usuário via AskUserQuestion (antes só operava na
+janela única configurada, sem filtro por sessão).
+
+`main()` (rodava incondicionalmente ao fim do arquivo) ganhou um guard
+`if (require.main === module)` - achado ao escrever os testes: sem
+ele, `require("./scanner")` a partir de qualquer outro script (com
+credenciais reais presentes) dispararia um ciclo de scanner de
+verdade como efeito colateral silencioso de um import. Zero mudança
+de comportamento em produção (`forex-scanner-real.yml` já chama
+`node scripts/scanner.js` diretamente, onde `require.main === module`
+é sempre verdadeiro).
+
+`js/config.js`: `PRESETS_HORARIO` (radio) vira base de
+`renderizarSessoesHorario()` (checkboxes `.cfgSessao` + checkbox
+exclusivo `#cfgPersonalizado`, com `aplicarSessoesNaTela()` cuidando
+da exclusividade mútua nos dois sentidos). Novo campo de config
+`sessoesAtivas: []` substitui `presetHorario` (vazio = Personalizado,
+não-vazio = modo por sessões) - persistido em
+`configuracoes/geral.sessoesAtivas`. `calcularConsumoEstimadoTwelveData()`
+ganhou um branch pro modo por sessões: soma consultas estimadas por
+sessão ativa (ciclos da janela dela × pares elegíveis pra ela, por
+moeda), mostrando um detalhamento por sessão no card de consumo; modo
+Personalizado mantém a conta original inalterada (janela única +
+bônus asiático incondicional).
+
+Validado: `node -c` nos dois arquivos. Dois scripts isolados no
+scratchpad, requerendo `scripts/scanner.js` DIRETO (não uma cópia) -
+`scripts/firebase.js` stubado no cache do Node (sem
+`serviceAccount.json` neste ambiente, ver CLAUDE.md) e o relógio
+global mockado pra testes determinísticos de dia da semana/hora:
+(1) `validate-ajuste019-sessoes.js`, 24 cenários - regressão explícita
+do modo Personalizado (EUR/USD e USD/JPY se comportando IDÊNTICO ao
+scanner antigo do AJUSTE-005/006, incluindo a janela asiática
+incondicional e sua exclusividade Mon-Thu) mais o modo por sessões
+novo (Londres sozinha, overlap Londres+NY, buraco Londres+Ásia sem NY
+retornando `false` no horário do buraco, USD/JPY sem operar quando só
+Londres+NY marcadas sem Ásia, GBP/JPY passando a operar em Londres,
+EUR/JPY continuando de fora de Londres mesmo tendo EUR); (2)
+`validate-ajuste019-paridade-config-scanner.js`, 60 cenários (3
+sessões × 20 pares de `TODOS_PARES`) - confirma que a classificação
+por moeda em `js/config.js` (usada só pro estimador) bate EXATAMENTE
+com a classificação real usada pelo gate de produção em
+`scripts/scanner.js`, pra nunca mostrar um número de consultas
+enganoso na tela.
+
+Pendente: `js/pairInsights.js` continua com a cópia antiga de janela
+(BUG-011, já sinalizada como desatualizada desde o AJUSTE-013) - não
+tocada aqui, decisão de deferir mantida (card que a usa,
+"Sugestão de Agora", está desativado desde o AJUSTE-014). Modo por
+sessões não trata o fim de semana/sexta-feira com o mesmo detalhe que
+o modo Personalizado tinha pra pares com lastro asiático (ex.: no
+Personalizado, USD/JPY fora da janela asiática cai na janela padrão
+única às sextas; no modo por sessões, ele simplesmente fica de fora
+até a Ásia abrir de novo) - tradeoff deliberado, documentado nos
+comentários de `parNaJanelaOperacional()`, baixo risco (conta roda em
+SIMULADA hoje) e não mencionado explicitamente pelo usuário no escopo
+pedido.
+--------

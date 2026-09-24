@@ -77,11 +77,14 @@ function configuracaoPadrao() {
 
     cooldown: 30,
 
-    // "personalizado" (padrão) mantém horarioInicio/horarioFim como
-    // campos livres, exatamente como sempre foi. Os outros 3 valores
-    // são atalhos que preenchem esses dois campos automaticamente -
-    // ver PRESETS_HORARIO/horarioDoPreset() mais abaixo.
-    presetHorario: "personalizado",
+    // AJUSTE-019 (24/09/2026): substitui presetHorario (radio, uma
+    // janela por vez). Vazio = modo Personalizado, horarioInicio/
+    // horarioFim livres valem pra todo par (comportamento de sempre).
+    // Não-vazio = modo por sessões: cada sessão marcada ("londres",
+    // "novaYork", "asia") usa sua própria janela fixa, e só os pares
+    // daquela sessão (por moeda) operam nela - ver
+    // scripts/scanner.js parNaJanelaOperacional().
+    sessoesAtivas: [],
 
     horarioInicio: "07:30",
 
@@ -313,14 +316,14 @@ Cooldown entre sinais
 
 </div>
 
-${renderizarPresetHorario(config)}
+${renderizarSessoesHorario(config)}
 
 <div class="list-item">
 
 Horário Inicial
 
 <br>
-<small style="opacity:.7;">Preenchido automaticamente se um mercado acima estiver selecionado</small>
+<small style="opacity:.7;">Ignorado quando pelo menos uma sessão está marcada acima - cada sessão usa seu próprio horário fixo. Só vale com Personalizado marcado.</small>
 <br><br>
 
 <input
@@ -328,7 +331,7 @@ Horário Inicial
     type="time"
     value="${config.horarioInicio}"
     style="width:100%;"
-    ${config.presetHorario !== "personalizado" ? "disabled" : ""}>
+    ${(config.sessoesAtivas || []).length > 0 ? "disabled" : ""}>
 
 </div>
 
@@ -342,7 +345,7 @@ Horário Final
     id="cfgFim"
     type="time"
     value="${config.horarioFim}"
-    ${config.presetHorario !== "personalizado" ? "disabled" : ""}
+    ${(config.sessoesAtivas || []).length > 0 ? "disabled" : ""}
     style="width:100%;">
 
 </div>
@@ -747,10 +750,15 @@ function avisoSugestaoAplicada() {
 // ======================================================
 // PRESETS DE JANELA HORÁRIA (mercados)
 // ---------------------------------------------------
-// Horários de Brasília (GMT-3, sem DST desde 2019). Cada preset só
-// preenche horarioInicio/horarioFim - o backend (scripts/scanner.js)
-// nunca lê presetHorario, só os dois campos resultantes. Fontes:
+// Horários de Brasília (GMT-3, sem DST desde 2019). Fontes:
 // Babypips/Dukascopy (ver FEATURE-001 em ENGINEERING.md).
+//
+// AJUSTE-019 (24/09/2026): diferente do preset antigo (só preenchia
+// horarioInicio/horarioFim, nunca lido pelo backend por nome), o
+// backend agora LÊ configuracao.sessoesAtivas diretamente (ver
+// scripts/scanner.js parNaJanelaOperacional()) - os horários fixos
+// abaixo (SESSAO_LONDRES/SESSAO_NOVA_YORK/janela asiática) são
+// duplicados lá, não lidos daqui.
 // ======================================================
 
 // AJUSTE-018 (24/09/2026): preset "asia" corrigido pra refletir o
@@ -762,20 +770,64 @@ function avisoSugestaoAplicada() {
 // por horarioDoPreset()/duracaoJanelaPadraoMinutos() - mesmo padrão
 // do AJUSTE-006 no scanner.js real) passa a ser o próprio preset, sem
 // opt-in.
+//
+// AJUSTE-019 (24/09/2026): PRESETS_HORARIO deixa de ser um radio
+// (uma janela única por vez) e vira a base de um modo por SESSÕES -
+// o usuário marca 1+ checkboxes (Londres/Nova York/Ásia) e cada par
+// monitorado só opera dentro da(s) sessão(ões) marcada(s) A QUE ELE
+// PERTENCE (por moeda - ver MOEDAS_SESSAO_* abaixo), não mais numa
+// janela única igual pra todo mundo. "Personalizado" continua
+// existindo, mas agora como alternativa EXCLUSIVA (não combinável com
+// as sessões) - volta a ser a janela única livre de sempre
+// (horarioInicio/horarioFim). Ver scripts/scanner.js
+// parNaJanelaOperacional() pra a implementação real que este UI
+// alimenta (configuracao.sessoesAtivas).
+//
+// Decisão explícita do usuário (24/09/2026): se nenhuma sessão marcada
+// cobre o horário atual (ex.: só Londres + Ásia marcadas, sem Nova
+// York - buraco das 13h às 21h), o scanner fica parado nesse
+// intervalo, de propósito - cada sessão roda só no seu horário
+// próprio, sem tentar preencher o buraco com outra janela.
 const PRESETS_HORARIO = {
 
     londres: { horarioInicio: "04:00", horarioFim: "13:00" },
 
     novaYork: { horarioInicio: "10:00", horarioFim: "19:00" },
 
-    // Janela PADRÃO vale pra TODOS os pares monitorados quando
-    // selecionada (diferente da janela adicional automática só pra
-    // JPY/AUD/NZD do AJUSTE-005/006 em scripts/scanner.js - mesma
-    // regra de negócio, duplicação deliberada, ver BUG-011). Vai até
-    // 04:00 do dia seguinte, cobrindo o overlap Sydney/Tóquio.
+    // Vai até 04:00 do dia seguinte, cobrindo o overlap Sydney/Tóquio -
+    // mesma janela (fixa, incondicional) que scripts/scanner.js já usa
+    // pra pares JPY/AUD/NZD independente deste checkbox estar marcado
+    // ou não quando o modo é Personalizado (AJUSTE-005/006); só passa
+    // a depender deste checkbox quando pelo menos uma sessão está
+    // marcada (modo por sessões).
     asia: { horarioInicio: "21:00", horarioFim: "04:00" }
 
 };
+
+// Elegibilidade por moeda - mesma regra e mesmos nomes de sessão que
+// scripts/scanner.js (MOEDAS_SESSAO_LONDRES/MOEDAS_SESSAO_NOVA_YORK) -
+// duplicação deliberada, mesmo padrão do BUG-011 (esta tela não pode
+// fazer require() do script Node). A Ásia usa MOEDAS_JANELA_ASIA_CFG/
+// PARES_JANELA_ASIA_EXCLUIDOS_CFG, já existentes mais abaixo neste
+// arquivo (seção "Orçamento de Consultas").
+const MOEDAS_SESSAO_LONDRES_CFG = new Set(["EUR", "GBP", "CHF"]);
+const MOEDAS_SESSAO_NOVA_YORK_CFG = new Set(["USD", "CAD"]);
+
+function parElegivelSessaoLondresCfg(par) {
+    const [moedaBase, moedaCotada] = par.split("/");
+    return (
+        MOEDAS_SESSAO_LONDRES_CFG.has(moedaBase) ||
+        MOEDAS_SESSAO_LONDRES_CFG.has(moedaCotada)
+    );
+}
+
+function parElegivelSessaoNovaYorkCfg(par) {
+    const [moedaBase, moedaCotada] = par.split("/");
+    return (
+        MOEDAS_SESSAO_NOVA_YORK_CFG.has(moedaBase) ||
+        MOEDAS_SESSAO_NOVA_YORK_CFG.has(moedaCotada)
+    );
+}
 
 function horarioDoPreset(preset) {
 
@@ -783,13 +835,15 @@ function horarioDoPreset(preset) {
 
 }
 
-function renderizarPresetHorario(config) {
+function renderizarSessoesHorario(config) {
 
-    const opcoes = [
+    const sessoesAtivas = config.sessoesAtivas || [];
+    const personalizadoAtivo = sessoesAtivas.length === 0;
+
+    const opcoesSessao = [
         { id: "londres", label: "🇬🇧 Mercado de Londres (04:00–13:00)" },
         { id: "novaYork", label: "🇺🇸 Mercado de Nova York (10:00–19:00)" },
-        { id: "asia", label: "🌏 Mercado Asiático (21:00–04:00)" },
-        { id: "personalizado", label: "⚙️ Personalizado (definir manualmente abaixo)" }
+        { id: "asia", label: "🌏 Mercado Asiático (21:00–04:00)" }
     ];
 
     return `
@@ -797,20 +851,40 @@ function renderizarPresetHorario(config) {
 
             Janela de Horário
 
+            <br>
+            <small style="opacity:.7;">
+                Marque uma ou mais sessões - cada par monitorado opera
+                só na(s) sessão(ões) marcada(s) a que ele pertence
+                (por moeda). Sem cobertura de nenhuma sessão marcada
+                num horário (ex.: buraco entre Londres e Ásia sem Nova
+                York), o scanner fica parado nesse intervalo.
+            </small>
             <br><br>
 
-            ${opcoes.map(opcao => `
+            ${opcoesSessao.map(opcao => `
                 <label style="display:block; margin-bottom:8px;">
                     <input
-                        type="radio"
-                        name="presetHorario"
-                        class="cfgPresetHorario"
+                        type="checkbox"
+                        class="cfgSessao"
                         value="${opcao.id}"
-                        ${config.presetHorario === opcao.id ? "checked" : ""}
+                        ${sessoesAtivas.includes(opcao.id) ? "checked" : ""}
                     >
                     ${opcao.label}
                 </label>
             `).join("")}
+
+            <label style="display:block; margin-top:12px;">
+                <input
+                    type="checkbox"
+                    id="cfgPersonalizado"
+                    ${personalizadoAtivo ? "checked" : ""}
+                >
+                ⚙️ Personalizado (definir manualmente abaixo)
+            </label>
+            <small style="opacity:.7;">
+                Exclusivo - marcar Personalizado desmarca as sessões
+                acima, e vice-versa.
+            </small>
 
         </div>
     `;
@@ -897,7 +971,64 @@ function duracaoJanelaPadraoMinutos(horarioInicio, horarioFim, janelaSeguranca) 
 function calcularConsumoEstimadoTwelveData(config) {
 
     const pares = config.pares || [];
+    const sessoesAtivas = config.sessoesAtivas || [];
 
+    // AJUSTE-019 (24/09/2026): modo por sessões - cada sessão marcada
+    // soma suas próprias chamadas (ciclos da SUA janela x pares
+    // elegíveis PRA ELA, por moeda), sem a janela padrão única nem o
+    // "bônus" incondicional da Ásia (que só existe no modo
+    // Personalizado - ver scripts/scanner.js parNaJanelaOperacional).
+    if (sessoesAtivas.length > 0) {
+
+        const defsSessao = {
+            londres: { janela: PRESETS_HORARIO.londres, elegivel: parElegivelSessaoLondresCfg },
+            novaYork: { janela: PRESETS_HORARIO.novaYork, elegivel: parElegivelSessaoNovaYorkCfg },
+            asia: { janela: PRESETS_HORARIO.asia, elegivel: parElegivelJanelaAsiaCfg }
+        };
+
+        let totalEstimado = 0;
+        const detalhePorSessao = [];
+
+        sessoesAtivas.forEach((sessaoId) => {
+
+            const def = defsSessao[sessaoId];
+            if (!def) return;
+
+            const duracao = duracaoJanelaPadraoMinutos(
+                def.janela.horarioInicio,
+                def.janela.horarioFim,
+                config.janelaSeguranca
+            );
+
+            const ciclos = Math.floor(duracao / MINUTOS_POR_CICLO_SCANNER);
+            const paresElegiveis = pares.filter(def.elegivel);
+            const chamadas = ciclos * paresElegiveis.length * CHAMADAS_POR_PAR_POR_CICLO;
+
+            totalEstimado += chamadas;
+
+            detalhePorSessao.push({
+                sessaoId,
+                pares: paresElegiveis.length,
+                chamadas: Math.round(chamadas)
+            });
+
+        });
+
+        totalEstimado = Math.round(totalEstimado);
+
+        return {
+            modoSessoes: true,
+            totalEstimado,
+            detalhePorSessao,
+            excedeOrcamento: totalEstimado > ORCAMENTO_DIARIO_TWELVEDATA,
+            margem: ORCAMENTO_DIARIO_TWELVEDATA - totalEstimado
+        };
+
+    }
+
+    // Modo Personalizado (comportamento original, inalterado): janela
+    // única configurada pra todo par + janela asiática incondicional
+    // por cima (AJUSTE-005/006, sempre ativa nesse modo).
     const duracaoPadrao = duracaoJanelaPadraoMinutos(
         config.horarioInicio,
         config.horarioFim,
@@ -938,6 +1069,7 @@ function calcularConsumoEstimadoTwelveData(config) {
         (ciclosAsiaPorDia * CHAMADAS_POR_PAR_POR_CICLO);
 
     return {
+        modoSessoes: false,
         totalEstimado,
         chamadasPadrao: Math.round(chamadasPadrao),
         chamadasAsiaPorDia: Math.round(chamadasAsiaPorDia),
@@ -980,11 +1112,31 @@ function renderizarConsumoApi(config) {
             </div>
             <div>${linhaMargem}</div>
             <div style="margin-top:6px; opacity:.75;">
-                Custo por par adicional: ~${consumo.custoParSemLastroAsia}/dia (sem lastro asiático) ou
-                ~${consumo.custoParComLastroAsia}/dia (JPY/AUD/NZD, entra também na janela adicional automática).
+                ${
+                    consumo.modoSessoes
+                        ? renderizarDetalheSessoes(consumo.detalhePorSessao)
+                        : `Custo por par adicional: ~${consumo.custoParSemLastroAsia}/dia (sem lastro asiático) ou
+                           ~${consumo.custoParComLastroAsia}/dia (JPY/AUD/NZD, entra também na janela adicional automática).`
+                }
             </div>
         </div>
     `;
+
+}
+
+const NOMES_SESSAO_CFG = {
+    londres: "Londres",
+    novaYork: "Nova York",
+    asia: "Ásia"
+};
+
+function renderizarDetalheSessoes(detalhePorSessao) {
+
+    if (!detalhePorSessao || detalhePorSessao.length === 0) return "";
+
+    return detalhePorSessao
+        .map(d => `${NOMES_SESSAO_CFG[d.sessaoId] || d.sessaoId}: ${d.pares} par(es), ~${d.chamadas}/dia`)
+        .join(" · ");
 
 }
 
@@ -1042,15 +1194,21 @@ function obterConfiguracoesTela() {
 
             "balanceado",
 
-        presetHorario:
+        sessoesAtivas:
 
-            document.querySelector(
+            Array.from(
 
-                '.cfgPresetHorario:checked'
+                document.querySelectorAll(
 
-            )?.value ||
+                    ".cfgSessao:checked"
 
-            "personalizado",
+                )
+
+            ).map(
+
+                item => item.value
+
+            ),
 
         delay:
 
@@ -1181,39 +1339,42 @@ janelaSeguranca: Number(
 function bindConfigEvents() {
 
     // ------------------------------------------
-    // Preset de janela horária - atualiza os campos
-    // Horário Inicial/Final ao vivo, antes de salvar
-    // (nada disso grava no Firestore por si só).
+    // AJUSTE-019: sessões (checkbox, 1+) x Personalizado (checkbox,
+    // exclusivo) - marcar um lado desmarca o outro. Horário Inicial/
+    // Final só ficam livres/editáveis com Personalizado marcado; no
+    // modo por sessões cada sessão usa sua própria janela fixa (não
+    // aparece nesses dois campos). Nada disso grava no Firestore por
+    // si só - só o clique em "Salvar Configurações".
     // ------------------------------------------
 
-    function aplicarPresetNaTela() {
-
-        const presetSelecionado =
-            document.querySelector('.cfgPresetHorario:checked')?.value ||
-            "personalizado";
+    function aplicarSessoesNaTela(origem) {
 
         const inicioEl = document.getElementById("cfgInicio");
         const fimEl = document.getElementById("cfgFim");
+        const personalizadoEl = document.getElementById("cfgPersonalizado");
+        const sessaoEls = document.querySelectorAll(".cfgSessao");
 
-        if (presetSelecionado === "personalizado") {
-            if (inicioEl) inicioEl.disabled = false;
-            if (fimEl) fimEl.disabled = false;
-            return;
+        if (origem === "personalizado" && personalizadoEl?.checked) {
+            sessaoEls.forEach(el => { el.checked = false; });
         }
 
-        const horario = horarioDoPreset(presetSelecionado);
-
-        if (!horario) return;
-
-        if (inicioEl) {
-            inicioEl.value = horario.horarioInicio;
-            inicioEl.disabled = true;
+        if (origem === "sessao" && Array.from(sessaoEls).some(el => el.checked)) {
+            if (personalizadoEl) personalizadoEl.checked = false;
         }
 
-        if (fimEl) {
-            fimEl.value = horario.horarioFim;
-            fimEl.disabled = true;
+        const modoPersonalizado =
+            personalizadoEl?.checked ||
+            !Array.from(sessaoEls).some(el => el.checked);
+
+        // Nenhuma sessão marcada e Personalizado também desmarcado
+        // (usuário desmarcou tudo) - volta pro Personalizado sozinho,
+        // pra nunca deixar a tela sem nenhuma opção ativa.
+        if (modoPersonalizado && personalizadoEl) {
+            personalizadoEl.checked = true;
         }
+
+        if (inicioEl) inicioEl.disabled = !modoPersonalizado;
+        if (fimEl) fimEl.disabled = !modoPersonalizado;
 
     }
 
@@ -1236,12 +1397,21 @@ function bindConfigEvents() {
 
     }
 
-    document.querySelectorAll(".cfgPresetHorario").forEach((radio) => {
-        radio.onchange = () => {
-            aplicarPresetNaTela();
+    document.querySelectorAll(".cfgSessao").forEach((checkbox) => {
+        checkbox.onchange = () => {
+            aplicarSessoesNaTela("sessao");
             atualizarConsumoApi();
         };
     });
+
+    const personalizadoEl = document.getElementById("cfgPersonalizado");
+
+    if (personalizadoEl) {
+        personalizadoEl.onchange = () => {
+            aplicarSessoesNaTela("personalizado");
+            atualizarConsumoApi();
+        };
+    }
 
     document.querySelectorAll(".cfgPar").forEach((checkbox) => {
         checkbox.onchange = atualizarConsumoApi;
@@ -1308,7 +1478,7 @@ function bindConfigEvents() {
                         perfil: config.perfil,
                         delay: config.delay,
                         cooldown: config.cooldown,
-                        presetHorario: config.presetHorario,
+                        sessoesAtivas: config.sessoesAtivas,
                         horarioInicio: config.horarioInicio,
                         horarioFim: config.horarioFim,
                         janelaSeguranca: config.janelaSeguranca,
