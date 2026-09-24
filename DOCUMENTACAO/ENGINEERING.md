@@ -9907,3 +9907,67 @@ fora de cooldown, com a flag confirmada ligada). Liquidity Sweeps e
 Fair Value Gaps (FVG) seguem fora de escopo, registrados aqui como
 pendência, não implementados.
 --------
+AJUSTE-008 — fechamento manual de operação (resultado real da
+corretora) + detecção de rotação de tela reforçada (js/historico.js)
+
+Origem: usuário fechou manualmente na XM um sinal real (EUR/JPY SELL,
+23/09/2026 21:55) por +$3, preferindo travar lucro a esperar o TP/SL
+automático - decisão de risco razoável, mas expôs um problema real: a
+operação continuaria `ABERTA` no Firestore até `checker.js` bater o
+TP/SL dele sozinho, gravando um resultado que **não é o que realmente
+aconteceu com o dinheiro real do usuário**. Como toda operação
+encerrada alimenta a taxa de acerto/expectativa usada por
+`decisionEngine.js` pra aprovar sinais futuros, isso contaminaria
+silenciosamente a base de aprendizado - exatamente o tipo de risco que
+`CLAUDE.md` trata como não-negociável ("Qualidade de sinal da RMI").
+Não existia nenhum jeito de registrar isso: `alternarOperacaoReal`
+(já existente) só liga/desliga se uma operação JÁ FECHADA conta pra
+Conta Real, nunca reescreve o resultado em si.
+
+Também aproveitado pra corrigir um bug relatado separadamente: no
+celular, virar a tela não trocava pra "modo lista" sozinho - precisava
+atualizar a página manualmente.
+
+Duas mudanças, ambas em `js/historico.js`:
+
+1. **Fechamento manual** (`fecharOperacaoManualmente`, exposta como
+   `window.fecharOperacaoManualmente`): novo botão "🔒 Fechei
+   Manualmente na Corretora", visível só em operações ainda sem
+   `resultado` (PENDENTE). Pede o resultado financeiro real via
+   `prompt()`, confirma, e grava `status: "ENCERRADA"`, `resultado`
+   (WIN/LOSS pelo sinal do valor informado), `resultadoFinanceiro`,
+   `motivoEncerramento: "MANUAL_CORRETORA"` (valor novo e distinto dos
+   fechamentos automáticos - SL_FINANCEIRO/TP_FINANCEIRO/SL_PIPS/
+   TP_PIPS - pra dar pra filtrar numa análise de qualidade depois),
+   `fechadoManualmente: true`, `fimOperacao`. Atualiza `saldoSimulado`
+   com a MESMA fórmula de `js/checker.js` (linha ~364-368) - Conta
+   Simulada acompanha todo sinal fechado, sempre, independente do
+   `tipoConta` ativo (comportamento documentado lá, preservado aqui).
+   Não mexe em `saldoReal` - marcar como "conta de verdade" continua
+   sendo o passo separado de sempre, pelo checkbox
+   `alternarOperacaoReal` já existente (reutilizado, não duplicado).
+
+2. **Detecção de rotação reforçada** (`inicializarDeteccaoOrientacao`):
+   o mecanismo original (`matchMedia("(orientation: landscape)")` +
+   evento `change`) já existia e, na teoria, deveria funcionar sozinho
+   - mas é um comportamento conhecido de alguns navegadores móveis não
+   disparar esse evento de forma confiável, ou disparar antes do
+   viewport terminar de recalcular. Reforçado com dois fallbacks
+   redundantes, sem remover o original: listener de `resize` (relê
+   `mq.matches` em vez de supor, porque `resize` dispara por qualquer
+   motivo, não só rotação de verdade) e a API `screen.orientation`,
+   quando disponível. Debounce de 150ms antes de reler a orientação,
+   pra dar tempo do navegador terminar de recalcular dimensões.
+   `aplicarOrientacaoAtual()` centraliza os três caminhos e só
+   re-renderiza se o valor de fato mudou.
+
+Validado: `node -c` (sintaxe) nos dois arquivos - o teste funcional de
+verdade fica pro usuário confirmar no próprio app, já que
+`fecharOperacaoManualmente` depende de `firebase.firestore()`/`prompt`/
+`confirm` reais de browser (não dá pra isolar num teste Node puro como
+os scripts de `scripts/`), e a rotação depende de dispositivo físico
+real, que não existe neste ambiente. Pendente, per CLAUDE.md: validar
+o primeiro uso real do botão de fechamento manual (o usuário já tem um
+caso real esperando - o próprio EUR/JPY que motivou esta mudança) e
+confirmar se a rotação melhorou no celular dele.
+--------

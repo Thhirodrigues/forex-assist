@@ -446,6 +446,134 @@ function bannerSMC(sinal) {
 
 }
 
+// AJUSTE-008 (24/09/2026): botão só aparece em operação ainda
+// PENDENTE (sem `resultado` gravado) - depois de fechada, o único
+// jeito de mudar o resultado é `alternarOperacaoReal` (que já existe,
+// mas só liga/desliga se conta pra Conta Real, nunca reescreve o
+// resultado em si).
+function botaoFecharManualmente(sinal, docId) {
+
+  if (sinal.resultado) return "";
+
+  return `
+    <div style="margin-bottom:14px; text-align:center;">
+      <button
+        onclick="fecharOperacaoManualmente('${docId}')"
+        style="padding:8px 14px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;"
+      >
+        🔒 Fechei Manualmente na Corretora
+      </button>
+      <div style="font-size:10px; color:#8c95b3; margin-top:4px;">
+        Registra o resultado REAL (o que você de fato ganhou/perdeu),
+        em vez de deixar o sistema esperar o TP/SL automático bater.
+      </div>
+    </div>
+  `;
+
+}
+
+// AJUSTE-008 (24/09/2026): fecha manualmente uma operação ainda
+// PENDENTE com o resultado financeiro REAL que o usuário teve na
+// corretora. Sem isso, uma operação encerrada na mão (ex.: travou
+// lucro parcial na XM em vez de esperar o TP/SL do sistema) ficava
+// ABERTA pra sempre no Firestore até o checker.js automático bater o
+// TP/SL dele - gravando um resultado que nunca aconteceu de verdade e
+// contaminando silenciosamente a taxa de acerto/expectativa que
+// decisionEngine.js usa pra aprovar sinais futuros (ver CLAUDE.md,
+// "Qualidade de sinal da RMI"). `motivoEncerramento: "MANUAL_CORRETORA"`
+// marca esses casos como distintos dos fechamentos automáticos
+// (SL_FINANCEIRO/TP_FINANCEIRO/SL_PIPS/TP_PIPS), pra dar pra filtrar
+// depois numa análise de qualidade.
+window.fecharOperacaoManualmente = async function (docId) {
+
+  const db = firebase.firestore();
+
+  const docRef = db.collection("historico").doc(docId);
+
+  const doc = await docRef.get();
+
+  const sinal = doc.data();
+
+  if (!sinal || sinal.resultado) {
+    alert("Essa operação já está encerrada - não é possível fechar de novo.");
+    carregarHistorico();
+    return;
+  }
+
+  const entrada = prompt(
+    `Fechar ${sinal.par} (${sinal.direcao}) manualmente - informe o resultado ` +
+    `financeiro REAL que você teve na corretora (em USD, use negativo pra ` +
+    `prejuízo). Ex.: 3 ou -4.5`
+  );
+
+  if (entrada === null) return;
+
+  const resultadoFinanceiro = Number(String(entrada).replace(",", "."));
+
+  if (!Number.isFinite(resultadoFinanceiro)) {
+    alert("Valor inválido - informe um número, ex.: 3 ou -4.5");
+    return;
+  }
+
+  const resultado = resultadoFinanceiro >= 0 ? "WIN" : "LOSS";
+
+  const confirmado = confirm(
+    `Confirma o fechamento MANUAL de ${sinal.par} (${sinal.direcao}) com ` +
+    `resultado ${resultado} de $${resultadoFinanceiro.toFixed(2)}? Essa operação ` +
+    `vai contar no histórico/estatísticas com esse resultado - não dá pra ` +
+    `desfazer pela tela depois.`
+  );
+
+  if (!confirmado) return;
+
+  const configRef = db.collection("configuracoes").doc("geral");
+
+  const configDoc = await configRef.get();
+
+  const config = configDoc.exists ? configDoc.data() : {};
+
+  // Mesma fórmula do fechamento automático de js/checker.js - a Conta
+  // Simulada acompanha TODO sinal fechado, sempre, independente do
+  // tipoConta ativo (ver comentário lá). Marcar como "Operação Real"
+  // (soma na Conta Real de verdade) continua sendo um passo separado,
+  // pelo checkbox que já existe (alternarOperacaoReal) - este botão só
+  // registra o resultado em si.
+  const saldoAntes =
+    Number(config.saldoSimulado ?? config.saldoInicial ?? 0);
+
+  const saldoDepois =
+    Number((saldoAntes + resultadoFinanceiro).toFixed(2));
+
+  await docRef.update({
+
+    status: "ENCERRADA",
+
+    resultado,
+
+    resultadoFinanceiro: Number(resultadoFinanceiro.toFixed(2)),
+
+    saldoAntes,
+
+    saldoDepois,
+
+    motivoEncerramento: "MANUAL_CORRETORA",
+
+    fechadoManualmente: true,
+
+    fimOperacao: Date.now()
+
+  });
+
+  await configRef.update({
+
+    saldoSimulado: saldoDepois
+
+  });
+
+  carregarHistorico();
+
+};
+
 function bannerConfiguracaoAjustada(sinal) {
 
   const decisao = sinal.financeiro?.decisaoMercado?.decisao;
@@ -496,6 +624,20 @@ let deteccaoOrientacaoInicializada = false;
 // confiável que ficar comparando window.innerWidth a cada resize).
 // Registrado uma única vez (guard) porque historicoView() é
 // recarregado toda vez que o usuário entra na aba Histórico.
+// AJUSTE-008 (24/09/2026): usuário reportou que, no celular, o evento
+// "change" do matchMedia às vezes não dispara (ou dispara com o
+// viewport ainda no tamanho antigo) na hora exata da rotação - alguns
+// navegadores móveis são conhecidos por isso, principalmente no
+// primeiro rebind depois de trocar de aba do app. Reforçado com dois
+// fallbacks redundantes, sem tirar o mecanismo original: (1) listener
+// de "resize" (dispara em qualquer mudança de viewport, não só
+// orientação "de verdade" - por isso relê mq.matches em vez de supor)
+// e (2) um pequeno debounce (150ms) antes de reler mq.matches, pra dar
+// tempo do navegador terminar de recalcular as dimensões depois da
+// rotação física (leitura em cima da hora pode pegar o valor antigo).
+// Os três caminhos (change nativo, resize, e o botão manual já
+// existente) convergem pro mesmo `aplicarOrientacaoAtual()`, que só
+// re-renderiza se o valor realmente mudou - não recarrega à toa.
 function inicializarDeteccaoOrientacao() {
   if (deteccaoOrientacaoInicializada) return;
   deteccaoOrientacaoInicializada = true;
@@ -505,10 +647,27 @@ function inicializarDeteccaoOrientacao() {
   const mq = window.matchMedia("(orientation: landscape)");
   modoTabela = mq.matches;
 
-  mq.addEventListener("change", () => {
-    modoTabela = mq.matches;
+  let debounceId = null;
+
+  function aplicarOrientacaoAtual() {
+    const novoValor = mq.matches;
+    if (novoValor === modoTabela) return;
+    modoTabela = novoValor;
     carregarHistorico();
-  });
+  }
+
+  function aplicarComDebounce() {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(aplicarOrientacaoAtual, 150);
+  }
+
+  mq.addEventListener("change", aplicarComDebounce);
+
+  window.addEventListener("resize", aplicarComDebounce);
+
+  if (window.screen && window.screen.orientation && window.screen.orientation.addEventListener) {
+    window.screen.orientation.addEventListener("change", aplicarComDebounce);
+  }
 }
 
 // Botão manual - equivalente no computador de "virar o celular" (não
@@ -799,6 +958,8 @@ ${sinal.precoSaida ?? sinal.precoFechamento ?? "--"}
 </div>
 
 </div>
+
+${botaoFecharManualmente(sinal, docId)}
 
 ${sinal.status === "ENCERRADA" ? renderizarCaminhoPrecos(sinal) : ""}
 
