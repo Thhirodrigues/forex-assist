@@ -694,6 +694,74 @@ function parNaJanelaOperacional(par, context) {
 
 }
 
+// AJUSTE-019 (24/09/2026): espelha parNaJanelaOperacional() ramo a
+// ramo, mas devolve QUAL janela admitiu o par ("asia"/"londres"/
+// "novaYork"/"personalizado") em vez de só true/false - pra poder
+// gravar no sinal salvo qual foi o critério real de horário usado
+// (pedido do usuário, depois de uma dúvida real sobre um sinal de
+// USD/JPY às 03:55 com o modo Personalizado selecionado - a resposta
+// é a janela asiática incondicional do AJUSTE-005/006, não um bug).
+// Só é chamada DEPOIS de parNaJanelaOperacional() já ter confirmado
+// true, então null aqui nunca deveria acontecer em uso real - a
+// paridade entre as duas é validada em ferramentas/scratchpad.
+function identificarOrigemJanela(par, context) {
+
+    const sessoesAtivas = context.configuracao.sessoesAtivas || [];
+    const modoSessoes = sessoesAtivas.length > 0;
+
+    const elegivelAsia = parElegivelJanelaAsia(par);
+
+    if (elegivelAsia) {
+
+        const asiaHabilitada =
+            !modoSessoes || sessoesAtivas.includes("asia");
+
+        if (asiaHabilitada && dentroJanelaAsiaBruta()) {
+            return "asia";
+        }
+
+        const { diaSemana } = obterAgoraBrasil();
+
+        if (diaSemana >= 1 && diaSemana <= 4) {
+            return null;
+        }
+
+    }
+
+    if (!modoSessoes) {
+        return dentroJanelaPadrao(context) ? "personalizado" : null;
+    }
+
+    if (
+        sessoesAtivas.includes("londres") &&
+        parElegivelSessaoLondres(par) &&
+        dentroDeJanela(
+            SESSAO_LONDRES.horarioInicio,
+            SESSAO_LONDRES.horarioFim,
+            context.configuracao.janelaSeguranca,
+            context
+        )
+    ) {
+        return "londres";
+    }
+
+    if (
+        sessoesAtivas.includes("novaYork") &&
+        parElegivelSessaoNovaYork(par) &&
+        dentroDeJanela(
+            SESSAO_NOVA_YORK.horarioInicio,
+            SESSAO_NOVA_YORK.horarioFim,
+            context.configuracao.janelaSeguranca,
+            context
+        )
+    ) {
+        return "novaYork";
+    }
+
+    return null;
+
+}
+
 // ===================================================
 // VALIDAÇÕES GERAIS
 // ===================================================
@@ -903,6 +971,11 @@ async function executarAnalisePar(context,par) {
             estatisticas
         );
 
+        // AJUSTE-019: registra qual janela admitiu este par agora,
+        // pra persistir no sinal (ver pairAnalyzer.js `janelaOrigem`).
+        const janelaOrigem =
+            identificarOrigemJanela(par, context);
+
         const resultado =
             await analisarPar({
 
@@ -914,6 +987,8 @@ async function executarAnalisePar(context,par) {
                     context.configuracao,
 
                 estatisticas,
+
+                janelaOrigem,
 
                 getCandles,
 
@@ -1436,7 +1511,8 @@ module.exports = {
     parElegivelJanelaAsia,
     parElegivelSessaoLondres,
     parElegivelSessaoNovaYork,
-    parNaJanelaOperacional
+    parNaJanelaOperacional,
+    identificarOrigemJanela
 
 };
 

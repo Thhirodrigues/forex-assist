@@ -218,6 +218,13 @@ db,
 par,
 configuracao,
 estatisticas,
+
+// AJUSTE-019 (24/09/2026): qual janela (scripts/scanner.js
+// identificarOrigemJanela) admitiu este par agora - "asia"/
+// "londres"/"novaYork"/"personalizado". Opcional/null em chamadas
+// diretas (ex.: testes) que não passam por scanner.js.
+janelaOrigem,
+
 getCandles,
 ema,
 rsi,
@@ -631,6 +638,16 @@ const analise = {
     smcDetectado: qualidade.smcDetectado,
 
     smcScore: qualidade.smcScore,
+
+    // AJUSTE-019 (24/09/2026): qual janela de horário admitiu este
+    // par nesta análise - "asia"/"londres"/"novaYork"/"personalizado"
+    // (null se chamado fora do fluxo real do scanner). Motivado por
+    // dúvida real do usuário sobre um sinal de par JPY fora do
+    // horário configurado em "Personalizado" - a janela asiática é
+    // incondicional nesse modo (AJUSTE-005/006), não um bug; este
+    // campo deixa isso rastreável sinal a sinal, sem precisar
+    // reconstruir o raciocínio.
+    janelaOrigem: janelaOrigem || null,
 
     estatisticas,
 

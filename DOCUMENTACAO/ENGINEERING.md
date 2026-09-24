@@ -10537,4 +10537,46 @@ até a Ásia abrir de novo) - tradeoff deliberado, documentado nos
 comentários de `parNaJanelaOperacional()`, baixo risco (conta roda em
 SIMULADA hoje) e não mencionado explicitamente pelo usuário no escopo
 pedido.
+
+AJUSTE-019b (mesmo dia, follow-up): campo `janelaOrigem` no sinal
+salvo, mostrando QUAL janela admitiu o par ("asia"/"londres"/
+"novaYork"/"personalizado")
+
+Origem: usuário, olhando o Histórico, viu um sinal de USD/JPY às
+03:55 com o modo Personalizado selecionado na Config (07:30-18:00) e
+perguntou por quê, esperando que "agora o horário deve seguir a
+seleção". Resposta: não é bug, é o comportamento incondicional da
+janela asiática (AJUSTE-005/006) preservado de propósito no modo
+Personalizado (ver nota acima) - mas não havia como o usuário
+confirmar isso olhando só o sinal salvo, precisava confiar na
+explicação. Pedido explícito do usuário: "devemos ter um lugar, no
+sinal, pra marcar em qual modo o sinal foi gerado".
+
+Implementação: `scripts/scanner.js` ganhou
+`identificarOrigemJanela(par, context)`, espelhando
+`parNaJanelaOperacional()` ramo a ramo mas devolvendo qual janela
+admitiu (string) em vez de só true/false. Chamada em
+`executarAnalisePar()` logo depois da checagem normal, resultado
+passado como `janelaOrigem` pra `analisarPar()`
+(`scripts/pairAnalyzer.js`), que persiste no objeto `analise`/
+`operacao` salvo. `js/historico.js` ganhou `bannerJanelaOrigem()`,
+mostrado no detalhe do sinal (mesmo estilo do banner de SMC/ajuste de
+config) com um texto explicativo por origem - a Ásia deixa claro que
+é incondicional, independente do modo selecionado.
+
+Validado: `node -c` nos 3 arquivos. Script isolado no scratchpad
+(`validate-ajuste019-origem-janela.js`), requerendo `scripts/scanner.js`
+real - grade de 5.040 combinações (7 dias × 9 horários × 8
+combinações de sessão × 10 pares), confirmando que
+`identificarOrigemJanela()` devolve uma origem não-nula SE E SOMENTE
+SE `parNaJanelaOperacional()` devolve `true`, sem nenhuma divergência.
+
+Nota separada, achado ao investigar o print do usuário: os prints
+mostravam a tela de Config com radio buttons e o rótulo antigo
+"Mercado Asiático (21:00–23:59)" - isso só é possível vendo uma cópia
+em cache de `js/config.js` de ANTES do AJUSTE-018 (que já trocou esse
+rótulo hoje) e do AJUSTE-019 (que trocou radio por checkbox). Sinal de
+cache desatualizado (Service Worker `sw.js` ou HTTP cache do
+navegador) - não confirmado como causa raiz (sem acesso ao dispositivo
+do usuário), comunicado a ele pra confirmar com um refresh forçado.
 --------

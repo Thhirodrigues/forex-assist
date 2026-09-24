@@ -813,6 +813,30 @@ function bannerConfiguracaoAjustada(sinal) {
 
 }
 
+// AJUSTE-019 (24/09/2026): rótulo de qual janela admitiu o par -
+// campo novo (janelaOrigem), sinais salvos antes desta data não têm
+// esse campo (fica null/undefined, banner não aparece).
+const LEGENDA_JANELA_ORIGEM = {
+  asia: "🌏 Sessão Ásia (21:00–04:00) - janela incondicional pra pares JPY/AUD/NZD, independente do modo selecionado na Config",
+  londres: "🇬🇧 Sessão Londres (04:00–13:00)",
+  novaYork: "🇺🇸 Sessão Nova York (10:00–19:00)",
+  personalizado: "⚙️ Horário Personalizado (janela única configurada)"
+};
+
+function bannerJanelaOrigem(sinal) {
+
+  const origem = sinal.janelaOrigem;
+
+  if (!origem || !LEGENDA_JANELA_ORIGEM[origem]) return "";
+
+  return `
+    <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:rgba(140,149,179,.10); border:1px solid rgba(140,149,179,.3); font-size:11px; color:#b8c0d8;">
+      🕐 Gerado em: ${LEGENDA_JANELA_ORIGEM[origem]}
+    </div>
+  `;
+
+}
+
 // "DD/MM/YYYY" -> "MM/YYYY" (chave de ordenação/agrupamento por mês).
 // "Data Indefinida" fica isolada no próprio grupo, no fim da lista.
 function mesChaveDe(dataStr) {
@@ -1056,6 +1080,8 @@ ${miniCard("🏁", "SAÍDA", formatarPrecoPar(sinal.precoSaida ?? sinal.precoFec
 </div>
 
 ${bannerSMC(sinal)}
+
+${bannerJanelaOrigem(sinal)}
 
 ${botaoFecharManualmente(sinal, docId)}
 
