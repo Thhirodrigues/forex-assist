@@ -5,12 +5,18 @@
 ChatGPT maio–setembro/2026, cruzada com o código real lido em 17/09).
 
 **Status:** material de referência — critérios e ideias para o **Manual**
-(a aba ainda não escrita) e para melhorias futuras. **Não é escopo da
-rodada de correções em andamento** (MARCO ZERO / MUD-01 a MUD-05 e
-AJUSTE-002 — ver `ENGINEERING.md`). Foi arquivado aqui especificamente
+e para melhorias futuras. Foi arquivado aqui especificamente
 para não se perder na conversa, por pedido explícito do usuário
 (17/09/2026): a implementação de qualquer item daqui espera a conclusão
 das correções em andamento.
+
+**Atualização (25/09/2026):** o Manual (seção 2 abaixo) foi escrito -
+ver AJUSTE-024 em `ENGINEERING.md` e `js/manual.js`. Cobre a Camada 1
+(glossário) e os dois itens prioritários da Camada 2/seção 2.3
+(estratégias do próprio app + interpretação de sinal), conferidos
+contra o código real na data. Ainda não cobre todo o escopo do DT-025
+(calendário econômico, correlação entre pares, imagens de candle) -
+esses continuam como ideias registradas, seção 3 abaixo.
 
 ---
 

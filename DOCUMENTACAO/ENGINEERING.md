@@ -10857,3 +10857,61 @@ sem mock) confirmando que `{status:"SEM_DADOS"}` agora aplica -5,
 existe mais no mundo real), e `{status:"RUIM"}` continua aplicando -10
 (não regressivo).
 --------
+AJUSTE-024 — Manual reescrito como Base de Conhecimento completa
+(js/manual.js)
+
+Origem: usuário pediu um Manual "bem completo, o usuário não precisa
+ir na internet, temos aqui e são termos que a gente usa também" -
+seguindo o escopo do DT-025 (`DOCUMENTACAO/BACKLOG-E-VISAO.md` seção
+2.2), priorizando primeiro os dois itens que o próprio documento
+aponta como os únicos que "ninguém além deste projeto pode escrever":
+o que o score/perfil significa, e como ler um sinal salvo.
+
+Processo: antes de escrever qualquer explicação de como o RMI decide,
+reli `scripts/marketAnalyzer.js`, `scoreEngine.js`, `decisionEngine.js`,
+`moneyManager.js`, `historyAnalyzer.js`, `statisticsEngine.js`,
+`riskManager.js` e `js/checker.js` inteiros (parte via subagente
+Explore, parte lido diretamente e conferido - per CLAUDE.md, nunca
+documentar de memória) - esse processo encontrou e corrigiu o
+AJUSTE-023 (penalidade histórica morta). Todo número/limiar/regra do
+Manual (pesos de EMA/RSI/ADX, faixas de qualidade, score mínimo por
+perfil, risco por operação/diário, perdas consecutivas, RR mínimo,
+fórmula de expectativa, motivos de encerramento, sessões de horário)
+foi tirado direto do código real nesta data, não de memória da
+conversa nem do documento DT-025 original (que é mais antigo).
+
+Estrutura (7 seções, `js/manual.js` dividido em uma função por
+seção): (1) Como o RMI decide um sinal - pipeline completo, as 5 EMAs
+e a tabela de tendência, RSI/ADX com pontuação, composição do score,
+faixas de qualidade, SMC/Order Blocks (com a limitação conhecida de
+zonaLow/zonaHigh não persistidos, registrada explicitamente),
+multi-timeframe, tabela comparativa dos 3 perfis, veto de RSI extremo,
+cooldown e circuit breaker diário, janelas de sessão; (2) Como ler um
+sinal salvo - cada campo do Histórico/Resultados explicado, incluindo
+a tabela de `motivoEncerramento` (TP_FINANCEIRO/SL_FINANCEIRO/
+TP_PIPS/SL_PIPS/MANUAL_CORRETORA) e o desempate pessimista quando TP e
+SL batem no mesmo ciclo; (3) Gestão de risco e dinheiro - lote, RR,
+fórmula de expectativa com exemplo numérico, pip/pipette; (4)
+Glossário de indicadores (EMA/RSI/ADX/ATR/RR/Spread); (5) Estrutura de
+mercado (sessões, pares/cruzados, candlestick, S/R, pullback/breakout);
+(6) Psicologia do trader (curta, ligada a comportamentos reais que o
+app já reforça - circuit breaker, avisos vs. bloqueios, Conservador
+gerando poucos sinais de propósito); (7) Notificações (conteúdo
+original preservado, sem mudança).
+
+Validado: `node -c`. Conferência manual de contas (ex.: exemplo de
+expectativa 60%/TP$5/SL$5 = +$1,00, recalculado à mão contra a
+fórmula real). Uma imprecisão encontrada e corrigida antes de
+publicar: a explicação inicial do multiplicador de confiança dizia
+"menos de 50 operações reduz o peso", mas o limiar real pra peso cheio
+(confidenceMultiplier=1.0) é ~40 operações (confiabilidade =
+min(100, round(operacoes/50*100)) ≥80 - matematicamente equivale a
+operacoes≥40, não 50) - corrigido antes do commit.
+
+Pendente, per CLAUDE.md: doc vivo, não definitivo - precisa ser
+reconferido contra o código se o pipeline (marketAnalyzer/scoreEngine/
+decisionEngine/moneyManager) mudar de novo, mesma disciplina do
+ENGINEERING.md. Sem browser real neste ambiente, não foi possível
+verificar visualmente o resultado renderizado (tabelas HTML, quebras
+de linha) - conferido só por leitura do HTML gerado.
+--------
