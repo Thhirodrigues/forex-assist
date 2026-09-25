@@ -106,7 +106,14 @@ function aplicarPenalidadeHistorico(
         penalidade += ENGINE_WEIGHTS.PENALIDADE_RUIM;
     }
 
-    if (historico.status === "SEM_BASE") {
+    // AJUSTE-023 (25/09/2026): achado escrevendo o Manual (conferindo
+    // contra o código real, per CLAUDE.md) - historyAnalyzer.js's
+    // analisarHistorico() (quem produz o `historico.status` real
+    // recebido aqui) NUNCA retorna "SEM_BASE" - o estado "sem
+    // estatística nenhuma" se chama "SEM_DADOS" lá (só no early-return
+    // `if (!estatisticas)`). Essa penalidade de -5 nunca disparava
+    // desde que foi escrita - corrigido pro nome real.
+    if (historico.status === "SEM_DADOS") {
         penalidade += ENGINE_WEIGHTS.PENALIDADE_SEM_BASE;
     }
 

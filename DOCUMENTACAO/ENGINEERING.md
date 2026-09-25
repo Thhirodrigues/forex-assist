@@ -10827,3 +10827,33 @@ sucesso (ver log do workflow disparado) e que o Dashboard carrega
 visivelmente mais rápido depois - sem browser real neste ambiente,
 não dá pra confirmar a percepção de velocidade a partir daqui.
 --------
+AJUSTE-023 — corrige penalidade histórica "SEM_BASE" morta no
+scoreEngine.js (achado ao pesquisar pra escrever o Manual)
+
+Origem: usuário pediu um Manual completo, explicando de verdade como
+o RMI decide - pra escrever isso com precisão (não confiar em memória,
+conferir contra o código, per CLAUDE.md), reli scripts/scoreEngine.js,
+scripts/historyAnalyzer.js e scripts/statisticsEngine.js a fundo.
+Achado: `aplicarPenalidadeHistorico()` (scoreEngine.js) testa
+`historico.status === "SEM_BASE"` pra aplicar -5 no score, mas
+`historyAnalyzer.js`'s `analisarHistorico()` (quem realmente produz
+esse `historico.status`, consumido por scoreEngine.js) NUNCA retorna
+essa string - o estado real "sem estatística nenhuma pro par" se
+chama `"SEM_DADOS"` (só no `if (!estatisticas)` early-return da
+função). Confirmado com `grep` que `"SEM_BASE"` não existe em nenhum
+lugar de `historyAnalyzer.js`. Essa penalidade nunca disparou desde
+que foi escrita.
+
+Corrigido: a comparação passa a checar `"SEM_DADOS"` (o nome real).
+Impacto: baixo (±5 pontos num score 0-100, só no caso raro de análise
+sem NENHUMA estatística histórica do par ainda) mas real - sinais
+gerados sem histórico nenhum passam a receber a penalidade que sempre
+deveria ter existido, tornando o score ligeiramente mais conservador
+nesse cenário específico.
+
+Validado: `node -c`; teste isolado direto (`require` real do módulo,
+sem mock) confirmando que `{status:"SEM_DADOS"}` agora aplica -5,
+`{status:"SEM_BASE"}` (nome antigo) não aplica nada (0, esperado - não
+existe mais no mundo real), e `{status:"RUIM"}` continua aplicando -10
+(não regressivo).
+--------
