@@ -10915,3 +10915,30 @@ ENGINEERING.md. Sem browser real neste ambiente, não foi possível
 verificar visualmente o resultado renderizado (tabelas HTML, quebras
 de linha) - conferido só por leitura do HTML gerado.
 --------
+AJUSTE-024b (mesmo dia, follow-up) - padrões de candlestick no Manual
+(js/manual.js)
+
+Origem: usuário notou a falta real (a seção "Candlestick" do AJUSTE-024
+só explicava a anatomia de UM candle, não os padrões de múltiplos
+candles) e pediu os "18 principais" com uma referência específica (URL
+da XP Investimentos). Tentativa de `WebFetch` naquela URL bloqueada
+pelo proxy de rede deste ambiente (`conteudos.xpi.com.br` fora da
+lista liberada) - comunicado ao usuário. Escrito, em vez disso, o
+conjunto clássico de padrões de candlestick (conhecimento consolidado
+de análise técnica, não exclusivo de nenhuma fonte) - 19 padrões ao
+todo (8 de reversão de alta, 8 de reversão de baixa, 3 de
+indecisão/continuação, com variantes do Doji mencionadas à parte).
+
+Implementação: 3 tabelas novas dentro de `secaoEstruturaMercado()`
+(reversão de alta / reversão de baixa / indecisão-continuação), cada
+padrão com nome em português e inglês e a descrição de como reconhecer
+visualmente. Nota explícita adicionada: isso é conhecimento geral de
+mercado, não algo que o RMI detecta ou usa na decisão automática hoje
+(o app usa EMA/RSI/ADX/ATR + SMC) - pra não sugerir, por engano, que o
+scanner reconhece esses padrões.
+
+Validado: `node -c`. Conteúdo é educacional/estável (definições
+clássicas de candlestick não mudam com o pipeline do app) - risco de
+ficar desatualizado é baixo, diferente das outras seções do Manual que
+dependem do código real.
+--------
