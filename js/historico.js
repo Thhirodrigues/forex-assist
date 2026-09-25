@@ -545,13 +545,25 @@ window.confirmarFechamentoManual = async function (docId) {
 
   await docRef.update(atualizacao);
 
+  // AJUSTE-022 (25/09/2026): mesma contagem incremental do fechamento
+  // automático (js/checker.js) - fechamento manual também precisa
+  // manter winsTotal/lossesTotal em dia, senão o Dashboard ficaria
+  // sistematicamente errado pra toda operação fechada manualmente.
   await configRef.update({
 
-    saldoSimulado: saldoDepois
+    saldoSimulado: saldoDepois,
+
+    ...(resultado === "WIN"
+      ? { winsTotal: firebase.firestore.FieldValue.increment(1) }
+      : {}),
+
+    ...(resultado === "LOSS"
+      ? { lossesTotal: firebase.firestore.FieldValue.increment(1) }
+      : {})
 
   });
 
-  carregarHistorico();
+  atualizarTelaAposOperacaoReal();
 
 };
 

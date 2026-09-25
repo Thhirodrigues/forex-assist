@@ -1,0 +1,36 @@
+name: Backfill contadores WIN/LOSS (configuracoes/geral)
+
+# Ferramenta administrativa avulsa, NÃO faz parte do pipeline de
+# análise/decisão do produto. Só dispara manualmente (workflow_dispatch),
+# nunca por cron. Roda ferramentas/backfill-contadores-resultado.js, que
+# inicializa configuracoes/geral.winsTotal/lossesTotal com a contagem
+# real já acumulada em `historico` (AJUSTE-022, 25/09/2026) - ação
+# administrativa única, não precisa rodar de novo depois (os contadores
+# se mantêm sozinhos via incremento em cada fechamento).
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Backfill contadores
+        run: |
+          node ferramentas/backfill-contadores-resultado.js

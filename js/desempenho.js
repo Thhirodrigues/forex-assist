@@ -142,6 +142,21 @@ async function obterDesempenhoDoDia(dataStr) {
 
 }
 
+// AJUSTE-022 (25/09/2026): causa raiz real da lentidão do Dashboard
+// que o usuário reportou (motivou a criação da aba Resultados,
+// AJUSTE-021) - contarPorResultado() escaneava/contava a coleção
+// historico inteira, DUAS VEZES (WIN e LOSS), TODA VEZ que o Dashboard
+// renderizava (a cada troca de aba). configuracoes/geral.winsTotal/
+// lossesTotal (mantidos incrementalmente por js/checker.js e
+// js/historico.js a cada fechamento, ver AJUSTE-022 lá) substituem
+// isso por uma leitura O(1) - o mesmo documento configSnap que esta
+// função já buscava de qualquer forma, sem nenhuma consulta extra.
+//
+// Fallback pro método antigo (contarPorResultado) só se os campos
+// ainda não existirem no documento (config novo, ou backfill único -
+// ferramentas/backfill-contadores-resultado.js - ainda não rodado)
+// - garante que o número mostrado nunca fica errado, só mais lento
+// até o backfill rodar uma vez.
 async function obterResumoGeral() {
 
     const configSnap =
@@ -149,6 +164,25 @@ async function obterResumoGeral() {
 
     const config =
         configSnap.exists ? configSnap.data() : {};
+
+    const temContadorIncremental =
+        typeof config.winsTotal === "number" &&
+        typeof config.lossesTotal === "number";
+
+    if (temContadorIncremental) {
+
+        return {
+            saldoReal: Number(config.saldoReal || 0),
+            saldoSimulado: Number(config.saldoSimulado ?? config.saldoInicial ?? 0),
+            winsTotal: config.winsTotal,
+            winsAproximado: false,
+            lossesTotal: config.lossesTotal,
+            lossesAproximado: false,
+            totalSinais: config.winsTotal + config.lossesTotal,
+            totalAproximado: false
+        };
+
+    }
 
     const [wins, losses] = await Promise.all([
         contarPorResultado("WIN"),

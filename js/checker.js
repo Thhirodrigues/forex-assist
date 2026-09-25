@@ -594,9 +594,28 @@ const {
 
         });
 
+        // AJUSTE-022 (25/09/2026): contador incremental de WIN/LOSS -
+        // configuracoes/geral.winsTotal/lossesTotal, atualizado na MESMA
+        // transação do fechamento (nunca fica dessincronizado do
+        // resultado real gravado acima). Objetivo: js/desempenho.js
+        // (Dashboard) passa a LER esses dois campos direto, em vez de
+        // escanear/contar toda a coleção historico a cada render (causa
+        // raiz real da lentidão reportada pelo usuário - ver
+        // ENGINEERING.md). Precisa de um backfill único pro valor
+        // acumulado ANTES desta mudança (ferramentas/backfill-
+        // contadores-resultado.js) - sem isso, o contador começaria do
+        // zero em vez do total real já existente.
         transaction.update(configuracaoRef, {
 
-            saldoSimulado: saldoDepois
+            saldoSimulado: saldoDepois,
+
+            ...(resultado === "WIN"
+                ? { winsTotal: admin.firestore.FieldValue.increment(1) }
+                : {}),
+
+            ...(resultado === "LOSS"
+                ? { lossesTotal: admin.firestore.FieldValue.increment(1) }
+                : {})
 
         });
 

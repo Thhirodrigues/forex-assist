@@ -10773,3 +10773,57 @@ lentidão do Dashboard (contador incremental, ver acima); esclarecer
 com o usuário o que "lotes" deveria significar, caso a interpretação
 registrada acima não seja a pretendida.
 --------
+AJUSTE-022 — Dashboard: contador incremental de WIN/LOSS em vez de
+escanear/contar `historico` a cada render (js/checker.js, js/historico.js,
+js/desempenho.js, ferramentas/backfill-contadores-resultado.js NOVO)
+
+Origem: causa raiz da lentidão do Dashboard, identificada durante a
+investigação do AJUSTE-021 (usuário citou "mais de 500 pares" -
+exatamente `LIMITE_CONTAGEM_FALLBACK` em js/desempenho.js). Usuário
+confirmou explicitamente querer a correção depois de ver a explicação.
+
+Implementação: `configuracoes/geral` ganha dois campos novos,
+`winsTotal`/`lossesTotal`, mantidos INCREMENTALMENTE (nunca
+recalculados do zero) nos dois únicos lugares que fecham uma operação
+com resultado:
+1. `js/checker.js` (fechamento automático, transação já existente) -
+   `admin.firestore.FieldValue.increment(1)` no campo certo (WIN ou
+   LOSS), na MESMA transação que já grava `status:"ENCERRADA"` -
+   atômico, nunca dessincroniza do resultado real.
+2. `js/historico.js` `confirmarFechamentoManual()` (fechamento
+   manual) - mesma ideia, `firebase.firestore.FieldValue.increment(1)`
+   (SDK cliente, mesma API). Essa função também passou a chamar
+   `atualizarTelaAposOperacaoReal()` (já existente desde o AJUSTE-021)
+   em vez de `carregarHistorico()` direto, pra continuar funcionando
+   certo se disparada a partir da aba Resultados.
+
+`js/desempenho.js` `obterResumoGeral()` reescrita: se
+`config.winsTotal`/`lossesTotal` existem (números), usa direto - ZERO
+consulta extra além do `configSnap` que a função já buscava de
+qualquer forma (antes: até 2 buscas de até 500 documentos cada, a
+CADA render do Dashboard). Se não existem ainda (config antigo, ou
+backfill não rodado), cai no método antigo (`contarPorResultado()`,
+inalterado) - nunca mostra um número errado, só mais lento até o
+backfill rodar.
+
+`ferramentas/backfill-contadores-resultado.js` (NOVO, mesmo padrão de
+`ativar-smc.js`/`analise-rr-simulacao.js` - `workflow_dispatch` via
+`.github/workflows/backfill-contadores-resultado.yml`, Firebase Admin
+com o secret): conta o WIN/LOSS real já acumulado em `historico` via
+`.count()` (agregação nativa, suportada no SDK Admin) e grava como
+ponto de partida dos contadores - sem isso, winsTotal/lossesTotal
+começariam do zero, contradizendo o histórico real. Ação única;
+disparada nesta sessão via `mcp__github__actions_run_trigger` (sem
+acesso direto ao Firestore daqui, ver CLAUDE.md).
+
+Validado: `node -c` nos 4 arquivos tocados. Lógica de fallback
+conferida por leitura (não há como rodar contra o Firestore real
+nesta sessão) - `temContadorIncremental` checa `typeof === "number"`
+nos dois campos, não só truthy (0 é um total real válido, não pode
+cair no fallback por engano).
+
+Pendente: confirmar no GitHub Actions que o backfill rodou com
+sucesso (ver log do workflow disparado) e que o Dashboard carrega
+visivelmente mais rápido depois - sem browser real neste ambiente,
+não dá pra confirmar a percepção de velocidade a partir daqui.
+--------
