@@ -11439,4 +11439,61 @@ disciplina de sempre.
 
 Validado: `node -c` no script; YAML do workflow validado com
 `python3 -c "import yaml; yaml.safe_load(...)"`.
+
+**Resultado real (26/09/2026, GitHub Actions, run #1, job
+`diagnostico`, conclusion `success`):**
+
+```
+Total: 412 | 161W 251L | Taxa GLOBAL: 39.1%
+
+Por par: GBP/USD 34.7% (n=72), USD/JPY 37.9% (n=58), EUR/USD 42.1%
+(n=57), USD/CHF 42.1% (n=57), AUD/USD 44.4% (n=54), USD/CAD 39.6%
+(n=53), NZD/USD 38.9% (n=36), EUR/JPY 28.0% (n=25) - TODOS abaixo
+de 50%, nenhum par positivo.
+
+Por faixa de score: 35-44 → 41.3% (n=75) | 45-54 → 42.1% (n=76) |
+55-64 → 39.4% (n=33) | 65-74 → 23.5% (n=17) | 75+ → 38.4% (n=211,
+a maior faixa) - SEM tendência de subir com o score.
+
+Score médio WIN: 73.2 (n=161) | Score médio LOSS: 74.5 (n=251) -
+praticamente igual, LOSS levemente MAIOR que WIN.
+
+Por semana: 10-16/09 → 30,4% (n=92) | 17-23/09 → 44,7% (n=85) |
+23-24/09 → 46,4% (n=28) - melhora recente, ainda abaixo de 50%,
+amostra pequena nas últimas semanas.
+```
+
+**Leitura honesta, sem suavizar**: a preocupação do usuário está
+confirmada por dado real, não é impressão - taxa de acerto global
+39,1%, todo par abaixo de 50%, e com RR fixo 1:1 (TP=SL=$5) isso
+significa expectativa matemática negativa na maior parte do histórico
+(bate com o achado do AJUSTE-029). O achado mais grave não é a taxa em
+si - é que **o score não discrimina resultado**: a faixa de score mais
+alta (75+, a maioria dos dados) tem taxa de acerto (38,4%) igual ou
+pior que a faixa mais baixa (35-44, 41,3%), e o score médio de quem
+PERDEU (74,5) é levemente MAIOR que o de quem GANHOU (73,2). Isso não
+é "precisa de mais confirmação" - é evidência de que, nesta amostra, o
+motor de pontuação atual não está prevendo resultado nenhum.
+
+Hipótese não confirmada, registrada pra investigação futura: RR fixo
+em dólar ($5/$5), sem spread modelado (`PENDENCIAS-ESTRATEGICAS-RMI.md`,
+item ainda aberto) nem alvo escalado por ATR, num candle de 5min, pode
+estar deixando o resultado dominado por ruído/custo de execução em vez
+de pela qualidade técnica do sinal - mesmo um sinal genuinamente melhor
+pode não conseguir superar spread + ruído com um alvo tão apertado e
+fixo. Não testado aqui, só levantado como explicação plausível.
+
+Nota de cautela sobre os recortes: "(sem perfil)" é metade da amostra
+(207/412) - operações salvas antes do PENTE-FINO-001 (10/09/2026)
+persistir o campo `perfil`, ou seja, de uma fase bem mais antiga/imatura
+do pipeline; BALANCEADO aparece com 72,7% mas `n=11` - amostra pequena
+demais pra significar qualquer coisa, não tratar como perfil "bom".
+A melhora nas últimas duas semanas (30,4%→44,7%→46,4%) é real mas
+ainda abaixo do breakeven e com amostra pequena - direção encorajadora,
+não prova de nada ainda.
+
+Pendente: nenhuma mudança de código sugerida nesta entrada - achado
+muda a prioridade do planejamento estratégico discutido com o usuário
+(spread/exposição/calendário/carry trade), decisão de próximo passo
+em aberto, fica pra conversa direta com o usuário.
 --------
