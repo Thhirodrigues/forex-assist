@@ -11082,3 +11082,61 @@ ainda não aconteceu (só validação isolada com candles sintéticos) -
 primeiros ciclos reais devem ser conferidos manualmente antes de
 confiar cegamente na detecção, per CLAUDE.md.
 --------
+AJUSTE-026 (mesmo dia, follow-up) - desenho de cada candle no Manual,
+antes da definição (js/manual.js)
+
+Origem: ao pedir a implementação de detecção de candlestick
+(AJUSTE-025), usuário também pediu que o Manual mostrasse "o desenho
+exato do candle antes da sua definição" pra cada um dos 18 padrões
+(não só o texto). Uma primeira tentativa de desenhar isso à mão,
+direto em SVG dentro do código, foi interrompida pelo usuário: "seria
+melhor um desenho externo, seus desenhos manuais ficam muito feios".
+Em vez de insistir cegamente, a resposta foi: (a) explicar por que uma
+imagem hospedada de verdade na internet conflitaria com o
+funcionamento offline/self-contained do app e teria o mesmo risco de
+direito autoral que copiar texto de terceiros, e (b) montar um preview
+separado (fora do código de produção) usando o tema visual exato do
+app (cores, fundo escuro) pra o usuário aprovar ANTES de qualquer
+coisa entrar no `js/manual.js` real. Preview publicado como Artifact
+(https://claude.ai/artifact/NsutMNsCmaDHheyAuTJXG7) e enviado ao
+usuário via arquivo - aprovado ("Pode seguir com as imagens tbm") sem
+pedido de mudança.
+
+Implementação: **js/manual.js** ganhou `velaSVG(x, largura, spec)`
+(desenha um corpo+pavio em coordenadas 0-100), `candleIconSVG(specs)`
+(agrupa 1-3 velas lado a lado, pra padrões multi-candle), e
+`DESENHO_CANDLE` - objeto com as coordenadas dos 18 padrões, as
+MESMAS já aprovadas no preview (nenhuma escolha de design nova feita
+na hora da integração). `desenho(chave)` é o helper chamado direto
+dentro das 3 tabelas de padrões (Reversão de Alta/Baixa, Indecisão),
+numa nova coluna "Desenho" à esquerda da coluna "#" - o desenho
+aparece ANTES do nome/definição do padrão em cada linha, exatamente
+como pedido. Verificação automática (scratchpad): as 18 chaves usadas
+via `desenho("...")` nas tabelas batem 1-para-1 com as 18 chaves
+declaradas em `DESENHO_CANDLE` (sem chave usada e não declarada, sem
+chave declarada e não usada).
+
+Além da grade de 18 padrões, a seção "Candlestick (velas) - anatomia"
+(que antes só tinha texto) ganhou `anatomiaCandleSVG()` - um candle de
+alta único, anotado com linhas de chamada pra Máxima, Sombra superior,
+Corpo, Sombra inferior, Mínima, Fechamento e Abertura - mesmo painel
+de anatomia mostrado e aprovado no preview, inserido antes do parágrafo
+explicativo (mesmo princípio de "desenho antes da definição").
+
+Validado: `node -c js/manual.js` depois de cada edição (bloco de
+funções novo, e depois cada uma das 3 tabelas reescritas). Script
+node isolado no scratchpad conferindo que as chaves usadas em
+`desenho("...")` e as chaves declaradas em `DESENHO_CANDLE` são
+exatamente o mesmo conjunto de 18. Não validado (e não dá pra validar
+neste ambiente): renderização visual real no navegador - o preview
+aprovado usa exatamente as mesmas coordenadas SVG portadas aqui, mas
+o usuário ainda precisa abrir a aba Manual de verdade pra confirmar
+que ficou como esperado num navegador real (sem emulador disponível
+neste ambiente, mesma limitação de sempre).
+
+Pendente: nenhuma mudança de escopo pendente aqui - isso fecha o
+pedido original do AJUSTE-024/025 sobre desenhos no Manual. Fase 2 da
+detecção de candlestick (Harami, Três Corvos, Estrela Manhã/Tarde,
+Chute/Kicker) continua registrada como pendência no AJUSTE-025, não
+nesta entrada.
+--------

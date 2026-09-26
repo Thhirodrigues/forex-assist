@@ -23,6 +23,146 @@
 // estar desatualizado.
 // ======================================================
 
+// ======================================================
+// DESENHOS DE CANDLE (SVG inline)
+// ---------------------------------------------------
+// AJUSTE-026 (26/09/2026): usuário pediu o desenho exato do candle
+// ANTES da definição de cada padrão ("os desenhos manuais ficam
+// muito feios" foi o feedback da 1ª tentativa - refeito com
+// coordenadas cuidadas, aprovado antes via preview num Artifact
+// separado, com a mesma paleta de cor já usada no Histórico
+// (#00d26a/#ff5252/#4fc3f7/#8c95b3), replicado aqui igual). SVG puro,
+// sem imagem externa - funciona offline dentro do PWA, sem depender
+// de nenhum site permanecer no ar.
+// ======================================================
+
+function velaSVG(x, largura, spec) {
+  const cx = x + largura / 2;
+  const bodyH = Math.max(4, spec.bodyBottom - spec.bodyTop);
+  const corCorpo = spec.corpo || spec.cor;
+  return `
+    <line x1="${cx}" y1="${spec.wickTop}" x2="${cx}" y2="${spec.wickBottom}" stroke="${spec.cor}" stroke-width="3" stroke-linecap="round"/>
+    <rect x="${x}" y="${spec.bodyTop}" width="${largura}" height="${bodyH}" rx="2.5" fill="${corCorpo}"/>
+  `;
+}
+
+// specs: array de {bodyTop, bodyBottom, wickTop, wickBottom, cor} em
+// coordenadas 0-100 (y cresce pra baixo) - 1 item por candle do padrão.
+function candleIconSVG(specs) {
+  const largura = 100, altura = 100;
+  const n = specs.length;
+  const larguraVela = n === 1 ? 26 : n === 2 ? 22 : 18;
+  const gap = (largura - n * larguraVela) / (n + 1);
+  const corpos = specs.map((s, i) => velaSVG(gap + i * (larguraVela + gap), larguraVela, s)).join("");
+  const larguraSvg = n === 1 ? 56 : n === 2 ? 74 : 88;
+  return `<svg viewBox="0 0 ${largura} ${altura}" width="${larguraSvg}" height="${Math.round(larguraSvg * altura / largura)}" style="display:block;">${corpos}</svg>`;
+}
+
+const CV_VERDE = "#00d26a", CV_VERMELHO = "#ff5252", CV_CINZA = "#a7b0c8";
+
+// Coordenadas de cada um dos 18 padrões - mesmas usadas no preview
+// aprovado pelo usuário antes desta integração.
+const DESENHO_CANDLE = {
+  MARTELO: [{ bodyTop: 12, bodyBottom: 26, wickTop: 10, wickBottom: 70, cor: CV_VERDE }],
+  MARTELO_INVERTIDO: [{ bodyTop: 62, bodyBottom: 76, wickTop: 14, wickBottom: 78, cor: CV_VERDE }],
+  HARAMI_FUNDO: [
+    { bodyTop: 22, bodyBottom: 48, wickTop: 16, wickBottom: 54, cor: CV_VERMELHO },
+    { bodyTop: 36, bodyBottom: 44, wickTop: 32, wickBottom: 48, cor: CV_VERDE },
+    { bodyTop: 12, bodyBottom: 40, wickTop: 8, wickBottom: 46, cor: CV_VERDE }
+  ],
+  ENGOLFO_ALTA: [
+    { bodyTop: 34, bodyBottom: 46, wickTop: 30, wickBottom: 50, cor: CV_VERMELHO },
+    { bodyTop: 16, bodyBottom: 58, wickTop: 10, wickBottom: 64, cor: CV_VERDE }
+  ],
+  PIERCING_LINE: [
+    { bodyTop: 16, bodyBottom: 50, wickTop: 12, wickBottom: 56, cor: CV_VERMELHO },
+    { bodyTop: 22, bodyBottom: 58, wickTop: 18, wickBottom: 64, cor: CV_VERDE }
+  ],
+  CHUTE_ALTA: [
+    { bodyTop: 48, bodyBottom: 64, wickTop: 44, wickBottom: 70, cor: CV_VERMELHO },
+    { bodyTop: 12, bodyBottom: 28, wickTop: 8, wickBottom: 34, cor: CV_VERDE }
+  ],
+  ENGOLFO_BAIXA: [
+    { bodyTop: 34, bodyBottom: 46, wickTop: 30, wickBottom: 50, cor: CV_VERDE },
+    { bodyTop: 16, bodyBottom: 58, wickTop: 10, wickBottom: 64, cor: CV_VERMELHO }
+  ],
+  ESTRELA_CADENTE: [{ bodyTop: 62, bodyBottom: 76, wickTop: 14, wickBottom: 78, cor: CV_VERMELHO }],
+  NUVEM_NEGRA: [
+    { bodyTop: 22, bodyBottom: 58, wickTop: 18, wickBottom: 64, cor: CV_VERDE },
+    { bodyTop: 16, bodyBottom: 50, wickTop: 12, wickBottom: 56, cor: CV_VERMELHO }
+  ],
+  ENFORCADO: [{ bodyTop: 12, bodyBottom: 26, wickTop: 10, wickBottom: 70, cor: CV_VERMELHO }],
+  TRES_CORVOS: [
+    { bodyTop: 10, bodyBottom: 26, wickTop: 6, wickBottom: 30, cor: CV_VERMELHO },
+    { bodyTop: 24, bodyBottom: 42, wickTop: 20, wickBottom: 46, cor: CV_VERMELHO },
+    { bodyTop: 40, bodyBottom: 60, wickTop: 36, wickBottom: 64, cor: CV_VERMELHO }
+  ],
+  HARAMI_TOPO: [
+    { bodyTop: 22, bodyBottom: 48, wickTop: 16, wickBottom: 54, cor: CV_VERDE },
+    { bodyTop: 36, bodyBottom: 44, wickTop: 32, wickBottom: 48, cor: CV_VERMELHO },
+    { bodyTop: 30, bodyBottom: 60, wickTop: 26, wickBottom: 66, cor: CV_VERMELHO }
+  ],
+  CHUTE_BAIXA: [
+    { bodyTop: 12, bodyBottom: 28, wickTop: 8, wickBottom: 34, cor: CV_VERDE },
+    { bodyTop: 48, bodyBottom: 64, wickTop: 44, wickBottom: 70, cor: CV_VERMELHO }
+  ],
+  DOJI: [{ bodyTop: 43, bodyBottom: 47, wickTop: 14, wickBottom: 76, cor: CV_CINZA, corpo: CV_CINZA }],
+  DIA_LONGO: [
+    { bodyTop: 10, bodyBottom: 52, wickTop: 6, wickBottom: 56, cor: CV_VERDE },
+    { bodyTop: 24, bodyBottom: 66, wickTop: 20, wickBottom: 70, cor: CV_VERMELHO }
+  ],
+  DIA_CURTO: [
+    { bodyTop: 38, bodyBottom: 48, wickTop: 32, wickBottom: 54, cor: CV_VERDE },
+    { bodyTop: 42, bodyBottom: 52, wickTop: 36, wickBottom: 58, cor: CV_VERMELHO }
+  ],
+  MARUBOZU: [{ bodyTop: 14, bodyBottom: 74, wickTop: 14, wickBottom: 74, cor: CV_CINZA, corpo: CV_CINZA }],
+  PIAO: [
+    { bodyTop: 40, bodyBottom: 50, wickTop: 30, wickBottom: 60, cor: CV_CINZA, corpo: CV_CINZA },
+    { bodyTop: 42, bodyBottom: 52, wickTop: 32, wickBottom: 62, cor: CV_CINZA, corpo: CV_CINZA }
+  ]
+};
+
+function desenho(chave) {
+  const spec = DESENHO_CANDLE[chave];
+  return spec ? candleIconSVG(spec) : "";
+}
+
+// Diagrama de anatomia (candle de alta anotado) - mesmo painel mostrado
+// e aprovado no preview antes desta integração, coordenadas fixas
+// (não reaproveita DESENHO_CANDLE porque tem texto/linhas de chamada,
+// não é um ícone de padrão).
+function anatomiaCandleSVG() {
+  const corLinha = "#5a6485";
+  const corTexto = "#c9d1e8";
+  return `
+    <svg viewBox="0 0 320 130" width="100%" style="max-width:320px; display:block; margin:12px auto;">
+      <line x1="90" y1="20" x2="90" y2="110" stroke="${CV_VERDE}" stroke-width="3" stroke-linecap="round"/>
+      <rect x="75" y="45" width="30" height="30" rx="3" fill="${CV_VERDE}"/>
+
+      <line x1="90" y1="20" x2="130" y2="20" stroke="${corLinha}" stroke-width="1" stroke-dasharray="2,2"/>
+      <text x="134" y="24" font-size="11" fill="${corTexto}">Máxima</text>
+
+      <line x1="90" y1="33" x2="130" y2="33" stroke="${corLinha}" stroke-width="1" stroke-dasharray="2,2"/>
+      <text x="134" y="37" font-size="11" fill="${corTexto}">Sombra superior (pavio)</text>
+
+      <line x1="105" y1="60" x2="130" y2="60" stroke="${corLinha}" stroke-width="1" stroke-dasharray="2,2"/>
+      <text x="134" y="64" font-size="11" fill="${corTexto}">Corpo (abertura → fechamento)</text>
+
+      <line x1="90" y1="97" x2="130" y2="97" stroke="${corLinha}" stroke-width="1" stroke-dasharray="2,2"/>
+      <text x="134" y="101" font-size="11" fill="${corTexto}">Sombra inferior (pavio)</text>
+
+      <line x1="90" y1="110" x2="130" y2="110" stroke="${corLinha}" stroke-width="1" stroke-dasharray="2,2"/>
+      <text x="134" y="114" font-size="11" fill="${corTexto}">Mínima</text>
+
+      <line x1="75" y1="45" x2="60" y2="45" stroke="${corLinha}" stroke-width="1" stroke-dasharray="2,2"/>
+      <text x="58" y="48" font-size="11" fill="${corTexto}" text-anchor="end">Fechamento</text>
+
+      <line x1="75" y1="75" x2="60" y2="75" stroke="${corLinha}" stroke-width="1" stroke-dasharray="2,2"/>
+      <text x="58" y="78" font-size="11" fill="${corTexto}" text-anchor="end">Abertura</text>
+    </svg>
+  `;
+}
+
 function manualView() {
   return `
     <div class="card">
@@ -653,6 +793,7 @@ function secaoEstruturaMercado() {
       </p>
 
       <h3>Candlestick (velas) - anatomia</h3>
+      ${anatomiaCandleSVG()}
       <p>
         Cada candle mostra 4 preços de um intervalo de tempo: abertura,
         fechamento, máxima e mínima. O "corpo" é a distância entre
@@ -679,49 +820,52 @@ function secaoEstruturaMercado() {
       <p><b>Padrões de reversão de ALTA (bom momento pra considerar compra):</b></p>
       <table style="width:100%; border-collapse:collapse; font-size:12px; margin:10px 0;">
         <tr style="background:rgba(255,255,255,.06);">
+          <th style="padding:6px; text-align:center;">Desenho</th>
           <th style="padding:6px; text-align:left;">#</th>
           <th style="padding:6px; text-align:left;">Padrão</th>
           <th style="padding:6px; text-align:left;">Corpo / sombras</th>
           <th style="padding:6px; text-align:left;">O que sinaliza</th>
         </tr>
-        <tr><td style="padding:6px;">1</td><td style="padding:6px;">🕯️ <b>Martelo</b> (Hammer)</td><td style="padding:6px;">Corpo pequeno no topo; sombra inferior longa (~2x o corpo); sombra superior mínima/ausente</td><td style="padding:6px;">Vem de queda prolongada - mercado tentando corrigir pra cima</td></tr>
-        <tr><td style="padding:6px;">2</td><td style="padding:6px;">🕯️ <b>Martelo Invertido</b></td><td style="padding:6px;">Corpo pequeno na base; sombra superior longa (~2x o corpo); sombra inferior mínima/ausente</td><td style="padding:6px;">Compradores testando preços mais altos, ainda sem força total - início de transição pra alta</td></tr>
-        <tr><td style="padding:6px;">3</td><td style="padding:6px;"><b>Harami de Fundo</b></td><td style="padding:6px;">3 candles: baixa de corpo médio, depois um pequeno já de alta, depois um grande de alta</td><td style="padding:6px;">Vendedores perdendo força aos poucos até a tendência virar pra cima</td></tr>
-        <tr><td style="padding:6px;">4</td><td style="padding:6px;">🕯️ <b>Engolfo de Alta</b></td><td style="padding:6px;">Candle de baixa pequeno seguido de um de alta bem maior, cujo corpo cobre o anterior inteiro</td><td style="padding:6px;">Mudança forte e repentina de força vendedora pra compradora</td></tr>
-        <tr><td style="padding:6px;">5</td><td style="padding:6px;"><b>Piercing Line</b></td><td style="padding:6px;">Candle de baixa seguido de um de alta que fecha acima da metade do corpo anterior</td><td style="padding:6px;">Recuperação parcial forte o bastante pra indicar reversão de alta</td></tr>
-        <tr><td style="padding:6px;">6</td><td style="padding:6px;"><b>Chute de Alta</b> (Kicker)</td><td style="padding:6px;">Dois candles médios/longos com um gap entre eles: fecha em baixa, abre já em alta</td><td style="padding:6px;">Um fato novo (ex.: notícia) muda o preço bruscamente - reversão forte pra cima</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("MARTELO")}</td><td style="padding:6px;">1</td><td style="padding:6px;">🕯️ <b>Martelo</b> (Hammer)</td><td style="padding:6px;">Corpo pequeno no topo; sombra inferior longa (~2x o corpo); sombra superior mínima/ausente</td><td style="padding:6px;">Vem de queda prolongada - mercado tentando corrigir pra cima</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("MARTELO_INVERTIDO")}</td><td style="padding:6px;">2</td><td style="padding:6px;">🕯️ <b>Martelo Invertido</b></td><td style="padding:6px;">Corpo pequeno na base; sombra superior longa (~2x o corpo); sombra inferior mínima/ausente</td><td style="padding:6px;">Compradores testando preços mais altos, ainda sem força total - início de transição pra alta</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("HARAMI_FUNDO")}</td><td style="padding:6px;">3</td><td style="padding:6px;"><b>Harami de Fundo</b></td><td style="padding:6px;">3 candles: baixa de corpo médio, depois um pequeno já de alta, depois um grande de alta</td><td style="padding:6px;">Vendedores perdendo força aos poucos até a tendência virar pra cima</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("ENGOLFO_ALTA")}</td><td style="padding:6px;">4</td><td style="padding:6px;">🕯️ <b>Engolfo de Alta</b></td><td style="padding:6px;">Candle de baixa pequeno seguido de um de alta bem maior, cujo corpo cobre o anterior inteiro</td><td style="padding:6px;">Mudança forte e repentina de força vendedora pra compradora</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("PIERCING_LINE")}</td><td style="padding:6px;">5</td><td style="padding:6px;"><b>Piercing Line</b></td><td style="padding:6px;">Candle de baixa seguido de um de alta que fecha acima da metade do corpo anterior</td><td style="padding:6px;">Recuperação parcial forte o bastante pra indicar reversão de alta</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("CHUTE_ALTA")}</td><td style="padding:6px;">6</td><td style="padding:6px;"><b>Chute de Alta</b> (Kicker)</td><td style="padding:6px;">Dois candles médios/longos com um gap entre eles: fecha em baixa, abre já em alta</td><td style="padding:6px;">Um fato novo (ex.: notícia) muda o preço bruscamente - reversão forte pra cima</td></tr>
       </table>
 
       <p><b>Padrões de reversão de BAIXA (bom momento pra considerar venda):</b></p>
       <table style="width:100%; border-collapse:collapse; font-size:12px; margin:10px 0;">
         <tr style="background:rgba(255,255,255,.06);">
+          <th style="padding:6px; text-align:center;">Desenho</th>
           <th style="padding:6px; text-align:left;">#</th>
           <th style="padding:6px; text-align:left;">Padrão</th>
           <th style="padding:6px; text-align:left;">Corpo / sombras</th>
           <th style="padding:6px; text-align:left;">O que sinaliza</th>
         </tr>
-        <tr><td style="padding:6px;">7</td><td style="padding:6px;">🕯️ <b>Engolfo de Baixa</b></td><td style="padding:6px;">Candle de alta pequeno seguido de um de baixa bem maior, cujo corpo cobre o anterior inteiro</td><td style="padding:6px;">Mudança forte e repentina de força compradora pra vendedora</td></tr>
-        <tr><td style="padding:6px;">8</td><td style="padding:6px;">🕯️ <b>Estrela Cadente</b> (Shooting Star)</td><td style="padding:6px;">Corpo pequeno na base; sombra superior longa; sombra inferior mínima/ausente</td><td style="padding:6px;">Vem de sequência de altas - mercado entrando em reversão de baixa</td></tr>
-        <tr><td style="padding:6px;">9</td><td style="padding:6px;"><b>Nuvem Negra</b> (Dark Cloud Cover)</td><td style="padding:6px;">Candle de alta seguido de um de baixa que fecha abaixo da metade do corpo anterior</td><td style="padding:6px;">Sinal de reversão de baixa, mas fraco (variação pequena) - vale confirmar com outros fatores antes de vender</td></tr>
-        <tr><td style="padding:6px;">10</td><td style="padding:6px;">🕯️ <b>Enforcado</b> (Hanging Man)</td><td style="padding:6px;">Corpo pequeno; sombra inferior longa (~2x o corpo); sombra superior mínima/ausente - no TOPO de uma alta</td><td style="padding:6px;">Movimento vendedor perdeu força ao longo do candle - possível início de queda</td></tr>
-        <tr><td style="padding:6px;">11</td><td style="padding:6px;"><b>Três Corvos Pretos</b></td><td style="padding:6px;">3 candles de baixa seguidos, cada um fechando abaixo da mínima anterior</td><td style="padding:6px;">Sequência de altas perdendo força - bom momento pra vender</td></tr>
-        <tr><td style="padding:6px;">12</td><td style="padding:6px;"><b>Harami de Topo</b></td><td style="padding:6px;">3 candles: alta de corpo médio, depois um pequeno já de baixa, depois um grande de baixa</td><td style="padding:6px;">Compradores ficando indecisos até a tendência virar pra baixo (espelho do Harami de Fundo)</td></tr>
-        <tr><td style="padding:6px;">13</td><td style="padding:6px;"><b>Chute de Baixa</b> (Kicker)</td><td style="padding:6px;">Dois candles médios/longos com um gap entre eles: fecha em alta, abre já em baixa</td><td style="padding:6px;">Um fato novo muda o preço bruscamente - reversão forte pra baixo</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("ENGOLFO_BAIXA")}</td><td style="padding:6px;">7</td><td style="padding:6px;">🕯️ <b>Engolfo de Baixa</b></td><td style="padding:6px;">Candle de alta pequeno seguido de um de baixa bem maior, cujo corpo cobre o anterior inteiro</td><td style="padding:6px;">Mudança forte e repentina de força compradora pra vendedora</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("ESTRELA_CADENTE")}</td><td style="padding:6px;">8</td><td style="padding:6px;">🕯️ <b>Estrela Cadente</b> (Shooting Star)</td><td style="padding:6px;">Corpo pequeno na base; sombra superior longa; sombra inferior mínima/ausente</td><td style="padding:6px;">Vem de sequência de altas - mercado entrando em reversão de baixa</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("NUVEM_NEGRA")}</td><td style="padding:6px;">9</td><td style="padding:6px;"><b>Nuvem Negra</b> (Dark Cloud Cover)</td><td style="padding:6px;">Candle de alta seguido de um de baixa que fecha abaixo da metade do corpo anterior</td><td style="padding:6px;">Sinal de reversão de baixa, mas fraco (variação pequena) - vale confirmar com outros fatores antes de vender</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("ENFORCADO")}</td><td style="padding:6px;">10</td><td style="padding:6px;">🕯️ <b>Enforcado</b> (Hanging Man)</td><td style="padding:6px;">Corpo pequeno; sombra inferior longa (~2x o corpo); sombra superior mínima/ausente - no TOPO de uma alta</td><td style="padding:6px;">Movimento vendedor perdeu força ao longo do candle - possível início de queda</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("TRES_CORVOS")}</td><td style="padding:6px;">11</td><td style="padding:6px;"><b>Três Corvos Pretos</b></td><td style="padding:6px;">3 candles de baixa seguidos, cada um fechando abaixo da mínima anterior</td><td style="padding:6px;">Sequência de altas perdendo força - bom momento pra vender</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("HARAMI_TOPO")}</td><td style="padding:6px;">12</td><td style="padding:6px;"><b>Harami de Topo</b></td><td style="padding:6px;">3 candles: alta de corpo médio, depois um pequeno já de baixa, depois um grande de baixa</td><td style="padding:6px;">Compradores ficando indecisos até a tendência virar pra baixo (espelho do Harami de Fundo)</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("CHUTE_BAIXA")}</td><td style="padding:6px;">13</td><td style="padding:6px;"><b>Chute de Baixa</b> (Kicker)</td><td style="padding:6px;">Dois candles médios/longos com um gap entre eles: fecha em alta, abre já em baixa</td><td style="padding:6px;">Um fato novo muda o preço bruscamente - reversão forte pra baixo</td></tr>
       </table>
 
       <p><b>Indecisão / dependem de outros fatores pra decidir:</b></p>
       <table style="width:100%; border-collapse:collapse; font-size:12px; margin:10px 0;">
         <tr style="background:rgba(255,255,255,.06);">
+          <th style="padding:6px; text-align:center;">Desenho</th>
           <th style="padding:6px; text-align:left;">#</th>
           <th style="padding:6px; text-align:left;">Padrão</th>
           <th style="padding:6px; text-align:left;">Corpo / sombras</th>
           <th style="padding:6px; text-align:left;">O que sinaliza</th>
         </tr>
-        <tr><td style="padding:6px;">14</td><td style="padding:6px;"><b>Doji</b></td><td style="padding:6px;">Sem corpo (abertura = fechamento, ou quase)</td><td style="padding:6px;">Equilíbrio total entre compradores e vendedores - pode antecipar mudança de tendência</td></tr>
-        <tr><td style="padding:6px;">15</td><td style="padding:6px;"><b>Dia Longo</b></td><td style="padding:6px;">Dois candles seguidos com corpos grandes (não importa a cor)</td><td style="padding:6px;">Variação forte nos dois dias, mas sem indicar se a tendência continua ou reverte - exige mais contexto</td></tr>
-        <tr><td style="padding:6px;">16</td><td style="padding:6px;"><b>Dia Curto</b></td><td style="padding:6px;">Dois candles seguidos com corpos pequenos (não importa a cor)</td><td style="padding:6px;">Indecisão e estabilidade - pode virar reversão ou continuação, exige mais contexto</td></tr>
-        <tr><td style="padding:6px;">17</td><td style="padding:6px;"><b>Marubozu</b></td><td style="padding:6px;">Corpo médio/grande, sem sombra nenhuma (abriu na máxima/mínima e fechou na mínima/máxima)</td><td style="padding:6px;">Convicção forte de um lado só naquele candle, mas sozinho não define reversão nem continuidade</td></tr>
-        <tr><td style="padding:6px;">18</td><td style="padding:6px;"><b>Pião</b> (Spinning Top)</td><td style="padding:6px;">Dois candles pequenos seguidos, pouca variação entre abertura e fechamento</td><td style="padding:6px;">Pouca convicção de ninguém - observe o mercado antes de decidir</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("DOJI")}</td><td style="padding:6px;">14</td><td style="padding:6px;"><b>Doji</b></td><td style="padding:6px;">Sem corpo (abertura = fechamento, ou quase)</td><td style="padding:6px;">Equilíbrio total entre compradores e vendedores - pode antecipar mudança de tendência</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("DIA_LONGO")}</td><td style="padding:6px;">15</td><td style="padding:6px;"><b>Dia Longo</b></td><td style="padding:6px;">Dois candles seguidos com corpos grandes (não importa a cor)</td><td style="padding:6px;">Variação forte nos dois dias, mas sem indicar se a tendência continua ou reverte - exige mais contexto</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("DIA_CURTO")}</td><td style="padding:6px;">16</td><td style="padding:6px;"><b>Dia Curto</b></td><td style="padding:6px;">Dois candles seguidos com corpos pequenos (não importa a cor)</td><td style="padding:6px;">Indecisão e estabilidade - pode virar reversão ou continuação, exige mais contexto</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("MARUBOZU")}</td><td style="padding:6px;">17</td><td style="padding:6px;"><b>Marubozu</b></td><td style="padding:6px;">Corpo médio/grande, sem sombra nenhuma (abriu na máxima/mínima e fechou na mínima/máxima)</td><td style="padding:6px;">Convicção forte de um lado só naquele candle, mas sozinho não define reversão nem continuidade</td></tr>
+        <tr><td style="padding:6px; text-align:center;">${desenho("PIAO")}</td><td style="padding:6px;">18</td><td style="padding:6px;"><b>Pião</b> (Spinning Top)</td><td style="padding:6px;">Dois candles pequenos seguidos, pouca variação entre abertura e fechamento</td><td style="padding:6px;">Pouca convicção de ninguém - observe o mercado antes de decidir</td></tr>
       </table>
 
       <h3>Como analisar candlestick na prática</h3>
