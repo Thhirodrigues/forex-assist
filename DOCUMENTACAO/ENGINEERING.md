@@ -11563,3 +11563,93 @@ pares JPY e não-JPY). Próximo passo proposto: registrar TODA análise
 do ADX/entrada tardia, sem mudar decisão, e comparar com amostra
 maior antes de mexer em peso.
 --------
+AJUSTE-032 (26/09/2026) - registro de TODA análise (aprovada ou
+reprovada) + rótulos contaminados fora da base de aprendizado
+(scripts/analysisLogger.js NOVO, scripts/pairAnalyzer.js,
+scripts/scanner.js, scripts/statisticsEngine.js)
+
+Origem: usuário aprovou o próximo passo proposto no AJUSTE-031
+("registrar toda análise + score sombra") e perguntou se não seria
+melhor descartar todos os resultados antigos. Também lembrou que o
+spread não foi descontado em nenhum resultado e achava que um spread
+fixo médio já tinha sido definido.
+
+Spread (conferido): NUNCA implementado. Zero ocorrências em qualquer
+.js além do texto do Manual. Existe só no planejamento
+(FASE05-RMI-EXPERT lista "spread" como critério e "spread excessivo"
+como veto; DOCUMENTO_MESTRE lista `spread` como campo planejado;
+RECOMENDACOES_ANALISTA_FOREX.md sugeriu constante por par). Todos os
+resultados medidos até hoje, limpos ou não, são brutos.
+
+Parte 1 - descartar os antigos: descartar da APRENDIZAGEM, não do
+banco. `statisticsEngine.js` ganha `rotuloConfiavel()` e filtra, logo
+depois de ler o bruto (cache ou Firestore), toda operação fechada
+antes de 17/09/2026 11:30 UTC (AJUSTE-003) - fica fora de wins/loss/
+taxaAcerto/expectativa E do gate operacoesElegiveis. Nada é apagado:
+reverter é remover o filtro; operação re-rotulada no futuro com
+`rotuloCorrigido: true` volta a contar. Motivo de não apagar: a
+exclusão é irreversível e os dados de ENTRADA (indicadores, score)
+continuam válidos - só o RÓTULO está errado, e ele pode ser refeito
+com candles históricos corretos (fim de semana = orçamento de API
+livre). Dashboard/Resultados continuam mostrando tudo - não alterados
+nesta entrada.
+
+Parte 2 - registro de análises: `analysisLogger.js` (montador puro +
+gravação best-effort injetada pelo scanner, mesmo padrão do push).
+Grava em `analises/{timestamp}_{par}` toda análise que chega na
+decisão, aprovada OU reprovada: perfil configurado/resolvido,
+tentativas da cascata (status/motivo/expectativa por nível), preço de
+entrada, datetime do último candle, todos os componentes do score
+(score, scoreTecnico, ema/rsi/adx/tendenciaScore, multi, historico,
+confidenceMultiplier, smc, candlestick), indicadores brutos (EMAs
+5min/15min, RSI, ADX, ATR), TP/SL em pips e USD, lote, expectativa, e
+`rotuloHipotetico: null` (a preencher depois, offline). Nenhuma
+chamada de API aqui. Log `Análise...........registrada (id)` em cada
+gravação (pra confirmar no log real, não por ausência de erro).
+Custo: até ~8 gravações por ciclo de 5min (~2.300/dia no máximo com
+mercado aberto o dia todo), dentro da cota gratuita de 20 mil
+escritas/dia do Firestore; ~1,5 KB por documento.
+
+"Score sombra": em vez de fixar UMA fórmula alternativa em código
+(novo deploy e dias de espera por hipótese), os componentes brutos
+ficam gravados e qualquer fórmula alternativa é calculada depois,
+offline, sobre o mesmo conjunto. Cuidado registrado: testar muitas
+fórmulas na mesma amostra pequena gera falso positivo - a hipótese
+principal a testar é a do AJUSTE-031 (ADX alto/tendência esticada =
+entrada tardia), definida ANTES de ver o dado novo.
+
+Defeito encontrado no AJUSTE-028 (cascata) e comunicado ao usuário:
+as `estatisticas` são calculadas uma vez com o perfil CONFIGURADO. Com
+CONSERVADOR configurado, a visão dele não tem nenhuma operação própria
+-> taxaAcerto = 0 -> expectativa = -slUSD sempre -> o gate de
+expectativa do BALANCEADO (mínimo 0) bloqueia sempre. Confirmado
+rodando o motor real: score 50, taxaAcerto 0 -> CONSERVADOR reprova
+(score), BALANCEADO reprova (expectativa -3,00), AGRESSIVO aprova. Na
+prática a cascata hoje é "Conservador ou Agressivo" - o Balanceado
+nunca é alcançado. A validação do AJUSTE-028 não pegou isso porque
+usou taxa de acerto sintética de 80%. Raiz do problema (já registrada
+na seção 6 de PENDENCIAS-ESTRATEGICAS-RMI.md): `statisticsEngine.js`
+trata "sem histórico" como "0% de acerto" (`operacoes === 0 ? 0`), o
+que transforma ausência de dado em pior caso possível no gate de
+expectativa. NÃO corrigido nesta entrada - é decisão de produto (o
+que fazer com a expectativa quando não há histórico: pular o gate,
+tratar como neutro, ou manter bloqueando), levada ao usuário.
+
+Validado: `node -c` nos 4 arquivos; script isolado
+(validate-ajuste032.js, módulos reais, só I/O mockado) - 15 cenários:
+filtro de rótulo (antes/depois do corte, fallback pra timestamp,
+rotuloCorrigido, sem data), obterEstatisticasPar com cache falso
+(2W/1L limpas contam, 4 LOSS contaminadas não; operacoesElegiveis 3,
+não 7), montador (aprovada/reprovada, campos ausentes viram null),
+gravação com db quebrado não lança, e integração do analisarPar:
+reprovado registra 1 análise e não salva operação; aprovado registra
+1 e salva normalmente; registrarAnalise lançando erro não muda a
+decisão; sem registrarAnalise injetado funciona igual. Cascata do
+AJUSTE-028 reconferida (10/10).
+
+Pendente: confirmar no primeiro ciclo real (mercado reabre domingo 18h
+BRT) que `Análise...........registrada` aparece no log de cada par
+avaliado; ferramenta de rotulagem hipotética offline (próximo passo);
+decisão sobre expectativa sem histórico (acima); re-rotular os
+antigos com candles corretos (opcional).
+--------

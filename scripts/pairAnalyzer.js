@@ -53,6 +53,12 @@ const {
     detectarPadraoCandlestick
 } = require("./candlePatterns");
 
+// AJUSTE-032 (26/09/2026): só o montador (puro) é requerido direto; a
+// gravação em si (I/O) é injetada pelo scanner, igual salvarOperacao.
+const {
+    montarRegistroAnalise
+} = require("./analysisLogger");
+
 // CACHE-002 (16/09/2026): candles de 15min só mudam a cada 15min, mas
 // o Scanner roda a cada 5min - sem cache, 2 de cada 3 chamadas a essa
 // perna traziam exatamente o mesmo candle da chamada anterior, puro
@@ -247,7 +253,12 @@ salvarOperacao,
 // a admin/db reais. Ausente (ex.: chamadas de teste) ou falha no
 // envio nunca impede o sinal de salvar - push é um efeito colateral
 // best-effort, não parte do critério de aprovação da RMI.
-enviarPushAbertura
+enviarPushAbertura,
+
+// AJUSTE-032 (26/09/2026): opcional, mesmo princípio do push - grava
+// toda análise que chega na decisão (aprovada ou não) em `analises`.
+// Ausente em testes; falha nunca muda a decisão.
+registrarAnalise
 
 }) {
 
@@ -512,6 +523,7 @@ const perfisParaTentar =
 let financeiro;
 let decisao;
 let perfilResolvido;
+const tentativasCascata = [];
 
 for (const perfilTentativa of perfisParaTentar) {
 
@@ -581,6 +593,14 @@ for (const perfilTentativa of perfisParaTentar) {
     decisao = decisaoTentativa;
     perfilResolvido = perfilTentativa;
 
+    tentativasCascata.push({
+        perfil: perfilTentativa,
+        aprovado: decisaoTentativa.aprovado === true,
+        status: decisaoTentativa.status,
+        motivo: decisaoTentativa.motivo,
+        expectativa: financeiroTentativa.expectativa
+    });
+
     if (decisao.aprovado) break;
 
     if (perfisParaTentar.length > 1) {
@@ -590,6 +610,42 @@ for (const perfilTentativa of perfisParaTentar) {
 }
 
 const rebaixadoDaCascata = perfilResolvido !== perfil;
+
+// AJUSTE-032 (26/09/2026): grava esta análise (aprovada OU reprovada)
+// com todos os componentes do score e indicadores brutos - base pro
+// "score sombra" e pra rotulagem hipotética offline (ver
+// scripts/analysisLogger.js). Nunca interfere na decisão acima.
+if (typeof registrarAnalise === "function") {
+
+    try {
+
+        await registrarAnalise(montarRegistroAnalise({
+            par,
+            perfilConfigurado: perfil,
+            perfilResolvido,
+            decisao,
+            tentativasCascata,
+            qualidade,
+            financeiro,
+            indicadores: {
+                ema9, ema21, ema50, ema100, ema200,
+                ema9_15, ema21_15, ema50_15,
+                rsi: rsiAtual,
+                adx: adxAtual,
+                atr: atrAtual
+            },
+            precoEntrada: closes[closes.length - 1],
+            ultimoCandleDatetime: candles[candles.length - 1]?.datetime,
+            janelaOrigem
+        }));
+
+    } catch (erroRegistro) {
+
+        console.log(`Aviso: falha ao registrar análise: ${erroRegistro.message}`);
+
+    }
+
+}
 
 if (!decisao.aprovado) {
 

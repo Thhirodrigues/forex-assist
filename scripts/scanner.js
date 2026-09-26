@@ -53,6 +53,16 @@ const {
 const enviarPushAbertura =
     (operacao) => enviarPushAberturaBase(admin, db, operacao);
 
+// AJUSTE-032 (26/09/2026): mesmo padrão do push acima - pré-vinculado ao
+// db real, injetado no pairAnalyzer.js (que continua sem saber de
+// Firebase). Grava toda análise que chega na decisão em `analises`.
+const {
+    registrarAnalise: registrarAnaliseBase
+} = require("./analysisLogger");
+
+const registrarAnalise =
+    (registro) => registrarAnaliseBase(db, registro);
+
 // ===================================================
 // CONFIGURAÇÃO PADRÃO
 // (Fallback caso Firestore esteja indisponível)
@@ -1006,7 +1016,9 @@ async function executarAnalisePar(context,par) {
 
                 salvarOperacao,
 
-                enviarPushAbertura
+                enviarPushAbertura,
+
+                registrarAnalise
 
             });
 

@@ -54,6 +54,29 @@ const RIGOR_PERFIL = {
     CONSERVADOR: 3
 };
 
+// AJUSTE-032 (26/09/2026): até o AJUSTE-003 (17/09/2026 11:24 UTC) o
+// checker incluía até ~50min de candles ANTERIORES à entrada no caminho
+// de preço (offset de timezone da TwelveData) - o WIN/LOSS dessas
+// operações foi decidido em parte por preço de antes do sinal existir
+// (AJUSTE-031 mediu: 36,6% nesses rótulos vs 45,6% nos limpos). Esses
+// rótulos deixam de alimentar a estatística que vira bônus/penalidade
+// e expectativa no score ao vivo. Os documentos NÃO são apagados do
+// banco (decisão do usuário: descartar da aprendizagem, não destruir) -
+// só ignorados aqui; reverter é remover este filtro. Se um dia forem
+// re-rotulados com candles corretos, gravar `rotuloCorrigido: true`
+// faz eles voltarem a contar.
+const CORTE_ROTULO_CONFIAVEL = Date.parse("2026-09-17T11:30:00Z");
+
+function rotuloConfiavel(dados) {
+
+    if (dados?.rotuloCorrigido === true) return true;
+
+    const fim = Number(dados?.fimOperacao ?? dados?.timestamp);
+
+    return Number.isFinite(fim) && fim >= CORTE_ROTULO_CONFIAVEL;
+
+}
+
 function operacaoAtendeRigorDoPerfil(perfilOperacao, perfilAtual) {
 
     const rigorOperacao =
@@ -152,7 +175,16 @@ async function obterEstatisticasPar(
     perfilAtual
 ) {
 
-    const operacoesRaw = await obterOperacoesBrutasDoPar(db, par);
+    // AJUSTE-032: operação fechada com rótulo contaminado (antes do
+    // AJUSTE-003) fica fora de TODO cálculo abaixo - tanto do gate
+    // operacoesElegiveis quanto de wins/loss/taxaAcerto/expectativa.
+    // O cache (cacheEstatisticas) continua guardando o bruto; o filtro
+    // roda depois, então não precisa invalidar cache nenhum.
+    const operacoesRaw = (await obterOperacoesBrutasDoPar(db, par))
+        .filter(dados =>
+            !(dados.resultado === "WIN" || dados.resultado === "LOSS") ||
+            rotuloConfiavel(dados)
+        );
 
     // MUD-02 (17/09/2026): o CONSERVADOR estava estruturalmente
     // travado - operacoesMinimas=30 (decisionEngine.js) só contava
@@ -509,6 +541,8 @@ module.exports = {
 
     idCacheDoPar,
 
-    obterOperacoesBrutasDoPar
+    obterOperacoesBrutasDoPar,
+
+    rotuloConfiavel
 
 };
