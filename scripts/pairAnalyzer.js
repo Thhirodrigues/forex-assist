@@ -529,6 +529,18 @@ const decisao = avaliarOperacao({
 
 if (!decisao.aprovado) {
 
+    // AJUSTE-027 (26/09/2026): antes disto, um sinal REPROVADO só
+    // logava status+motivo - o valor numérico de qualidade.score (o
+    // que decisionEngine.js realmente comparou contra o scoreMinimo
+    // do perfil) nunca aparecia em lugar nenhum, nem no log nem no
+    // Firestore (sinal reprovado não é salvo). Impossível de fora
+    // saber se uma reprovação por "Score abaixo do mínimo" está na
+    // margem (ex.: 52 contra 55) ou longe (ex.: 20 contra 55) - achado
+    // testando o perfil Conservador (que só reprovou por score, 2 dias
+    // seguidos, sem nenhum outro motivo aparecer). Só observabilidade,
+    // não muda decisão nenhuma.
+    console.log(`Score.............${qualidade.score}`);
+    console.log(`Qualidade.........${qualidade.qualidade}`);
     console.log(`Status............${decisao.status}`);
     console.log(`Motivo............${decisao.motivo}`);
 

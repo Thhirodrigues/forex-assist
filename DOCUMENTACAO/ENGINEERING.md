@@ -11140,3 +11140,56 @@ detecção de candlestick (Harami, Três Corvos, Estrela Manhã/Tarde,
 Chute/Kicker) continua registrada como pendência no AJUSTE-025, não
 nesta entrada.
 --------
+AJUSTE-027 (26/09/2026) - log do score numérico também no caminho de
+reprovação (scripts/pairAnalyzer.js)
+
+Origem: usuário testando o perfil CONSERVADOR (scoreMinimo 55) desde
+24/09, relatou zero sinal gerado "antes de ontem e ontem até as 18h,
+antes do mercado fechar". Auditoria em logs reais do GitHub Actions
+(forex-scanner-real.yml, per CLAUDE.md - nunca confiar em workflow
+verde sozinho) confirmou: `Erros..............0` em toda execução
+conferida (24/09 18:05 UTC e 25/09 16:55/20:00/21:15 UTC), e toda
+reprovação com o MESMO motivo - "Score abaixo do mínimo (55, perfil
+CONSERVADOR)" - nunca histórico insuficiente, nunca multi-timeframe
+divergente. Não é erro silencioso.
+
+Hipótese inicial errada, corrigida em público: primeiro suspeitei do
+AJUSTE-023 (penalidade -5 por SEM_DADOS, que passou a disparar de
+verdade um dia antes) como causa. Descartada ao conferir o log de
+24/09 18:05 UTC - já mostrava perfil CONSERVADOR reprovando por score
+ANTES do AJUSTE-023 sequer existir (commitado só às 04:04 UTC de
+25/09). Causa estrutural real, achada em statisticsEngine.js:
+`RIGOR_PERFIL` (AGRESSIVO=1, BALANCEADO=2, CONSERVADOR=3) +
+`operacaoAtendeRigorDoPerfil()` filtram o histórico usado pra
+wins/loss/confiabilidade pelo rigor do perfil - nenhuma operação
+gerada sob Agressivo/Balanceado conta pro Conservador (rigor 3, o
+mais alto). Por isso todo par aparecia com `Histórico...........0W/0L`
+/ `Confiabilidade......SEM_DADOS` assim que o perfil mudou pra
+Conservador, mesmo com histórico real de dezenas de operações sob
+outros perfis - "cold start" por design (hierarquia de rigor), não
+bug, empilhado sobre a barra técnica já mais alta (55 contra 35 do
+Agressivo) + exigência de multi-timeframe.
+
+Lacuna real encontrada no código: `pairAnalyzer.js`'s bloco
+`if (!decisao.aprovado)` (o caminho de toda reprovação) só logava
+`decisao.status`/`decisao.motivo` - o valor de `qualidade.score`
+nunca era impresso nesse caminho, e um sinal reprovado não é salvo no
+Firestore (só operações aprovadas passam por `salvarOperacao`). Ou
+seja, não havia como saber, nem pelo log nem pelo banco, se as
+reprovações estavam na margem (ex.: 52 contra 55) ou longe (ex.: 20).
+
+Implementação: duas linhas novas dentro do bloco de reprovação,
+`console.log` de `qualidade.score` e `qualidade.qualidade`, antes das
+linhas de Status/Motivo que já existiam. Puramente aditivo - não toca
+em nenhum cálculo, não muda `decisao` nem o que é salvo. Validado com
+`node -c` e um `require()` isolado do módulo confirmando que carrega
+sem efeito colateral (não dispara nenhuma chamada de rede/Firestore
+só por ser importado).
+
+Pendente: com essa linha em produção, os próximos ciclos do scanner
+vão finalmente mostrar o score numérico das reprovações - só aí dá
+pra saber se o Conservador está feito certo ou perto disso, ou se está
+estruturalmente inatingível pra este par/mercado no momento. Nenhuma
+mudança de comportamento sugerida ainda - decisão fica pra depois de
+ver os números reais.
+--------
