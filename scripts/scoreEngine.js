@@ -17,7 +17,16 @@ const ENGINE_WEIGHTS = {
     // confirmação, nunca decisora sozinha: um order block não aprova
     // nem reprova operação nenhuma por si só. Valor inicial pra
     // calibrar depois com dado real, não definitivo.
-    SMC_ORDER_BLOCK: 3
+    SMC_ORDER_BLOCK: 3,
+
+    // AJUSTE-025 (26/09/2026): padrões de candlestick clássicos
+    // (Fase 1 - Martelo/Enforcado/Martelo Invertido/Estrela Cadente/
+    // Engolfo de Alta/Engolfo de Baixa, ver scripts/candlePatterns.js).
+    // Peso maior que o SMC por pedido explícito do usuário ("quero
+    // isso como reforço de consistência do sinal") - mesma ressalva:
+    // camada secundária, nunca decide sozinha, valor inicial sem
+    // validação empírica própria ainda.
+    CANDLESTICK_PATTERN: 5
 };
 
 // ======================================================
@@ -152,6 +161,34 @@ function aplicarBonusSMC(smc, tendencia) {
 }
 
 // ======================================================
+// PADRÕES DE CANDLESTICK (AJUSTE-025, 26/09/2026)
+// ======================================================
+//
+// `candlestick` vem da detecção feita em pairAnalyzer.js (via
+// scripts/candlePatterns.js - este arquivo só decide o PESO, mesma
+// separação de responsabilidade do SMC acima). `tendencia` é a
+// direção já calculada pelo Market Analyzer pro sinal atual.
+//
+// Regra igual ao SMC: padrão detectado na MESMA direção do sinal ->
+// bônus. Padrão na direção CONTRÁRIA -> penalidade. Sem padrão
+// detectado -> neutro (nunca penaliza a AUSÊNCIA de padrão).
+function aplicarBonusCandlestick(candlestick, tendencia) {
+
+    if (!candlestick) {
+        return 0;
+    }
+
+    if (tendencia !== "ALTA" && tendencia !== "BAIXA") {
+        return 0;
+    }
+
+    return candlestick.direcao === tendencia
+        ? ENGINE_WEIGHTS.CANDLESTICK_PATTERN
+        : -ENGINE_WEIGHTS.CANDLESTICK_PATTERN;
+
+}
+
+// ======================================================
 // EXPORTS
 // ======================================================
 
@@ -166,6 +203,8 @@ module.exports = {
     aplicarPenalidadeHistorico,
 
     aplicarBonusSMC,
+
+    aplicarBonusCandlestick,
 
     ENGINE_WEIGHTS,
 

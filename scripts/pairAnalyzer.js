@@ -44,6 +44,15 @@ const {
     avaliarOperacao
 } = require("./decisionEngine");
 
+// AJUSTE-025 (26/09/2026): detecção de padrões de candlestick (Fase 1)
+// - mesmo padrão de moneyManager.js/decisionEngine.js acima (módulo
+// puro, sem I/O, requerido direto - diferente de getCandles/
+// existeCooldown/salvarOperacao, que são injetados por serem I/O real
+// e precisarem ser mockáveis em teste).
+const {
+    detectarPadraoCandlestick
+} = require("./candlePatterns");
+
 // CACHE-002 (16/09/2026): candles de 15min só mudam a cada 15min, mas
 // o Scanner roda a cada 5min - sem cache, 2 de cada 3 chamadas a essa
 // perna traziam exatamente o mesmo candle da chamada anterior, puro
@@ -349,6 +358,19 @@ return {
 };
 }
 
+// AJUSTE-025 (26/09/2026): candles numéricos extraídos aqui fora (não
+// só dentro do `if` do SMC como antes) - agora dois detectores
+// independentes precisam deles (SMC condicional à flag, candlestick
+// sempre ativo por decisão do usuário).
+const candlesNumericos = candles.map(c => ({
+
+    open: Number(c.open),
+    high: Number(c.high),
+    low: Number(c.low),
+    close: Number(c.close)
+
+}));
+
 // MUD-05 (17/09/2026): detecção de order block só roda com a flag
 // explicitamente ligada (configuracao?.smcAtivo === true) - padrão
 // desligada. Com a flag desligada, `smc` fica null e o score sai
@@ -357,20 +379,20 @@ let smc = null;
 
 if (configuracao?.smcAtivo === true) {
 
-    const candlesNumericos = candles.map(c => ({
-
-        open: Number(c.open),
-        high: Number(c.high),
-        low: Number(c.low),
-        close: Number(c.close)
-
-    }));
-
     smc = detectarOrderBlock(candlesNumericos, atrAtual, closes[closes.length - 1]);
 
     console.log(`SMC..............${smc ? `OB ${smc.direcao}${smc.naZona ? " (preço na zona)" : " (fora da zona)"}` : "nenhum OB relevante"}`);
 
 }
+
+// AJUSTE-025 (26/09/2026): detecção de padrão de candlestick (Fase 1 -
+// ver scripts/candlePatterns.js) - sempre ativa, sem flag de Config
+// (decisão explícita do usuário, diferente do SMC que nasceu com
+// opt-in). Mesmo shape de sempre (null = nenhum padrão detectado ou
+// candles insuficientes) - nunca derruba a análise.
+const candlestick = detectarPadraoCandlestick(candlesNumericos, atrAtual);
+
+console.log(`Candlestick......${candlestick ? `${candlestick.padrao} (${candlestick.direcao})` : "nenhum padrão da Fase 1 detectado"}`);
 
 const qualidade = calcularQualidade(
     ema9,
@@ -385,7 +407,8 @@ const qualidade = calcularQualidade(
     ema50_15,
     estatisticas,
     atrAtual,
-    smc
+    smc,
+    candlestick
 
 );
 
@@ -638,6 +661,14 @@ const analise = {
     smcDetectado: qualidade.smcDetectado,
 
     smcScore: qualidade.smcScore,
+
+    // AJUSTE-025 (26/09/2026): mesma lógica do AJUSTE-007 acima, pro
+    // padrão de candlestick (Fase 1) em vez do order block SMC -
+    // candlestickDetectado fica null quando nenhum dos 6 padrões foi
+    // encontrado nesse ciclo (mesmo shape sempre, agora persistido).
+    candlestickDetectado: qualidade.candlestickDetectado,
+
+    candlestickScore: qualidade.candlestickScore,
 
     // AJUSTE-019 (24/09/2026): qual janela de horário admitiu este
     // par nesta análise - "asia"/"londres"/"novaYork"/"personalizado"

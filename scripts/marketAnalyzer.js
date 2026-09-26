@@ -33,7 +33,9 @@ const {
 
     aplicarPenalidadeHistorico,
 
-    aplicarBonusSMC
+    aplicarBonusSMC,
+
+    aplicarBonusCandlestick
 
 
 } = require("./scoreEngine");
@@ -630,6 +632,17 @@ function classificarQualidade(scoreFinal) {
 // de candles bruto. `null`/ausente (flag SMC desligada, ou nenhum OB
 // relevante detectado) reproduz o score de antes desta mudança,
 // bit a bit - ver aplicarBonusSMC() em scoreEngine.js.
+//
+// AJUSTE-025 (26/09/2026): `candlestick` segue o MESMO padrão - mais
+// um parâmetro opcional no fim, preserva as 13 chamadas anteriores
+// (12 + smc) intactas. Vem de pairAnalyzer.js também (scripts/
+// candlePatterns.js - detecção sobre os candles brutos, que só
+// pairAnalyzer.js tem). Nota: RMI-011 (PENDENCIAS-ESTRATEGICAS-RMI.md/
+// BACKLOG-E-VISAO.md) já registra o crescimento excessivo desta
+// função (agora 14 parâmetros posicionais) como dívida técnica
+// conhecida - não resolvida aqui de propósito (fora do escopo deste
+// ajuste, mudar a assinatura de uma função tão usada é risco
+// desnecessário pra uma feature que não precisa disso).
 function calcularQualidade(
   ema9,
   ema21,
@@ -643,7 +656,8 @@ function calcularQualidade(
   ema50_15,
   estatisticas,
   atrAtual,
-  smc = null
+  smc = null,
+  candlestick = null
 ) {
 
   let score = 0;
@@ -847,6 +861,15 @@ scoreFinal += Math.round(volatilidade.score * 0.5);
 const smcScore = aplicarBonusSMC(smc, emas.tendencia);
 scoreFinal += smcScore;
 
+// AJUSTE-025 (26/09/2026): bônus/penalidade de padrão de candlestick,
+// mesmo tratamento do SMC acima - camada secundária, nunca decide
+// sozinha (ver aplicarBonusCandlestick em scoreEngine.js).
+// candlestickScore fica 0 quando `candlestick` é null (nenhum dos 6
+// padrões da Fase 1 detectado) - score idêntico ao de antes desta
+// mudança nesse caso.
+const candlestickScore = aplicarBonusCandlestick(candlestick, emas.tendencia);
+scoreFinal += candlestickScore;
+
 // =====================================================
 // NORMALIZAÇÃO DO SCORE
 // =====================================================
@@ -942,7 +965,15 @@ return {
     // `smc` é null (flag desligada ou nenhum OB relevante encontrado).
     smcDetectado: smc ? { direcao: smc.direcao, naZona: smc.naZona } : null,
 
-    smcScore
+    smcScore,
+
+    // AJUSTE-025 (26/09/2026): expõe o que a detecção de padrão de
+    // candlestick decidiu, pra log e persistência - candlestickScore é
+    // 0 quando `candlestick` é null (nenhum dos 6 padrões da Fase 1
+    // detectado nesse ciclo).
+    candlestickDetectado: candlestick ? { padrao: candlestick.padrao, direcao: candlestick.direcao } : null,
+
+    candlestickScore
 
 };
 

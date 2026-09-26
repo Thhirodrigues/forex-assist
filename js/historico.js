@@ -312,6 +312,57 @@ function bannerSMC(sinal) {
 
 }
 
+// AJUSTE-025 (26/09/2026): mesmo padrão do bannerSMC acima, pro
+// padrão de candlestick clássico (Fase 1 - Martelo/Enforcado/Martelo
+// Invertido/Estrela Cadente/Engolfo de Alta/Engolfo de Baixa, ver
+// scripts/candlePatterns.js). Sinais salvos antes desta mudança não
+// têm `candlestickDetectado` - não renderiza nada, não é erro.
+const LEGENDA_CANDLESTICK = {
+  MARTELO: "🔨 Martelo",
+  ENFORCADO: "🪢 Enforcado",
+  MARTELO_INVERTIDO: "🔨 Martelo Invertido",
+  ESTRELA_CADENTE: "🌠 Estrela Cadente",
+  ENGOLFO_ALTA: "📈 Engolfo de Alta",
+  ENGOLFO_BAIXA: "📉 Engolfo de Baixa"
+};
+
+function bannerCandlestick(sinal) {
+
+  if (!sinal.candlestickDetectado) return "";
+
+  const { padrao, direcao } = sinal.candlestickDetectado;
+
+  const score = Number(sinal.candlestickScore) || 0;
+
+  const corFundo = score > 0
+    ? "rgba(0,210,106,.10)"
+    : score < 0
+    ? "rgba(255,82,82,.10)"
+    : "rgba(255,255,255,.04)";
+
+  const corBorda = score > 0
+    ? "rgba(0,210,106,.3)"
+    : score < 0
+    ? "rgba(255,82,82,.3)"
+    : "rgba(255,255,255,.08)";
+
+  const corTexto = score > 0
+    ? "#8fd6b0"
+    : score < 0
+    ? "#ff9e9e"
+    : "#8c95b3";
+
+  const sinalScore = score > 0 ? "+" : "";
+  const nomePadrao = LEGENDA_CANDLESTICK[padrao] || padrao;
+
+  return `
+    <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:${corFundo}; border:1px solid ${corBorda}; font-size:11px; color:${corTexto};">
+      🕯️ Candlestick: ${nomePadrao} (${direcao})${score !== 0 ? ` — ${sinalScore}${score} no score` : ""}
+    </div>
+  `;
+
+}
+
 // AJUSTE-008 (24/09/2026): botão só aparece em operação ainda
 // PENDENTE (sem `resultado` gravado) - depois de fechada, o único
 // jeito de mudar o resultado é `alternarOperacaoReal` (que já existe,
@@ -907,6 +958,8 @@ ${miniCard("🏁", "SAÍDA", formatarPrecoPar(sinal.precoSaida ?? sinal.precoFec
 </div>
 
 ${bannerSMC(sinal)}
+
+${bannerCandlestick(sinal)}
 
 ${bannerOrigemSinal(sinal)}
 

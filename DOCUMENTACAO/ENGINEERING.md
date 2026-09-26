@@ -10972,3 +10972,113 @@ rápido" (Candle Gatilho, Rompimento de Candle, Candles de reversão).
 
 Validado: `node -c`.
 --------
+AJUSTE-025 — detecção de padrões de candlestick (Fase 1) entra no
+pipeline real, como camada secundária de score (scripts/candlePatterns.js
+NOVO, scoreEngine.js, marketAnalyzer.js, pairAnalyzer.js, js/historico.js,
+js/manual.js)
+
+Origem: depois de escrever os 18 padrões de candlestick no Manual
+(AJUSTE-024b/c), usuário perguntou se o RMI lê candles do mesmo jeito
+que esses padrões clássicos - resposta (conferida no código real):
+não, o RMI usa EMA/RSI/ADX/ATR (tudo baseado em fechamento, sem olhar
+forma de corpo/sombra) + SMC (que olha direção do candle e
+deslocamento, não formato). Usuário decidiu que queria implementar
+detecção de candlestick de verdade, "uma forma a mais de pegar um
+sinal mais consistente". Escopo definido via AskUserQuestion (3
+perguntas) antes de escrever qualquer código de produção, mesma
+disciplina já usada pro SMC (MUD-05) e pro redesenho de sessões
+(AJUSTE-019):
+1. Fase 1 = só os 6 padrões de 1-2 candles (Martelo, Enforcado,
+   Martelo Invertido, Estrela Cadente, Engolfo de Alta, Engolfo de
+   Baixa) - os de 3 candles (Harami, Três Corvos, Estrela Manhã/
+   Tarde) e os de gap (Chute/Kicker) ficam pra uma Fase 2, registrada
+   como pendência, não implementada agora.
+2. Peso ±5 no score (maior que o ±3 do SMC, por pedido explícito -
+   "quero isso como reforço de consistência").
+3. Sempre ativo, sem checkbox na tela de Config (diferente do SMC,
+   que nasceu com opt-in).
+
+Implementação: **scripts/candlePatterns.js** (NOVO) - módulo puro
+(sem I/O, sem Firestore), mesmo padrão arquitetural de scoreEngine.js/
+decisionEngine.js. `detectarPadraoCandlestick(candles, atr)` roda os 6
+detectores sobre o candle mais recente (e o anterior, no caso do
+Engolfo) e devolve `{padrao, direcao} | null`. Geometria calibrada
+pelo ATR do par (`CANDLE_PATTERNS`: corpo pequeno ≤30% do ATR, sombra
+longa ≥2x o corpo E ≥40% do ATR, sombra curta ≤15% do ATR, corpo
+mínimo de engolfo ≥20% do ATR) - valores iniciais, sem validação
+empírica própria ainda, mesma ressalva de sempre nesta base de código
+(RSI_VETO em decisionEngine.js, SMC_ORDER_BLOCK em scoreEngine.js).
+Martelo/Enforcado e Martelo Invertido/Estrela Cadente são a MESMA
+forma geométrica cada par - `tendenciaRecente()` (compara o fechamento
+de 5 candles atrás com o fechamento do candle imediatamente anterior
+ao candidato) decide qual rótulo/direção aplicar, dependendo de o
+candle vir de uma queda ou de uma alta recente. Engolfo de Alta/Baixa
+não precisa desse contexto - a cor e a relação geométrica dos 2
+candles já definem sozinhas qual dos dois é.
+
+**scoreEngine.js**: `CANDLESTICK_PATTERN: 5` em `ENGINE_WEIGHTS`,
+`aplicarBonusCandlestick(candlestick, tendencia)` - MESMO contrato do
+`aplicarBonusSMC` (concorda com a tendência do sinal → soma, discorda
+→ subtrai, sem padrão detectado → 0, tendência sem direção clara →
+0).
+
+**marketAnalyzer.js**: `calcularQualidade()` ganha um 14º parâmetro
+opcional `candlestick = null` (mesmo padrão do `smc` - AJUSTE
+preserva as 13 chamadas anteriores intactas). Nota registrada no
+código: RMI-011 (crescimento excessivo desta função, já documentado
+em PENDENCIAS-ESTRATEGICAS-RMI.md/BACKLOG-E-VISAO.md) piora mais um
+pouco com isso - não resolvido aqui de propósito, mudar a assinatura
+de uma função tão usada é risco desnecessário fora do escopo pedido.
+Retorna `candlestickDetectado`/`candlestickScore` no mesmo shape do
+`smcDetectado`/`smcScore`.
+
+**pairAnalyzer.js**: `candlesNumericos` (remap pra number) extraído
+pra fora do `if` do SMC, já que agora dois detectores independentes
+precisam dele (SMC continua condicional à flag `smcAtivo`;
+candlestick sempre roda, por decisão do usuário). `detectarPadraoCandlestick`
+requerido direto de `candlePatterns.js` (módulo puro, mesmo padrão de
+moneyManager/decisionEngine - diferente de getCandles/existeCooldown/
+salvarOperacao, que são injetados por serem I/O real). Log novo
+(`Candlestick......`) espelhando o log já existente do SMC.
+`candlestickDetectado`/`candlestickScore` persistidos no objeto
+`analise` salvo no Firestore, mesmo padrão do AJUSTE-007 pro SMC.
+
+**js/historico.js**: `bannerCandlestick()` (com `LEGENDA_CANDLESTICK`
+pros 6 nomes) - mesmo estilo visual do `bannerSMC()`, mostrado no
+detalhe do sinal (Histórico e Resultados, que reusa
+`construirDetalheSinal`).
+
+**js/manual.js**: nova seção "Padrão de Candlestick (Fase 1)" dentro
+de "Como o RMI decide", explicando a mesma coisa que este texto
+explica. A ressalva da seção "Os 18 principais padrões de
+candlestick" (que antes dizia "nenhum é usado pelo RMI") foi
+corrigida - 6 dos 18 agora são detectados de verdade, marcados com 🕯️
+nas tabelas; os outros 12 continuam só conhecimento geral (Fase 2,
+pendência).
+
+Validado: `node -c` nos 5 arquivos tocados. Script isolado no
+scratchpad (`validate-ajuste025-candlestick.js`), requerendo os 3
+módulos reais direto (candlePatterns.js, scoreEngine.js,
+marketAnalyzer.js - nenhum toca Firestore/rede) - 21 cenários:
+detecção geométrica de cada um dos 6 padrões (incluindo os casos
+Martelo-vs-Enforcado e Martelo Invertido-vs-Estrela Cadente com a
+MESMA forma geométrica, só mudando o contexto de tendência anterior),
+rejeição de formas inválidas (sombra fora do limiar, engolfo trivial),
+candles insuficientes/ATR inválido não derrubam a detecção,
+`aplicarBonusCandlestick` nos 4 casos (concorda/discorda/nenhum
+padrão/tendência sem direção), e REGRESSÃO explícita confirmando que
+`calcularQualidade()` com candlestick ausente ou `null` devolve
+EXATAMENTE o mesmo `scoreFinal` de antes desta mudança (mesmo padrão
+de regressão já usado pro SMC no AJUSTE-007).
+
+Pendente: Fase 2 (Harami, Três Corvos, Estrela da Manhã/Tarde, Chute/
+Kicker - padrões de 3 candles ou com gap, mais complexos de detectar
+com segurança) - registrada, não iniciada. Confirmação por contexto
+de suporte/resistência (o próprio Manual explica que um padrão vale
+mais nesse contexto) não implementada - o app não tem detecção de
+suporte/resistência ainda, mesmo nível de simplificação aceito pro
+SMC. Validação end-to-end contra um sinal real gerado em produção
+ainda não aconteceu (só validação isolada com candles sintéticos) -
+primeiros ciclos reais devem ser conferidos manualmente antes de
+confiar cegamente na detecção, per CLAUDE.md.
+--------
