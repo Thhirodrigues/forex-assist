@@ -135,7 +135,7 @@ function anatomiaCandleSVG() {
   const corLinha = "#5a6485";
   const corTexto = "#c9d1e8";
   return `
-    <svg viewBox="0 0 320 130" width="100%" style="max-width:320px; display:block; margin:12px auto;">
+    <svg viewBox="-14 0 334 130" width="100%" style="max-width:320px; display:block; margin:12px auto;">
       <line x1="90" y1="20" x2="90" y2="110" stroke="${CV_VERDE}" stroke-width="3" stroke-linecap="round"/>
       <rect x="75" y="45" width="30" height="30" rx="3" fill="${CV_VERDE}"/>
 
@@ -155,7 +155,7 @@ function anatomiaCandleSVG() {
       <text x="134" y="114" font-size="11" fill="${corTexto}">Mínima</text>
 
       <line x1="75" y1="45" x2="60" y2="45" stroke="${corLinha}" stroke-width="1" stroke-dasharray="2,2"/>
-      <text x="58" y="48" font-size="11" fill="${corTexto}" text-anchor="end">Fechamento</text>
+      <text x="64" y="48" font-size="11" fill="${corTexto}" text-anchor="end">Fechamento</text>
 
       <line x1="75" y1="75" x2="60" y2="75" stroke="${corLinha}" stroke-width="1" stroke-dasharray="2,2"/>
       <text x="58" y="78" font-size="11" fill="${corTexto}" text-anchor="end">Abertura</text>
