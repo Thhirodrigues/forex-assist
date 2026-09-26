@@ -56,6 +56,11 @@ const PERFIL_ANALISE = {
 
 };
 
+// AJUSTE-033: mesmo valor de OPERACOES_MINIMAS_HISTORICO em
+// statisticsEngine.js (não importado de lá - statisticsEngine já importa
+// este arquivo, evitar import circular).
+const OPERACOES_MINIMAS_EXPECTATIVA = 30;
+
 function obterPerfilAnalise(perfil) {
 
     return PERFIL_ANALISE[perfil] || PERFIL_ANALISE.BALANCEADO;
@@ -186,7 +191,44 @@ function avaliarOperacao(resultado) {
 
     const perfilNormalizado = (resultado.perfil || "BALANCEADO").toUpperCase();
 
+    // AJUSTE-033 (26/09/2026): a expectativa é calculada com a taxa de
+    // acerto histórica do par - e statisticsEngine.js devolve 0% quando
+    // NÃO existe histórico (`operacoes === 0 ? 0`). Ou seja, "sem dado"
+    // virava "0% de acerto", expectativa = -slUSD, e o gate bloqueava
+    // sempre - era o que deixava o BALANCEADO inalcançável na cascata
+    // do AJUSTE-028 (confirmado com o motor real). Decisão do usuário:
+    // com histórico insuficiente a expectativa não é confiável, então
+    // NÃO bloqueia - vira aviso explícito de "histórico insuficiente".
+    // Com histórico suficiente, o gate volta a valer normalmente.
+    // `operacoesBaseExpectativa` ausente (chamadas antigas/testes)
+    // mantém o comportamento anterior (trata como suficiente).
+    const operacoesBase = resultado.operacoesBaseExpectativa;
+
+    const historicoInsuficienteParaExpectativa =
+        Number.isFinite(Number(operacoesBase)) &&
+        Number(operacoesBase) < OPERACOES_MINIMAS_EXPECTATIVA;
+
     if (
+        Number.isFinite(expectativa) &&
+        expectativa < regrasFinanceiras.expectativaMinima &&
+        historicoInsuficienteParaExpectativa &&
+        perfilNormalizado !== "AGRESSIVO"
+    ) {
+
+        justificativas.push("Expectativa não avaliada - histórico insuficiente (aviso)");
+
+        avisoExpectativa = {
+
+            ativo: true,
+
+            historicoInsuficiente: true,
+
+            mensagem: `Histórico insuficiente pra calcular a expectativa deste par (${Number(operacoesBase)} de ${OPERACOES_MINIMAS_EXPECTATIVA} operações válidas) - ` +
+                `a taxa de acerto é desconhecida, não 0%. Sinal liberado sem essa checagem; avalie com cautela.`
+
+        };
+
+    } else if (
         Number.isFinite(expectativa) &&
         expectativa < regrasFinanceiras.expectativaMinima
     ) {

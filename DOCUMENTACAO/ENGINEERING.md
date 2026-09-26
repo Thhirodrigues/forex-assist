@@ -11653,3 +11653,60 @@ avaliado; ferramenta de rotulagem hipotética offline (próximo passo);
 decisão sobre expectativa sem histórico (acima); re-rotular os
 antigos com candles corretos (opcional).
 --------
+AJUSTE-033 (26/09/2026) - "sem histórico" deixa de ser "0% de acerto"
+no gate de expectativa (scripts/decisionEngine.js,
+scripts/pairAnalyzer.js)
+
+Origem: defeito do AJUSTE-028 registrado no AJUSTE-032 - com
+CONSERVADOR configurado, taxaAcerto=0 (sem histórico próprio) virava
+expectativa = -slUSD e bloqueava o BALANCEADO sempre; a cascata ia
+direto pro AGRESSIVO. Usuário perguntou antes se não dava pra lançar
+uma "margem inventada" de dados pro Conservador e remover depois;
+resposta: não - dado fabricado no `historico` vaza pra Dashboard,
+Resultados, saldo simulado, checker e todos os diagnósticos, a remoção
+depois é propensa a erro, e nem resolveria o que barra o Conservador
+hoje (score < 55, não histórico - e o AJUSTE-031 mostrou que forçar
+score mais alto não melhora acerto). A versão estatisticamente
+legítima dessa intuição é um "prior" (tratar o desconhecido como
+desconhecido), que é o que foi feito aqui. Usuário: "se viajei muito
+nessa ideia, pode seguir com a sua recomendação".
+
+Implementação: `avaliarOperacao()` recebe `operacoesBaseExpectativa`
+(quantas operações válidas embasam a taxa de acerto -
+`estatisticas.operacoes`, já filtradas por rigor de perfil e por
+rótulo confiável do AJUSTE-032). Abaixo de 30 (mesmo valor de
+OPERACOES_MINIMAS_HISTORICO, constante local pra evitar import
+circular), expectativa negativa NÃO bloqueia Balanceado/Conservador:
+vira `avisoExpectativa` com `historicoInsuficiente: true` e mensagem
+explícita ("taxa de acerto desconhecida, não 0%"). Com 30+ operações,
+o gate volta a bloquear como antes. Agressivo inalterado (sempre só
+aviso). Campo ausente = comportamento antigo (retrocompatível). A UI
+já exibia `avisoExpectativa.mensagem` genericamente (ícone 📉 +
+texto no detalhe) - sem mudança de tela.
+
+Efeito na cascata: um sinal que não bate o Conservador agora pode
+parar no BALANCEADO (antes, impossível). O Conservador em si continua
+exigindo 30 operações próprias (operacoesMinimas) - este ajuste não
+o "destrava" por trás.
+
+Não alterado de propósito: `decidirConfiguracaoMercado()` em
+moneyManager.js continua reduzindo lote pra 0,02 quando a expectativa
+(calculada com taxa 0) é negativa. Mudar isso muda a distância em
+pips do TP/SL (TP/SL são em dólar) - ou seja, muda a régua de
+resultado no meio da investigação do AJUSTE-031/032. Fica pra quando
+TP/SL forem reescritos com base em ATR.
+
+Validado: `node -c`; validate-ajuste033.js (10 cenários, motor real):
+defeito corrigido (score 50 sem histórico aprova no Balanceado, com
+aviso explícito); com 30+ operações e expectativa negativa o
+Balanceado continua bloqueado; histórico bom aprova sem aviso;
+chamada sem o campo novo mantém bloqueio antigo; score baixo, RSI
+extremo e multi divergente continuam barrando; Conservador continua
+barrado pelo operacoesMinimas; Agressivo mantém o aviso antigo.
+Regressões: validate-ajuste032 (15/15), validate-ajuste028-cascata
+(10/10), validate-ajuste009-rsi-veto e
+validate-pentefino004-expectativa (todos OK).
+
+Pendente: confirmar no primeiro ciclo real (check-in de domingo) que
+a cascata passa a registrar tentativas no Balanceado.
+--------

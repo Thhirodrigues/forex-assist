@@ -585,7 +585,12 @@ for (const perfilTentativa of perfisParaTentar) {
         // passa a vetar RSI extremo contra a direção do sinal - precisa do
         // valor numérico do RSI, que já era calculado aqui mas nunca era
         // repassado pra essa chamada.
-        rsi: rsiAtual
+        rsi: rsiAtual,
+
+        // AJUSTE-033 (26/09/2026): quantas operações válidas embasam a
+        // taxa de acerto usada na expectativa - abaixo do mínimo, o gate
+        // de expectativa vira aviso (sem dado != 0% de acerto).
+        operacoesBaseExpectativa: estatisticas.operacoes ?? 0
 
     });
 

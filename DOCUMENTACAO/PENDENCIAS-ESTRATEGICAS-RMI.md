@@ -184,3 +184,15 @@ em Balanceado continua sem contar como evidência do Conservador
 (`RIGOR_PERFIL` exige rigor igual ou maior, por design). Uma das
 opções acima (ou outra) ainda precisa ser escolhida explicitamente
 antes que o CONSERVADOR consiga, de fato, se autoalimentar.
+
+**Atualização (26/09/2026, AJUSTE-032/033):** o contorno do AJUSTE-028
+tinha um defeito - com o Conservador configurado, "sem histórico" era
+tratado como "0% de acerto" (`operacoes === 0 ? 0` em
+statisticsEngine.js), a expectativa saía sempre negativa e o
+BALANCEADO nunca era alcançado. Corrigido no AJUSTE-033: com menos de
+30 operações válidas, a expectativa não bloqueia, só avisa. Rótulos
+anteriores ao AJUSTE-003 também deixaram de alimentar a estatística
+(AJUSTE-032). O item 6 em si (o Conservador acumular 30 operações
+PRÓPRIAS) continua aberto; a ideia de reclassificar o histórico por
+mérito foi medida no AJUSTE-029 e só 2 operações se qualificariam - e
+a de lançar dado fabricado foi descartada (contaminaria a base).
