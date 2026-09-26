@@ -1,0 +1,37 @@
+name: Diagnóstico retroativo - perfil Conservador
+
+# Ferramenta administrativa avulsa, SÓ LEITURA, NÃO faz parte do
+# pipeline de análise/decisão do produto. Só dispara manualmente
+# (workflow_dispatch), nunca por cron. Roda
+# ferramentas/diagnostico-retroativo-conservador.js, que conta quantas
+# operações do histórico real já bateriam os 3 critérios completos do
+# CONSERVADOR (score/multi-timeframe/expectativa) mesmo tendo sido
+# aprovadas sob outro perfil - AJUSTE-029, 26/09/2026. Não escreve nada
+# no Firestore.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Diagnóstico retroativo Conservador
+        run: |
+          node ferramentas/diagnostico-retroativo-conservador.js

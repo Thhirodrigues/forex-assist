@@ -11293,3 +11293,76 @@ A simplificação da taxaAcerto/expectativa (acima) deve ser revisitada
 se/quando a decisão do item 6 for tomada, já que a solução definitiva
 provavelmente muda a forma como o histórico por perfil é consultado.
 --------
+AJUSTE-029 (26/09/2026) - diagnóstico retroativo (só leitura) pra
+decidir a solução real do "ovo e galinha" do CONSERVADOR
+(ferramentas/diagnostico-retroativo-conservador.js NOVO,
+.github/workflows/diagnostico-retroativo-conservador.yml NOVO)
+
+Origem: depois do AJUSTE-028 (cascata, contorno temporário), usuário
+pediu planejamento completo das pendências estratégicas com ordem de
+prioridade e perguntou se algum item dependia do "ovo e galinha" (item
+6 de PENDENCIAS-ESTRATEGICAS-RMI.md). Resposta, conferida item a item:
+nenhum dos outros 6 itens do planejamento depende tecnicamente dele -
+usuário decidiu deixá-lo por último e pediu uma ideia pra resolvê-lo de
+verdade. Usuário também compartilhou (e descartou por conta própria,
+antes de eu precisar apontar) uma ideia alternativa - lançar sinais
+falsos manualmente com score >= 55 só pra destravar o gate, removendo
+depois - descartada pelo próprio usuário por não combinar com a índole
+do app (contaminaria a base de aprendizado com dado fabricado,
+exatamente o que CLAUDE.md/RMI existem pra evitar).
+
+Investigação (conferida no código, não suposição) revelou que existem
+DOIS mecanismos de cold-start diferentes, não um só:
+- **Mecanismo A (ainda circular de verdade)**: `statisticsEngine.js`'s
+  `operacaoAtendeRigorDoPerfil()` só conta, pra taxa de acerto/bônus-
+  penalidade histórico (a fonte do "0W/0L, SEM_DADOS" visto no
+  AJUSTE-027), operação ROTULADA "CONSERVADOR" - precisa de operação
+  Conservador pra existir taxa de acerto Conservador.
+- **Mecanismo B (já corrigido sem querer, MUD-02, 17/09/2026)**: o
+  gate `operacoesMinimas:30` usa `operacoesElegiveis`, que conta
+  QUALQUER operação histórica (independente do rótulo) com
+  `score >= scoreMinimo` do perfil - não é mais circular, só lento
+  (comentário do próprio MUD-02 em statisticsEngine.js confirma a
+  intenção: "histórico antigo conta pelo SCORE... calculado À PARTE do
+  filtro estatístico usado no resto desta função").
+
+Ideia proposta e aprovada pelo usuário: estender ao Mecanismo A a
+mesma lógica que o MUD-02 já validou no Mecanismo B - contar evidência
+pelo que a operação REALMENTE atingiu (score + multi-timeframe +
+expectativa, os três critérios reais de `decisionEngine.js` pro
+CONSERVADOR, exceto `operacoesMinimas` que não faz sentido reavaliar
+sobre si mesmo), não pelo rótulo de perfil que a aprovou. Verificado
+no código antes de propor: nenhum dos três campos (`score`, `multi`,
+`financeiro.expectativa`) depende do perfil que estava configurado no
+momento em que a operação foi salva - só o LIMIAR de aprovação (não o
+valor calculado) depende do perfil. Ou seja, dá pra reclassificar
+RETROATIVAMENTE o histórico já existente (~400 operações reais, ver
+AJUSTE-022), sem esperar semanas de dado novo.
+
+Implementação desta entrada: só o DIAGNÓSTICO, não a reclassificação
+em si - ferramenta administrativa avulsa, mesmo padrão de
+`backfill-contadores-resultado.js`, mas **só leitura, não escreve nada
+no Firestore**. Conta, sobre o histórico real: quantas operações batem
+score≥55 sozinho; quantas batem score≥55 + multi confirmado; quantas
+batem os 3 critérios completos (score + multi + expectativa≥0) -
+critério COMPLETO do CONSERVADOR aplicado retroativamente. Quebra o
+resultado por perfil ORIGINAL que aprovou (pra confirmar que operações
+Balanceado/Agressivo realmente qualificariam) e por PAR (o gate
+`operacoesMinimas` é por par, não global - precisa de 30 no MESMO
+par). Single-field query (`resultado in [WIN, LOSS]`) - sem índice
+composto, mesma disciplina de sempre.
+
+Validado: `node -c` no script; YAML do workflow validado com
+`python3 -c "import yaml; yaml.safe_load(...)"`. Execução real (via
+GitHub Actions, workflow_dispatch) e leitura dos números ainda
+pendente nesta entrada - próximo passo imediato.
+
+Pendente: rodar o diagnóstico e ler o resultado real decide se a
+reclassificação de verdade (mudar `operacaoAtendeRigorDoPerfil()` ou
+adicionar um campo tipo `rigorMaximoAtingido` calculado e usado no
+lugar do rótulo `perfil` pra fins estatísticos) vale a pena agora ou
+se o histórico real ainda não tem massa suficiente pra isso destravar
+o CONSERVADOR de fato. Nenhuma mudança de código de produção proposta
+ainda - decisão fica pra depois de ver o número real, mesma disciplina
+do AJUSTE-027.
+--------
