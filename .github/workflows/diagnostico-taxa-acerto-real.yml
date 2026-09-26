@@ -1,0 +1,35 @@
+name: Diagnóstico - taxa de acerto real
+
+# Ferramenta administrativa avulsa, SÓ LEITURA, NÃO faz parte do
+# pipeline de análise/decisão do produto. Só dispara manualmente
+# (workflow_dispatch), nunca por cron. Roda
+# ferramentas/diagnostico-taxa-acerto-real.js, que quebra a taxa de
+# acerto real do histórico por par/perfil/direção/faixa de score/
+# semana - AJUSTE-030, 26/09/2026. Não escreve nada no Firestore.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Diagnóstico taxa de acerto real
+        run: |
+          node ferramentas/diagnostico-taxa-acerto-real.js

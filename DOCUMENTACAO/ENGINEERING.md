@@ -11411,3 +11411,32 @@ conclusão prática (o teto de 30→2 pela expectativa já é o suficiente
 pra não implementar agora), mas registrado pra não confundir o número
 "30" com uma medida limpa de divergência real.
 --------
+AJUSTE-030 (26/09/2026) - diagnóstico (só leitura) da taxa de acerto
+real, quebrada por par/perfil/direção/faixa de score/semana
+(ferramentas/diagnostico-taxa-acerto-real.js NOVO,
+.github/workflows/diagnostico-taxa-acerto-real.yml NOVO)
+
+Origem: reação direta ao resultado do AJUSTE-029 - usuário: "segundo o
+resultado total a taxa de losses está bem maior, por isso sempre
+questiono a análise - hoje não dá pra confiar nos sinais que geramos".
+Antes de continuar o planejamento estratégico (spread/exposição/
+calendário/carry trade), a pergunta de fundo precisa de resposta com
+dado real: a taxa de acerto está mesmo abaixo de 50%? É uniforme ou
+concentrada nalgum recorte específico? E a pergunta mais importante -
+o SCORE da RMI tem alguma relação real com o resultado (sinal de score
+alto ganha mais que sinal de score baixo), ou o motor de pontuação
+inteiro não está discriminando nada?
+
+Implementação: script só-leitura, mesmo padrão administrativo dos
+anteriores. Quebra taxa de acerto por: PAR, PERFIL (rótulo que
+aprovou), DIREÇÃO (BUY/SELL), FAIXA DE SCORE (35-44/45-54/55-64/
+65-74/75+ - a checagem central de se o score discrimina resultado) e
+SEMANA (janela de 7 dias corridos desde epoch, mostra evolução/
+tendência no tempo). Também calcula score médio de WIN vs score médio
+de LOSS - se forem parecidos, é evidência de que o score não prediz
+nada. Single-field query (`resultado in [WIN, LOSS]`), mesma
+disciplina de sempre.
+
+Validado: `node -c` no script; YAML do workflow validado com
+`python3 -c "import yaml; yaml.safe_load(...)"`.
+--------
