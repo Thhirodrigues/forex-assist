@@ -11193,3 +11193,103 @@ estruturalmente inatingível pra este par/mercado no momento. Nenhuma
 mudança de comportamento sugerida ainda - decisão fica pra depois de
 ver os números reais.
 --------
+AJUSTE-028 (26/09/2026) - cascata de aprovação CONSERVADOR →
+BALANCEADO → AGRESSIVO, contorno temporário do "ovo e galinha"
+(scripts/pairAnalyzer.js, js/historico.js)
+
+Origem: discussão estratégica (mesma sessão do AJUSTE-027) sobre
+próximos passos da RMI. Usuário confirmou que o "ovo e galinha" do
+CONSERVADOR (PENDENCIAS-ESTRATEGICAS-RMI.md, seção 6 - o gate de 30
+operações do próprio perfil nunca se auto-alimenta, porque
+`RIGOR_PERFIL` em statisticsEngine.js só conta operação já aprovada
+NO CONSERVADOR) precisa de decisão própria, mas não quis ficar com o
+app "completamente parado" até essa decisão acontecer. Proposta:
+manter CONSERVADOR configurado, mas se um sinal não bater o critério
+dele, tentar BALANCEADO e depois AGRESSIVO automaticamente, avisando
+claramente no sinal qual critério realmente aprovou - o usuário decide
+se opera com base nessa informação. Três decisões de escopo fechadas
+via AskUserQuestion antes de codar:
+1. Escopo só quando o perfil CONFIGURADO é CONSERVADOR (não genérico
+   pra qualquer perfil) - resposta do usuário elaborou a mecânica
+   (tenta Conservador, cai pra Balanceado, cai pra Agressivo) mas
+   confirmou o mesmo escopo estreito perguntado.
+2. Risco financeiro (lote/TP/SL/validação) usa as regras do NÍVEL QUE
+   REALMENTE APROVOU, não sempre as do Conservador.
+3. Sempre automático quando Conservador é o perfil configurado - sem
+   checkbox novo em Config.
+
+Importante, comunicado ao usuário antes de implementar: isso NÃO
+resolve o "ovo e galinha" - uma operação aprovada em BALANCEADO
+continua não contando como evidência do CONSERVADOR (`RIGOR_PERFIL`
+exige rigor igual ou maior, e está certo assim - não seria honesto
+contar evidência mais fraca como prova do nível mais exigente). É um
+problema complementar ("não ficar parado enquanto a decisão de
+verdade não é tomada"), registrado separado da pendência real (que
+continua aberta, ver PENDENCIAS-ESTRATEGICAS-RMI.md).
+
+Implementação: **scripts/pairAnalyzer.js** - o bloco que antes fazia
+UMA chamada de `analisarFinanceiro()` + `avaliarOperacao()` virou um
+loop sobre `perfisParaTentar` (`["CONSERVADOR","BALANCEADO","AGRESSIVO"]`
+quando o perfil configurado é CONSERVADOR, senão só `[perfil]` -
+comportamento idêntico ao de antes pros outros dois perfis, confirmado
+por teste). Cada iteração recalcula financeiro E decisão com aquele
+perfil - primeira que aprovar (`decisao.aprovado`) vence o loop. Log
+novo por tentativa reprovada (`Cascata...........X reprovado (motivo)`)
+e um log de sucesso quando o nível que aprovou é diferente do
+configurado. `analise.perfil` (persistido) passa a ser o nível que
+REALMENTE aprovou (`perfilResolvido`) - correto pro `RIGOR_PERFIL`
+funcionar (uma operação Balanceado deve contar como evidência
+Balanceado, nunca Conservador). Dois campos novos persistidos:
+`perfilConfigurado` (o que estava selecionado em Config no momento) e
+`rebaixadoDaCascata` (boolean).
+
+**js/historico.js** - `bannerCascata(sinal)`, mesmo padrão visual dos
+outros banners (SMC/Candlestick/Origem), mas com cor de aviso
+(laranja, não verde/neutro) por ser informação de confiança, não só
+detalhe técnico: só aparece quando `sinal.rebaixadoDaCascata` é
+`true`, mostra o perfil configurado E o que realmente aprovou, com o
+texto pedido pelo usuário ("avaliar sua própria confiança antes de
+operar"). Chamado em `construirDetalheSinal()` antes de
+`bannerOrigemSinal()` (que já lê `sinal.perfil` pro emoji do perfil -
+como esse campo agora reflete o nível resolvido, já mostra o rótulo
+certo sem mudança nenhuma ali). `js/resultados.js` reusa
+`construirDetalheSinal()`, herda o banner automaticamente.
+
+Simplificação assumida, registrada e não escondida: `estatisticas`
+(taxaAcerto/operacoesElegiveis, usada tanto no score quanto na
+expectativa financeira) é calculada UMA VEZ upstream em scanner.js,
+filtrada pelo rigor do perfil CONFIGURADO (Conservador). Ao tentar
+BALANCEADO/AGRESSIVO dentro da cascata, a expectativa financeira desses
+níveis usa essa MESMA taxaAcerto (a visão do Conservador - hoje
+0%/SEM_DADOS pra todo par, ver AJUSTE-027), não a própria história de
+cada nível. Recalcular por nível exigiria nova consulta ao Firestore
+dentro de `pairAnalyzer.js` (`obterEstatisticasPar` é assíncrono, hoje
+só chamado em `scanner.js`) - fora de escopo deste contorno temporário.
+
+Validado: `node -c` nos dois arquivos tocados; `require()` isolado de
+`pairAnalyzer.js` confirmando zero efeito colateral. Script isolado no
+scratchpad (`validate-ajuste028-cascata.js`), chamando
+`decisionEngine.js`/`moneyManager.js` reais direto (sem mock) - 10
+cenários: aprovação direta no Conservador com histórico suficiente;
+mesmo score alto SEM histórico cascateando pro Balanceado (confirma
+que a cascata contorna tanto o gate de score quanto o de histórico);
+cascata em score decrescente (Balanceado, depois Agressivo);
+reprovação em todos os níveis; os dois perfis fora do escopo
+(Balanceado/Agressivo) NUNCA cascateiam; o financeiro do sinal
+rebaixado usa de fato as regras do nível que aprovou (rrMinimo 1.0 do
+Balanceado, não o 1.2 do Conservador, com RR=1 - `recomendacao.operar`
+muda de `false` pra `true` entre os dois); veto de RSI extremo (regra
+igual pros três perfis) barra em TODOS os níveis mesmo com score alto,
+cascata não "escapa" dele; multi-timeframe divergente reprova em
+Conservador/Balanceado mas aprova em Agressivo (único que não exige
+confirmação multi-timeframe) - todos os 10 passaram.
+
+Pendente: a decisão de verdade sobre o "ovo e galinha" (perfil interno
+"APRENDIZADO" ou equivalente, PENDENCIAS-ESTRATEGICAS-RMI.md seção 6)
+continua em aberto - este ajuste é um contorno, não a solução.
+Validação end-to-end contra ciclo real de produção ainda não
+aconteceu (mercado fechado no momento da implementação - AJUSTE-027).
+A simplificação da taxaAcerto/expectativa (acima) deve ser revisitada
+se/quando a decisão do item 6 for tomada, já que a solução definitiva
+provavelmente muda a forma como o histórico por perfil é consultado.
+--------

@@ -662,6 +662,30 @@ const LEGENDA_PERFIL = {
   CONSERVADOR: "🟡 Conservador"
 };
 
+// AJUSTE-028 (26/09/2026): cascata de aprovação - enquanto o perfil
+// CONSERVADOR configurado não consegue acumular a própria história
+// (RIGOR_PERFIL em statisticsEngine.js, "ovo e galinha" registrado em
+// PENDENCIAS-ESTRATEGICAS-RMI.md seção 6), o app tenta CONSERVADOR e,
+// se não bater, cai pra BALANCEADO/AGRESSIVO - sinal.perfil já reflete
+// o nível que REALMENTE aprovou (não necessariamente o configurado).
+// Este banner só aparece quando os dois divergem, deixando isso visível
+// ANTES do usuário decidir se opera, exatamente como pedido: "avisar:
+// olha, analisado no modo agressivo/balanceado".
+function bannerCascata(sinal) {
+
+  if (!sinal.rebaixadoDaCascata) return "";
+
+  const perfilAprovadoLabel = LEGENDA_PERFIL[sinal.perfil] || sinal.perfil;
+  const perfilConfiguradoLabel = LEGENDA_PERFIL[sinal.perfilConfigurado] || sinal.perfilConfigurado;
+
+  return `
+    <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:rgba(255,183,77,.12); border:1px solid rgba(255,183,77,.4); font-size:11px; color:#ffcc80;">
+      ⚠️ Este sinal NÃO atingiu o critério de ${perfilConfiguradoLabel} (configurado em Config) - foi aprovado pelo critério mais permissivo de ${perfilAprovadoLabel}. Avalie sua própria confiança antes de operar.
+    </div>
+  `;
+
+}
+
 function bannerOrigemSinal(sinal) {
 
   const perfilLabel = LEGENDA_PERFIL[sinal.perfil] || null;
@@ -960,6 +984,8 @@ ${miniCard("🏁", "SAÍDA", formatarPrecoPar(sinal.precoSaida ?? sinal.precoFec
 ${bannerSMC(sinal)}
 
 ${bannerCandlestick(sinal)}
+
+${bannerCascata(sinal)}
 
 ${bannerOrigemSinal(sinal)}
 

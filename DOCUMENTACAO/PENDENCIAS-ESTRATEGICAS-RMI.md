@@ -171,3 +171,16 @@ quando isso for priorizado (nenhum avaliado a fundo ainda):
 
 Nenhuma dessas opções foi escolhida. Fica como pendência estratégica,
 mesma disciplina dos itens acima: não implementar sem decisão explícita.
+
+**Atualização (26/09/2026, AJUSTE-028, `ENGINEERING.md`):** um CONTORNO
+temporário foi implementado (não a solução definitiva acima, que
+continua em aberto) - enquanto o perfil configurado é CONSERVADOR e um
+sinal não bate o critério dele, o app tenta BALANCEADO e depois
+AGRESSIVO automaticamente, com aviso claro no sinal (`bannerCascata()`
+em `js/historico.js`) de que o critério real foi mais permissivo que o
+configurado. Isso evita o app ficar "zerado" enquanto a decisão acima
+não é tomada, mas NÃO resolve o problema em si: uma operação aprovada
+em Balanceado continua sem contar como evidência do Conservador
+(`RIGOR_PERFIL` exige rigor igual ou maior, por design). Uma das
+opções acima (ou outra) ainda precisa ser escolhida explicitamente
+antes que o CONSERVADOR consiga, de fato, se autoalimentar.

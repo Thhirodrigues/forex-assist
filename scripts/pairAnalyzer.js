@@ -464,8 +464,58 @@ if (parEhCruzado(par)) {
 
 }
 
-const financeiro =
-    analisarFinanceiro({
+// ===================================================
+// CASCATA DE APROVAÇÃO (AJUSTE-028, 26/09/2026)
+// ---------------------------------------------------
+// Decisão explícita do usuário (via AskUserQuestion, 26/09/2026):
+// enquanto o "ovo e galinha" do CONSERVADOR (PENDENCIAS-ESTRATEGICAS-
+// RMI.md, seção 6 - o gate de 30 operações do próprio perfil nunca se
+// auto-alimenta, porque RIGOR_PERFIL em statisticsEngine.js só conta
+// operação já aprovada NO CONSERVADOR) não tem solução definitiva, o
+// app não fica em zero sinal quando o perfil CONFIGURADO é
+// CONSERVADOR: tenta CONSERVADOR primeiro; se não bater, tenta
+// BALANCEADO; se não bater, tenta AGRESSIVO. O primeiro nível que
+// aprovar é o que vale - inclusive pra risco financeiro (lote/TP/SL):
+// decisão explícita do usuário foi usar o risco do nível que REALMENTE
+// aprovou (ex.: aprovou em Agressivo, lote/TP/SL do Agressivo), não
+// sempre o risco mais conservador. A análise técnica (score, tendência,
+// RSI, SMC, candlestick) é a MESMA pros três - só a régua de aprovação
+// (scoreMinimo/multi-timeframe/expectativa) muda, exatamente como os
+// perfis sempre diferiram entre si.
+//
+// Isso NÃO resolve o "ovo e galinha": uma operação aprovada em
+// BALANCEADO continua não contando pra estatística do CONSERVADOR
+// (RIGOR_PERFIL exige rigor igual ou maior, por design, e está certo -
+// uma operação Balanceado não é evidência de qualidade Conservador).
+// Resolve um problema diferente e complementar: não ficar parado
+// enquanto a decisão de verdade (perfil interno "APRENDIZADO" ou
+// equivalente, ver seção 6 do doc) não é tomada. Escopo confirmado:
+// só quando o perfil CONFIGURADO é CONSERVADOR (não genérico pra
+// qualquer perfil) e sempre automático (sem checkbox novo em Config).
+//
+// Simplificação assumida, registrada em vez de escondida: `estatisticas`
+// (taxaAcerto/operacoesElegiveis) é calculada UMA VEZ upstream
+// (scanner.js), filtrada pelo rigor do perfil CONFIGURADO (Conservador -
+// hoje 0%/SEM_DADOS, ver AJUSTE-027). Ao tentar BALANCEADO/AGRESSIVO
+// aqui, a expectativa financeira desses níveis usa essa MESMA
+// taxaAcerto (a visão do Conservador), não a própria história de cada
+// nível - recalcular por nível exigiria nova consulta ao Firestore
+// aqui dentro (obterEstatisticasPar é assíncrono, hoje só chamado em
+// scanner.js). Fora de escopo deste contorno temporário.
+const ORDEM_CASCATA_CONSERVADOR = ["CONSERVADOR", "BALANCEADO", "AGRESSIVO"];
+
+const perfisParaTentar =
+    perfil === "CONSERVADOR"
+        ? ORDEM_CASCATA_CONSERVADOR
+        : [perfil];
+
+let financeiro;
+let decisao;
+let perfilResolvido;
+
+for (const perfilTentativa of perfisParaTentar) {
+
+    const financeiroTentativa = analisarFinanceiro({
 
         probabilidade:
              estatisticas.resumo.taxaAcerto,
@@ -484,7 +534,7 @@ const financeiro =
 
         slUSD: configuracao?.sl,
 
-        perfil,
+        perfil: perfilTentativa,
 
         par,
 
@@ -494,38 +544,52 @@ const financeiro =
 
     });
 
-const decisao = avaliarOperacao({
+    const decisaoTentativa = avaliarOperacao({
 
-    score: qualidade.score,
+        score: qualidade.score,
 
-    qualidade: qualidade.qualidade,
+        qualidade: qualidade.qualidade,
 
-    tendencia: qualidade.tendencia,
+        tendencia: qualidade.tendencia,
 
-    multi: qualidade.multi,
+        multi: qualidade.multi,
 
-    confianca: qualidade.confidenceLevel,
+        confianca: qualidade.confidenceLevel,
 
-    recomendacaoFinanceira: financeiro.recomendacao,
+        recomendacaoFinanceira: financeiroTentativa.recomendacao,
 
-    expectativa: financeiro.expectativa,
+        expectativa: financeiroTentativa.expectativa,
 
-    perfil,
+        perfil: perfilTentativa,
 
-    // MUD-02 (17/09/2026): antes usava estatisticas.operacoes (contado
-    // pelo RÓTULO do perfil - travava o CONSERVADOR estruturalmente,
-    // ver statisticsEngine.js). Agora usa a contagem por SCORE. Fallback
-    // pro comportamento antigo (?? estatisticas.operacoes) se o campo
-    // faltar por qualquer motivo, em vez de quebrar.
-    operacoesHistoricas: estatisticas.operacoesElegiveis ?? estatisticas.operacoes,
+        // MUD-02 (17/09/2026): antes usava estatisticas.operacoes (contado
+        // pelo RÓTULO do perfil - travava o CONSERVADOR estruturalmente,
+        // ver statisticsEngine.js). Agora usa a contagem por SCORE. Fallback
+        // pro comportamento antigo (?? estatisticas.operacoes) se o campo
+        // faltar por qualquer motivo, em vez de quebrar.
+        operacoesHistoricas: estatisticas.operacoesElegiveis ?? estatisticas.operacoes,
 
-    // AJUSTE-009 (24/09/2026): decisionEngine.js's avaliarOperacao()
-    // passa a vetar RSI extremo contra a direção do sinal - precisa do
-    // valor numérico do RSI, que já era calculado aqui mas nunca era
-    // repassado pra essa chamada.
-    rsi: rsiAtual
+        // AJUSTE-009 (24/09/2026): decisionEngine.js's avaliarOperacao()
+        // passa a vetar RSI extremo contra a direção do sinal - precisa do
+        // valor numérico do RSI, que já era calculado aqui mas nunca era
+        // repassado pra essa chamada.
+        rsi: rsiAtual
 
-});
+    });
+
+    financeiro = financeiroTentativa;
+    decisao = decisaoTentativa;
+    perfilResolvido = perfilTentativa;
+
+    if (decisao.aprovado) break;
+
+    if (perfisParaTentar.length > 1) {
+        console.log(`Cascata...........${perfilTentativa} reprovado (${decisao.motivo})`);
+    }
+
+}
+
+const rebaixadoDaCascata = perfilResolvido !== perfil;
 
 if (!decisao.aprovado) {
 
@@ -551,8 +615,12 @@ if (!decisao.aprovado) {
 
 }
 
+if (rebaixadoDaCascata) {
+    console.log(`Cascata...........aprovado em ${perfilResolvido} (configurado: ${perfil})`);
+}
+
 direcao = decisao.direcao;
-        
+
 // ===================================================
 // FILTRO DE CONFIANÇA
 // ===================================================
@@ -626,7 +694,19 @@ const analise = {
     // exigidas por decisionEngine.js, para sempre - mesmo com milhares
     // de sinais reais no histórico. Confirmado com teste isolado antes
     // da correção.
-    perfil,
+    //
+    // AJUSTE-028 (26/09/2026): com a cascata de aprovação, `perfil` aqui
+    // passa a ser o nível que REALMENTE aprovou (perfilResolvido) - não
+    // necessariamente o configurado em Config. É o valor correto pra
+    // RIGOR_PERFIL (uma operação aprovada em Balanceado deve contar como
+    // evidência Balanceado, não Conservador). `perfilConfigurado` guarda
+    // o que estava selecionado em Config no momento, pra UI e para
+    // diferenciar sinal "puro" de sinal rebaixado pela cascata.
+    perfil: perfilResolvido,
+
+    perfilConfigurado: perfil,
+
+    rebaixadoDaCascata,
 
     score: qualidade.score,
 
