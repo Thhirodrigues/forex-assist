@@ -11497,3 +11497,69 @@ muda a prioridade do planejamento estratégico discutido com o usuário
 (spread/exposição/calendário/carry trade), decisão de próximo passo
 em aberto, fica pra conversa direta com o usuário.
 --------
+AJUSTE-031 (26/09/2026) - investigação: por que o score não
+discrimina WIN de LOSS (ferramentas/diagnostico-discriminacao-score.js
+NOVO, .github/workflows/diagnostico-discriminacao-score.yml NOVO)
+
+Origem: pedido explícito do usuário depois do AJUSTE-030 ("investiga
+por que o score não discrimina antes de mexer no spread"). Script só
+leitura, mesmo padrão dos diagnósticos anteriores.
+
+Achado de código ANTES de rodar: até o AJUSTE-003 (17/09/2026 11:24
+UTC) o checker incluía até ~50min de candles ANTERIORES à entrada no
+caminho de preço - o WIN/LOSS dessas operações foi decidido em parte
+por preço de antes do sinal existir. Por isso o script separa
+"LIMPAS" (fechadas a partir de 17/09 11:30 UTC) de "ANTIGAS". Métrica
+de discriminação: AUC por componente (0,5 = não discrimina; <0,5 =
+invertido). Com n~114, erro padrão ~0,055.
+
+Resultado real (run #1, conclusion success):
+
+LIMPAS: 114 ops, 52W/62L, 45,6%, P&L -$42,34, média WIN $2,38 vs
+média LOSS -$2,68 (RR efetivo ~0,89 -> breakeven ~53%).
+ANTIGAS: 298 ops, 109W/189L, 36,6%.
+
+Hipóteses:
+- H1 rótulo contaminado: CONFIRMADA em parte - 36,6% -> 45,6% ao
+  isolar rótulos limpos. Parte do "39%" global era artefato. Ainda
+  abaixo do breakeven.
+- H2 desempate pessimista (TP e SL no mesmo candle): DESCARTADA -
+  1 de 62 LOSS limpos.
+- H3 alvo pequeno demais pro ruído: DESCARTADA nos dados limpos - TP
+  médio 12,5 pips (~3 ATR de 5min), AUC do "TP em ATR" 0,483; faixa
+  1-2 ATR teve a MELHOR taxa (57,7%). (Nos dados antigos aparece AUC
+  0,78, mas é provável artefato da contaminação - não confiável.)
+- H4 componentes: nos dados LIMPOS o score é levemente INVERTIDO -
+  AUC 0,417, média WIN 47,8 vs LOSS 52,3, e a taxa cai de forma
+  monotônica com o score: 35-44 52,6% (n=38) | 45-54 48,8% (n=43) |
+  55-64 45,0% (n=20) | 65-74 22,2% (n=9) | 75-84 0% (n=4).
+  Componentes que puxam a inversão: adxScore AUC 0,420 e ADX (valor)
+  AUC 0,430 (ADX 20-25: 60%; ADX >=35: 35%), tendenciaScore 0,437.
+  emaScore 0,500 e rsiScore 0,509 (neutros). Mesma direção nos dados
+  antigos (ADX >=35: 3W/26L), mas lá a contaminação pode inflar o
+  efeito (entrada em tendência forte tem preço PRÉ-entrada do lado
+  adverso, que o checker antigo contava) - só os dados limpos valem.
+  Hipótese resultante (não confirmada, n pequeno): o score premia
+  "tendência já forte" (ADX alto, alinhamento de EMAs), e num
+  gatilho de 5min isso marca entrada tardia/esticada - mesma tensão
+  já registrada como item 9 em PENDENCIAS-ESTRATEGICAS-RMI.md
+  (scalping 5min vs filtro de tendência longa), agora com dado.
+- Outros: `historico` = RUIM em 113/114 limpas (penalidade -10 em
+  quase tudo, sem papel discriminante); rótulo `qualidade` = CONFLITO
+  em 104/114 (limiares de classificarQualidade() quase nunca
+  atingidos na era limpa - rótulo sem informação). O "ajuste
+  automático" de lote/TP/SL foi EXPECTATIVA_NEGATIVA em 113/114 - na
+  prática um estado constante.
+- Dados antigos confirmam, com a ressalva da contaminação, o veto de
+  RSI extremo do AJUSTE-009: RSI <30 -> 1W/13L; RSI >=70 -> 0W/9L.
+
+Decisão: nenhuma mudança de código de produção nesta entrada.
+Discutido com o usuário: remover TP/SL/lote fixos agora mudaria a
+métrica de resultado no meio da investigação (confunde antes/depois)
+e o "sugerido pelo sistema" atual não é adaptativo (tiers fixos em
+dólar; limiar de ATR 0,0012 em preço absoluto não é comparável entre
+pares JPY e não-JPY). Próximo passo proposto: registrar TODA análise
+(item 3 do planejamento) com um score "sombra" testando a hipótese
+do ADX/entrada tardia, sem mudar decisão, e comparar com amostra
+maior antes de mexer em peso.
+--------
