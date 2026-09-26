@@ -620,56 +620,91 @@ function secaoEstruturaMercado() {
         o quanto o preço foi além do corpo antes de voltar.
       </p>
 
-      <h3>Os principais padrões de candlestick</h3>
+      <h3>Os 18 principais padrões de candlestick</h3>
       <p style="font-size:11px; color:#8c95b3;">
-        Conteúdo clássico de análise técnica (o mesmo material que
-        qualquer curso de candlestick ensina, XP incluído) - não é algo
-        que o RMI detecta ou usa hoje na decisão automática (o app usa
-        EMA/RSI/ADX/ATR + SMC, ver seção "Como o RMI decide"), é
-        conhecimento geral pra você reconhecer visualmente no gráfico
-        da corretora.
+        Conteúdo clássico de análise técnica (existem uns 40 padrões
+        catalogados ao todo - estes são os 18 mais usados no mercado,
+        mesma lista de referência que corretoras como a XP ensinam) -
+        não é algo que o RMI detecta ou usa hoje na decisão automática
+        (o app usa EMA/RSI/ADX/ATR + SMC, ver seção "Como o RMI
+        decide"), é conhecimento geral pra você reconhecer
+        visualmente no gráfico da corretora.
       </p>
 
-      <p><b>De reversão de ALTA (aparecem depois de uma queda, sinalizam possível virada pra cima):</b></p>
+      <p><b>Padrões de reversão de ALTA (bom momento pra considerar compra):</b></p>
       <table style="width:100%; border-collapse:collapse; font-size:12px; margin:10px 0;">
-        <tr style="background:rgba(255,255,255,.06);"><th style="padding:6px; text-align:left;">Padrão</th><th style="padding:6px; text-align:left;">Como reconhecer</th></tr>
-        <tr><td style="padding:6px;"><b>Martelo</b> (Hammer)</td><td style="padding:6px;">Corpo pequeno no topo do candle, sombra inferior longa (2x o corpo ou mais), quase sem sombra superior</td></tr>
-        <tr><td style="padding:6px;"><b>Martelo Invertido</b> (Inverted Hammer)</td><td style="padding:6px;">Corpo pequeno na base, sombra superior longa, quase sem sombra inferior</td></tr>
-        <tr><td style="padding:6px;"><b>Engolfo de Alta</b> (Bullish Engulfing)</td><td style="padding:6px;">Candle de baixa pequeno seguido de um candle de alta cujo corpo "engole" o corpo inteiro do anterior</td></tr>
-        <tr><td style="padding:6px;"><b>Harami de Alta</b> (Bullish Harami)</td><td style="padding:6px;">Candle grande de baixa seguido de um candle pequeno de alta, contido DENTRO do corpo anterior (o oposto do Engolfo)</td></tr>
-        <tr><td style="padding:6px;"><b>Piercing Line</b> (Linha Penetrante)</td><td style="padding:6px;">Candle de baixa seguido de um de alta que abre abaixo da mínima anterior e fecha acima da metade do corpo anterior</td></tr>
-        <tr><td style="padding:6px;"><b>Estrela da Manhã</b> (Morning Star)</td><td style="padding:6px;">3 candles: queda forte, um candle pequeno de indecisão (às vezes com gap), e um candle de alta forte fechando dentro do 1º corpo</td></tr>
-        <tr><td style="padding:6px;"><b>Três Soldados Brancos</b> (Three White Soldiers)</td><td style="padding:6px;">3 candles de alta seguidos, corpos crescentes, sombras pequenas - continuidade forte compradora</td></tr>
-        <tr><td style="padding:6px;"><b>Pinça de Fundo</b> (Tweezer Bottom)</td><td style="padding:6px;">Dois candles (baixa, depois alta) com mínimas praticamente no mesmo nível - a queda "bate no mesmo chão" duas vezes e reverte</td></tr>
+        <tr style="background:rgba(255,255,255,.06);">
+          <th style="padding:6px; text-align:left;">#</th>
+          <th style="padding:6px; text-align:left;">Padrão</th>
+          <th style="padding:6px; text-align:left;">Corpo / sombras</th>
+          <th style="padding:6px; text-align:left;">O que sinaliza</th>
+        </tr>
+        <tr><td style="padding:6px;">1</td><td style="padding:6px;"><b>Martelo</b> (Hammer)</td><td style="padding:6px;">Corpo pequeno no topo; sombra inferior longa (~2x o corpo); sombra superior mínima/ausente</td><td style="padding:6px;">Vem de queda prolongada - mercado tentando corrigir pra cima</td></tr>
+        <tr><td style="padding:6px;">2</td><td style="padding:6px;"><b>Martelo Invertido</b></td><td style="padding:6px;">Corpo pequeno na base; sombra superior longa (~2x o corpo); sombra inferior mínima/ausente</td><td style="padding:6px;">Compradores testando preços mais altos, ainda sem força total - início de transição pra alta</td></tr>
+        <tr><td style="padding:6px;">3</td><td style="padding:6px;"><b>Harami de Fundo</b></td><td style="padding:6px;">3 candles: baixa de corpo médio, depois um pequeno já de alta, depois um grande de alta</td><td style="padding:6px;">Vendedores perdendo força aos poucos até a tendência virar pra cima</td></tr>
+        <tr><td style="padding:6px;">4</td><td style="padding:6px;"><b>Engolfo de Alta</b></td><td style="padding:6px;">Candle de baixa pequeno seguido de um de alta bem maior, cujo corpo cobre o anterior inteiro</td><td style="padding:6px;">Mudança forte e repentina de força vendedora pra compradora</td></tr>
+        <tr><td style="padding:6px;">5</td><td style="padding:6px;"><b>Piercing Line</b></td><td style="padding:6px;">Candle de baixa seguido de um de alta que fecha acima da metade do corpo anterior</td><td style="padding:6px;">Recuperação parcial forte o bastante pra indicar reversão de alta</td></tr>
+        <tr><td style="padding:6px;">6</td><td style="padding:6px;"><b>Chute de Alta</b> (Kicker)</td><td style="padding:6px;">Dois candles médios/longos com um gap entre eles: fecha em baixa, abre já em alta</td><td style="padding:6px;">Um fato novo (ex.: notícia) muda o preço bruscamente - reversão forte pra cima</td></tr>
       </table>
 
-      <p><b>De reversão de BAIXA (aparecem depois de uma alta, sinalizam possível virada pra baixo):</b></p>
+      <p><b>Padrões de reversão de BAIXA (bom momento pra considerar venda):</b></p>
       <table style="width:100%; border-collapse:collapse; font-size:12px; margin:10px 0;">
-        <tr style="background:rgba(255,255,255,.06);"><th style="padding:6px; text-align:left;">Padrão</th><th style="padding:6px; text-align:left;">Como reconhecer</th></tr>
-        <tr><td style="padding:6px;"><b>Enforcado</b> (Hanging Man)</td><td style="padding:6px;">Mesmo formato do Martelo (corpo pequeno no topo, sombra inferior longa), mas aparecendo no TOPO de uma alta, não no fundo de uma queda</td></tr>
-        <tr><td style="padding:6px;"><b>Estrela Cadente</b> (Shooting Star)</td><td style="padding:6px;">Corpo pequeno na base, sombra superior longa - aparece no topo de uma alta (espelho do Martelo Invertido)</td></tr>
-        <tr><td style="padding:6px;"><b>Engolfo de Baixa</b> (Bearish Engulfing)</td><td style="padding:6px;">Candle de alta pequeno seguido de um candle de baixa que engole o corpo inteiro do anterior</td></tr>
-        <tr><td style="padding:6px;"><b>Harami de Baixa</b> (Bearish Harami)</td><td style="padding:6px;">Candle grande de alta seguido de um candle pequeno de baixa contido dentro do corpo anterior</td></tr>
-        <tr><td style="padding:6px;"><b>Nuvem Negra</b> (Dark Cloud Cover)</td><td style="padding:6px;">Candle de alta seguido de um de baixa que abre acima da máxima anterior e fecha abaixo da metade do corpo anterior</td></tr>
-        <tr><td style="padding:6px;"><b>Estrela da Tarde</b> (Evening Star)</td><td style="padding:6px;">Espelho da Estrela da Manhã: alta forte, indecisão pequena, depois queda forte fechando dentro do 1º corpo</td></tr>
-        <tr><td style="padding:6px;"><b>Três Corvos Negros</b> (Three Black Crows)</td><td style="padding:6px;">3 candles de baixa seguidos, corpos crescentes - espelho dos Três Soldados Brancos</td></tr>
-        <tr><td style="padding:6px;"><b>Pinça de Topo</b> (Tweezer Top)</td><td style="padding:6px;">Dois candles (alta, depois baixa) com máximas praticamente no mesmo nível - espelho da Pinça de Fundo</td></tr>
+        <tr style="background:rgba(255,255,255,.06);">
+          <th style="padding:6px; text-align:left;">#</th>
+          <th style="padding:6px; text-align:left;">Padrão</th>
+          <th style="padding:6px; text-align:left;">Corpo / sombras</th>
+          <th style="padding:6px; text-align:left;">O que sinaliza</th>
+        </tr>
+        <tr><td style="padding:6px;">7</td><td style="padding:6px;"><b>Engolfo de Baixa</b></td><td style="padding:6px;">Candle de alta pequeno seguido de um de baixa bem maior, cujo corpo cobre o anterior inteiro</td><td style="padding:6px;">Mudança forte e repentina de força compradora pra vendedora</td></tr>
+        <tr><td style="padding:6px;">8</td><td style="padding:6px;"><b>Estrela Cadente</b> (Shooting Star)</td><td style="padding:6px;">Corpo pequeno na base; sombra superior longa; sombra inferior mínima/ausente</td><td style="padding:6px;">Vem de sequência de altas - mercado entrando em reversão de baixa</td></tr>
+        <tr><td style="padding:6px;">9</td><td style="padding:6px;"><b>Nuvem Negra</b> (Dark Cloud Cover)</td><td style="padding:6px;">Candle de alta seguido de um de baixa que fecha abaixo da metade do corpo anterior</td><td style="padding:6px;">Sinal de reversão de baixa, mas fraco (variação pequena) - vale confirmar com outros fatores antes de vender</td></tr>
+        <tr><td style="padding:6px;">10</td><td style="padding:6px;"><b>Enforcado</b> (Hanging Man)</td><td style="padding:6px;">Corpo pequeno; sombra inferior longa (~2x o corpo); sombra superior mínima/ausente - no TOPO de uma alta</td><td style="padding:6px;">Movimento vendedor perdeu força ao longo do candle - possível início de queda</td></tr>
+        <tr><td style="padding:6px;">11</td><td style="padding:6px;"><b>Três Corvos Pretos</b></td><td style="padding:6px;">3 candles de baixa seguidos, cada um fechando abaixo da mínima anterior</td><td style="padding:6px;">Sequência de altas perdendo força - bom momento pra vender</td></tr>
+        <tr><td style="padding:6px;">12</td><td style="padding:6px;"><b>Harami de Topo</b></td><td style="padding:6px;">3 candles: alta de corpo médio, depois um pequeno já de baixa, depois um grande de baixa</td><td style="padding:6px;">Compradores ficando indecisos até a tendência virar pra baixo (espelho do Harami de Fundo)</td></tr>
+        <tr><td style="padding:6px;">13</td><td style="padding:6px;"><b>Chute de Baixa</b> (Kicker)</td><td style="padding:6px;">Dois candles médios/longos com um gap entre eles: fecha em alta, abre já em baixa</td><td style="padding:6px;">Um fato novo muda o preço bruscamente - reversão forte pra baixo</td></tr>
       </table>
 
-      <p><b>De indecisão ou continuação:</b></p>
+      <p><b>Indecisão / dependem de outros fatores pra decidir:</b></p>
       <table style="width:100%; border-collapse:collapse; font-size:12px; margin:10px 0;">
-        <tr style="background:rgba(255,255,255,.06);"><th style="padding:6px; text-align:left;">Padrão</th><th style="padding:6px; text-align:left;">Como reconhecer</th></tr>
-        <tr><td style="padding:6px;"><b>Doji</b></td><td style="padding:6px;">Abertura e fechamento praticamente no mesmo preço (corpo quase inexistente) - indecisão entre compradores e vendedores. Variações: Doji Dragonfly (sombra só embaixo), Doji Gravestone (sombra só em cima), Doji Perna Longa (sombras longas dos dois lados)</td></tr>
-        <tr><td style="padding:6px;"><b>Pião</b> (Spinning Top)</td><td style="padding:6px;">Corpo pequeno, sombras superior e inferior parecidas em tamanho - indecisão, mas com algum corpo (diferente do Doji)</td></tr>
-        <tr><td style="padding:6px;"><b>Marubozu</b></td><td style="padding:6px;">Corpo grande, sem sombra (ou quase nenhuma) - convicção forte de um lado só, geralmente CONTINUA a tendência em vez de reverter</td></tr>
+        <tr style="background:rgba(255,255,255,.06);">
+          <th style="padding:6px; text-align:left;">#</th>
+          <th style="padding:6px; text-align:left;">Padrão</th>
+          <th style="padding:6px; text-align:left;">Corpo / sombras</th>
+          <th style="padding:6px; text-align:left;">O que sinaliza</th>
+        </tr>
+        <tr><td style="padding:6px;">14</td><td style="padding:6px;"><b>Doji</b></td><td style="padding:6px;">Sem corpo (abertura = fechamento, ou quase)</td><td style="padding:6px;">Equilíbrio total entre compradores e vendedores - pode antecipar mudança de tendência</td></tr>
+        <tr><td style="padding:6px;">15</td><td style="padding:6px;"><b>Dia Longo</b></td><td style="padding:6px;">Dois candles seguidos com corpos grandes (não importa a cor)</td><td style="padding:6px;">Variação forte nos dois dias, mas sem indicar se a tendência continua ou reverte - exige mais contexto</td></tr>
+        <tr><td style="padding:6px;">16</td><td style="padding:6px;"><b>Dia Curto</b></td><td style="padding:6px;">Dois candles seguidos com corpos pequenos (não importa a cor)</td><td style="padding:6px;">Indecisão e estabilidade - pode virar reversão ou continuação, exige mais contexto</td></tr>
+        <tr><td style="padding:6px;">17</td><td style="padding:6px;"><b>Marubozu</b></td><td style="padding:6px;">Corpo médio/grande, sem sombra nenhuma (abriu na máxima/mínima e fechou na mínima/máxima)</td><td style="padding:6px;">Convicção forte de um lado só naquele candle, mas sozinho não define reversão nem continuidade</td></tr>
+        <tr><td style="padding:6px;">18</td><td style="padding:6px;"><b>Pião</b> (Spinning Top)</td><td style="padding:6px;">Dois candles pequenos seguidos, pouca variação entre abertura e fechamento</td><td style="padding:6px;">Pouca convicção de ninguém - observe o mercado antes de decidir</td></tr>
       </table>
+
+      <h3>Como analisar candlestick na prática</h3>
+      <ol style="padding-left:20px; font-size:13px;">
+        <li>Olhe o(s) candle(s) anterior(es) pra saber se está diante de
+          uma possível reversão ou continuação da tendência.</li>
+        <li>Cruze com outros indicadores (médias móveis, RSI, suporte e
+          resistência) antes de decidir - um padrão isolado, sem
+          contexto, vale bem menos.</li>
+        <li>Dê mais peso quando o padrão aparece perto de um suporte/
+          resistência real e é confirmado pelo candle seguinte.</li>
+      </ol>
       <p style="font-size:11px; color:#8c95b3;">
-        Regra geral pra qualquer padrão de reversão: ele vale mais
-        quando aparece perto de um suporte/resistência real e é
-        confirmado pelo candle seguinte - um Martelo isolado no meio do
-        nada, sem contexto, é bem mais fraco que um Martelo formado
-        exatamente num suporte que já segurou o preço antes.
+        Regra rápida de cor: candle verde (fechamento acima da
+        abertura) = viés de alta; vermelho (fechamento abaixo da
+        abertura) = viés de baixa; variação muito pequena entre
+        abertura e fechamento = mercado indeciso, melhor esperar.
       </p>
+
+      <h3>Dicionário rápido</h3>
+      <ul style="padding-left:20px; font-size:13px;">
+        <li><b>Candle Gatilho</b> - o candle que confirma a reversão
+          quando o preço rompe a extremidade dele a favor da análise.</li>
+        <li><b>Rompimento de Candle</b> - quando o preço fecha acima da
+          máxima ou abaixo da mínima de um candle de referência.</li>
+        <li><b>Candles de reversão</b> - os padrões que indicam virada
+          de tendência (Harami é um exemplo clássico).</li>
+      </ul>
 
       <h3>Suporte e resistência</h3>
       <p>

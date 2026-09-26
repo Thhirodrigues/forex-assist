@@ -10942,3 +10942,33 @@ clássicas de candlestick não mudam com o pipeline do app) - risco de
 ficar desatualizado é baixo, diferente das outras seções do Manual que
 dependem do código real.
 --------
+AJUSTE-024c (mesmo dia, 2º follow-up) - padrões de candlestick
+substituídos pela lista exata da XP (18 itens, na ordem da fonte)
+
+Origem: `WebFetch` na URL da XP tinha sido bloqueado pelo proxy
+(AJUSTE-024b). Usuário colou o conteúdo completo do artigo direto na
+conversa. A lista genérica de 19 padrões escrita antes (própria,
+sem fonte específica) foi SUBSTITUÍDA pela lista exata da XP - 18
+padrões, mesma numeração/ordem/agrupamento do artigo (6 de reversão de
+alta, 7 de reversão de baixa, 5 de indecisão - incluindo padrões que a
+lista genérica anterior não tinha: Harami de Fundo/Topo como versão de
+3 candles - diferente do Harami clássico de 2 candles -, Chute/Kicker,
+Dia Longo, Dia Curto).
+
+Conteúdo reescrito com PALAVRAS PRÓPRIAS (não copiado verbatim do
+artigo da XP - direito autoral de terceiro), preservando os fatos
+técnicos corretos (formato do corpo/sombra, sinal de alta/baixa/
+indecisão) e a estrutura em tabela já usada no resto do Manual. Uma
+inconsistência encontrada na fonte original foi corrigida silenciosamente
+sem repassar: o texto da XP sobre "Nuvem Negra" tem um erro aparente
+(cabeçalho diz "reversão de baixa", corpo do texto diz "tendência de
+reversão de alta") - escrito aqui de forma consistente com a
+definição correta e universal do padrão (Dark Cloud Cover é
+definitivamente um padrão de reversão de BAIXA).
+
+Também adicionado (presente na fonte, ausente na versão anterior):
+seção "Como analisar candlestick na prática" (3 passos) e "Dicionário
+rápido" (Candle Gatilho, Rompimento de Candle, Candles de reversão).
+
+Validado: `node -c`.
+--------
