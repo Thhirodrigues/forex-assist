@@ -11365,4 +11365,49 @@ se o histórico real ainda não tem massa suficiente pra isso destravar
 o CONSERVADOR de fato. Nenhuma mudança de código de produção proposta
 ainda - decisão fica pra depois de ver o número real, mesma disciplina
 do AJUSTE-027.
+
+**Resultado real (26/09/2026, executado via GitHub Actions,
+workflow_dispatch, run #1, job `diagnostico`, conclusion `success`):**
+
+```
+Total de operações WIN/LOSS no histórico: 412
+Sem campo "score" gravado: 0
+Bate score >= 55: 261
+Bate score >= 55 + multi-timeframe confirmado: 30
+Bate os 3 critérios completos (score + multi + expectativa >= 0): 2
+  BALANCEADO: 1 | AGRESSIVO: 1
+  USD/JPY: 1 | GBP/USD: 1
+```
+
+**Leitura honesta, sem maquiagem**: a ideia (reclassificar por mérito
+técnico em vez de rótulo) está correta, mas os NÚMEROS não sustentam
+implementá-la agora - só 2 operações em 412 bateriam os 3 critérios
+completos do CONSERVADOR, uma por par, longe das 30 NO MESMO par que
+`operacoesMinimas` exige. Implementar a reclassificação hoje daria ao
+CONSERVADOR um placar de 1/30 no melhor par - progresso real, mas
+irrelevante na prática. **Decisão: não implementar a reclassificação
+agora** - construir o código pra um ganho de 1 operação não se
+justifica; revisitar quando houver mais massa (a cascata do AJUSTE-028
+deve gerar novas operações que ajudam a alimentar esse número com o
+tempo, mesmo que indiretamente).
+
+O funil revela algo mais importante que a pergunta original: a queda
+de 261→30 (só 11% mantêm multi-timeframe confirmado) e principalmente
+de 30→2 (só 7% têm expectativa≥0) mostra que a maioria esmagadora do
+histórico real tem `probabilidade` (taxa de acerto do par no momento)
+abaixo de 50% - com RR fixo em 1:1 (TP=SL=$5, configuração padrão),
+`expectativa >= 0` exige `probabilidade >= 50%` por definição
+matemática (`calcularExpectativa` em moneyManager.js). Isso não é um
+problema de rótulo de perfil - é um problema de taxa de acerto real
+do sistema, que afeta TODOS os perfis, não só o Conservador. Registrado
+como achado novo pra discussão com o usuário, não decidido aqui.
+
+Ressalva sobre o dado, não investigada a fundo: o campo `multi` só
+passou a ser gravado de forma confiável a partir do MUD-01 (17/09/2026)
+- parte da queda de 261→30 pode incluir documentos mais antigos com o
+campo `multi` ausente (tratado como reprovação, mesma cautela de
+sempre), não necessariamente "DIVERGENTE" de verdade. Não muda a
+conclusão prática (o teto de 30→2 pela expectativa já é o suficiente
+pra não implementar agora), mas registrado pra não confundir o número
+"30" com uma medida limpa de divergência real.
 --------
