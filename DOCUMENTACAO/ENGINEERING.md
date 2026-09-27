@@ -11652,6 +11652,14 @@ BRT) que `Análise...........registrada` aparece no log de cada par
 avaliado; ferramenta de rotulagem hipotética offline (próximo passo);
 decisão sobre expectativa sem histórico (acima); re-rotular os
 antigos com candles corretos (opcional).
+
+**Confirmado em produção (27/09/2026, 1º ciclo real pós-reabertura,
+run #7518, 21:00 UTC domingo):** `Análise...........registrada`
+apareceu nos 8 pares avaliados, zero `Aviso: não foi possível
+registrar`, `Erros..............0`. Scores reais do ciclo: EUR/USD 25,
+USD/CAD 30, USD/CHF 19, EUR/JPY 24 (reprovados nos 3 níveis) - AUD/USD
+57, GBP/USD 49, USD/JPY 49, NZD/USD 43 (aprovados, ver AJUSTE-033
+abaixo pro detalhe de em qual nível).
 --------
 AJUSTE-033 (26/09/2026) - "sem histórico" deixa de ser "0% de acerto"
 no gate de expectativa (scripts/decisionEngine.js,
@@ -11709,4 +11717,23 @@ validate-pentefino004-expectativa (todos OK).
 
 Pendente: confirmar no primeiro ciclo real (check-in de domingo) que
 a cascata passa a registrar tentativas no Balanceado.
+
+**Confirmado em produção (27/09/2026, mesmo ciclo acima):** dos 4
+sinais aprovados, 3 pararam no BALANCEADO (GBP/USD score 49, USD/JPY
+score 49, AUD/USD score 57 - os três com expectativa negativa,
+`operacoesBaseExpectativa: 0`, antes do AJUSTE-033 seriam barrados
+por "Expectativa matemática... abaixo do mínimo" e cairiam pro
+Agressivo) - o defeito do AJUSTE-028 está corrigido de fato, não só em
+teste sintético. O 4º (NZD/USD, score 43) foi barrado no BALANCEADO
+por SCORE mesmo (43 < 45, não por expectativa) e aprovou no AGRESSIVO
+- comportamento correto, não é o bug.
+
+Achado extra, não previsto: AUD/USD teve score 57 (ACIMA do mínimo 55
+do CONSERVADOR) mas foi reprovado nele mesmo assim, por
+`operacoesMinimas` ("Histórico insuficiente para o perfil CONSERVADOR
+(mínimo 30 operações)") - confirma com dado real, não só teoria, que
+mesmo um sinal tecnicamente bom o bastante pro Conservador não
+consegue entrar por causa do cold-start (Mecanismo A/B, AJUSTE-029/
+032) - reforça que este ajuste resolve a expectativa, não o
+`operacoesMinimas` em si, exatamente como documentado.
 --------
