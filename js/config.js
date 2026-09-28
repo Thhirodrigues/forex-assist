@@ -602,7 +602,7 @@ style="width:100%; padding:8px; border:none; border-radius:8px; background:#1f4e
 
 <div style="font-size:11px; color:#8c95b3; margin-top:4px;">
 
-Usa o valor acima como saldo atual da Conta Simulada (dinheiro fictício, pra testar o app sem risco real). Substitui o que estiver lá, incluindo qualquer WIN/LOSS já acumulado. Lembre de deixar "Base de Cálculo de Risco" abaixo em "Conta Simulada" enquanto estiver testando, senão isso aqui não afeta o dimensionamento dos sinais.
+Usa o valor acima como saldo atual da Conta Simulada (dinheiro fictício, pra testar o app sem risco real). <b>Substitui</b> o saldo atual - não soma nem desconta (ex.: pra ficar com $500, digite 500). A confirmação mostra o saldo atual antes de gravar. Lembre de deixar "Base de Cálculo de Risco" abaixo em "Conta Simulada" enquanto estiver testando, senão isso aqui não afeta o dimensionamento dos sinais.
 
 </div>
 
@@ -1561,6 +1561,41 @@ function bindConfigEvents() {
     // Configurações" de propósito - grava saldoReal diretamente,
     // sobrescrevendo o que já estiver acumulado. Confirmação explícita
     // porque é destrutivo se usado por engano depois da primeira vez.
+    // AJUSTE-041 (28/09/2026): usuário digitou 643,07 achando que o
+    // botão SOMAVA ao saldo simulado (-143,07) pra chegar em 500 - mas
+    // ele SUBSTITUI. A tela nunca mostrava o saldo atual, então o texto
+    // "substitui o que estiver lá" não bastava. Agora a confirmação lê o
+    // saldo gravado e mostra "atual -> novo". Leitura best-effort: se
+    // falhar, a confirmação segue sem o valor atual (mesmo fluxo de antes).
+    async function textoConfirmacaoSaldo(campo, nomeConta, valor, extra) {
+
+        let atual = null;
+
+        try {
+            const doc = await db.collection("configuracoes").doc("geral").get();
+            const v = Number(doc.data()?.[campo]);
+            if (Number.isFinite(v)) atual = v;
+        } catch (erro) {
+            console.error("Não foi possível ler o saldo atual:", erro);
+        }
+
+        const linhaAtual = atual === null
+            ? `Saldo atual da ${nomeConta}: (não foi possível ler)\n`
+            : `Saldo atual da ${nomeConta}: $${atual.toFixed(2)}\n`;
+
+        const avisoZero = valor === 0
+            ? `\nCom saldo $0 não dá pra calcular o risco - todo sinal vai mostrar aviso de risco.\n`
+            : "";
+
+        return linhaAtual +
+            `Novo saldo: $${valor.toFixed(2)}\n\n` +
+            `ATENÇÃO: o valor digitado SUBSTITUI o saldo atual - não soma nem desconta.\n` +
+            avisoZero +
+            (extra ? `${extra}\n` : "") +
+            `\nConfirma?`;
+
+    }
+
     const btnDefinirSaldoReal = document.getElementById("btnDefinirSaldoReal");
 
     if (btnDefinirSaldoReal) {
@@ -1574,11 +1609,10 @@ function bindConfigEvents() {
                 return;
             }
 
-            const confirmado = confirm(
-                `Isso vai definir o saldo da Conta Real como $${valor.toFixed(2)}, ` +
-                `substituindo o que estiver lá agora (incluindo qualquer WIN/LOSS/aporte já ` +
-                `acumulado). Use só na primeira vez. Confirma?`
-            );
+            const confirmado = confirm(await textoConfirmacaoSaldo(
+                "saldoReal", "Conta Real", valor,
+                "Isso apaga qualquer WIN/LOSS/aporte já acumulado. Use só na primeira vez."
+            ));
 
             if (!confirmado) return;
 
@@ -1628,11 +1662,10 @@ function bindConfigEvents() {
                 return;
             }
 
-            const confirmado = confirm(
-                `Isso vai definir o saldo da Conta Simulada como $${valor.toFixed(2)}, ` +
-                `substituindo o que estiver lá agora (incluindo qualquer WIN/LOSS já ` +
-                `acumulado). Confirma?`
-            );
+            const confirmado = confirm(await textoConfirmacaoSaldo(
+                "saldoSimulado", "Conta Simulada", valor,
+                "Isso apaga qualquer WIN/LOSS já acumulado na Conta Simulada."
+            ));
 
             if (!confirmado) return;
 

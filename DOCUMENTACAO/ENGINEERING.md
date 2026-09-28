@@ -12260,3 +12260,20 @@ e aprovado; AGRESSIVO 45 ops mensagem antiga; BALANCEADO 45 ops continua
 bloqueando). Regressões 028/032/033/034/037/038/039, feature010,
 pentefino004, bug024 passando.
 --------
+
+AJUSTE-041 (28/09/2026) - confirmação dos botões de saldo mostra
+"atual -> novo" (só frontend, js/config.js)
+
+Caso real: usuário digitou 643,07 no "Definir Saldo Inicial da Conta
+Simulada" achando que o botão somava ao saldo (-143,07) pra chegar em
+500; ele SUBSTITUI e o saldo virou 643,07. A tela nunca mostrava o
+saldo atual. Agora os dois botões (Simulada e Real) leem
+configuracoes/geral antes de confirmar e mostram saldo atual, novo
+saldo, "SUBSTITUI - não soma nem desconta" e, se o valor for 0, que
+todo sinal vai mostrar aviso de risco (AJUSTE-040). Leitura
+best-effort: se falhar, confirmação segue sem o valor atual. Texto de
+ajuda do botão Simulada atualizado ("pra ficar com $500, digite 500").
+Validado isolando a função com Firestore simulado (leitura ok, falha
+de leitura, valor 0). Nenhuma escrita automática no saldo foi feita
+por aqui - o usuário redefine pela tela.
+--------
