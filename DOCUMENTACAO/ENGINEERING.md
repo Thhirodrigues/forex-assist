@@ -11947,3 +11947,103 @@ confundir (confundi antes, atenção registrada). Não corrigido nesta
 entrada - decisão de produto (quanto penalizar "sem dado" vs "ruim
 confirmado") levada ao usuário, mesma disciplina de sempre.
 --------
+
+AJUSTE-037 (28/09/2026) - revisão completa do score + ADX em zona
+ideal (PRODUÇÃO) + penalidade de histórico proporcional (TESTADA E
+REVERTIDA)
+
+Pedido do usuário: revisar tudo que foi concluído no dia antes de
+implementar (ADX em zona ideal e penalidade menor pra par sem
+histórico), e só então seguir com as duas implementações.
+
+Revisão - duas correções ao que eu tinha afirmado antes:
+
+1) ADX pesava DUAS vezes, não uma. analisarADX() dava 0-15 pontos e
+   analisarTendencia() somava mais +5 (ADX 20-30) ou +10 (ADX >=30).
+   Contribuição total real: <15:0, 15-20:3, 20-25:11, 25-30:14,
+   30-35:22, 35-40:24, >=40:25. O maior salto (+8) é exatamente em 30,
+   onde o acerto cai de 56% pra 26%. Consequência: a candidata "A) sem
+   ADX" do AJUSTE-035 só removeu adxScore e deixou a parte do ADX em
+   tendenciaScore - aquele teste estava incompleto.
+
+2) Histórico ausente era penalizado em QUATRO camadas, não uma (-10
+   RUIM como eu tinha dito): par com 0 operações -> taxaAcerto 0 ->
+   RUIM -> pesoHistorico -8 (historyAnalyzer, -10 x 0,8) + RUIM -10
+   (scoreEngine) + bonusDirecao -5 (statisticsEngine devolve taxa 0 pra
+   direção vazia, e `0 < 50`) + score INTEIRO x0,8 (confidenceMultiplier
+   com menos de 25 operações). Explica o GBP/USD de 27/09: técnico 74
+   -> score 49. `memoriaOperacional` (marketAnalyzer) lê
+   historicoDirecao.ultimos5, que não existe no objeto BUY/SELL - é
+   sempre 0 (código morto, não alterado).
+
+Ferramenta: ferramentas/diagnostico-replay-score-ajuste037.js (+ .yml,
+workflow_dispatch, só leitura). Reprocessa as operações fechadas com
+rótulo confiável pelo calcularQualidade() do CHECKOUT (disparada com
+ref = branch, antes de qualquer merge na main), usando os insumos
+salvos em cada operação (indicadores, estatisticas do momento da
+decisão, SMC/candlestick detectados). Checagem de fidelidade: com
+histórico >=40 operações e ADX<30 (onde nada muda), o motor do
+checkout reproduziu o score salvo em 69 de 69 operações.
+
+Resultado 1 - ADX + histórico proporcional juntos (n=162):
+  AUC salvo 0,440 | novo 0,459 | só histórico novo 0,379 (-2,76 SE)
+  Acerto por tamanho do histórico no momento da decisão:
+    0 operações   35,4% (n=48)
+    1-39          33,3% (n=21)
+    40+           48,4% (n=93)
+  A penalidade pesada é conceitualmente errada ("não sei" tratado como
+  "sei que é ruim"), mas NESTA amostra aponta na direção certa: as
+  operações sem histórico perderam mais. Removê-la subiu justamente o
+  grupo que mais perde. Causa provável não isolada (confusão possível
+  com perfil - histórico zero acontece mais em BALANCEADO/CONSERVADOR,
+  que filtram por rigor - e com época). Mudança de histórico
+  REVERTIDA: historyAnalyzer.js e scoreEngine.js idênticos ao
+  anterior; comentário no marketAnalyzer.js explica por que não
+  "corrigir" sem novo replay.
+
+Resultado 2 - só ADX (motor que foi pra produção, exato):
+  AUC score final 0,440 -> 0,547 (+1,03 SE)
+  AUC score técnico 0,450 -> 0,593 (+2,06 SE)
+  Corte 35: 162 aprovadas (42,6%) -> 128 (45,3%)
+  Corte 45:  98 aprovadas (37,8%) ->  67 (44,8%)
+  Corte 55:  40 aprovadas (32,5%) ->  22 (36,4%)
+
+Mudança de produção (só marketAnalyzer.js):
+  - analisarADX: 0-15:0 | 15-20:3 | 20-25:6 | 25-30:9 (iguais a
+    antes) | >=30: 0, força "ESTICADA" (antes 12/14/15).
+  - analisarTendencia: removido o +10 pra ADX >=30 (o +5 pra 20-30
+    continua).
+  - Nada muda abaixo de ADX 30. Não é penalidade - ADX alto só deixa
+    de ser premiado.
+  Validação isolada (scratchpad/validate-ajuste037.js, motor real novo
+  x cópia do antigo): 32/32, incluindo score idêntico ao antigo em 20
+  combinações histórico x ADX<30. Regressão 028/032/033/034: todas
+  passando. Manual (js/manual.js) atualizado: tabela do ADX e texto
+  da confirmação cruzada.
+
+Ressalvas (não escondidas):
+  - A zona 20-30 foi identificada NOS MESMOS dados que validam a
+    mudança - o AUC 0,547 é otimista. Diferença que sustenta a
+    decisão: ADX 20-30 56% (n=66) vs >=30 25% (n=52), ~3,4 erros-
+    padrão. Precisa ser reconferida fora da amostra: rodar este mesmo
+    replay de novo com ~100 operações novas fechadas depois deste
+    ajuste (a coleção `analises` do AJUSTE-032 também permite rotular
+    sinais reprovados).
+  - Mesmo com a mudança, o acerto fica em ~45% no corte 35 - SEM
+    spread modelado. Não existe edge demonstrado ainda; isto reduz
+    sinal ruim, não cria sinal bom.
+  - Só existem resultados de operações que o motor ANTIGO aprovou -
+    sinais que o novo aprovaria e o antigo não, nunca foram medidos.
+  - Efeito esperado em produção: MENOS sinais (principalmente os de
+    ADX alto, que eram os de score mais alto), CONSERVADOR mais raro
+    ainda (score >=55 já era difícil com histórico zerado).
+
+Pendências registradas pra decisão do usuário (nenhuma implementada):
+  - Com amostra cheia, taxa <50% é contada três vezes (pesoHistorico
+    -10, RUIM -10, bonusDirecao -5). Como ~todo par está abaixo de 50%
+    hoje, é praticamente uniforme - não discrimina entre pares.
+  - Limiar RUIM em 50% ignora a relação TP/SL (o que importa é
+    expectativa, não taxa pura).
+  - analisarATR usa limiares absolutos (0,0020/0,0012) - pares JPY
+    (preço ~150) ficam sempre em "ALTA", +5 automático.
+--------

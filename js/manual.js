@@ -276,15 +276,20 @@ function secaoComoDecide() {
         <tr><td style="padding:6px;">15 a 20</td><td style="padding:6px;">FRACA</td><td style="padding:6px; text-align:right;">3</td></tr>
         <tr><td style="padding:6px;">20 a 25</td><td style="padding:6px;">MODERADA</td><td style="padding:6px; text-align:right;">6</td></tr>
         <tr><td style="padding:6px;">25 a 30</td><td style="padding:6px;">BOA</td><td style="padding:6px; text-align:right;">9</td></tr>
-        <tr><td style="padding:6px;">30 a 35</td><td style="padding:6px;">FORTE</td><td style="padding:6px; text-align:right;">12</td></tr>
-        <tr><td style="padding:6px;">35 a 40</td><td style="padding:6px;">MUITO FORTE</td><td style="padding:6px; text-align:right;">14</td></tr>
-        <tr><td style="padding:6px;">acima de 40</td><td style="padding:6px;">EXTREMA</td><td style="padding:6px; text-align:right;">15</td></tr>
+        <tr><td style="padding:6px;">30 ou mais</td><td style="padding:6px;">ESTICADA</td><td style="padding:6px; text-align:right;">0</td></tr>
       </table>
       <p style="font-size:11px; color:#8c95b3;">
+        Por que ADX alto não soma: nos dados reais do próprio RMI
+        (AJUSTE-036/037), com alvo curto em M5, ADX 20-30 acertou ~56%
+        e ADX 30 ou mais só ~25% - quando o ADX já está alto, o
+        movimento já andou e o sinal chega tarde (reverte antes do TP).
+        Até o AJUSTE-037 era o contrário: ADX alto era o que mais somava.
+      </p>
+      <p style="font-size:11px; color:#8c95b3;">
         Mais um bônus de "confirmação cruzada": se EMA e RSI concordam
-        na direção, +10; se ADX está moderado/bom, +5 extra; se ADX
-        está forte/muito forte/extremo, +10 extra (esse é o campo
-        interno "tendenciaScore").
+        na direção, +10; se ADX está moderado/bom (20 a 30), +5 extra
+        (esse é o campo interno "tendenciaScore"). ADX esticado (30+)
+        não ganha extra nenhum.
       </p>
 
       <h3>Passo 3 - Score final (0 a 100)</h3>
