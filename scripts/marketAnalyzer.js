@@ -41,6 +41,29 @@ const {
 } = require("./scoreEngine");
 
 // ===================================================
+// ESCALA DE PREÇO POR PAR (AJUSTE-038)
+// ===================================================
+//
+// AJUSTE-038 (28/09/2026): analisarEMAs (compressão), analisarSlope,
+// analisarDistanciaEMAs, analisarSimetria e analisarATR comparam
+// DIFERENÇAS DE PREÇO com limiares absolutos (0,0003 / 0,0010 / 0,0015
+// / 0,0020...) pensados em pip de 0,0001. Em par JPY o pip é 0,01 - a
+// mesma distância em pips vale 100x mais em unidade de preço, então
+// par JPY caía sempre no topo (slope 8, distância IDEAL +5, ATR ALTA
+// +5) e par não-JPY sempre na base (ATR BAIXA em 100% das 399 análises
+// registradas). Confirmado em dado real (ferramentas/diagnostico-atr-
+// pips.js). Fator pra levar preço de par JPY pra mesma escala de pip
+// dos demais, aplicado nas ENTRADAS de calcularQualidade() por quem
+// chama (pairAnalyzer.js) - ordem entre EMAs, RSI e ADX não mudam com
+// escala, só as distâncias ficam comparáveis. Mesmo critério de pip de
+// moneyManager.js (par com "JPY" = 0,01).
+function fatorEscalaPip(par) {
+
+    return String(par || "").includes("JPY") ? 0.01 : 1;
+
+}
+
+// ===================================================
 // ANÁLISE DAS EMAs
 // ===================================================
 
@@ -1020,6 +1043,8 @@ module.exports = {
     analisarATR,
 
     calcularQualidade,
+
+    fatorEscalaPip,
 
     analisarDistanciaEMAs,
 

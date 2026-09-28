@@ -23,7 +23,13 @@ const serviceAccount = require("../serviceAccount.json");
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
-const { calcularQualidade } = require("../scripts/marketAnalyzer");
+const marketAnalyzer = require("../scripts/marketAnalyzer");
+const { calcularQualidade } = marketAnalyzer;
+
+// AJUSTE-038: mesma escala de pip que pairAnalyzer.js aplica nas
+// entradas do score (JPY x0,01). Checkout sem a função = fator 1
+// (reproduz o motor de antes).
+const fatorEscala = par => typeof marketAnalyzer.fatorEscalaPip === "function" ? marketAnalyzer.fatorEscalaPip(par) : 1;
 
 const CORTE_ROTULO_CONFIAVEL = Date.parse("2026-09-17T11:30:00Z");
 
@@ -89,10 +95,11 @@ async function main() {
         const campos = ["ema9", "ema21", "ema50", "ema100", "ema200", "rsi", "adx", "ema9_15", "ema21_15", "ema50_15", "atr"];
         if (campos.some(c => num(i[c]) === null) || !d.estatisticas) { semInsumo++; return; }
 
+        const f = fatorEscala(d.par);
         const q = calcularQualidade(
-            i.ema9, i.ema21, i.ema50, i.ema100, i.ema200,
-            i.rsi, i.adx, i.ema9_15, i.ema21_15, i.ema50_15,
-            d.estatisticas, i.atr,
+            i.ema9 * f, i.ema21 * f, i.ema50 * f, i.ema100 * f, i.ema200 * f,
+            i.rsi, i.adx, i.ema9_15 * f, i.ema21_15 * f, i.ema50_15 * f,
+            d.estatisticas, i.atr * f,
             d.smcDetectado || null,
             d.candlestickDetectado || null
         );
@@ -110,6 +117,7 @@ async function main() {
             tecnicoSalvo: num(d.scoreTecnico),
             tecnicoNovo: q.scoreTecnico,
             operacoesHist: num(d.estatisticas.operacoes) ?? 0,
+            jpy: String(d.par).includes("JPY"),
             historicoNovo: q.historico,
             adx: i.adx
         });
@@ -125,7 +133,9 @@ async function main() {
     // 30 (tabela igual), o motor novo tem que reproduzir o score salvo.
     // Se não reproduz, os insumos salvos não bastam pra confiar no
     // replay - reportado antes de qualquer conclusão.
-    const controle = ops.filter(o => o.operacoesHist >= 40 && o.adx < 30 && o.antigo !== null);
+    // AJUSTE-038: par JPY muda de propósito com a escala de pip - fica
+    // fora do controle de fidelidade.
+    const controle = ops.filter(o => o.operacoesHist >= 40 && o.adx < 30 && o.antigo !== null && !o.jpy);
     const iguais = controle.filter(o => Math.abs(o.novo - o.antigo) <= 1).length;
     console.log(`Fidelidade (hist >= 40 ops e ADX < 30, deveria bater): ${iguais} de ${controle.length} iguais (±1)\n`);
 
@@ -135,6 +145,12 @@ async function main() {
     relatorio("Score técnico salvo (EMA+RSI+tend+ADX)", ops, o => o.tecnicoSalvo);
     relatorio("Score técnico novo", ops, o => o.tecnicoNovo);
     console.log("Referência: ~1,96 SE de 0,5 = significativo a 95%. AUC do score novo é otimista (ADX tirado destes dados).");
+
+    const mediaDe = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : "n/a";
+    for (const [nome, grupo] of [["JPY", ops.filter(o => o.jpy)], ["não-JPY", ops.filter(o => !o.jpy)]]) {
+        const w = grupo.filter(o => o.resultado === "WIN").length;
+        console.log(`${nome.padEnd(8)} n=${grupo.length} acerto ${grupo.length ? (w * 100 / grupo.length).toFixed(1) : "n/a"}% | score médio salvo ${mediaDe(grupo.map(o => o.antigo).filter(v => v !== null))} -> motor do checkout ${mediaDe(grupo.map(o => o.novo))}`);
+    }
 
     const tx = s => s.length ? `${(s.filter(o => o.resultado === "WIN").length * 100 / s.length).toFixed(1)}% (n=${s.length})` : "n/a";
     console.log(`\nAcerto com 0 operações no histórico: ${tx(ops.filter(o => o.operacoesHist === 0))}`);

@@ -59,6 +59,10 @@ const {
     montarRegistroAnalise
 } = require("./analysisLogger");
 
+// AJUSTE-038: import direto (não injetado) - função pura de escala,
+// sem I/O, igual pra teste e produção.
+const { fatorEscalaPip } = require("./marketAnalyzer");
+
 // CACHE-002 (16/09/2026): candles de 15min só mudam a cada 15min, mas
 // o Scanner roda a cada 5min - sem cache, 2 de cada 3 chamadas a essa
 // perna traziam exatamente o mesmo candle da chamada anterior, puro
@@ -405,19 +409,25 @@ const candlestick = detectarPadraoCandlestick(candlesNumericos, atrAtual);
 
 console.log(`Candlestick......${candlestick ? `${candlestick.padrao} (${candlestick.direcao})` : "nenhum padrão da Fase 1 detectado"}`);
 
+// AJUSTE-038 (28/09/2026): EMAs e ATR entram no score na escala de pip
+// comum (par JPY x0,01) - ver fatorEscalaPip() em marketAnalyzer.js.
+// Só a ENTRADA do score muda: indicadores salvos, SMC, candlestick e o
+// financeiro continuam recebendo os valores brutos.
+const escalaPip = fatorEscalaPip(par);
+
 const qualidade = calcularQualidade(
-    ema9,
-    ema21,
-    ema50,
-    ema100,
-    ema200,
+    ema9 * escalaPip,
+    ema21 * escalaPip,
+    ema50 * escalaPip,
+    ema100 * escalaPip,
+    ema200 * escalaPip,
     rsiAtual,
     adxAtual,
-    ema9_15,
-    ema21_15,
-    ema50_15,
+    ema9_15 * escalaPip,
+    ema21_15 * escalaPip,
+    ema50_15 * escalaPip,
     estatisticas,
-    atrAtual,
+    atrAtual * escalaPip,
     smc,
     candlestick
 
