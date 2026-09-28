@@ -8,7 +8,8 @@
 > continua sendo o log cronológico de decisões técnicas — auditável,
 > mas não é pra navegação rápida).
 >
-> Última atualização: 09/09/2026 (seções 1-4 abaixo) — **aviso
+> Última atualização: **seção 0 em 28/09/2026**; seções 1-4 abaixo
+> continuam em 09/09/2026 — **aviso
 > honesto**: entre 10 e 11/09/2026 houve uma sessão extensa com muita
 > coisa nova (scanner ativado em produção, várias correções de
 > pipeline - PENTE-FINO-001 a 004, push notifications, gráfico de
@@ -35,6 +36,110 @@
 > consolidação de verdade, não só mais um aviso em cima do anterior -
 > registrado aqui como dívida, não resolvido nesta sessão. Pra estado
 > real, ler o final do `ENGINEERING.md` e `PENDENCIAS-ESTRATEGICAS-RMI.md`.
+
+---
+
+## 0. REGRA VIGENTE — CONGELAMENTO DO PIPELINE DE SINAIS (decidido em 28/09/2026)
+
+**Leia isto antes de propor qualquer mudança em score, aprovação, TP/SL
+ou lote.** Decisão do usuário, tomada depois de um dia inteiro corrigindo
+*instrumentos de medida quebrados* (ver "O que aconteceu em 28/09"
+abaixo): a cada correção a base de comparação recomeça do zero, e sem
+parar de mexer nunca se saberá qual mudança ajudou ou atrapalhou.
+
+### O que fica congelado
+
+Nenhuma mudança na **lógica** de:
+
+- `scripts/marketAnalyzer.js`, `scoreEngine.js`, `historyAnalyzer.js`
+  (pesos, limiares, bônus/penalidades, escala de pip);
+- `scripts/decisionEngine.js` (gates, perfis, cascata, veto de RSI);
+- `scripts/moneyManager.js` (cálculo de lote/TP/SL/expectativa/risco) e
+  a cascata em `scripts/pairAnalyzer.js`;
+- filtros de aprendizado em `scripts/statisticsEngine.js`.
+
+**Até**: fecharem **100 operações** (WIN/LOSS) com
+`financeiro.regimeTPSL === "CONFIG"` — só essas contam; operações sem
+esse campo são do regime anterior (TP/SL $3 forçado em par não-JPY, lote
+reduzido) e **não são comparáveis** (alvo em pips diferente).
+
+- 100 é um **piso, não uma garantia**: com ~45% de acerto, o intervalo de
+  95% do acerto medido em 100 operações é de ~±10 pontos percentuais.
+  Enxerga efeito grande (como o do ADX: 56% x 25%), não efeito pequeno.
+- Ritmo ainda **não medido** no regime novo (até 19:25 UTC de 28/09
+  havia 2 operações no regime novo). Referência de antes das mudanças:
+  162 operações fechadas em 11 dias corridos (17→28/09); o replay
+  projeta ~30% menos aprovações agora. Medir antes de prometer prazo.
+- Ferramenta pra contar as operações do regime novo: **ainda não
+  existe** (o replay `diagnostico-replay-score-ajuste037.js` imprime o
+  total geral, sem filtrar por regime). Criar quando for preciso.
+
+### O que PODE continuar durante o congelamento
+
+- Conserto de **bug que corrompe o que é salvo** ou engana o usuário
+  (como os do AJUSTE-038 a 041) — com teste isolado do motor real,
+  regressões, registro no `ENGINEERING.md` e validação no primeiro
+  ciclo real, como sempre. Na dúvida se é "bug" ou "mudança de
+  estratégia": é mudança de estratégia, vai pra fila e pergunta-se ao
+  usuário.
+- Frontend, Manual, textos de aviso, documentação.
+- Ferramentas administrativas **só de leitura** (`ferramentas/*.js` +
+  `workflow_dispatch`), inclusive medir o resultado **líquido de spread**
+  offline — sem alterar nenhum sinal.
+- O usuário mexer na Config (saldo, pares, horários).
+
+### Fila (registrada, NÃO implementar antes do descongelamento)
+
+Detalhe em `PENDENCIAS-ESTRATEGICAS-RMI.md` e `BACKLOG-E-VISAO.md`;
+itens achados em 28/09 (`ENGINEERING.md`, AJUSTE-037 a 041):
+
+1. Spread modelado (por par) no score/expectativa — junto com 2 e 3.
+2. Taxa <50% contada 3x com amostra cheia (pesoHistorico -10, RUIM -10,
+   bonusDirecao -5); nota: a penalidade de histórico "errada no
+   conceito" apontou pro lado certo no replay (AJUSTE-037) — medir antes.
+3. Limiar "RUIM" em 50% de acerto ignora a relação TP/SL (trocar por
+   expectativa, só confiável depois do spread).
+4. Folga mínima entre EMAs pra classificar tendência (EUR/USD 28/09:
+   tendência decidida por ~0,3 pip entre EMA50 e EMA100).
+5. Recalibrar limiares de ATR/slope/distância (hoje em pips, mas os
+   valores nunca foram calibrados; ATR sem relação com acerto no dado).
+6. Reconferir a zona ideal do ADX (20-30) **fora da amostra** — foi
+   identificada nos mesmos dados que a validam.
+7. Código morto/incorreto sem efeito prático: `memoriaOperacional`
+   (lê `ultimos5` que não existe no objeto BUY/SELL), `analisarAlinhamento`
+   (`a > b || a < b`), `riskEngine.js`/`positionSizing.js`.
+8. Teto de exposição entre pares correlacionados; breakeven; stop por
+   ATR; blackout de notícias; carry trade.
+
+### Quando descongelar
+
+Com >= 100 operações do regime novo fechadas: rodar, no regime novo,
+`ferramentas/diagnostico-replay-score-ajuste037.js` (reconfere ADX fora
+da amostra), `diagnostico-atr-pips.js`, `diagnostico-discriminacao-score.js`
+e `diagnostico-taxa-acerto-real.js`, mais o resultado líquido de spread.
+Só então decidir a fila **um item por vez**, com replay antes de cada
+mudança (padrão do AJUSTE-037: o que parecia certo no conceito piorou
+no dado e foi revertido).
+
+### O que aconteceu em 28/09/2026 (resumo verificado; detalhe no `ENGINEERING.md`)
+
+- AJUSTE-037: ADX passou a ter "zona ideal" (>=30 não soma); mudança de
+  histórico proporcional **testada e revertida** (piorava o ranking).
+- AJUSTE-038: EMAs/ATR entram no score na escala de pip (JPY x0,01) —
+  antes o ATR era "BAIXA" em 100% dos não-JPY e "ALTA" em 100% dos JPY.
+- AJUSTE-039: lote/TP/SL **sempre os da Config** (antes 124 de 124
+  operações não-JPY saíam com TP/SL $3 forçado, ignorando a Config);
+  exceção só GBP/USD com TP 1,5x. Operações novas marcadas
+  `regimeTPSL: "CONFIG"`.
+- AJUSTE-040: aviso de risco quando o saldo do cálculo é <= 0;
+  mensagem de expectativa honesta no AGRESSIVO com histórico curto.
+- AJUSTE-041: confirmação dos botões de saldo mostra "atual -> novo".
+- **Pendente do usuário**: em 28/09 21:25 UTC o saldo simulado estava em
+  $643,07 (usuário queria 500; o botão SUBSTITUI, não soma). Confirmar
+  com `ferramentas/checar-saldo-simulado.js` (só leitura).
+- **Ainda sem evidência de edge**: ~45% de acerto sem spread modelado
+  não é lucro. As seções 3 e 4 abaixo continuam descrevendo 09/09 e
+  **não** refletem nada disto.
 
 ---
 
