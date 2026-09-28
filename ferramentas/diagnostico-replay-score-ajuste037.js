@@ -105,6 +105,12 @@ async function main() {
             novo: q.score,
             // variante aproximada: histórico novo, ADX antigo (sem clamp exato)
             soHistorico: Math.min(100, Math.max(0, q.score - adxNovo + adxAntigo(i.adx))),
+            // variante aproximada: ADX novo, histórico antigo (score salvo
+            // + diferença de ADX escalada pelo multiplicador que valia).
+            soADX: num(d.score) === null ? null : Math.min(100, Math.max(0, Math.round(
+                num(d.score) + (adxNovo - adxAntigo(i.adx)) * (num(d.confidenceMultiplier) ?? 1)))),
+            tecnicoSalvo: num(d.scoreTecnico),
+            tecnicoNovo: q.scoreTecnico,
             operacoesHist: num(d.estatisticas.operacoes) ?? 0,
             historicoNovo: q.historico,
             adx: i.adx
@@ -128,7 +134,15 @@ async function main() {
     relatorio("Score salvo (produção)", ops, o => o.antigo);
     relatorio("Score novo (histórico + ADX)", ops, o => o.novo);
     relatorio("Só histórico novo (ADX antigo, aprox.)", ops, o => o.soHistorico);
+    relatorio("Só ADX novo (histórico antigo, aprox.)", ops, o => o.soADX);
+    relatorio("Score técnico salvo (EMA+RSI+tend+ADX)", ops, o => o.tecnicoSalvo);
+    relatorio("Score técnico novo", ops, o => o.tecnicoNovo);
     console.log("Referência: ~1,96 SE de 0,5 = significativo a 95%. AUC do score novo é otimista (ADX tirado destes dados).");
+
+    const tx = s => s.length ? `${(s.filter(o => o.resultado === "WIN").length * 100 / s.length).toFixed(1)}% (n=${s.length})` : "n/a";
+    console.log(`\nAcerto com 0 operações no histórico: ${tx(ops.filter(o => o.operacoesHist === 0))}`);
+    console.log(`Acerto com 1-39 operações:           ${tx(ops.filter(o => o.operacoesHist > 0 && o.operacoesHist < 40))}`);
+    console.log(`Acerto com 40+ operações:            ${tx(ops.filter(o => o.operacoesHist >= 40))}`);
 
     const media = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : "n/a";
     console.log(`\nMédia score: salvo ${media(ops.map(o => o.antigo).filter(v => v !== null))} | novo ${media(ops.map(o => o.novo))}`);
