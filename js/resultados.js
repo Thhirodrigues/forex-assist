@@ -549,6 +549,7 @@ async function carregarResultados() {
                 <th style="padding:6px 8px;">Direção</th>
                 <th style="padding:6px 8px;">Tempo</th>
                 <th style="padding:6px 8px;">Resultado</th>
+                <th style="padding:6px 8px; text-align:center;" title="Modo que aprovou o sinal">Modo</th>
                 <th style="padding:6px 8px; text-align:right;">Favor</th>
                 <th style="padding:6px 8px; text-align:right;">Contra</th>
                 <th style="padding:6px 8px; text-align:right;">Resultado Financeiro</th>

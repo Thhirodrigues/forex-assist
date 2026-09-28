@@ -499,10 +499,23 @@ function secaoComoLerSinal() {
         <li><b>⚠️</b> ao lado do resultado - tem um Aviso de Risco
           (Money Manager achou o risco alto pro saldo atual, mas não
           bloqueou - toque pra ver a mensagem completa).</li>
-        <li><b>📉</b> - Aviso de Expectativa (só aparece no perfil
-          Agressivo, quando a expectativa matemática do par tava
-          negativa mas o Agressivo deixa passar como aviso, não
-          bloqueio).</li>
+        <li><b>📉</b> - Aviso de Expectativa: a expectativa matemática
+          do par tava negativa, mas não bloqueou o sinal - no
+          Agressivo isso é sempre assim (aceita mais risco por
+          definição); no Balanceado/Conservador (AJUSTE-033,
+          26/09/2026) só vira aviso em vez de bloqueio quando o
+          histórico do par ainda é curto (menos de 30 operações) - sem
+          dado suficiente, a expectativa calculada não é confiável, não
+          é o mesmo que "confirmada negativa".</li>
+        <li><b>🔬</b> - Aviso de Histórico (AJUSTE-034, 28/09/2026, só
+          Conservador): o score bateu o mínimo do perfil (55), mas o
+          par ainda não tem as 30 operações próprias exigidas pra
+          confiança plena - sinal liberado mesmo assim, com aviso.</li>
+        <li><b>Coluna "Modo"</b> (AJUSTE-034) - bolinha colorida com o
+          perfil que REALMENTE aprovou o sinal (🟢 Agressivo/🔵
+          Balanceado/🟡 Conservador), que pode ser mais permissivo que
+          o perfil configurado em Config quando a cascata (ver "Como o
+          RMI decide") rebaixou o sinal - toque pra ver o detalhe.</li>
       </ul>
 
       <h3>Ao expandir o sinal (toque na linha)</h3>

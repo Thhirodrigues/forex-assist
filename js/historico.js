@@ -876,7 +876,12 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
     ? `<span title="${String(sinal.avisoRisco.mensagem).replace(/"/g, "&quot;")}"> ⚠️</span>`
     : sinal.avisoExpectativa?.ativo
       ? `<span title="${String(sinal.avisoExpectativa.mensagem).replace(/"/g, "&quot;")}"> 📉</span>`
-      : "";
+      // AJUSTE-034 (28/09/2026): mesmo padrão dos dois acima - sinal
+      // aprovado pelo CONSERVADOR com histórico ainda abaixo de 30
+      // operações no par.
+      : sinal.avisoHistorico?.ativo
+        ? `<span title="${String(sinal.avisoHistorico.mensagem).replace(/"/g, "&quot;")}"> 🔬</span>`
+        : "";
 
   const usd = sinal.resultadoFinanceiro;
   const usdFormatado = usd == null ? "--" : `${usd >= 0 ? "+" : "-"}$${Math.abs(Number(usd)).toFixed(2)}`;
@@ -901,6 +906,21 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
   const favorFormatado = favor != null ? Number(favor).toFixed(1) : "--";
   const contraFormatado = contra != null ? Number(contra).toFixed(1) : "--";
 
+  // AJUSTE-034 (28/09/2026): pedido do usuário - bolinha da cor do
+  // MODO que realmente aprovou o sinal (🟢 Agressivo/🔵 Balanceado/
+  // 🟡 Conservador, mesmas cores de LEGENDA_PERFIL), visível na
+  // tabela principal sem precisar abrir o detalhe. `sinal.perfil` já
+  // é o nível REALMENTE aprovado desde o AJUSTE-028 (não
+  // necessariamente o configurado - ver bannerCascata) - correto usar
+  // direto aqui. "-" pra sinais salvos antes do PENTE-FINO-001
+  // (perfil nunca foi persistido).
+  const perfilDotTitle = sinal.perfil
+    ? `Aprovado no modo ${LEGENDA_PERFIL[sinal.perfil] || sinal.perfil}${sinal.rebaixadoDaCascata ? ` (configurado: ${LEGENDA_PERFIL[sinal.perfilConfigurado] || sinal.perfilConfigurado})` : ""}`
+    : "Perfil não registrado neste sinal";
+  const perfilDot = sinal.perfil
+    ? (LEGENDA_PERFIL[sinal.perfil] || "⚪").split(" ")[0]
+    : "-";
+
   return `
     <tr id="sinal-${docId}" data-sinal-id="${docId}" style="cursor:pointer; ${borderStyle}">
       <td style="padding:8px; white-space:nowrap;">${horario}</td>
@@ -908,6 +928,7 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
       <td style="padding:8px; white-space:nowrap;">${direcaoLabel}</td>
       <td style="padding:8px; white-space:nowrap;">${tempoLabel}</td>
       <td style="padding:8px; white-space:nowrap;">${resultadoLabel}${avisoIcone}</td>
+      <td style="padding:8px; text-align:center;" title="${perfilDotTitle.replace(/"/g, "&quot;")}">${perfilDot}</td>
       <td style="padding:8px; text-align:right; color:#00d26a;">${favorFormatado}</td>
       <td style="padding:8px; text-align:right; color:#ff5252;">${contraFormatado}</td>
       <td style="padding:8px; text-align:right; font-weight:bold; color:${usdCor};">${usdFormatado}</td>
@@ -928,7 +949,7 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
       ` : ""}
     </tr>
     <tr>
-      <td colspan="${comCmp ? 10 : 9}" style="padding:0; border:none;">
+      <td colspan="${comCmp ? 11 : 10}" style="padding:0; border:none;">
         ${detalheHtml}
       </td>
     </tr>
@@ -1286,6 +1307,7 @@ async function carregarHistorico() {
                     <th style="padding:6px 8px;">Direção</th>
                     <th style="padding:6px 8px;">Tempo</th>
                     <th style="padding:6px 8px;">Resultado</th>
+                    <th style="padding:6px 8px; text-align:center;" title="Modo que aprovou o sinal">Modo</th>
                     <th style="padding:6px 8px; text-align:right;">Favor</th>
                     <th style="padding:6px 8px; text-align:right;">Contra</th>
                     <th style="padding:6px 8px; text-align:right;">Resultado Financeiro</th>

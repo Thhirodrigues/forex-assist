@@ -196,3 +196,17 @@ anteriores ao AJUSTE-003 também deixaram de alimentar a estatística
 PRÓPRIAS) continua aberto; a ideia de reclassificar o histórico por
 mérito foi medida no AJUSTE-029 e só 2 operações se qualificariam - e
 a de lançar dado fabricado foi descartada (contaminaria a base).
+
+**Atualização (28/09/2026, AJUSTE-034):** o pedaço que faltava foi
+implementado - o gate `operacoesMinimas` (as 30 operações próprias que
+o CONSERVADOR exige) virou AVISO, não bloqueio, quando o score já
+atinge o mínimo do perfil (mesma filosofia do AJUSTE-033, aplicada ao
+gate que tinha ficado de fora). Efeito: um sinal que bate TODOS os
+critérios técnicos reais do Conservador (score, multi-timeframe, sem
+veto de RSI) agora é aprovado DIRETO como Conservador mesmo sem as 30
+operações - e, ao fechar, essa operação PASSA A CONTAR de verdade pra
+estatística do Conservador (RIGOR_PERFIL exige rigor igual ou maior;
+antes, caindo pro Balanceado via cascata, nunca contava). É o
+mecanismo que faltava pro Conservador se autoalimentar. Ainda não
+validado ao vivo - confirmar num ciclo real que a contagem própria do
+Conservador realmente sobe.

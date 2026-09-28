@@ -11737,3 +11737,82 @@ consegue entrar por causa do cold-start (Mecanismo A/B, AJUSTE-029/
 032) - reforça que este ajuste resolve a expectativa, não o
 `operacoesMinimas` em si, exatamente como documentado.
 --------
+AJUSTE-034 (28/09/2026) - o gate operacoesMinimas do CONSERVADOR vira
+aviso, não bloqueio, quando o score já atinge o critério
+(scripts/decisionEngine.js, scripts/pairAnalyzer.js, js/historico.js,
+js/manual.js)
+
+Origem: usuário, revendo o resumo da sessão, perguntou "não tinha
+ficado definido que quando o score bater acima de 55, geraria uma
+msg... e liberar o sinal?" - esclarecido: isso NÃO tinha sido feito
+ainda. O AJUSTE-033 (26/09/2026) resolveu só o gate de EXPECTATIVA
+(que usava taxaAcerto=0 quando não havia histórico). O gate separado
+`operacoesMinimas` (exige 30 operações do próprio CONSERVADOR) tinha
+ficado de fora de propósito, porque "destravar" ele parecia arriscado
+demais na hora. O achado real de produção do dia anterior (AUD/USD,
+score 57 - acima do mínimo 55 - ainda assim reprovado no CONSERVADOR
+por "Histórico insuficiente... mínimo 30 operações", caindo pro
+BALANCEADO via cascata) tornou o caso concreto: esse MESMO gate que
+deveria proteger o Conservador de decidir com amostra pequena era o
+que impedia ele de um dia deixar de precisar da cascata - porque uma
+operação rotulada BALANCEADO nunca conta como evidência do
+CONSERVADOR (RIGOR_PERFIL, statisticsEngine.js).
+
+Implementação: mesma filosofia do AJUSTE-033 (aviso, não bloqueio,
+falls through em vez de return antecipado). `avaliarOperacao()` não
+reprova mais na hora quando `operacoesHistoricas < operacoesMinimas` -
+registra `avisoHistorico` (ativo/mensagem com "X de 30 operações") e
+CONTINUA rodando os checks seguintes (multi-timeframe, risco,
+expectativa, veto de RSI, COMPRESSAO/CONFLITO) - todos esses ainda
+podem reprovar o sinal normalmente. Só quando o sinal passa em TODOS
+eles é que aprova, carregando o aviso. Nada no scoreMinimo (55) nem no
+exigirMultiTimeframe foi relaxado - só a falta de AMOSTRA deixou de
+vetar sozinha um sinal que já passou em todo o resto.
+
+Efeito direto na cascata (AJUSTE-028): antes, um sinal CONSERVADOR-
+caliber sem histórico caía sempre pro nível seguinte (rotulado
+BALANCEADO/AGRESSIVO). Agora aprova DIRETO como CONSERVADOR (o loop da
+cascata para na primeira tentativa) - e como `analise.perfil` grava o
+nível que realmente aprovou, essa operação passa a contar de verdade
+pra estatística do CONSERVADOR quando fechar. É o mecanismo que
+faltava pro Conservador "andar com as próprias pernas" (a
+reclassificação retroativa do AJUSTE-029 só achou 2 operações
+qualificáveis no histórico velho; este ajuste resolve pra frente, sem
+depender de reclassificar nada).
+
+Efeito colateral bom, não buscado: como o sinal fica rotulado
+CONSERVADOR (não cai pro Agressivo/Balanceado), o Money Manager aplica
+as regras financeiras MAIS conservadoras dele (risco 1%, RR mínimo
+1.2), não as mais soltas de um nível mais permissivo.
+
+UI: `js/historico.js` ganha o ícone 🔬 (mesmo padrão de ⚠️/📉) quando
+`avisoHistorico.ativo`. Também pedido do usuário nesta mesma
+conversa: nova coluna "Modo" na tabela principal (Histórico e
+Resultados, que reusa `construirLinhaTabela`) - só a bolinha colorida
+do perfil que REALMENTE aprovou (🟢/🔵/🟡, mesmas cores de
+LEGENDA_PERFIL), com tooltip mostrando o perfil configurado quando
+diferente (sinal rebaixado pela cascata). `js/manual.js` atualizado
+explicando os três ícones de aviso e a coluna nova.
+
+Validado: `node -c` nos 4 arquivos. Script isolado
+(validate-ajuste034.js, motor real) - 8 cenários: score 57 (achado
+real) aprova direto no Conservador com aviso citando "0 de 30"; score
+55 exato com histórico parcial aprova com aviso; 30+ operações aprova
+SEM aviso (comportamento normal preservado); score abaixo de 55 (48)
+continua cascateando pro Balanceado normalmente, sem esse aviso; RSI
+extremo e multi-timeframe divergente continuam vetando mesmo com o
+aviso ativo; Balanceado/Agressivo configurados direto nunca geram
+avisoHistorico (operacoesMinimas=0 pra eles, gate nem roda).
+Regressão: validate-ajuste033 e validate-ajuste028-cascata tinham 2
+asserções que descreviam o comportamento ANTIGO (score 60 sem
+histórico cascateando pro Balanceado) - atualizadas de propósito pra
+refletir o novo comportamento correto (mesmo score aprova direto no
+Conservador agora), com comentário explicando a mudança; as duas
+suítes voltam a passar 100%, junto com validate-ajuste032 (15/15).
+
+Pendente: validar em produção real (próximo ciclo/dia) que um sinal
+Conservador-caliber realmente aprova direto e acumula rumo às 30
+operações - ainda não observado ao vivo (implementado após o último
+ciclo real conferido). Item 6 de PENDENCIAS-ESTRATEGICAS-RMI.md
+atualizado a seguir.
+--------

@@ -103,24 +103,50 @@ function avaliarOperacao(resultado) {
 
     }
 
+    // AJUSTE-034 (28/09/2026): antes disto, histórico abaixo do mínimo
+    // do perfil (30 operações pro CONSERVADOR) REPROVAVA de verdade
+    // (SEM_VIABILIDADE), mesmo quando o score já batia o mínimo do
+    // próprio perfil - era o gate que, confirmado com dado real em
+    // produção (AUD/USD, score 57, 27/09/2026), barrava o CONSERVADOR
+    // mesmo quando ele merecia aprovar, empurrando o sinal pra cascata
+    // (AJUSTE-028) e rotulando a operação como BALANCEADO/AGRESSIVO -
+    // que, por RIGOR_PERFIL (statisticsEngine.js), NUNCA conta como
+    // evidência do CONSERVADOR. Ou seja, o próprio gate que deveria
+    // proteger o CONSERVADOR de decidir com amostra pequena era o
+    // mesmo que o impedia de UM DIA deixar de precisar da cascata.
+    //
+    // Pedido explícito do usuário (28/09/2026): quando o score bate o
+    // mínimo do perfil mas o histórico ainda é curto, liberar o sinal
+    // COMO O PRÓPRIO PERFIL (não cascatear), com aviso explícito - a
+    // mesma filosofia já aplicada à expectativa no AJUSTE-033, agora
+    // completa pro gate de contagem também. Efeito esperado: uma
+    // operação que bate os critérios TÉCNICOS completos do CONSERVADOR
+    // passa a ser salva com `perfil: "CONSERVADOR"` de verdade, o que
+    // agora sim conta pra ele acumular as 30 operações próprias - o
+    // "andar com as próprias pernas" que a cascata sozinha não dava.
+    //
+    // Continua sendo um AVISO, não uma bagunça: nada aqui abaixa o
+    // scoreMinimo (55) nem a exigência de multi-timeframe do
+    // CONSERVADOR - só impede que a FALTA DE AMOSTRA, por si só, vete
+    // um sinal que já passou em todos os critérios de qualidade reais.
+    let avisoHistorico = null;
+
     if (
         perfilAnalise.operacoesMinimas > 0 &&
         (resultado.operacoesHistoricas ?? 0) < perfilAnalise.operacoesMinimas
     ) {
 
-    justificativas.push("Histórico insuficiente para o perfil");
+        justificativas.push("Histórico insuficiente para o perfil (aviso)");
 
-    return {
-        aprovado: false,
-        status: "SEM_VIABILIDADE",
-        direcao: "NONE",
-        motivo: `Histórico insuficiente para o perfil ${resultado.perfil} (mínimo ${perfilAnalise.operacoesMinimas} operações)`,
-        score,
-        qualidade,
-        tendencia,
-        confianca,
-        justificativas
-    };
+        avisoHistorico = {
+
+            ativo: true,
+
+            mensagem: `Score atingiu o critério do perfil ${resultado.perfil}, mas o histórico ainda tem só ` +
+                `${resultado.operacoesHistoricas ?? 0} de ${perfilAnalise.operacoesMinimas} operações necessárias pra confiança plena - ` +
+                `sinal liberado mesmo assim, avalie com mais cautela até o histórico se formar.`
+
+        };
 
     }
 
@@ -403,6 +429,7 @@ function avaliarOperacao(resultado) {
     confianca,
     avisoRisco,
     avisoExpectativa,
+    avisoHistorico,
 
     // BUG-021 (09/09/2026): este objeto `risco` era montado com
     // resultado.financeiro?.lote/tpUSD/slUSD, mas pairAnalyzer.js
@@ -435,6 +462,7 @@ function avaliarOperacao(resultado) {
     confianca,
     avisoRisco,
     avisoExpectativa,
+    avisoHistorico,
 
     justificativas
 };

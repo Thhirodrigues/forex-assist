@@ -849,6 +849,11 @@ const analise = {
 
     avisoExpectativa: decisao.avisoExpectativa || null,
 
+    // AJUSTE-034 (28/09/2026): mesmo padrão dos dois avisos acima -
+    // sinal aprovado com histórico ainda abaixo do mínimo do perfil
+    // (só possível pro CONSERVADOR, único com operacoesMinimas > 0).
+    avisoHistorico: decisao.avisoHistorico || null,
+
     indicadores: {
 
         ema9,
