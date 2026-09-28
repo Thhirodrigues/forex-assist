@@ -1,0 +1,35 @@
+name: Diagnóstico - ATR em pips (AJUSTE-038)
+
+# Ferramenta administrativa avulsa, SÓ LEITURA, NÃO faz parte do
+# pipeline de análise/decisão do produto. Só dispara manualmente
+# (workflow_dispatch), nunca por cron. Roda
+# ferramentas/diagnostico-atr-pips.js, que mede o ATR em pips por par
+# e a relação dele com acerto, antes de corrigir os limiares absolutos
+# de analisarATR - AJUSTE-038, 28/09/2026. Não escreve nada no Firestore.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Diagnóstico ATR
+        run: |
+          node ferramentas/diagnostico-atr-pips.js
