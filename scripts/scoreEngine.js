@@ -3,6 +3,8 @@
 // Forex Assist - RMI V2
 // ======================================================
 
+const { calcularPesoAmostra } = require("./historyAnalyzer");
+
 const ENGINE_WEIGHTS = {
     BONUS_EXCELENTE: 5,
     BONUS_BOA: 3,
@@ -42,43 +44,85 @@ function calcularScoreBase(score) {
 
 }
 // ======================================================
+// PESO DA AMOSTRA (AJUSTE-037)
+// ======================================================
+
+// AJUSTE-037: objeto `historico` sem pesoAmostra (chamada antiga/
+// externa) cai no confidenceMultiplier antigo, pra não quebrar.
+function pesoAmostraDe(historico) {
+
+    if (typeof historico.pesoAmostra === "number") {
+        return historico.pesoAmostra;
+    }
+
+    return typeof historico.confidenceMultiplier === "number"
+        ? historico.confidenceMultiplier
+        : 1;
+
+}
+
+// ======================================================
 // BÔNUS DE DIREÇÃO
 // ======================================================
 
+// AJUSTE-037 (28/09/2026): statisticsEngine.js devolve taxaAcerto 0
+// quando a direção não tem NENHUMA operação (historicoBUY.length === 0)
+// - e aqui `0 < 50` virava -5 automático. Todo par sem histórico
+// naquela direção perdia 5 pontos por uma "taxa de acerto ruim" que
+// não existia. Agora: sem operação na direção = 0; com operação, o
+// bônus/penalidade escala com o tamanho da amostra daquela direção
+// (mesma régua do histórico do par, historyAnalyzer.js
+// calcularPesoAmostra).
 function aplicarBonusDirecao(historicoDirecao) {
 
     if (!historicoDirecao) {
         return 0;
     }
 
+    const operacoesDirecao =
+        (Number(historicoDirecao.wins) || 0) +
+        (Number(historicoDirecao.loss) || 0);
+
+    if (operacoesDirecao === 0) {
+        return 0;
+    }
+
+    let bonus = 0;
+
     if (historicoDirecao.taxaAcerto >= 80) {
-        return 5;
+        bonus = 5;
     }
 
-    if (historicoDirecao.taxaAcerto >= 70) {
-        return 3;
+    else if (historicoDirecao.taxaAcerto >= 70) {
+        bonus = 3;
     }
 
-    if (historicoDirecao.taxaAcerto < 50) {
-        return -5;
+    else if (historicoDirecao.taxaAcerto < 50) {
+        bonus = -5;
     }
 
-    return 0;
+    // `|| 0` normaliza o -0 de Math.round(-0,4).
+    return Math.round(bonus * calcularPesoAmostra(operacoesDirecao)) || 0;
 
 }
 // ===================================================
 // BÔNUS DO HISTÓRICO
 // ===================================================
 
+// AJUSTE-037 (28/09/2026): escala pelo tamanho da amostra (pesoAmostra,
+// 0 a 1) em vez do confidenceMultiplier (0,8 a 1,0) - com 3 operações a
+// 100%, o bônus era 80% do cheio; agora é 10%.
 function aplicarBonusHistorico(historico) {
 
     let bonus = 0;
+
+    const peso = pesoAmostraDe(historico);
 
     if (historico.status === "EXCELENTE") {
 
         bonus += Math.round(
             ENGINE_WEIGHTS.BONUS_EXCELENTE *
-            historico.confidenceMultiplier
+            peso
         );
 
     }
@@ -87,7 +131,7 @@ function aplicarBonusHistorico(historico) {
 
         bonus += Math.round(
             ENGINE_WEIGHTS.BONUS_BOA *
-            historico.confidenceMultiplier
+            peso
         );
 
     }
@@ -111,20 +155,37 @@ function aplicarPenalidadeHistorico(
         penalidade += ENGINE_WEIGHTS.PENALIDADE_DIVERGENCIA;
     }
 
+    const peso = pesoAmostraDe(historico);
+
+    // AJUSTE-037 (28/09/2026): RUIM escala com o tamanho da amostra -
+    // antes eram -10 cheios com qualquer amostra (inclusive 0
+    // operações, que caíam em RUIM por taxaAcerto 0 - ver
+    // historyAnalyzer.js). Com 30+ operações continua -10.
+    //
+    // Nota registrada, NÃO alterada aqui (fora do escopo): com amostra
+    // cheia, taxa < 50% é contada TRÊS vezes - pesoHistorico -10
+    // (historyAnalyzer), esta penalidade -10, e aplicarBonusDirecao -5.
+    // Decisão pendente com o usuário (ENGINEERING.md, AJUSTE-037).
     if (historico.status === "RUIM") {
-        penalidade += ENGINE_WEIGHTS.PENALIDADE_RUIM;
+        penalidade += Math.round(ENGINE_WEIGHTS.PENALIDADE_RUIM * peso);
     }
 
     // AJUSTE-023 (25/09/2026): achado escrevendo o Manual (conferindo
     // contra o código real, per CLAUDE.md) - historyAnalyzer.js's
     // analisarHistorico() (quem produz o `historico.status` real
     // recebido aqui) NUNCA retorna "SEM_BASE" - o estado "sem
-    // estatística nenhuma" se chama "SEM_DADOS" lá (só no early-return
-    // `if (!estatisticas)`). Essa penalidade de -5 nunca disparava
-    // desde que foi escrita - corrigido pro nome real.
-    if (historico.status === "SEM_DADOS") {
-        penalidade += ENGINE_WEIGHTS.PENALIDADE_SEM_BASE;
-    }
+    // estatística nenhuma" se chama "SEM_DADOS" lá.
+    //
+    // AJUSTE-037 (28/09/2026): mesmo com o nome corrigido, SEM_DADOS
+    // nunca chegava aqui (historyAnalyzer.js só devolvia SEM_DADOS com
+    // `estatisticas` null, o que não acontece). Agora devolve pra 0
+    // operações, e a penalidade vira "de amostra insuficiente": -5 com
+    // 0 operações, diminuindo até 0 com 30+ (15 operações = -3, 24 =
+    // -1). Garante que ter POUCO histórico nunca pontua melhor que não
+    // ter nenhum só porque o peso da taxa ainda é pequeno - e que
+    // histórico ausente é só "pontuação menor", como definido com o
+    // usuário.
+    penalidade += Math.round(ENGINE_WEIGHTS.PENALIDADE_SEM_BASE * (1 - peso));
 
     return penalidade;
 

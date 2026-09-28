@@ -254,21 +254,20 @@ function analisarTendencia(
         score += 10;
     }
 
-    // ADX moderado
+    // ADX na zona ideal (20-30)
+    //
+    // AJUSTE-037 (28/09/2026): removido o "+10 pra ADX forte" (>=30)
+    // que existia aqui. Junto com os 12-15 pontos de analisarADX(),
+    // ADX >=30 somava 22-25 pontos no total - o maior peso isolado do
+    // score - exatamente na faixa que perde mais nos dados reais
+    // (AJUSTE-036, n=161 rótulos confiáveis: ADX 20-30 ganhou 56%,
+    // ADX >=30 ganhou 25%; diferença de ~3,4 erros-padrão). Ver
+    // analisarADX() abaixo pra zona ideal completa.
     if (
         adxInfo.forca === "MODERADA" ||
         adxInfo.forca === "BOA"
     ) {
         score += 5;
-    }
-
-    // ADX forte
-    if (
-        adxInfo.forca === "FORTE" ||
-        adxInfo.forca === "MUITO_FORTE" ||
-        adxInfo.forca === "EXTREMA"
-    ) {
-        score += 10;
     }
 
     let qualidade = "CONFLITO";
@@ -305,6 +304,25 @@ function analisarTendencia(
 // ANÁLISE DO ADX
 // ===================================================
 
+// AJUSTE-037 (28/09/2026): ADX deixou de ser "quanto maior, melhor".
+// Antes: 0/3/6/9/12/14/15 pontos subindo até ADX 40+, mais +10 em
+// analisarTendencia() pra ADX >=30 - ADX alto era o componente que
+// mais somava no score. Nos dados reais (AJUSTE-036, n=161 operações
+// com rótulo confiável, M5, TP/SL fixos curtos) a relação é em PICO,
+// não linear:
+//   ADX < 20   -> 43% de acerto (n=44)
+//   ADX 20-30  -> 56% de acerto (n=66)
+//   ADX >= 30  -> 25% de acerto (n=52)
+// Leitura: com ADX >=30 o movimento já andou (tendência "esticada");
+// entrar nele com alvo curto é chegar tarde - reverte antes do TP
+// (dos LOSS com score >=75, 3 de 4 foram contra quase direto).
+//
+// Por isso: 20-30 mantém exatamente os pontos de antes (6/9, +5 da
+// confirmação), abaixo de 20 também igual, e >=30 passa a valer 0
+// (sem bônus nenhum - não é penalidade, é só deixar de premiar).
+// Ressalva registrada: a zona foi identificada NOS MESMOS dados que a
+// motivam (n pequeno) - precisa ser reconferida fora da amostra com as
+// operações novas antes de ganhar peso maior (ver ENGINEERING.md).
 function analisarADX(adx) {
 
   let score = 0;
@@ -338,24 +356,10 @@ function analisarADX(adx) {
 
   }
 
-  else if (adx < 35) {
-
-    score = 12;
-    forca = "FORTE";
-
-  }
-
-  else if (adx < 40) {
-
-    score = 14;
-    forca = "MUITO_FORTE";
-
-  }
-
   else {
 
-    score = 15;
-    forca = "EXTREMA";
+    score = 0;
+    forca = "ESTICADA";
 
   }
 
@@ -876,10 +880,14 @@ scoreFinal += candlestickScore;
 
 scoreFinal = calcularScoreBase(scoreFinal);
 
-// Adaptive Confidence influencia o score final
-scoreFinal = Math.round(
-    scoreFinal * adaptive.confidenceMultiplier
-);
+// AJUSTE-037 (28/09/2026): removida a multiplicação do score INTEIRO
+// por adaptive.confidenceMultiplier (0,8 com menos de 25 operações no
+// histórico do par, 0,9 com 25-39). Ela cortava 10-20% da análise
+// TÉCNICA por falta de histórico - um 75 técnico virava 60 só porque o
+// par ainda não tinha operações fechadas naquele perfil, e isso por
+// cima das outras camadas de histórico. A confiança na amostra agora
+// escala só a contribuição do PRÓPRIO histórico (pesoAmostra em
+// historyAnalyzer.js / scoreEngine.js), que é o que ela mede.
 
 scoreFinal = Math.min(
     100,
@@ -890,8 +898,8 @@ scoreFinal = Math.min(
 // AJUSTE ADAPTATIVO DO HISTÓRICO
 // ====================================================
 
-// Score já ajustado pelo Adaptive Confidence.
-// Não aplicar novamente.
+// AJUSTE-037: não existe mais multiplicação do score inteiro pela
+// confiança do histórico (ver acima) - não reintroduzir aqui.
 
     
 return {
