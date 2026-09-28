@@ -178,10 +178,15 @@ const NOMES_MES = [
 // ajuste automático do decidirConfiguracaoMercado() (scripts/moneyManager.js).
 // sinal.financeiro.decisaoMercado.decisao guarda o motivo do ajuste (ou
 // "MANTER" quando nada foi alterado).
+//
+// AJUSTE-039 (28/09/2026): desde esta data só RR_PAR (TP 1,5x do SL no
+// GBP/USD, AJUSTE-004) altera o configurado. Os outros três rótulos
+// ficam aqui só pra sinais antigos, salvos antes da mudança.
 const LEGENDA_AJUSTE_MERCADO = {
   REDUZIR_EXPOSICAO: "ADX fraco - tendência sem força suficiente",
   MERCADO_LENTO: "baixa volatilidade (ATR baixo)",
-  EXPECTATIVA_NEGATIVA: "expectativa histórica negativa reduziu o lote"
+  EXPECTATIVA_NEGATIVA: "expectativa histórica negativa reduziu o lote",
+  RR_PAR: "TP 1,5x o SL, regra específica do GBP/USD"
 };
 
 // Usuário pediu pra poder ver o movimento completo do preço, da

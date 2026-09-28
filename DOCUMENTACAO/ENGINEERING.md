@@ -12110,3 +12110,54 @@ Outro achado lateral (sem efeito prático, não alterado):
 analisarAlinhamento conta `a > b || a < b` (sempre verdadeiro salvo
 empate) - devolve PARCIAL (3) pra praticamente qualquer não-alinhado.
 --------
+
+AJUSTE-039 (28/09/2026) - lote/TP/SL sempre os da Config (decisão do
+usuário: "opção A")
+
+Contexto: AJUSTE-038 achou que moneyManager.js
+decidirConfiguracaoMercado() sobrescrevia o configurado em três ramos
+(ADX<20 -> lote 0,02 + TP/SL $3; atr<0,0012 -> TP/SL $3; expectativa<0
+-> lote 0,02). O de ATR, com limiar absoluto de preço, disparava em
+100% dos pares não-JPY: 124 de 124 operações com rótulo confiável
+saíram com TP/SL $3 (EUR/USD 7,5 pips, USD/CHF 6,2) enquanto a Config
+dizia $5 - só par JPY usava o configurado. E o lote reduzido não
+recalculava tpPips/slPips (calculados com o pip do lote configurado).
+
+Opções apresentadas: A) sempre Config; B) manter ajuste automático em
+pips (na prática $3 pra quase todo par, ATR M5 raramente passa de 12
+pips); C) deixar como está. Usuário escolheu A.
+
+Mudança:
+  - moneyManager.js decidirConfiguracaoMercado: os três ramos não
+    alteram mais lote/TP/SL. Condições viram só informação
+    (decisaoMercado.condicoesMercado {adxFraco, expectativaNegativa};
+    risco "ALTO" com ADX<20 continua como rótulo). Mantida a regra do
+    GBP/USD (TP 1,5x SL, AJUSTE-004, decisão anterior separada), agora
+    com decisao "RR_PAR" (antes ficava "MANTER" e o banner do Histórico
+    dizia "conforme configurado" com TP 1,5x).
+  - financeiro.regimeTPSL = "CONFIG" (e registro de `analises`) - marca
+    o regime novo. statisticsEngine NÃO filtra por isso (filtrar zeraria
+    o histórico de novo); separar os regimes fica pras ferramentas de
+    análise. Resultados antes/depois não são diretamente comparáveis
+    (alvo em pips diferente: EUR/USD 7,5 -> 12,5).
+  - js/historico.js: legenda RR_PAR; rótulos antigos mantidos pra
+    sinais salvos antes. js/manual.js atualizado.
+
+Validação: scratchpad/validate-ajuste039.js 10/10 (EUR/USD com ATR
+baixo, ADX 15 e taxa 0 sai 0,04/$5/$5 e 12,5 pips; USD/JPY idem;
+GBP/USD $7,5/$5 R/R 1,5 com RR_PAR; Config arbitrária respeitada;
+regimeTPSL no registro de análise). Regressões 028/032/033/034/037/038,
+feature010, pentefino004, bug024 passando. Quatro asserções antigas
+falham DE PROPÓSITO (descreviam os ramos removidos):
+validate-bug021-moneymanager (ADX fraco reduz lote / TP-SL $3) e
+validate-ajuste004-rr-gbpusd (GBP/USD e USD/JPY com ADX baixo caindo
+pra $3).
+
+Achado durante a validação (corrigido antes do commit):
+calcularExpectativa devolve string (toFixed) - Number.isFinite("-5.00")
+é false; condição normalizada com Number().
+
+Efeito esperado: alvo maior em pips em todo par não-JPY (menos peso
+relativo do spread, operações mais longas); risco por operação sobe de
+$3 pra $5 nesses pares.
+--------

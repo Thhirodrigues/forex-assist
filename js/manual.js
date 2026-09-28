@@ -562,21 +562,25 @@ function secaoComoLerSinal() {
       <h3>Configuração Utilizada</h3>
       <p>
         LOTE / TP / SL - o tamanho de posição e os alvos em dólar
-        realmente usados nessa operação. Um aviso mostra se esses
-        valores foram os configurados manualmente na tela de Config,
-        ou se o Money Manager ajustou automaticamente por algum destes
-        motivos:
+        realmente usados nessa operação. Desde 28/09/2026 (AJUSTE-039)
+        são SEMPRE os valores da tela de Config, com uma única exceção:
       </p>
       <ul style="padding-left:20px; font-size:13px;">
-        <li><b>REDUZIR_EXPOSICAO</b> - ADX abaixo de 20 (tendência sem
-          força) - lote reduzido, TP/SL apertados pra $3.</li>
-        <li><b>MERCADO_LENTO</b> - ATR abaixo de 0,0012 (baixa
-          volatilidade) - TP/SL apertados pra $3.</li>
-        <li><b>EXPECTATIVA_NEGATIVA</b> - expectativa matemática do
-          par abaixo de zero - lote reduzido.</li>
+        <li><b>RR_PAR</b> - GBP/USD usa TP de 1,5x o SL (R/R 1,5:1),
+          regra específica desse par validada com dado real
+          (AJUSTE-004).</li>
         <li><b>MANTER</b> - nenhum ajuste, valores exatamente como
           configurados.</li>
       </ul>
+      <p style="font-size:11px; color:#8c95b3;">
+        Sinais antigos (antes de 28/09) podem mostrar outros motivos -
+        REDUZIR_EXPOSICAO (ADX abaixo de 20), MERCADO_LENTO (ATR baixo)
+        e EXPECTATIVA_NEGATIVA - que reduziam lote e apertavam TP/SL
+        pra $3 automaticamente. Foram desligados: o de ATR usava um
+        valor de preço fixo que, na prática, forçava $3 em TODO par sem
+        iene, ignorando a Config. Resultados de antes e depois dessa
+        data não são diretamente comparáveis (alvos diferentes em pips).
+      </p>
 
       <h3>Controle Financeiro</h3>
       <p><b>SALDO ANTES / RESULTADO / SALDO DEPOIS</b> - o saldo
@@ -757,15 +761,14 @@ function secaoIndicadores() {
         Mede a volatilidade - o tamanho médio da oscilação de preço
         por candle, em valor absoluto (não em %). ATR baixo = mercado
         "parado" (candles pequenos); ATR alto = mercado agitado
-        (candles grandes). O RMI usa ATR baixo como motivo pra apertar
-        TP/SL automaticamente (MERCADO_LENTO).
+        (candles grandes).
       </p>
       <p style="font-size:11px; color:#8c95b3;">
         Desde o AJUSTE-038, no <b>score</b> o ATR e as distâncias entre
         EMAs são comparados em pips, igual pra todos os pares (antes,
         pares com iene - preço perto de 150 - ganhavam pontos de graça
-        só pela escala do preço). O MERCADO_LENTO do TP/SL ainda usa o
-        valor bruto - ver "Pendências" no ENGINEERING.md.
+        só pela escala do preço). O ATR não altera mais o TP/SL
+        (AJUSTE-039) - lote/TP/SL são sempre os da Config.
       </p>
 
       <h3>Reward:Risk (RR)</h3>

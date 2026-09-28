@@ -684,33 +684,36 @@ function decidirConfiguracaoMercado({
 
     }
 
-    if (adx < 20) {
+    // AJUSTE-039 (28/09/2026), decisão do usuário ("opção A"): lote/TP/
+    // SL passam a ser SEMPRE os da tela de Config. Antes, três ramos
+    // sobrescreviam o configurado:
+    //   - ADX < 20          -> lote 0,02, TP/SL $3
+    //   - atr < 0,0012      -> TP/SL $3 ("MERCADO_LENTO")
+    //   - expectativa < 0   -> lote 0,02
+    // O do ATR usava limiar ABSOLUTO de preço: 124 de 124 operações
+    // não-JPY com rótulo confiável saíram com TP/SL de $3 (EUR/USD 7,5
+    // pips) e só par JPY usava o configurado ($5, 19,7 pips) - o "TP/SL
+    // fixo" nunca valeu fora do JPY (ferramentas/diagnostico-atr-pips.js,
+    // AJUSTE-038). E o lote reduzido não recalculava tpPips/slPips (que
+    // usam o valor de pip do lote configurado) - o $ exibido não batia
+    // com o lote exibido. Com expectativa<0 disparando sempre que o par
+    // não tem histórico (taxa 0), o lote saía 0,02 quase sempre.
+    // As condições continuam registradas (condicoesMercado, só
+    // informativo, pra análise futura) mas não alteram mais nada.
+    configuracao.condicoesMercado = {
 
-        configuracao.lote = 0.02;
+        // Number(): calcularExpectativa devolve string (toFixed) -
+        // Number.isFinite("-5.00") é false.
+        adxFraco: Number.isFinite(Number(adx)) && Number(adx) < 20,
 
-        configuracao.tpUSD = 3;
+        expectativaNegativa: Number.isFinite(Number(expectativa)) && Number(expectativa) < 0
 
-        configuracao.slUSD = 3;
+    };
+
+    if (configuracao.condicoesMercado.adxFraco) {
 
         configuracao.risco = "ALTO";
 
-        configuracao.decisao = "REDUZIR_EXPOSICAO";
-    }
-
-    if (atr < 0.0012) {
-
-        configuracao.tpUSD = 3;
-
-        configuracao.slUSD = 3;
-
-        configuracao.decisao = "MERCADO_LENTO";
-    }
-
-    if (expectativa < 0) {
-
-        configuracao.lote = 0.02;
-
-        configuracao.decisao = "EXPECTATIVA_NEGATIVA";
     }
 
     // AJUSTE-004: alarga só o TP (SL fica no valor já decidido acima
@@ -720,6 +723,10 @@ function decidirConfiguracaoMercado({
     if (par === "GBP/USD") {
 
         configuracao.tpUSD = Number((configuracao.slUSD * 1.5).toFixed(2));
+
+        // AJUSTE-039: rótulo próprio - antes ficava "MANTER" e o banner
+        // do Histórico dizia "conforme configurado" com TP 1,5x.
+        configuracao.decisao = "RR_PAR";
 
     }
 
@@ -1053,6 +1060,14 @@ const classificacaoFinanceira =
     return {
 
         ...configuracao,
+
+        // AJUSTE-039 (28/09/2026): marca o regime de lote/TP/SL em que o
+        // sinal nasceu. "CONFIG" = sempre o valor da tela de Config (só
+        // GBP/USD com TP 1,5x). Operações sem o campo são do regime
+        // anterior (TP/SL $3 forçado em par não-JPY) - resultados dos
+        // dois regimes não são comparáveis diretamente (alvo diferente
+        // em pips). Só marca; statisticsEngine não filtra por isso.
+        regimeTPSL: "CONFIG",
 
         decisaoMercado,
 

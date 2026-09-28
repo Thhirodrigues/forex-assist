@@ -137,6 +137,9 @@ function montarRegistroAnalise({
 
         expectativa: numeroOuNull(financeiro?.expectativa),
 
+        // AJUSTE-039: regime de lote/TP/SL (ver moneyManager.js).
+        regimeTPSL: financeiro?.regimeTPSL || null,
+
         // Preenchido depois, em lote, pela ferramenta de rotulagem
         // (resultado hipotético: teria batido TP ou SL primeiro).
         rotuloHipotetico: null
