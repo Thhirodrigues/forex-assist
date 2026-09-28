@@ -32,7 +32,9 @@ async function main() {
         const fim = num(d.fimOperacao) ?? num(d.timestamp);
         const atr = num(d?.indicadores?.atr);
         if (fim === null || fim < CORTE_ROTULO_CONFIAVEL || atr === null || !d.par) return;
-        ops.push({ par: d.par, resultado: d.resultado, atr, atrPips: atr / pip(d.par) });
+        const f = d.financeiro || {};
+        ops.push({ par: d.par, resultado: d.resultado, atr, atrPips: atr / pip(d.par),
+            tpUSD: num(f.tpUSD), slUSD: num(f.slUSD), tpPips: num(f.tpPips), slPips: num(f.slPips), lote: num(f.lote), adx: num(d?.indicadores?.adx) });
     });
 
     const snapA = await db.collection("analises").select("par", "indicadores").get();
@@ -84,6 +86,20 @@ async function main() {
     console.log(`\nAcerto com ATR relativo à mediana do PRÓPRIO par (n=${comMed.length}):`);
     console.log(`  abaixo da mediana do par  ${tx(comMed.filter(o => o.atrPips < medianaPar[o.par]))}`);
     console.log(`  acima da mediana do par   ${tx(comMed.filter(o => o.atrPips >= medianaPar[o.par]))}`);
+
+    // AJUSTE-038: moneyManager.js decidirConfiguracaoMercado() usa o
+    // mesmo limiar absoluto (atr < 0,0012 -> MERCADO_LENTO -> TP/SL $3)
+    // e o resultado é o TP/SL REAL que o checker usa. Confere nos dados.
+    console.log("\nTP/SL REAL salvo nas operações (financeiro), por par:");
+    for (const par of pares) {
+        const o = ops.filter(x => x.par === par);
+        if (!o.length) continue;
+        const combos = o.reduce((m, x) => { const k = `TP$${x.tpUSD}/SL$${x.slUSD} lote ${x.lote}`; m[k] = (m[k] || 0) + 1; return m; }, {});
+        const tp = o.map(x => x.tpPips).filter(v => v !== null), sl = o.map(x => x.slPips).filter(v => v !== null);
+        console.log(`  ${par.padEnd(8)} n=${String(o.length).padStart(3)}  TP pips mediana=${pct(tp, .5)?.toFixed(1)}  SL pips mediana=${pct(sl, .5)?.toFixed(1)}  ATR pips mediana=${pct(o.map(x => x.atrPips), .5).toFixed(1)}  ${JSON.stringify(combos)}  acerto ${tx(o)}`);
+    }
+    const lento = ops.filter(o => o.atr < 0.0012), adxBaixo = ops.filter(o => o.adx !== null && o.adx < 20);
+    console.log(`\nOperações com atr < 0,0012 (MERCADO_LENTO forçado): ${lento.length} de ${ops.length}; com ADX < 20 (também força $3): ${adxBaixo.length}`);
 
     process.exit(0);
 }
