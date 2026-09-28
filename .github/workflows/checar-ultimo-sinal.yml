@@ -1,0 +1,35 @@
+name: Checar últimos sinais salvos (AJUSTE-039)
+
+# Ferramenta administrativa avulsa, SÓ LEITURA, NÃO faz parte do
+# pipeline de análise/decisão do produto. Só dispara manualmente
+# (workflow_dispatch), nunca por cron. Roda
+# ferramentas/checar-ultimo-sinal.js, que lê os documentos mais recentes
+# de historico e imprime os campos salvos, pra conferir o regime
+# de TP/SL novo - AJUSTE-039, 28/09/2026. Não escreve nada no Firestore.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Checar últimos sinais
+        run: |
+          node ferramentas/checar-ultimo-sinal.js
