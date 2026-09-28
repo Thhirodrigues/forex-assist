@@ -11816,3 +11816,61 @@ operações - ainda não observado ao vivo (implementado após o último
 ciclo real conferido). Item 6 de PENDENCIAS-ESTRATEGICAS-RMI.md
 atualizado a seguir.
 --------
+AJUSTE-035 (28/09/2026) - resultado do teste formal de score
+alternativo sem ADX (ferramentas/diagnostico-score-alternativo-adx.js
+NOVO, .github/workflows/diagnostico-score-alternativo-adx.yml NOVO)
+
+Origem: usuário pediu a investigação formal da hipótese do AJUSTE-031
+(ADX/tendência puxando o score na direção errada) antes de decidir
+qualquer peso novo. 4 candidatas definidas ANTES de rodar (sem
+garimpo): sem ADX; sem ADX com tendência pela metade; ADX invertido;
+só EMA+RSI.
+
+Resultado real (28/09/2026, GitHub Actions, run #1, conclusion
+success) - amostra de 161 operações com rótulo confiável (cresceu de
+114 pra 161 desde o AJUSTE-031, dois dias de mercado real a mais):
+
+```
+ORIGINAL (produção)              AUC=0.436  1.42 desvios de 0.5
+A) sem ADX                       AUC=0.475  0.55 desvios
+B) sem ADX, tendência/2          AUC=0.491  0.19 desvios
+C) ADX invertido                 AUC=0.513  -0.28 desvios (direção positiva)
+D) só EMA+RSI                    AUC=0.512  -0.26 desvios (direção positiva)
+```
+
+Leitura honesta: NENHUMA das 5 (incluindo a original) é
+estatisticamente significativa a 95% (nenhuma passa de 1.96 desvios).
+Duas leituras, as duas importam:
+
+1. Existe uma tendência CONSISTENTE com a hipótese do AJUSTE-031: à
+   medida que o componente de ADX é removido e depois invertido, o
+   AUC sobe de 0.436 -> 0.475 -> 0.491 -> 0.513, cruzando 0.5 (neutro)
+   na direção esperada. Não é ruído aleatório sem padrão - tem
+   monotonicidade.
+
+2. MAS o sinal original ENFRAQUECEU com mais dado: 1.56 desvios com
+   n=114 (AJUSTE-031) caiu pra 1.42 desvios com n=161 (mais dado
+   reduziu a "estranheza", não aumentou) - sinal de que parte do
+   achado original era amostra pequena regredindo à média, não um
+   efeito real e estável. Com essa amostra, nenhuma candidata prova
+   nada com confiança.
+
+Decisão: NÃO mudar nenhum peso de produção agora - a evidência é
+direcionalmente consistente mas não é estatisticamente forte o
+bastante pra justificar mexer no scoreEngine.js. Deixar o AJUSTE-032
+(registro de toda análise) continuar acumulando amostra - reavaliar
+quando o n for bem maior (a amostra de `historico` cresce só com
+sinais APROVADOS, ~1-4/dia; `analises` cresce com TODO ciclo, mas
+ainda não tem rótulo de resultado - rotulagem hipotética offline
+continua sendo o próximo passo de infraestrutura, ainda não
+construído).
+
+Validado: `node -c`; execução real via GitHub Actions (não só
+sintético).
+
+Pendente: repetir este mesmo diagnóstico periodicamente (ex.: daqui
+1-2 semanas) conforme mais operações fecham, pra ver se a tendência
+se mantém/fortalece (aí sim justificaria mudança de peso) ou se
+converge pra AUC=0.5 em tudo (score realmente não discrimina nada,
+problema diferente - mais estrutural que só o ADX).
+--------
