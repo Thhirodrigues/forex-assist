@@ -12161,3 +12161,57 @@ Efeito esperado: alvo maior em pips em todo par não-JPY (menos peso
 relativo do spread, operações mais longas); risco por operação sobe de
 $3 pra $5 nesses pares.
 --------
+
+AJUSTE-039 - VALIDAÇÃO AO VIVO (28/09/2026, ferramentas/checar-ultimo-sinal.js,
+só leitura, lê o documento REALMENTE salvo em `historico`)
+
+Primeiros sinais no regime novo (deploy 18:35 UTC; nada foi salvo entre
+18:25 e 19:10, então o USD/CHF das 19:10 é o primeiro):
+  - USD/CHF BUY 19:10 e EUR/USD SELL 19:25, ambos AGRESSIVO (configurado
+    CONSERVADOR, rebaixadoDaCascata=true), scores 39 e 36:
+    financeiro.regimeTPSL=CONFIG, lote 0,04, TP/SL $5 (USD/CHF 10,4
+    pips, EUR/USD 12,5 pips), decisaoMercado MANTER, condicoesMercado
+    registradas só como informação (adxFraco true no USD/CHF).
+  - Contraste com o USD/CAD das 18:25 (regime antigo): sem regimeTPSL,
+    lote 0,02, TP/SL $3, decisao EXPECTATIVA_NEGATIVA.
+  - Aritmética do score conferida nos dois: EUR/USD 10+20+6+25=61
+    (ADX 24,7 -> 6 pts + 5 de confirmação), USD/CHF 20+20+3+20=63
+    (ADX 17,8 -> 3 pts, sem bônus de confirmação). Tamanho do documento
+    ~3,2-3,4 KB.
+
+Problemas encontrados (nenhum corrigido nesta entrada):
+  1. SALDO SIMULADO NEGATIVO: banca=-143,07 salva em todo documento novo
+     (era -141,49 às 18:25) -> riscoPercentual=-3,49 e avisoRisco=null.
+     calcularRiscoPercentual = SL/banca; a checagem
+     `riscoPercentual > regras.riscoPorOperacao` (moneyManager.js:472)
+     nunca dispara com banca <= 0. O aviso de risco fica mudo e o
+     percentual exibido no Histórico não faz sentido. Não bloqueia sinal
+     (FEATURE-010 tornou aviso), mas com SL $5 (era $3 na prática) o
+     buraco ficou maior. Ação do usuário: Config > "Saldo Inicial (USD)" +
+     botão "Definir Saldo Inicial da Conta Simulada Agora" (só grava
+     configuracoes/geral.saldoSimulado; não apaga histórico/estatísticas).
+     Os 3 sinais abertos mantêm o snapshot antigo de banca.
+  2. MENSAGEM ENGANOSA no AGRESSIVO: avisoExpectativa diz "pelo
+     histórico, esse tipo de operação tende a dar prejuízo em média"
+     (expectativa -5,00) com 0 operações no histórico - taxa 0% é
+     "desconhecida", não medida. O ramo `historicoInsuficiente` do
+     AJUSTE-033 exclui o AGRESSIVO (perfil !== AGRESSIVO), então só
+     BALANCEADO/CONSERVADOR recebem a mensagem honesta (visto no
+     GBP/USD BALANCEADO: "0 de 30 operações... desconhecida, não 0%").
+     Só texto - não muda aprovação (AGRESSIVO tem expectativaMin -1 e o
+     gate já é aviso). Proposta: estender a mensagem honesta ao
+     AGRESSIVO quando operacoesBase < 30.
+  3. OBSERVAÇÃO (não é defeito de código): 3 de 3 sinais aprovados
+     ficaram só no AGRESSIVO com score 36-40 (mínimo 35). O EUR/USD SELL
+     tem EMA21/50/100 a menos de 0,4 pip entre si: analisarEMAs classifica
+     BAIXA com `ema9<ema21 && ema50<ema100` sem separação mínima (EMA50
+     abaixo da EMA100 por ~0,3 pip). O score baixo (EMA 10, slope 0,
+     distância FRACA) sinaliza isso, mas a classificação de tendência em
+     si não exige folga - candidato a backlog, sem evidência ainda.
+  4. Artefato da ferramenta (não do produto): `ultimoCandleDatetime`
+     aparece undefined em `historico` - o campo só existe em `analises`.
+  5. Observado, NÃO investigado: banca foi de -141,49 (18:25) a -143,07
+     (19:10), variação de -1,58 - não bate com SL nominal de $3/$4,5 do
+     GBP/USD que fechou LOSS na janela. Verificar resultadoFinanceiro do
+     fechamento antes de confiar no saldo simulado como ledger.
+--------
