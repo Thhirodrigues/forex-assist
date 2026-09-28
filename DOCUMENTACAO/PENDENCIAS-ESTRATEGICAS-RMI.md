@@ -90,6 +90,18 @@ implementação — mesma disciplina já aplicada ao `BACKLOG-E-VISAO.md`.
    limiares com dado próprio quando houver amostra.
 2. **Modelar spread** na expectativa/aprovação, mesmo que como constante
    por par.
+   **Decisão do usuário (28/09/2026, AJUSTE-037):** fazer JUNTO com dois
+   itens do score de histórico, no mesmo pacote, porque os três mexem
+   na mesma pergunta ("o sinal dá dinheiro, não só acerta?"):
+   (a) taxa de acerto <50% contada três vezes com amostra cheia
+   (pesoHistorico -10, RUIM -10, bonusDirecao -5) - mesma família de
+   problema do ADX contado duas vezes e da discussão SMC/FVG (várias
+   notas pra mesma informação); (b) limiar "RUIM" em 50% de acerto
+   ignora a relação TP/SL - trocar por expectativa, que só é confiável
+   depois do spread modelado. Obrigatório antes de ir pra produção:
+   replay com ferramentas/diagnostico-replay-score-ajuste037.js (a
+   penalidade de histórico que parecia errada se mostrou alinhada com
+   o resultado real no AJUSTE-037 - não mexer sem medir).
 3. **Decidir o destino de `riskEngine.js` e `positionSizing.js`** — ambos
    confirmados mortos agora, reduz dívida técnica e tamanho de documento
    salvo (relevante pro teto de 1 MiB do Firestore que motivou a
