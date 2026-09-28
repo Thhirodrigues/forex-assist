@@ -1,0 +1,35 @@
+name: Diagnóstico - sinais fortes que revertem
+
+# Ferramenta administrativa avulsa, SÓ LEITURA, NÃO faz parte do
+# pipeline de análise/decisão do produto. Só dispara manualmente
+# (workflow_dispatch), nunca por cron. Roda
+# ferramentas/diagnostico-sinais-fortes-perdedores.js, que testa se
+# sinais de score/ADX alto revertem mais que o normal (hipótese do
+# usuário) - AJUSTE-036, 28/09/2026. Não escreve nada no Firestore.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Diagnóstico sinais fortes perdedores
+        run: |
+          node ferramentas/diagnostico-sinais-fortes-perdedores.js
