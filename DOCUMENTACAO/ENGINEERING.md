@@ -12215,3 +12215,48 @@ Problemas encontrados (nenhum corrigido nesta entrada):
      GBP/USD que fechou LOSS na janela. Verificar resultadoFinanceiro do
      fechamento antes de confiar no saldo simulado como ledger.
 --------
+
+AJUSTE-040 (28/09/2026) - aviso de saldo <= 0 e mensagem de expectativa
+honesta no AGRESSIVO (correções dos problemas 1, 2 e 5 da validação do
+AJUSTE-039)
+
+1. Saldo zerado/negativo silenciava o aviso de risco
+   moneyManager.js avaliarConfiguracao: `banca` <= 0 -> motivo
+   SALDO_INSUFICIENTE; gerarRecomendacao gera mensagem própria
+   ("saldo usado pra calcular o risco está zerado ou negativo ($X) -
+   redefina na Config"). Continua só AVISO (FEATURE-010) - não bloqueia
+   sinal. `banca` ausente (chamadas antigas) mantém o comportamento
+   anterior. Confirmado às 19:34 UTC: configuracoes/geral.saldoSimulado
+   ainda -143,07 (saldoInicial 0) - o valor precisa ser redefinido pelo
+   usuário na Config; nada foi gravado no Firestore por aqui.
+
+2. Mensagem do AGRESSIVO
+   decisionEngine.js: removida a exclusão `perfilNormalizado !==
+   "AGRESSIVO"` do ramo historicoInsuficiente (AJUSTE-033). AGRESSIVO
+   com < 30 operações agora mostra "histórico insuficiente... taxa
+   desconhecida, não 0%" em vez de "tende a dar prejuízo em média".
+   Só texto: AGRESSIVO nunca bloqueia por expectativa nos dois ramos.
+   Com >= 30 operações, mensagem antiga. BALANCEADO/CONSERVADOR com
+   histórico suficiente continuam bloqueando.
+
+5. Diferença do saldo simulado (-1,51 / -1,58 por LOSS com SL "$3")
+   EXPLICADO, sem correção nova: js/checker.js calcula o resultado como
+   movimentoPips × calcularValorPip(lote SALVO). No regime antigo o lote
+   salvo era reduzido pra 0,02, mas tpPips/slPips tinham sido calculados
+   com o pip do lote configurado (0,04) - SL "$3" = 7,5 pips × $0,20 =
+   ~$1,50 debitado. É o bug já descrito no AJUSTE-038/039; some no
+   regime novo (lote e pips vêm da mesma Config: USD/CHF 10,4 pips ×
+   $0,48 = $5). Consequência: os valores em $ exibidos nos sinais
+   antigos com lote reduzido são o DOBRO do que foi de fato debitado.
+
+Não corrigido de propósito (problema 3): classificação de tendência sem
+folga mínima entre EMAs (EUR/USD 19:25, ~0,3 pip). Mudar isso altera
+quais sinais existem - precisa de replay antes, não há evidência ainda.
+
+Validação: scratchpad/validate-ajuste040.js 10/10 (caso real banca
+-143,07 gera avisoRisco e segue aprovado; banca 0 avisa; banca 1000 sem
+aviso; banca 100 mantém RISCO_ELEVADO; AGRESSIVO 0 ops mensagem honesta
+e aprovado; AGRESSIVO 45 ops mensagem antiga; BALANCEADO 45 ops continua
+bloqueando). Regressões 028/032/033/034/037/038/039, feature010,
+pentefino004, bug024 passando.
+--------

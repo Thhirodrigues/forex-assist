@@ -237,8 +237,14 @@ function avaliarOperacao(resultado) {
     if (
         Number.isFinite(expectativa) &&
         expectativa < regrasFinanceiras.expectativaMinima &&
-        historicoInsuficienteParaExpectativa &&
-        perfilNormalizado !== "AGRESSIVO"
+        // AJUSTE-040 (28/09/2026): antes excluía o AGRESSIVO
+        // (`perfilNormalizado !== "AGRESSIVO"`) - ele caía no ramo de
+        // baixo com a mensagem "pelo histórico, esse tipo de operação
+        // tende a dar prejuízo em média" mesmo com 0 operações (taxa
+        // desconhecida, não 0%). Visto ao vivo no USD/CHF e EUR/USD de
+        // 28/09. Só muda o TEXTO do aviso: o AGRESSIVO nunca bloqueia
+        // por expectativa, nos dois ramos.
+        historicoInsuficienteParaExpectativa
     ) {
 
         justificativas.push("Expectativa não avaliada - histórico insuficiente (aviso)");

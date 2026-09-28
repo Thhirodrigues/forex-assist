@@ -503,7 +503,10 @@ function secaoComoLerSinal() {
           registro de "esse par estava em cooldown nesse ciclo").</li>
         <li><b>⚠️</b> ao lado do resultado - tem um Aviso de Risco
           (Money Manager achou o risco alto pro saldo atual, mas não
-          bloqueou - toque pra ver a mensagem completa).</li>
+          bloqueou - toque pra ver a mensagem completa). Desde o
+          AJUSTE-040 também aparece quando o saldo usado no cálculo
+          está zerado ou negativo (aí não dá pra medir o risco -
+          redefina o saldo na Config).</li>
         <li><b>📉</b> - Aviso de Expectativa: a expectativa matemática
           do par tava negativa, mas não bloqueou o sinal - no
           Agressivo isso é sempre assim (aceita mais risco por
@@ -511,7 +514,10 @@ function secaoComoLerSinal() {
           26/09/2026) só vira aviso em vez de bloqueio quando o
           histórico do par ainda é curto (menos de 30 operações) - sem
           dado suficiente, a expectativa calculada não é confiável, não
-          é o mesmo que "confirmada negativa".</li>
+          é o mesmo que "confirmada negativa". Desde o AJUSTE-040 o
+          Agressivo também mostra essa mensagem de "histórico
+          insuficiente" quando o par tem menos de 30 operações (antes
+          dizia "tende a dar prejuízo" mesmo sem histórico nenhum).</li>
         <li><b>🔬</b> - Aviso de Histórico (AJUSTE-034, 28/09/2026, só
           Conservador): o score bateu o mínimo do perfil (55), mas o
           par ainda não tem as 30 operações próprias exigidas pra

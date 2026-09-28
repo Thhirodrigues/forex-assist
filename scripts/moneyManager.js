@@ -451,7 +451,9 @@ function avaliarConfiguracao(
 
         rewardRisk,
 
-        riscoPercentual
+        riscoPercentual,
+
+        banca
 
     } = configuracao;
 
@@ -460,6 +462,30 @@ function avaliarConfiguracao(
     let aprovada = true;
 
     let motivo = "APROVADA";
+
+    // AJUSTE-040 (28/09/2026): riscoPercentual = SL / banca. Com banca
+    // zerada ou negativa (saldo simulado ficou em -143,07 em 28/09) o
+    // percentual sai negativo/infinito e `riscoPercentual > limite`
+    // nunca dispara - o aviso de risco ficava MUDO justamente quando a
+    // conta está no vermelho. Agora vira aviso próprio (continua sendo
+    // só aviso, FEATURE-010 - não bloqueia o sinal). `banca` ausente
+    // (chamadas antigas/testes) mantém o comportamento anterior.
+    const bancaInvalida =
+        banca !== undefined &&
+        banca !== null &&
+        !(Number(banca) > 0);
+
+    if (bancaInvalida) {
+
+        return {
+
+            aprovada: false,
+
+            motivo: "SALDO_INSUFICIENTE"
+
+        };
+
+    }
 
     if (rewardRisk < regras.rrMinimo) {
 
@@ -815,6 +841,22 @@ function gerarRecomendacao(
         slUSD,
         rewardRisk
     } = simulacao.configuracaoOriginal;
+
+    if (simulacao.avaliacao.motivo === "SALDO_INSUFICIENTE") {
+
+        return {
+
+            operar: false,
+
+            mensagem:
+                `O saldo usado pra calcular o risco está zerado ou negativo ` +
+                `($${Number(banca).toFixed(2)}) - não dá pra medir quanto da banca esta ` +
+                `operação arrisca (SL de $${Number(slUSD).toFixed(2)}). Redefina o saldo ` +
+                `na tela de Config.`
+
+        };
+
+    }
 
     if (simulacao.avaliacao.motivo === "RISCO_ELEVADO") {
 
