@@ -12047,3 +12047,66 @@ Pendências registradas pra decisão do usuário (nenhuma implementada):
   - analisarATR usa limiares absolutos (0,0020/0,0012) - pares JPY
     (preço ~150) ficam sempre em "ALTA", +5 automático.
 --------
+
+AJUSTE-038 (28/09/2026) - escala de pip nas entradas do score (par JPY)
++ achado no TP/SL (MERCADO_LENTO), NÃO corrigido, aguardando decisão
+
+Pedido do usuário: corrigir o viés do ATR em pares JPY (medir em pips).
+
+Diagnóstico (ferramentas/diagnostico-atr-pips.js, só leitura; 162
+operações com rótulo confiável + 399 análises registradas):
+  - analisarATR com limiares absolutos (0,0020/0,0012): 100% das
+    análises não-JPY caíram em BAIXA (-2 no score) e 100% das JPY em
+    ALTA (+5). NORMAL nunca aconteceu. A "volatilidade" era só "é JPY?".
+  - ATR mediano em pips (M5): AUD 2,4 | NZD 2,3 | USD/CAD 3,8 | USD/CHF
+    3,8 | EUR/USD 4,0 | GBP/USD 4,1 | USD/JPY 5,9 | EUR/JPY 17,6.
+  - ATR em pips x acerto: sem relação significativa (tercis 38,9% /
+    46,3% / 42,6%; relativo à mediana do próprio par 42,2% x 45,0%).
+  - O mesmo problema existe em analisarSlope (0,0010/0,0007/0,0004),
+    analisarDistanciaEMAs (0,0015/0,0008), analisarSimetria (0,0001/
+    0,0003/0,0006) e na compressão de analisarEMAs (0,0003). Par JPY
+    tinha slope 8 e distância IDEAL quase sempre. Mesmo mercado medido
+    em pips: USD/JPY 69 x EUR/USD 55 no motor anterior.
+
+Mudança de produção:
+  - marketAnalyzer.js: fatorEscalaPip(par) (JPY 0,01, demais 1 - mesmo
+    critério de pip de moneyManager.js).
+  - pairAnalyzer.js: EMAs (5m e 15m) e ATR entram em calcularQualidade
+    multiplicados pelo fator. RSI/ADX não mudam (sem escala). Ordem das
+    EMAs não muda. Indicadores salvos, SMC, candlestick e financeiro
+    continuam com os valores brutos.
+  - Limiares NÃO recalibrados (continuam os mesmos, agora aplicados em
+    pips pra todos). Continua verdade que ATR 12+ pips em M5 quase não
+    ocorre - ATR vira praticamente constante (-2) pra quase todo par,
+    o que bate com o dado (ATR sem relação com acerto). Recalibrar é
+    outra decisão, sem evidência de ganho hoje.
+
+Validação: scratchpad/validate-ajuste038.js 7/7 (analisarPar real,
+EMAs/ATR x0,01 só em JPY, indicadores salvos brutos, mesmo mercado em
+pips -> mesmo score); regressões 028/032/033/034/037 passando.
+Replay (motor do branch, fidelidade 60/60 nos não-JPY):
+  AUC 0,547 (só ADX) -> 0,540 (ADX + escala) - neutro, dentro do ruído
+  Corte 35: 128 (45,3%) -> 112 (43,8%)
+  Corte 45:  67 (44,8%) ->  56 (44,6%)
+  Corte 55:  22 (36,4%) ->  16 (43,8%)
+  JPY: score médio 53,4 -> 31,2 (acerto histórico 39,5%, n=38);
+  não-JPY: 47,7 -> 41,4 (ADX somado). Efeito esperado: par JPY
+  aprovado bem menos. É correção de viés, não ganho de discriminação.
+
+ACHADO NÃO CORRIGIDO (decisão do usuário, mexe em dinheiro):
+moneyManager.js decidirConfiguracaoMercado() usa `atr < 0,0012` ->
+MERCADO_LENTO -> tpUSD=slUSD=3, e esse é o TP/SL REAL que o checker
+usa (financeiro.tpPips/slPips). Nos dados: 124 de 124 operações
+não-JPY saíram com TP/SL de $3 (EUR/USD 7,5 pips, USD/CHF 6,2); o
+TP/SL configurado ($5) só foi aplicado em par JPY (19,7 pips) - e o
+ramo ADX<20 também força $3. Ou seja, o "TP/SL fixo" configurado
+nunca valeu nos pares não-JPY. Replay não consegue simular TP/SL
+diferente (operação já fechou no nível antigo) - por isso não foi
+corrigido junto. Relacionado e também não corrigido: tpPips/slPips
+são calculados com o valor de pip do lote CONFIGURADO, mas o lote
+salvo pode ter sido reduzido pra 0,02 (ADX<20 / expectativa<0) - o
+tpUSD/slUSD exibido não corresponde ao lote exibido.
+Outro achado lateral (sem efeito prático, não alterado):
+analisarAlinhamento conta `a > b || a < b` (sempre verdadeiro salvo
+empate) - devolve PARCIAL (3) pra praticamente qualquer não-alinhado.
+--------

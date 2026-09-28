@@ -760,6 +760,13 @@ function secaoIndicadores() {
         (candles grandes). O RMI usa ATR baixo como motivo pra apertar
         TP/SL automaticamente (MERCADO_LENTO).
       </p>
+      <p style="font-size:11px; color:#8c95b3;">
+        Desde o AJUSTE-038, no <b>score</b> o ATR e as distâncias entre
+        EMAs são comparados em pips, igual pra todos os pares (antes,
+        pares com iene - preço perto de 150 - ganhavam pontos de graça
+        só pela escala do preço). O MERCADO_LENTO do TP/SL ainda usa o
+        valor bruto - ver "Pendências" no ENGINEERING.md.
+      </p>
 
       <h3>Reward:Risk (RR)</h3>
       <p>Ver seção "Gestão de risco e dinheiro" acima.</p>
