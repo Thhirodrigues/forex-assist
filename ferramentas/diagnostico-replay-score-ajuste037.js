@@ -103,8 +103,6 @@ async function main() {
             resultado: d.resultado,
             antigo: num(d.score),
             novo: q.score,
-            // variante aproximada: histórico novo, ADX antigo (sem clamp exato)
-            soHistorico: Math.min(100, Math.max(0, q.score - adxNovo + adxAntigo(i.adx))),
             // variante aproximada: ADX novo, histórico antigo (score salvo
             // + diferença de ADX escalada pelo multiplicador que valia).
             soADX: num(d.score) === null ? null : Math.min(100, Math.max(0, Math.round(
@@ -132,9 +130,8 @@ async function main() {
     console.log(`Fidelidade (hist >= 40 ops e ADX < 30, deveria bater): ${iguais} de ${controle.length} iguais (±1)\n`);
 
     relatorio("Score salvo (produção)", ops, o => o.antigo);
-    relatorio("Score novo (histórico + ADX)", ops, o => o.novo);
-    relatorio("Só histórico novo (ADX antigo, aprox.)", ops, o => o.soHistorico);
-    relatorio("Só ADX novo (histórico antigo, aprox.)", ops, o => o.soADX);
+    relatorio("Score do motor do checkout", ops, o => o.novo);
+        relatorio("Só ADX novo (histórico antigo, aprox.)", ops, o => o.soADX);
     relatorio("Score técnico salvo (EMA+RSI+tend+ADX)", ops, o => o.tecnicoSalvo);
     relatorio("Score técnico novo", ops, o => o.tecnicoNovo);
     console.log("Referência: ~1,96 SE de 0,5 = significativo a 95%. AUC do score novo é otimista (ADX tirado destes dados).");

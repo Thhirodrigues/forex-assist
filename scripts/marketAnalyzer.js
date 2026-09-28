@@ -880,14 +880,22 @@ scoreFinal += candlestickScore;
 
 scoreFinal = calcularScoreBase(scoreFinal);
 
-// AJUSTE-037 (28/09/2026): removida a multiplicação do score INTEIRO
-// por adaptive.confidenceMultiplier (0,8 com menos de 25 operações no
-// histórico do par, 0,9 com 25-39). Ela cortava 10-20% da análise
-// TÉCNICA por falta de histórico - um 75 técnico virava 60 só porque o
-// par ainda não tinha operações fechadas naquele perfil, e isso por
-// cima das outras camadas de histórico. A confiança na amostra agora
-// escala só a contribuição do PRÓPRIO histórico (pesoAmostra em
-// historyAnalyzer.js / scoreEngine.js), que é o que ela mede.
+// Adaptive Confidence influencia o score final
+//
+// AJUSTE-037 (28/09/2026): chegou a ser removido junto com o resto da
+// penalidade de histórico ausente (par sem operação caía em RUIM e
+// perdia ~30 pontos em 4 camadas: pesoHistorico, bonusDirecao, RUIM e
+// este ×0,8). Replay com o motor real sobre 162 operações com rótulo
+// confiável mostrou que isso PIORAVA o ranking (AUC 0,440 -> 0,379,
+// -2,76 SE): operações sem histórico acertaram 35,4% (n=48), com 40+
+// operações 48,4% (n=93). A penalidade é "errada" na intenção (trata
+// "não sei" como "ruim"), mas na amostra atual aponta na direção certa.
+// Revertido - não "corrigir" sem novo replay com dado novo (ver
+// ENGINEERING.md, AJUSTE-037, e ferramentas/diagnostico-replay-score-
+// ajuste037.js).
+scoreFinal = Math.round(
+    scoreFinal * adaptive.confidenceMultiplier
+);
 
 scoreFinal = Math.min(
     100,
@@ -898,8 +906,8 @@ scoreFinal = Math.min(
 // AJUSTE ADAPTATIVO DO HISTÓRICO
 // ====================================================
 
-// AJUSTE-037: não existe mais multiplicação do score inteiro pela
-// confiança do histórico (ver acima) - não reintroduzir aqui.
+// Score já ajustado pelo Adaptive Confidence.
+// Não aplicar novamente.
 
     
 return {
