@@ -11874,3 +11874,76 @@ se mantém/fortalece (aí sim justificaria mudança de peso) ou se
 converge pra AUC=0.5 em tudo (score realmente não discrimina nada,
 problema diferente - mais estrutural que só o ADX).
 --------
+AJUSTE-036 (28/09/2026) - resultado: ADX tem "zona ideal" (20-30), não
+é uma relação linear - explica por que o teste linear do AJUSTE-035
+ficou fraco (ferramentas/diagnostico-sinais-fortes-perdedores.js)
+
+Origem: usuário, depois do resultado inconclusivo do AJUSTE-035,
+propôs uma explicação - "temos muito mais perdas por sinais positivos
+(fortes) do que WIN, o sinal veio forte mas não seguiu a tendência".
+
+Resultado real (GitHub Actions, run #1, success, mesma amostra limpa,
+n=161 - cresceu desde o AJUSTE-035 porque mais operações fecharam):
+
+```
+Por faixa de ADX:
+  < 20      43.2% (n=44)
+  20-25     56.7% (n=30)
+  25-30     55.6% (n=36)
+  30-35     26.3% (n=19)   <- queda abrupta
+  35-40     25.0% (n=16)
+  >= 40     23.5% (n=17)
+
+Entre score>=75 (4 sinais, todos LOSS):
+  3 de 4 reverteram rápido (maxPipsFavor médio 2.4 vs maxPipsContra
+  médio 29.2 - foram contra quase direto, sem "andar a favor" antes).
+```
+
+Achado: ADX não tem relação LINEAR com resultado - tem uma "zona
+ideal" (20-30, onde a taxa de acerto passa de 55%, acima do
+breakeven) e degrada dos dois lados (ADX muito baixo = mercado
+lateral/choppy; ADX muito alto = tendência já esticada, controle do
+usuário confirmado pelo dado). Isso explica por que as 4 candidatas
+LINEARES do AJUSTE-035 (remover ADX, inverter ADX) só chegaram a
+AUC~0.51 - uma transformação linear não consegue capturar um padrão
+em forma de sino/pico; a métrica AUC mede ordenação, não amplitude, e
+sub-representa esse tipo de relação. O padrão bate com teoria clássica
+de análise técnica (ADX de Wilder): força de tendência crescente é
+boa até certo ponto, depois sinaliza exaustão - não é coincidência
+sem fundamento.
+
+Amostra ainda pequena nos extremos (ADX 30-35 n=19, >=40 n=17, score
+75+ n=4) - direcionalmente forte e consistente com teoria conhecida,
+mas ainda não robusta o bastante pra fixar limiares exatos (20/30)
+em produção sem margem de erro.
+
+Decisão: nenhuma mudança de produção nesta entrada - achado repassado
+ao usuário pra decidir prioridade, junto com um segundo achado (não
+relacionado ao ADX) descoberto ao verificar como o histórico "sem
+dado" afeta o score hoje (ver observação abaixo, sem AJUSTE próprio
+ainda).
+
+Achado adicional, não relacionado ao ADX, encontrado ao confirmar uma
+pergunta do usuário sobre como o histórico de um par sem dado afeta o
+score: historyAnalyzer.js's SEM_DADOS só é atingido quando o parâmetro
+`estatisticas` inteiro é `null`/`undefined` - nunca acontece na
+prática (statisticsEngine.js sempre devolve um objeto, mesmo com 0
+operações). Com 0 operações, taxa=0, e taxa<50 joga no branch
+`status="RUIM"` (penalidade FIXA de -10, sem o amortecimento por
+confidenceMultiplier que os bônus EXCELENTE/BOA têm) - ou seja, "sem
+histórico" recebe hoje a MESMA penalidade máxima que "histórico
+realmente ruim confirmado", não uma penalidade menor proporcional à
+incerteza (que é o que o usuário descreveu como comportamento
+esperado, e não é o que o código faz). O AJUSTE-023 (25/09) corrigiu
+uma comparação de string (SEM_BASE -> SEM_DADOS) que, agora
+confirmado, nunca chega a disparar de qualquer forma, porque o branch
+SEM_DADOS de historyAnalyzer.js é estruturalmente inatingível no uso
+real - a correção do AJUSTE-023 ficou correta sintaticamente, mas o
+efeito prático que ela pretendia (um -5 mais leve pra "sem dado") não
+existe hoje. `estatisticas.status` (statisticsEngine.js, SEM_DADOS
+corretamente calculado, usado só pro log/UI) é um campo DIFERENTE do
+que alimenta o score - nomes parecidos, fontes diferentes, fácil de
+confundir (confundi antes, atenção registrada). Não corrigido nesta
+entrada - decisão de produto (quanto penalizar "sem dado" vs "ruim
+confirmado") levada ao usuário, mesma disciplina de sempre.
+--------
