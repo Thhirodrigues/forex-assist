@@ -848,6 +848,104 @@ function formatarDuracaoMs(ms) {
   return `${h}:${m}:${s}`;
 }
 
+// ======================================================
+// FILTRO POR RESULTADO NO CABEÇALHO DA TABELA (AJUSTE-043, 29/09/2026)
+// ------------------------------------------------------
+// Pedido do usuário: clicar no NOME "Resultado" do cabeçalho da coluna e
+// ficar na tela só WIN, só LOSS ou só Pendente. Cada toque passa pro
+// próximo estado: todos -> ✅ WIN -> ❌ LOSS -> ⏳ Pendente -> todos.
+//
+// Decisões de desenho:
+//  - Esconde/mostra as LINHAS já desenhadas (display), sem chamar
+//    carregarHistorico() - recarregar fecharia os dias/meses que o
+//    usuário abriu e refaria a consulta no Firestore a cada toque.
+//  - Como a lista É redesenhada de vez em quando (troca de aba, Carregar
+//    mais, fechar operação), o estado fica numa variável de módulo e
+//    aplicarFiltroHistoricoResultado() roda de novo no fim de cada
+//    carregarHistorico().
+//  - Dia/mês sem nenhuma linha visível some inteiro (senão ficam
+//    cabeçalhos vazios); volta quando o filtro sai.
+//  - Só vale pra TABELA (é onde existe o cabeçalho). No modo lista
+//    (cards) não há o que clicar, então o filtro não é aplicado lá - mas
+//    o estado é mantido e volta ao reabrir a tabela.
+//  - Só vê o que já está carregado (hoje + ontem, mais os dias de
+//    "Carregar mais") - filtrar não busca dia mais antigo sozinho.
+//  - Vive na sessão da página (como modoTabela/diasCarregados): não
+//    sobrevive a um reload.
+// ======================================================
+let filtroHistoricoResultado = "";
+
+const CICLO_FILTRO_HISTORICO = ["", "WIN", "LOSS", "PENDENTE"];
+const INDICADOR_FILTRO_HISTORICO = { "": "▾", WIN: "✅", LOSS: "❌", PENDENTE: "⏳" };
+const ROTULO_FILTRO_HISTORICO = { WIN: "✅ WIN", LOSS: "❌ LOSS", PENDENTE: "⏳ Pendente" };
+
+function thResultadoFiltravel() {
+  const ativo = !!filtroHistoricoResultado;
+  return `<th class="th-filtro-resultado" onclick="alternarFiltroHistoricoResultado()"
+      title="Toque pra filtrar: só WIN, só LOSS, só Pendente, ou todos"
+      style="padding:6px 8px; cursor:pointer; user-select:none; white-space:nowrap;${ativo ? " background:rgba(79,195,247,.22);" : ""}">Resultado <span class="ind-filtro-resultado">${INDICADOR_FILTRO_HISTORICO[filtroHistoricoResultado]}</span></th>`;
+}
+
+window.alternarFiltroHistoricoResultado = function () {
+  const i = CICLO_FILTRO_HISTORICO.indexOf(filtroHistoricoResultado);
+  filtroHistoricoResultado = CICLO_FILTRO_HISTORICO[(i + 1) % CICLO_FILTRO_HISTORICO.length];
+  aplicarFiltroHistoricoResultado();
+};
+
+function aplicarFiltroHistoricoResultado() {
+  const raiz = document.getElementById("historicoLista");
+  if (!raiz) return;
+
+  const filtro = filtroHistoricoResultado;
+  let linhasTotal = 0;
+  let linhasVisiveis = 0;
+
+  raiz.querySelectorAll("tr[data-resultado-filtro]").forEach((tr) => {
+    linhasTotal++;
+    const mostra = !filtro || tr.dataset.resultadoFiltro === filtro;
+    if (mostra) linhasVisiveis++;
+
+    tr.style.display = mostra ? "" : "none";
+
+    // A linha de detalhe (RSI/EMA/gráfico) vem logo depois - vai junto.
+    const detalhe = tr.nextElementSibling;
+    if (detalhe && detalhe.dataset.detalheDe === tr.dataset.sinalId) {
+      detalhe.style.display = mostra ? "" : "none";
+    }
+  });
+
+  // Dia sem nenhuma linha visível some; mês sem nenhum dia visível some.
+  // Sem tabela dentro (modo lista) não há nada a decidir - não mexe.
+  raiz.querySelectorAll(".hist-dia").forEach((dia) => {
+    const linhas = dia.querySelectorAll("tr[data-resultado-filtro]");
+    if (!linhas.length) return;
+    const algumaVisivel = !filtro || [...linhas].some((tr) => tr.style.display !== "none");
+    dia.style.display = algumaVisivel ? "" : "none";
+  });
+
+  raiz.querySelectorAll(".hist-mes").forEach((mes) => {
+    const dias = mes.querySelectorAll(".hist-dia");
+    if (!dias.length) return;
+    const algumDiaVisivel = !filtro || [...dias].some((d) => d.style.display !== "none");
+    mes.style.display = algumDiaVisivel ? "" : "none";
+  });
+
+  const vazio = document.getElementById("historicoFiltroVazio");
+  if (vazio) {
+    const semResultado = !!filtro && linhasTotal > 0 && linhasVisiveis === 0;
+    vazio.style.display = semResultado ? "block" : "none";
+    if (semResultado) {
+      vazio.innerHTML = `Nenhum sinal ${ROTULO_FILTRO_HISTORICO[filtro]} nos dias carregados. Toque em "Resultado" no cabeçalho pra mudar o filtro.`;
+    }
+  }
+
+  raiz.querySelectorAll(".th-filtro-resultado").forEach((th) => {
+    const ind = th.querySelector(".ind-filtro-resultado");
+    if (ind) ind.textContent = INDICADOR_FILTRO_HISTORICO[filtro];
+    th.style.background = filtro ? "rgba(79,195,247,.22)" : "";
+  });
+}
+
 // Linha de tabela (modo paisagem/botão) equivalente ao card do modo
 // retrato - mesmas colunas da referência que o usuário mandou, mais
 // uma coluna extra "Cmp" (comparação, FEATURE-015) já que essa
@@ -862,12 +960,15 @@ function formatarDuracaoMs(ms) {
 // (mudou pra Resultados, ver js/resultados.js), mas o resto da linha é
 // idêntico nas duas telas - reusar esta mesma função de lá, passando
 // `comCmp: true`, evita duplicar HTML/lógica em dois arquivos.
-// AJUSTE-042 (29/09/2026): ganhou o parâmetro opcional `comPrecos` (só a
-// aba Resultados liga, ver js/resultados.js) - duas colunas novas,
-// "Preço Entrada" e "Preço Final", entre "Modo" e "Favor", pedido do
-// usuário. Flag separada de `comCmp` de propósito (o Histórico não
-// mostra nenhuma das duas; ligar as colunas de preço lá no futuro não
-// deveria arrastar o checkbox de comparação junto).
+// AJUSTE-042/043 (29/09/2026): ganhou o parâmetro opcional `comPrecos` -
+// duas colunas novas, "Preço Entrada" e "Preço Final", entre "Modo" e
+// "Favor", pedido do usuário PARA A TABELA DO HISTÓRICO (o primeiro
+// entendimento, em Resultados, estava errado e foi desfeito - ver
+// AJUSTE-043). Flag separada de `comCmp` de propósito (só Resultados tem o
+// checkbox de comparação; só o Histórico liga as colunas de preço).
+// AJUSTE-043: a linha também carrega `data-resultado-filtro` (WIN/LOSS/
+// PENDENTE/COOLDOWN) e a linha de detalhe `data-detalhe-de`, pro filtro
+// do cabeçalho "Resultado" esconder/mostrar as duas juntas sem recarregar.
 function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, detalheHtml, comCmp, comPrecos) {
   const horario = dataObj
     ? dataObj.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 5)
@@ -936,11 +1037,15 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
   // SAÍDA, construirDetalheSinal) - preço final = precoSaida (fechamento
   // manual) ?? precoFechamento (fechamento do checker); "--" enquanto o
   // sinal está pendente ou no registro de cooldown (sem preço).
+  const categoriaResultado = isCooldown
+    ? "COOLDOWN"
+    : (sinal.resultado === "WIN" ? "WIN" : sinal.resultado === "LOSS" ? "LOSS" : "PENDENTE");
+
   const precoEntradaFormatado = formatarPrecoPar(sinal.precoEntrada, sinal.par);
   const precoFinalFormatado = formatarPrecoPar(sinal.precoSaida ?? sinal.precoFechamento, sinal.par);
 
   return `
-    <tr id="sinal-${docId}" data-sinal-id="${docId}" style="cursor:pointer; ${borderStyle}">
+    <tr id="sinal-${docId}" data-sinal-id="${docId}" data-resultado-filtro="${categoriaResultado}" style="cursor:pointer; ${borderStyle}">
       <td style="padding:8px; white-space:nowrap;">${horario}</td>
       <td style="padding:8px; white-space:nowrap;">${isCooldown ? "🚫" : (sinal.direcao === "BUY" || sinal.direcao === "CALL" ? "🟢" : "🔴")} ${sinal.par || "-"}</td>
       <td style="padding:8px; white-space:nowrap;">${direcaoLabel}</td>
@@ -970,7 +1075,7 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
       </td>
       ` : ""}
     </tr>
-    <tr>
+    <tr data-detalhe-de="${docId}">
       <td colspan="${10 + (comCmp ? 1 : 0) + (comPrecos ? 2 : 0)}" style="padding:0; border:none;">
         ${detalheHtml}
       </td>
@@ -1214,7 +1319,7 @@ async function carregarHistorico() {
       const detalheHtml = construirDetalheSinal(sinal, doc.id, estaAberto);
 
       const card = modoTabela
-        ? construirLinhaTabela(sinal, doc.id, dataObj, isCooldown, borderStyle, detalheHtml)
+        ? construirLinhaTabela(sinal, doc.id, dataObj, isCooldown, borderStyle, detalheHtml, undefined, true)
         : `
         <div class="list-item" id="sinal-${doc.id}" style="${borderStyle}" data-sinal-id="${doc.id}">
           <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:bold;">
@@ -1321,15 +1426,17 @@ async function carregarHistorico() {
         const conteudoDia = modoTabela
           ? `
             <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-              <table style="border-collapse:collapse; width:100%; min-width:720px; font-size:12px;">
+              <table style="border-collapse:collapse; width:100%; min-width:860px; font-size:12px;">
                 <thead>
                   <tr style="background:rgba(255,255,255,.06); text-align:left;">
                     <th style="padding:6px 8px;">Horário</th>
                     <th style="padding:6px 8px;">Par</th>
                     <th style="padding:6px 8px;">Direção</th>
                     <th style="padding:6px 8px;">Tempo</th>
-                    <th style="padding:6px 8px;">Resultado</th>
+                    ${thResultadoFiltravel()}
                     <th style="padding:6px 8px; text-align:center;" title="Modo que aprovou o sinal">Modo</th>
+                    <th style="padding:6px 8px; text-align:right;" title="Preço em que a operação foi aberta">Preço Entrada</th>
+                    <th style="padding:6px 8px; text-align:right;" title="Preço em que a operação foi encerrada (o mesmo usado no resultado). -- enquanto está pendente.">Preço Final</th>
                     <th style="padding:6px 8px; text-align:right;">Favor</th>
                     <th style="padding:6px 8px; text-align:right;">Contra</th>
                     <th style="padding:6px 8px; text-align:right;">Resultado Financeiro</th>
@@ -1345,7 +1452,7 @@ async function carregarHistorico() {
           : gruposPorData[data];
 
         diasHtml += `
-        <div style="margin-top:10px; border:1px solid rgba(255,255,255,.08); border-radius:10px; overflow:hidden;">
+        <div class="hist-dia" style="margin-top:10px; border:1px solid rgba(255,255,255,.08); border-radius:10px; overflow:hidden;">
            <div
   onclick="
   const el = document.getElementById('data${idData}');
@@ -1371,7 +1478,7 @@ async function carregarHistorico() {
       });
 
       finalHtml += `
-      <div style="margin-top:16px; border:1px solid rgba(255,255,255,.12); border-radius:10px; overflow:hidden;">
+      <div class="hist-mes" style="margin-top:16px; border:1px solid rgba(255,255,255,.12); border-radius:10px; overflow:hidden;">
          <div
 onclick="
 const el = document.getElementById('mes${idMes}');
@@ -1396,7 +1503,7 @@ if (el.style.display === 'none') {
       `;
     });
 
-    lista.innerHTML = (finalHtml || '<div class="list-item">Nenhum sinal encontrado.</div>') + `
+    lista.innerHTML = '<div id="historicoFiltroVazio" class="list-item" style="display:none;"></div>' + (finalHtml || '<div class="list-item">Nenhum sinal encontrado.</div>') + `
       <button
         id="btnCarregarMaisHistorico"
         onclick="carregarMaisHistorico()"
@@ -1408,6 +1515,10 @@ if (el.style.display === 'none') {
 
     atualizarBotaoModoTabela();
     aplicarModoCompactoSeNecessario();
+
+    // AJUSTE-043: reaplica o filtro do cabeçalho "Resultado" a cada
+    // redesenho da lista (o estado vive em filtroHistoricoResultado).
+    aplicarFiltroHistoricoResultado();
 
 // Adicionar listeners de clique APÓS renderizar - BLINDADO
     setTimeout(() => {

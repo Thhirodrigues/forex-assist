@@ -527,22 +527,24 @@ function secaoComoLerSinal() {
           Balanceado/🟡 Conservador), que pode ser mais permissivo que
           o perfil configurado em Config quando a cascata (ver "Como o
           RMI decide") rebaixou o sinal - toque pra ver o detalhe.</li>
-        <li><b>Colunas "Preço Entrada" e "Preço Final"</b> (AJUSTE-042,
-          só na aba Resultados, entre "Modo" e "Favor") - o preço em
+        <li><b>Colunas "Preço Entrada" e "Preço Final"</b> (AJUSTE-043,
+          na tabela do Histórico, entre "Modo" e "Favor") - o preço em
           que a operação abriu e o preço em que foi encerrada (o mesmo
           usado pra calcular o resultado; se você fechou na mão, o
           preço que você informou). "--" no Preço Final = ainda
           pendente. Pares com iene mostram 3 casas, os demais 5.</li>
+        <li><b>Filtro no cabeçalho "Resultado"</b> (AJUSTE-043, tabela
+          do Histórico) - toque no nome "Resultado" da coluna pra ficar
+          na tela só ✅ WIN; toque de novo: só ❌ LOSS; de novo: só ⏳
+          Pendente; de novo: volta a mostrar todos. O cabeçalho mostra
+          o filtro ativo (✅/❌/⏳) e fica destacado. Não recarrega a
+          lista nem fecha os dias que você abriu; dia sem nenhum sinal
+          daquele resultado some enquanto o filtro estiver ligado.
+          Só vale pra tabela (no modo lista não há cabeçalho) e só
+          enxerga os dias já carregados - "Carregar mais" continua
+          sendo o jeito de buscar dias antigos. Some ao recarregar a
+          página.</li>
       </ul>
-
-      <h3>Filtros da aba Resultados</h3>
-      <p style="font-size:13px;">
-        Período, Par, Direção, Perfil (o "Modo" que aprovou) e, desde o
-        AJUSTE-042, <b>Resultado</b>: Todos, ✅ WIN, ❌ LOSS ou ⏳
-        Pendente (ainda aberto - não inclui os registros de cooldown).
-        Os filtros se combinam, e o placar (✅/❌/🎯/💵) no topo
-        reflete só o que ficou filtrado.
-      </p>
 
       <h3>Ao expandir o sinal (toque na linha)</h3>
       <p><b>EMA 9 / EMA 21 / EMA 200</b> - o preço de cada média na

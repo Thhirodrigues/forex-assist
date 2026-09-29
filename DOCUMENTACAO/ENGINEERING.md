@@ -12361,3 +12361,52 @@ asserção sobre o checkbox de comparação removido do Histórico no
 AJUSTE-021 e uma função renomeada) - resultado idêntico antes/depois
 (25 OK + as mesmas 2 obsoletas); não corrigido aqui.
 --------
+
+AJUSTE-043 (29/09/2026) - Histórico: filtro no cabeçalho "Resultado" +
+colunas "Preço Entrada"/"Preço Final"; DESFAZ o AJUSTE-042 em Resultados
+(só frontend; permitido pelo congelamento)
+
+Mal-entendido do AJUSTE-042: o pedido original era "um filtro na aba
+histórico, no item resultados" - "item resultados" era a COLUNA
+"Resultado" da tabela do Histórico, e li como a aba Resultados. Usuário
+esclareceu: o filtro é clicando no NOME "Resultado" no cabeçalho da
+coluna (só WIN, só LOSS ou só Pendente), e as duas colunas de preço
+também são no Histórico. js/resultados.js restaurado byte a byte ao estado
+anterior ao AJUSTE-042 (sem a lista suspensa de Resultado, sem as colunas de
+preço, 4 filtros e 11 colunas como antes).
+
+  - js/historico.js, tabela do Histórico: cabeçalho "Resultado" clicável
+    (`thResultadoFiltravel`); cada toque avança todos -> ✅ WIN -> ❌ LOSS
+    -> ⏳ Pendente -> todos (`alternarFiltroHistoricoResultado`), com o
+    indicador (▾/✅/❌/⏳) e destaque no cabeçalho. Colunas Preço Entrada e
+    Preço Final entre Modo e Favor (12 colunas, min-width 720 -> 860px;
+    `comPrecos` em construirLinhaTabela, colspan do detalhe 12).
+  - Esconde/mostra as linhas já desenhadas (display), SEM recarregar:
+    recarregar fecharia os dias/meses abertos e refaria a consulta. A linha
+    leva `data-resultado-filtro` (WIN/LOSS/PENDENTE/COOLDOWN) e o detalhe
+    `data-detalhe-de` (esconde junto). Dia/mês sem linha visível some. Se
+    nada bate: mensagem "Nenhum sinal X nos dias carregados". Estado em
+    variável de módulo (`filtroHistoricoResultado`) e reaplicado no fim de
+    todo carregarHistorico() (troca de aba, Carregar mais, fechar operação).
+    Cooldown só aparece sem filtro. "Pendente" = sem WIN/LOSS e não
+    cooldown (mesma regra do rótulo da linha).
+  - Limites assumidos (dito ao usuário): só na TABELA (no modo lista não há
+    cabeçalho; o filtro não é aplicado lá, mas o estado volta ao reabrir a
+    tabela); só filtra dias já carregados; some ao recarregar a página.
+  - "Preço Entrada e final do mesmo jeito" foi entendido como as duas
+    colunas (não como filtro nesses cabeçalhos) - assunção registrada.
+  - js/manual.js atualizado.
+
+Validação: scratchpad/test-ajuste043.js - app REAL no Chromium (Playwright,
+viewport de celular), só o Firestore simulado: cabeçalho e 12 células por
+linha (WIN, LOSS JPY, pendente, cooldown, fechamento manual), casas
+decimais, precoSaida vencendo precoFechamento, clique real no cabeçalho
+nos 4 estados (linhas e detalhes certos, cooldown fora do Pendente, dia e
+mês ocultos só quando vazios, dias abertos continuam abertos e a lista NÃO
+é recarregada), filtro sobrevivendo a redesenho, mensagem de lista vazia,
+modo lista sem efeito colateral, Resultados de volta a 4 filtros/11 colunas,
+zero erro de JavaScript depois de instalar o Firestore simulado (os 4 erros
+"firebase/db is not defined" são só da fase de carga do harness, sem
+Firebase). Captura de tela conferida. AJUSTE-042 fica no histórico como o
+entendimento inicial (parcialmente desfeito aqui).
+--------
