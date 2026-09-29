@@ -13,7 +13,7 @@ const serviceAccount = require("../serviceAccount.json");
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
-const QTD = 4;
+const QTD = 12;
 
 function iso(ms) { const n = Number(ms); return Number.isFinite(n) ? new Date(n).toISOString() : String(ms); }
 
@@ -41,9 +41,11 @@ async function main() {
         console.log(`avisoRisco=${JSON.stringify(d.avisoRisco)}`);
         console.log(`avisoExpectativa=${JSON.stringify(d.avisoExpectativa)}`);
         console.log(`avisoHistorico=${JSON.stringify(d.avisoHistorico)}`);
-        console.log(`precoEntrada=${d.precoEntrada} ultimoCandleDatetime=${d.ultimoCandleDatetime}`);
-        console.log(`campos de topo (${Object.keys(d).length}): ${Object.keys(d).sort().join(", ")}`);
-        console.log(`tamanho aproximado do documento: ${Buffer.byteLength(JSON.stringify(d))} bytes`);
+        console.log(`precoEntrada=${d.precoEntrada}`);
+        // Campos de FECHAMENTO (só existem em operação encerrada) - pra
+        // conferir como o resultado em dólar foi calculado.
+        console.log(`fechamento: motivo=${d.motivoEncerramento} precoFechamento=${d.precoFechamento} resultadoFinanceiro=${d.resultadoFinanceiro} lucroAtual=${d.lucroAtual} saldoAntes=${d.saldoAntes} saldoDepois=${d.saldoDepois} fim=${iso(d.fimOperacao)} tempoOperacao(min)=${Number.isFinite(Number(d.tempoOperacao)) ? (Number(d.tempoOperacao) / 60000).toFixed(1) : d.tempoOperacao}`);
+        console.log(`extremos: maxPipsFavor=${d.maxPipsFavor} maxPipsContra=${d.maxPipsContra} precoMaximo=${d.precoMaximo} precoMinimo=${d.precoMinimo}`);
     });
 
     process.exit(0);
