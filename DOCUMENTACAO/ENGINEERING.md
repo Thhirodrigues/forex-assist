@@ -12454,3 +12454,49 @@ como antes), zero erro de JavaScript. Regressão: test-ajuste043.js (filtro
 do cabeçalho, colunas de preço, modo lista) passa inteiro. Captura de
 tela conferida.
 --------
+
+AJUSTE-045 (29/09/2026) - link do sinal aponta pra página do PAR na XM
+(navegador E notificação push)
+
+O usuário achou a URL que abre direto a página do par na XM
+(`https://my.xm.com/pt/symbol-info/EURJPY`) e pediu que cada sinal use a
+do seu par (nome do par sem a barra no final). Depois pediu que TODOS os
+pares do app tenham link, "mesmo os que não estão marcados" - a regra
+depende só do par do sinal, não da lista marcada na Config.
+
+  - js/historico.js: `urlCorretoraXM(par)` ("EUR/JPY" -> ".../symbol-info/
+    EURJPY"; só letras, 6 caracteres, senão cai na área da conta
+    `URL_CORRETORA_XM`); `linkCorretoraXM(sinal, isCooldown)` usa o par do
+    sinal e o título do link diz qual página abre.
+  - scripts/pushNotifier.js: `urlXmParaPar(par)` (mesma regra), usada em
+    `data.url` do push de ABERTURA e de ENCERRAMENTO (antes sempre
+    `URL_XM_MEMBER`); exporta urlXmParaPar/URL_XM_SIMBOLO. A área da conta
+    segue como fallback (aqui e em firebase-messaging-sw.js, que só ganhou
+    o comentário). A regra existe em DOIS lugares (Node e navegador não
+    compartilham código) - manter iguais; comentado nos dois.
+  - Continua sem abrir a ORDEM pronta (a XM não expõe).
+
+LIMITE, não verificado: a rede do ambiente bloqueia my.xm.com
+(EGRESS_BLOCKED), então NÃO foi possível conferir que a página existe
+para cada um dos 20 pares (o padrão é o do exemplo do usuário, EURJPY).
+Conferir no celular ao menos os menos comuns (CAD/JPY, CHF/JPY, AUD/NZD,
+GBP/CAD). Se a XM usar outro nome de símbolo pra algum par, é um mapa de
+exceções em urlCorretoraXM/urlXmParaPar.
+
+Validação: scratchpad/validate-ajuste045-pares.js - lê os 20 pares REAIS de
+js/config.js (TODOS_PARES) e confere navegador == push == esperado para
+cada um, o exemplo exato do usuário, pares inválidos (undefined, null, "",
+"EUR", "EURUSDX", "12/34", "EUR/USD/JPY") caindo na área da conta, par em
+minúsculas/sem barra, e a pílula renderizada dos 20 pares (href, título,
+target, rel). validate-push-envio.js atualizado (a asserção antiga da URL
+da conta virou a do par; +cenários de abertura e encerramento para
+EUR/JPY, CAD/JPY, AUD/NZD, par ausente e inválido): 30 verificações
+passam. test-ajuste044.js (app real no Chromium): links por par na tabela,
+lista e Resultados, exemplo EUR/JPY, par fora dos monitorados (CAD/JPY),
+clique abre a página do par sem mexer no detalhe. Regressão:
+test-ajuste043.js, validate-push-estimativa-tempo e -integracao-
+pairanalyzer passam. validate-push-integracao-checker.js falha (6) IGUAL
+antes e depois desta mudança (o banco simulado dele não tem
+FieldValue.increment, que o checker ganhou depois) - pré-existente, não
+corrigido aqui.
+--------

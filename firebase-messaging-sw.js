@@ -57,7 +57,9 @@ messaging.onBackgroundMessage(
 // na notificação não fazia nada (o usuário via o alerta, mas precisava
 // abrir a XM manualmente por fora). Reaproveita uma aba já aberta do
 // app, se existir; senão abre uma nova na URL informada pelo push
-// (scripts/pushNotifier.js's URL_XM_MEMBER).
+// (scripts/pushNotifier.js: desde o AJUSTE-045 é a página do PAR do
+// sinal na XM; a área da conta abaixo é só o fallback se o push vier
+// sem URL).
 self.addEventListener("notificationclick", event => {
 
   event.notification.close();

@@ -17,7 +17,27 @@
 // Link de destino ao tocar a notificação - decidido com o usuário:
 // área geral da conta (saldo, Gerir, Depositar), não a tela de
 // mercados nem uma ordem pronta (XM não expõe isso via URL pública).
+//
+// AJUSTE-045 (29/09/2026): o usuário achou a URL que abre direto a página
+// do PAR na XM (`https://my.xm.com/pt/symbol-info/EURJPY`) e pediu que
+// cada sinal use a do seu par. A notificação agora leva pra página do
+// par do sinal (abertura e encerramento); a área da conta continua como
+// fallback quando o par não gera um símbolo válido. Continua sem abrir a
+// ORDEM pronta - a XM não expõe isso. Mesma regra de urlCorretoraXM() em
+// js/historico.js (backend e navegador não compartilham código -
+// manter iguais).
 const URL_XM_MEMBER = "https://my.xm.com/pt/member";
+const URL_XM_SIMBOLO = "https://my.xm.com/pt/symbol-info/";
+
+// "EUR/JPY" -> "https://my.xm.com/pt/symbol-info/EURJPY". Só letras, 6
+// caracteres; qualquer outra coisa cai na área da conta.
+function urlXmParaPar(par) {
+
+    const simbolo = String(par || "").replace(/[^A-Za-z]/g, "").toUpperCase();
+
+    return simbolo.length === 6 ? URL_XM_SIMBOLO + simbolo : URL_XM_MEMBER;
+
+}
 
 // ===================================================
 // ESTIMATIVA DE TEMPO HÁBIL (baseada em ATR, não arbitrária)
@@ -164,7 +184,7 @@ async function enviarPushAbertura(admin, db, operacao) {
             },
 
             data: {
-                url: URL_XM_MEMBER,
+                url: urlXmParaPar(operacao.par),
                 tipo: "abertura",
                 par: String(operacao.par || ""),
                 direcao: String(operacao.direcao || "")
@@ -223,7 +243,7 @@ async function enviarPushEncerramento(admin, db, sinal) {
             },
 
             data: {
-                url: URL_XM_MEMBER,
+                url: urlXmParaPar(sinal.par),
                 tipo: "encerramento",
                 par: String(sinal.par || ""),
                 resultado: String(sinal.resultado || "")
@@ -247,6 +267,10 @@ async function enviarPushEncerramento(admin, db, sinal) {
 module.exports = {
 
     URL_XM_MEMBER,
+
+    URL_XM_SIMBOLO,
+
+    urlXmParaPar,
 
     estimarTempoHabilMinutos,
 

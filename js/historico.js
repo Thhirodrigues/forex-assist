@@ -43,27 +43,46 @@ function formatarPrecoPar(valor, par) {
   return numero.toFixed(casasDecimais);
 }
 
-// AJUSTE-044 (29/09/2026): link do sinal pra corretora (XM) - pedido do
-// usuário ("fazer do sinal um link pra corretora XM, ao menos pra página
-// principal"). Mesmo destino que a notificação push já usa desde a
-// FEATURE-011 (área geral da conta XM, decidida com o usuário na época:
-// a XM não expõe URL pública que abra um mercado/ordem pronta nem logue
-// sozinho - então este link NÃO abre a ordem do sinal, só a conta).
-// Ao trocar o destino, trocar os TRÊS lugares (não dá pra compartilhar
-// código entre o backend Node e o navegador): esta constante,
-// URL_XM_MEMBER em scripts/pushNotifier.js e o fallback em
-// firebase-messaging-sw.js.
+// AJUSTE-044/045 (29/09/2026): link do sinal pra corretora (XM) - pedido do
+// usuário. 044: link pra área da conta (mesmo destino da notificação push
+// desde a FEATURE-011). 045: o usuário achou a URL que abre direto a página
+// do PAR na XM (informações do símbolo) e pediu que cada sinal use a do
+// seu par: `https://my.xm.com/pt/symbol-info/EURJPY` - o par sem a barra
+// no final (EUR/JPY -> EURJPY). A XM continua sem expor URL que abra a
+// ORDEM pronta (par/direção/lote/TP/SL) nem logue sozinha: o link leva à
+// página do instrumento, a ordem ainda é digitada na XM.
+//
+// A regra existe em DOIS lugares (backend Node e navegador não
+// compartilham código) - manter iguais: urlCorretoraXM() aqui e
+// urlXmParaPar() em scripts/pushNotifier.js. A área da conta
+// (URL_CORRETORA_XM) é o fallback quando o par não gera um símbolo válido
+// (também em scripts/pushNotifier.js URL_XM_MEMBER e no fallback de
+// firebase-messaging-sw.js).
 const URL_CORRETORA_XM = "https://my.xm.com/pt/member";
+const URL_CORRETORA_XM_SIMBOLO = "https://my.xm.com/pt/symbol-info/";
+
+// "EUR/JPY" -> ".../symbol-info/EURJPY". Só letras, 6 caracteres (todos os
+// pares do app têm o formato XXX/YYY); qualquer outra coisa (par ausente,
+// formato estranho) cai na área da conta em vez de montar link quebrado.
+function urlCorretoraXM(par) {
+  const simbolo = String(par || "").replace(/[^A-Za-z]/g, "").toUpperCase();
+  return simbolo.length === 6 ? URL_CORRETORA_XM_SIMBOLO + simbolo : URL_CORRETORA_XM;
+}
 
 // Pílula "XM ↗" ao lado do par. Registro de cooldown não é sinal
 // operável - sem link. stopPropagation: a linha/card inteiro alterna o
 // detalhe ao toque, o link tem que abrir a XM SEM expandir nem fechar o
 // detalhe (mesmo padrão dos checkboxes da tabela).
-function linkCorretoraXM(isCooldown) {
+function linkCorretoraXM(sinal, isCooldown) {
   if (isCooldown) return "";
-  return ` <a href="${URL_CORRETORA_XM}" target="_blank" rel="noopener noreferrer"
+  const url = urlCorretoraXM(sinal.par);
+  const paginaDoPar = url !== URL_CORRETORA_XM;
+  const titulo = paginaDoPar
+    ? `Abre a página de ${sinal.par} na XM (não abre a ordem pronta - a XM não permite isso por link)`
+    : "Abre a área da sua conta na XM (não abre a ordem pronta - a XM não permite isso por link)";
+  return ` <a href="${url}" target="_blank" rel="noopener noreferrer"
       onclick="event.stopPropagation();"
-      title="Abre a área da sua conta na XM (não abre a ordem pronta - a XM não permite isso por link)"
+      title="${titulo}"
       style="display:inline-block; margin-left:6px; padding:1px 6px; border-radius:6px; background:rgba(79,195,247,.15); color:#9adcf9; font-size:10px; font-weight:bold; text-decoration:none; vertical-align:middle;">XM ↗</a>`;
 }
 
@@ -1071,7 +1090,7 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
   return `
     <tr id="sinal-${docId}" data-sinal-id="${docId}" data-resultado-filtro="${categoriaResultado}" style="cursor:pointer; ${borderStyle}">
       <td style="padding:8px; white-space:nowrap;">${horario}</td>
-      <td style="padding:8px; white-space:nowrap;">${isCooldown ? "🚫" : (sinal.direcao === "BUY" || sinal.direcao === "CALL" ? "🟢" : "🔴")} ${sinal.par || "-"}${linkCorretoraXM(isCooldown)}</td>
+      <td style="padding:8px; white-space:nowrap;">${isCooldown ? "🚫" : (sinal.direcao === "BUY" || sinal.direcao === "CALL" ? "🟢" : "🔴")} ${sinal.par || "-"}${linkCorretoraXM(sinal, isCooldown)}</td>
       <td style="padding:8px; white-space:nowrap;">${direcaoLabel}</td>
       <td style="padding:8px; white-space:nowrap;">${tempoLabel}</td>
       <td style="padding:8px; white-space:nowrap;">${resultadoLabel}${avisoIcone}</td>
@@ -1362,7 +1381,7 @@ async function carregarHistorico() {
             </span>
             <span style="display:flex; align-items:center; gap:8px;">
               <span>${isCooldown ? "COOLDOWN" : (sinal.resultado === "WIN" ? "✅ WIN" : sinal.resultado === "LOSS" ? "❌ LOSS" : "⏳ PENDENTE")}</span>
-              ${linkCorretoraXM(isCooldown)}
+              ${linkCorretoraXM(sinal, isCooldown)}
             </span>
           </div>
           <div style="margin-top:4px; font-size:12px; color:#8c95b3;">
