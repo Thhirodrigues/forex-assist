@@ -911,6 +911,9 @@ function formatarDuracaoMs(ms) {
 //  - Só vale pra TABELA (é onde existe o cabeçalho). No modo lista
 //    (cards) não há o que clicar, então o filtro não é aplicado lá - mas
 //    o estado é mantido e volta ao reabrir a tabela.
+//  - AJUSTE-046: barra "Filtro ativo ... [✕ Mostrar todos]" no topo da
+//    lista (fora dos dias) - a saída que faltava quando o filtro esconde
+//    tudo.
 //  - Só vê o que já está carregado (hoje + ontem, mais os dias de
 //    "Carregar mais") - filtrar não busca dia mais antigo sozinho.
 //  - Vive na sessão da página (como modoTabela/diasCarregados): não
@@ -932,6 +935,18 @@ function thResultadoFiltravel() {
 window.alternarFiltroHistoricoResultado = function () {
   const i = CICLO_FILTRO_HISTORICO.indexOf(filtroHistoricoResultado);
   filtroHistoricoResultado = CICLO_FILTRO_HISTORICO[(i + 1) % CICLO_FILTRO_HISTORICO.length];
+  aplicarFiltroHistoricoResultado();
+};
+
+// AJUSTE-046 (29/09/2026): saída garantida do filtro. Sem ela, filtrar por
+// um resultado que não existe (ex.: Pendente sem nenhum aberto) escondia
+// TODOS os dias - e o cabeçalho "Resultado", que é o único jeito de mudar
+// o filtro, some junto: o usuário ficou preso numa tela só com a mensagem
+// (print do usuário, celular em modo compacto). Agora uma barra fixa no
+// topo da lista, fora dos dias, aparece sempre que há filtro ligado e tem
+// o botão "Mostrar todos".
+window.limparFiltroHistoricoResultado = function () {
+  filtroHistoricoResultado = "";
   aplicarFiltroHistoricoResultado();
 };
 
@@ -973,12 +988,22 @@ function aplicarFiltroHistoricoResultado() {
     mes.style.display = algumDiaVisivel ? "" : "none";
   });
 
-  const vazio = document.getElementById("historicoFiltroVazio");
-  if (vazio) {
-    const semResultado = !!filtro && linhasTotal > 0 && linhasVisiveis === 0;
-    vazio.style.display = semResultado ? "block" : "none";
-    if (semResultado) {
-      vazio.innerHTML = `Nenhum sinal ${ROTULO_FILTRO_HISTORICO[filtro]} nos dias carregados. Toque em "Resultado" no cabeçalho pra mudar o filtro.`;
+  // Barra do filtro ativo: fora dos grupos de dia (não some junto com
+  // eles), com o botão de saída. No modo lista o filtro não é aplicado
+  // (não há cabeçalho), então a barra também não aparece.
+  const barra = document.getElementById("historicoFiltroBarra");
+  if (barra) {
+    if (!filtro || !modoTabela) {
+      barra.style.display = "none";
+    } else {
+      const texto = linhasVisiveis === 0
+        ? `Nenhum sinal ${ROTULO_FILTRO_HISTORICO[filtro]} nos dias carregados.`
+        : `Filtro ativo: ${ROTULO_FILTRO_HISTORICO[filtro]} - ${linhasVisiveis} ${linhasVisiveis === 1 ? "sinal" : "sinais"}.`;
+      barra.innerHTML = `
+        <span>${texto}</span>
+        <button onclick="limparFiltroHistoricoResultado()" style="flex-shrink:0; padding:6px 10px; border:none; border-radius:8px; background:#4fc3f7; color:#081733; font-weight:bold; font-size:12px; cursor:pointer;">✕ Mostrar todos</button>
+      `;
+      barra.style.display = "flex";
     }
   }
 
@@ -1554,7 +1579,7 @@ if (el.style.display === 'none') {
       `;
     });
 
-    lista.innerHTML = '<div id="historicoFiltroVazio" class="list-item" style="display:none;"></div>' + (finalHtml || '<div class="list-item">Nenhum sinal encontrado.</div>') + `
+    lista.innerHTML = '<div id="historicoFiltroBarra" class="list-item" style="display:none; align-items:center; justify-content:space-between; gap:10px; font-size:12px;"></div>' + (finalHtml || '<div class="list-item">Nenhum sinal encontrado.</div>') + `
       <button
         id="btnCarregarMaisHistorico"
         onclick="carregarMaisHistorico()"

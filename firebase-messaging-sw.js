@@ -29,11 +29,15 @@ messaging.onBackgroundMessage(
           payload.notification?.body ||
           "Novo sinal",
 
+        // AJUSTE-046: "/icon-512.png" (raiz do domínio) não existe - o app
+        // vive em .../forex-assist/ - e o badge precisa ser a silhueta
+        // (só o canal alfa vale na barra de status). Relativo ao escopo
+        // do service worker; ver sw.js pra explicação completa.
         icon:
-          "/icon-512.png",
+          self.registration.scope + "icon-192.png",
 
         badge:
-          "/icon-512.png",
+          self.registration.scope + "badge-96.png",
 
         tag:
           "forex-assist",

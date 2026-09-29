@@ -88,6 +88,32 @@ self.addEventListener(
   }
 );
 
+// AJUSTE-046 (29/09/2026): ícones da notificação + destino do toque.
+//
+// ÍCONE: o Android mostra na barra de status a imagem "badge" usando SÓ o
+// canal alfa (a silhueta) - o icon-512.png colorido e opaco que estava
+// aqui não serve (o Android o ignora/vira um bloco e cai no logo do
+// Chrome). badge-96.png é a silhueta branca do logo do app sobre fundo
+// transparente (gerada a partir do icon-512.png). O ícone GRANDE do
+// corpo da notificação é o logo colorido (icon-192.png, mais leve).
+// Caminhos relativos a ESTE arquivo (o app vive em .../forex-assist/, não
+// na raiz do domínio - "/icon-512.png" apontaria pra um endereço que não
+// existe).
+//
+// DESTINO: scripts/pushNotifier.js manda em payload.data.url a página do
+// par na XM (AJUSTE-045), mas este arquivo ignorava e sempre abria o app
+// ("./"): o toque nunca chegava na XM. Só aceita https://my.xm.com/ (o
+// payload vem do nosso servidor, mas nunca abrir destino arbitrário);
+// qualquer outra coisa/ausência = "./" (o app), como antes.
+const ICONE_NOTIFICACAO = "./icon-192.png";
+const BADGE_NOTIFICACAO = "./badge-96.png";
+
+function destinoNotificacao(url) {
+  return typeof url === "string" && url.startsWith("https://my.xm.com/")
+    ? url
+    : "./";
+}
+
 self.addEventListener(
   "push",
   event => {
@@ -97,6 +123,9 @@ self.addEventListener(
 
     let body =
       "Novo sinal disponível";
+
+    let url =
+      "./";
 
     if (event.data) {
 
@@ -114,6 +143,11 @@ self.addEventListener(
           payload.notification?.body ||
           payload.body ||
           body;
+
+        url =
+          destinoNotificacao(
+            payload.data?.url
+          );
 
       } catch {
 
@@ -136,13 +170,13 @@ self.addEventListener(
             body,
 
             icon:
-              "./icon-512.png",
+              ICONE_NOTIFICACAO,
 
             badge:
-              "./icon-512.png",
+              BADGE_NOTIFICACAO,
 
             data: {
-              url: "./"
+              url
             }
           }
 
@@ -162,7 +196,9 @@ self.addEventListener(
     e.waitUntil(
 
       clients.openWindow(
-        "./"
+        destinoNotificacao(
+          e.notification.data?.url
+        )
       )
 
     );

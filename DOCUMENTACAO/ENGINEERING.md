@@ -12510,3 +12510,69 @@ rede do ambiente bloqueia my.xm.com). Se algum par não abrir, é um mapa
 de exceções em urlCorretoraXM (js/historico.js) e urlXmParaPar
 (scripts/pushNotifier.js).
 --------
+
+AJUSTE-046 (29/09/2026) - (a) saída do filtro do Histórico; (b) ícone da
+notificação push; (c) toque na notificação abre a página do par na XM
+(só frontend/notificação; congelamento do pipeline intacto - nenhuma
+mudança em pontuação, aprovação ou risco de sinal).
+
+(a) ARMADILHA DO FILTRO (relato do usuário, com print): com o filtro
+"Pendente" ativo e nenhum sinal pendente nos dias carregados, o Histórico
+mostrava só "Nenhum sinal Pendente...", sem caminho de volta - o
+cabeçalho "Resultado" (único controle do filtro, AJUSTE-043) fica oculto
+no modo compacto (celular deitado, altura < 500px), e mesmo fora dele a
+mensagem não oferecia saída óbvia.
+  - js/historico.js: barra `#historicoFiltroBarra` no topo da lista, visível
+    sempre que há filtro ativo em modo tabela, com "Filtro ativo: X - N
+    sinais." (ou "Nenhum sinal X nos dias carregados.") e o botão
+    "✕ Mostrar todos" (`window.limparFiltroHistoricoResultado`). Funciona
+    no modo compacto. O clique no cabeçalho "Resultado" continua
+    alternando Todos > WIN > LOSS > Pendente > Todos.
+  - Validação: scratchpad/test-ajuste043.js (Chromium real, app real,
+    banco simulado): 42 verificações, incluindo a reprodução do print
+    (filtro Pendente sem pendentes, modo compacto) e a saída pelo botão.
+
+(b) ÍCONE DA NOTIFICAÇÃO. Pedido: aparecer o logo do Forex Assist na barra
+de notificação, não o do Chrome. Causas prováveis encontradas no código:
+  - Quem exibe o push é o sw.js (js/push.js registra "./sw.js" e passa
+    esse registro ao getToken do Firebase); firebase-messaging-sw.js é
+    fallback e, na prática, fica inativo.
+  - O `badge` (ícone da barra de status no Android) era o icon-512.png
+    colorido e opaco. O Android usa SÓ o canal alfa do badge (silhueta);
+    uma imagem opaca vira bloco/é ignorada e cai no logo do Chrome.
+  - firebase-messaging-sw.js apontava pra "/icon-512.png" (raiz do
+    domínio), que não existe: o app vive em .../forex-assist/.
+  Correção: novo `badge-96.png` (96x96 RGBA, silhueta branca do logo sobre
+  fundo transparente, gerada a partir do icon-512.png); sw.js usa
+  `icon: ./icon-192.png` e `badge: ./badge-96.png` (caminhos relativos ao
+  arquivo); firebase-messaging-sw.js usa `self.registration.scope + ...`.
+
+(c) CORREÇÃO HONESTA sobre o AJUSTE-045: o push manda a página do par em
+`payload.data.url`, mas o sw.js ignorava esse campo e o toque sempre
+abria "./" (o app). Ou seja, minha afirmação anterior de que tocar na
+notificação abria a página do par na XM provavelmente NÃO era verdade no
+caminho que roda de fato. Agora o sw.js guarda `data.url` na notificação
+e, no toque, abre essa URL. Só aceita `https://my.xm.com/` (lista de
+permissão - `destinoNotificacao`); qualquer outra coisa ou ausência abre
+o app ("./"), como antes.
+
+LIMITES (não verificáveis daqui):
+  - Não há como testar num aparelho real; o resultado visual depende do
+    Android/fabricante (alguns OEMs sobrepõem o ícone). Se persistir o
+    logo do Chrome, precisa saber a marca do celular.
+  - O service worker novo só assume depois que o app é reaberto/atualizado
+    (CACHE_NAME não mudou; o sw.js é buscado sem cache a cada abertura).
+  - Não foi adicionado `webpush.notification.icon/badge` no envio do
+    servidor (scripts/pushNotifier.js); só se o cliente sozinho não bastar.
+  - Se aparecerem duas notificações por sinal, é sw.js + firebase-
+    messaging-sw.js ativos ao mesmo tempo - avisar.
+
+Validação: scratchpad/validate-push-icone-046.js (30 verificações, VM):
+listeners do sw.js intactos (install/activate/fetch/push/
+notificationclick); push no formato FCM com data.url XM -> icon 192,
+badge 96, data.url preservada; sem data, URL de outro domínio, prefixo
+enganoso (my.xm.com.evil.com) e "javascript:" -> "./"; texto puro e sem
+event.data; toque abre XM ou "./"; firebase-messaging-sw.js usa icon/badge
+pelo escopo; badge-96.png é 96x96 RGBA, cantos transparentes, pixels
+visíveis todos brancos (~24% da área).
+--------
