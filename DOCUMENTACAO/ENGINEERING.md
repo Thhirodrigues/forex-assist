@@ -12313,3 +12313,51 @@ do regime novo, lidos do Firestore com ferramentas/checar-ultimo-sinal.js
    sem teto de exposição (item 8 da fila). Reduz a amostra efetiva do
    critério de 100 operações do congelamento.
 --------
+
+DECISÃO DO USUÁRIO (29/09/2026) sobre a OBSERVAÇÃO acima: a diferença
+entre o resultado gravado (extremo da vela) e o nível do SL/TP (ex.:
+-$5,27 com SL de $5) é TOLERÁVEL - NÃO mexer, nem agora nem no
+descongelamento. Item 9 da fila do ESTADO_ATUAL removido da fila.
+--------
+
+AJUSTE-042 (29/09/2026) - aba Resultados: filtro por Resultado + colunas
+"Preço Entrada" e "Preço Final" (só frontend; pedido do usuário; permitido
+pelo congelamento, nada do pipeline de sinais foi tocado)
+
+Pedido: "um filtro na aba Histórico, no item Resultados, e dois campos,
+preço de entrada e preço final, entre Modo e Favor". A aba Resultados
+(js/resultados.js, AJUSTE-021) já tinha Período/Par/Direção/Perfil; faltava
+filtro por RESULTADO do sinal - interpretado assim (assunção registrada; se
+a intenção era outro filtro, ajustar).
+
+  - js/resultados.js: novo filtro "Resultado" (Todos / ✅ WIN / ❌ LOSS /
+    ⏳ Pendente). Client-side, como os outros (sem índice composto no
+    Firestore). "Pendente" = sem WIN/LOSS e que NÃO é registro de cooldown
+    (mesma regra do rótulo da linha). O placar do topo reflete o conjunto
+    filtrado e mostra o rótulo do filtro. Cabeçalho ganhou "Preço Entrada" e
+    "Preço Final" entre "Modo" e "Favor"; min-width da tabela 780 -> 940px
+    (a tabela já rola na horizontal).
+  - js/historico.js construirLinhaTabela: parâmetro novo `comPrecos` (flag
+    separada de `comCmp`), ligado só por Resultados; colspan do detalhe =
+    10 + (comCmp ? 1 : 0) + (comPrecos ? 2 : 0) = 13 em Resultados. O
+    Histórico não muda (10 colunas). Preço Final = precoSaida (fechamento
+    manual) ?? precoFechamento - a MESMA regra do card de detalhe; "--"
+    enquanto pendente e em cooldown. Formato via formatarPrecoPar (5 casas;
+    3 pra JPY). precoFechamento é o preço do extremo da vela que tocou o
+    TP/SL (o mesmo usado no resultado - ver observação acima).
+  - js/manual.js: colunas e filtros documentados.
+
+Validação: scratchpad/validate-ajuste042.js (código REAL das duas telas em
+sandbox, Firestore/DOM mockados) - todos os cenários: filtro WIN/LOSS/
+Pendente (cooldown fora do Pendente), placar do conjunto filtrado, select
+com a opção certa selecionada, cabeçalho de 13 colunas na ordem Modo |
+Preço Entrada | Preço Final | Favor, 13 células em cada tipo de linha
+(WIN, LOSS JPY, fechamento manual, pendente, cooldown), colspan 13, casas
+decimais (JPY x demais), precoSaida vencendo precoFechamento, Histórico
+sem as colunas novas (colspan 10) e uso anterior só com comCmp intacto
+(colspan 11). O teste antigo validate-modo-tabela-historico.js já estava
+quebrado ANTES desta mudança (sandbox sem window.addEventListener, uma
+asserção sobre o checkbox de comparação removido do Histórico no
+AJUSTE-021 e uma função renomeada) - resultado idêntico antes/depois
+(25 OK + as mesmas 2 obsoletas); não corrigido aqui.
+--------

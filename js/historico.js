@@ -862,7 +862,13 @@ function formatarDuracaoMs(ms) {
 // (mudou pra Resultados, ver js/resultados.js), mas o resto da linha é
 // idêntico nas duas telas - reusar esta mesma função de lá, passando
 // `comCmp: true`, evita duplicar HTML/lógica em dois arquivos.
-function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, detalheHtml, comCmp) {
+// AJUSTE-042 (29/09/2026): ganhou o parâmetro opcional `comPrecos` (só a
+// aba Resultados liga, ver js/resultados.js) - duas colunas novas,
+// "Preço Entrada" e "Preço Final", entre "Modo" e "Favor", pedido do
+// usuário. Flag separada de `comCmp` de propósito (o Histórico não
+// mostra nenhuma das duas; ligar as colunas de preço lá no futuro não
+// deveria arrastar o checkbox de comparação junto).
+function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, detalheHtml, comCmp, comPrecos) {
   const horario = dataObj
     ? dataObj.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 5)
     : "--:--";
@@ -926,6 +932,13 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
     ? (LEGENDA_PERFIL[sinal.perfil] || "⚪").split(" ")[0]
     : "-";
 
+  // AJUSTE-042: mesma regra do card de detalhe (miniCard ENTRADA/
+  // SAÍDA, construirDetalheSinal) - preço final = precoSaida (fechamento
+  // manual) ?? precoFechamento (fechamento do checker); "--" enquanto o
+  // sinal está pendente ou no registro de cooldown (sem preço).
+  const precoEntradaFormatado = formatarPrecoPar(sinal.precoEntrada, sinal.par);
+  const precoFinalFormatado = formatarPrecoPar(sinal.precoSaida ?? sinal.precoFechamento, sinal.par);
+
   return `
     <tr id="sinal-${docId}" data-sinal-id="${docId}" style="cursor:pointer; ${borderStyle}">
       <td style="padding:8px; white-space:nowrap;">${horario}</td>
@@ -934,6 +947,10 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
       <td style="padding:8px; white-space:nowrap;">${tempoLabel}</td>
       <td style="padding:8px; white-space:nowrap;">${resultadoLabel}${avisoIcone}</td>
       <td style="padding:8px; text-align:center;" title="${perfilDotTitle.replace(/"/g, "&quot;")}">${perfilDot}</td>
+      ${comPrecos ? `
+      <td style="padding:8px; text-align:right; white-space:nowrap;">${precoEntradaFormatado}</td>
+      <td style="padding:8px; text-align:right; white-space:nowrap;">${precoFinalFormatado}</td>
+      ` : ""}
       <td style="padding:8px; text-align:right; color:#00d26a;">${favorFormatado}</td>
       <td style="padding:8px; text-align:right; color:#ff5252;">${contraFormatado}</td>
       <td style="padding:8px; text-align:right; font-weight:bold; color:${usdCor};">${usdFormatado}</td>
@@ -954,7 +971,7 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
       ` : ""}
     </tr>
     <tr>
-      <td colspan="${comCmp ? 11 : 10}" style="padding:0; border:none;">
+      <td colspan="${10 + (comCmp ? 1 : 0) + (comPrecos ? 2 : 0)}" style="padding:0; border:none;">
         ${detalheHtml}
       </td>
     </tr>

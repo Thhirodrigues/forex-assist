@@ -36,6 +36,16 @@ let filtroResultadosPeriodo = "7";
 let filtroResultadosPar = "";
 let filtroResultadosDirecao = "";
 let filtroResultadosPerfil = "";
+// AJUSTE-042 (29/09/2026): filtro por RESULTADO do sinal ("" = todos,
+// "WIN", "LOSS", "PENDENTE"). Pedido do usuário; os outros quatro
+// filtros já existiam.
+let filtroResultadosStatus = "";
+
+const ROTULO_FILTRO_STATUS = {
+  WIN: "✅ WIN",
+  LOSS: "❌ LOSS",
+  PENDENTE: "⏳ Pendente"
+};
 
 const LIMITE_RESULTADOS = 2000;
 
@@ -316,6 +326,17 @@ function resultadosView() {
         </select>
       </div>
 
+      <div class="list-item">
+        Resultado
+        <br><br>
+        <select id="filtroResultadosStatus" style="width:100%;">
+          <option value="" ${filtroResultadosStatus === "" ? "selected" : ""}>Todos</option>
+          <option value="WIN" ${filtroResultadosStatus === "WIN" ? "selected" : ""}>✅ WIN</option>
+          <option value="LOSS" ${filtroResultadosStatus === "LOSS" ? "selected" : ""}>❌ LOSS</option>
+          <option value="PENDENTE" ${filtroResultadosStatus === "PENDENTE" ? "selected" : ""}>⏳ Pendente (ainda aberto)</option>
+        </select>
+      </div>
+
       <div id="resultadosStats" style="margin:15px 0;">Carregando estatísticas...</div>
 
       <div id="resultadosLista">Carregando resultados...</div>
@@ -336,11 +357,31 @@ function bindFiltrosResultados() {
   const parEl = document.getElementById("filtroResultadosPar");
   const direcaoEl = document.getElementById("filtroResultadosDirecao");
   const perfilEl = document.getElementById("filtroResultadosPerfil");
+  const statusEl = document.getElementById("filtroResultadosStatus");
 
   if (periodoEl) periodoEl.onchange = () => { filtroResultadosPeriodo = periodoEl.value; carregarResultados(); };
   if (parEl) parEl.onchange = () => { filtroResultadosPar = parEl.value; carregarResultados(); };
   if (direcaoEl) direcaoEl.onchange = () => { filtroResultadosDirecao = direcaoEl.value; carregarResultados(); };
   if (perfilEl) perfilEl.onchange = () => { filtroResultadosPerfil = perfilEl.value; carregarResultados(); };
+  if (statusEl) statusEl.onchange = () => { filtroResultadosStatus = statusEl.value; carregarResultados(); };
+}
+
+// AJUSTE-042: o sinal passa no filtro de resultado? "PENDENTE" = ainda
+// sem WIN/LOSS e que NÃO é registro de cooldown (cooldown não é sinal
+// de verdade, ver construirLinhaTabela) - mesma regra que o rótulo
+// "⏳ PENDENTE" da própria linha usa.
+function passaFiltroStatus(sinal) {
+  if (!filtroResultadosStatus) return true;
+
+  if (filtroResultadosStatus === "WIN") return sinal.resultado === "WIN";
+  if (filtroResultadosStatus === "LOSS") return sinal.resultado === "LOSS";
+
+  if (filtroResultadosStatus === "PENDENTE") {
+    const ehCooldown = sinal.status === "COOLDOWN" || sinal.origem === "cooldown";
+    return !ehCooldown && sinal.resultado !== "WIN" && sinal.resultado !== "LOSS";
+  }
+
+  return true;
 }
 
 // Direção normalizada pra comparar com o filtro (BUY/SELL) - sinais
@@ -395,6 +436,7 @@ async function carregarResultados() {
       if (filtroResultadosPar && sinal.par !== filtroResultadosPar) return;
       if (filtroResultadosDirecao && direcaoNormalizada(sinal.direcao) !== filtroResultadosDirecao) return;
       if (filtroResultadosPerfil && sinal.perfil !== filtroResultadosPerfil) return;
+      if (!passaFiltroStatus(sinal)) return;
 
       const dataObj = extrairDataObjSinal(sinal);
 
@@ -436,7 +478,7 @@ async function carregarResultados() {
       stats.innerHTML = `
         <div class="card" style="padding:10px;">
           <div style="font-size:11px; color:#8c95b3; text-align:center; margin-bottom:4px;">
-            ${labelPeriodo}${filtroResultadosPar ? ` · ${filtroResultadosPar}` : ""}${filtroResultadosDirecao ? ` · ${filtroResultadosDirecao === "BUY" ? "Compra" : "Venda"}` : ""}${filtroResultadosPerfil ? ` · ${LEGENDA_PERFIL[filtroResultadosPerfil] || filtroResultadosPerfil}` : ""}
+            ${labelPeriodo}${filtroResultadosPar ? ` · ${filtroResultadosPar}` : ""}${filtroResultadosDirecao ? ` · ${filtroResultadosDirecao === "BUY" ? "Compra" : "Venda"}` : ""}${filtroResultadosPerfil ? ` · ${LEGENDA_PERFIL[filtroResultadosPerfil] || filtroResultadosPerfil}` : ""}${filtroResultadosStatus ? ` · ${ROTULO_FILTRO_STATUS[filtroResultadosStatus]}` : ""}
           </div>
           <div style="text-align:center; font-size:17px; font-weight:bold;">
             ✅ ${winsTotal} &nbsp;&nbsp;&nbsp; ❌ ${lossesTotal} &nbsp;&nbsp;&nbsp; 🎯 ${taxaGeral}%
@@ -474,7 +516,7 @@ async function carregarResultados() {
       }
 
       const detalheHtml = construirDetalheSinal(sinal, id, estaAberto);
-      const linha = construirLinhaTabela(sinal, id, dataObj, isCooldown, borderStyle, detalheHtml, true);
+      const linha = construirLinhaTabela(sinal, id, dataObj, isCooldown, borderStyle, detalheHtml, true, true);
 
       if (!gruposPorData[dataSinal]) gruposPorData[dataSinal] = "";
       gruposPorData[dataSinal] += linha;
@@ -541,7 +583,7 @@ async function carregarResultados() {
       </div>
       <div id="${idData}" style="display:none; padding:0;">
         <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-          <table style="border-collapse:collapse; width:100%; min-width:780px; font-size:12px;">
+          <table style="border-collapse:collapse; width:100%; min-width:940px; font-size:12px;">
             <thead>
               <tr style="background:rgba(255,255,255,.06); text-align:left;">
                 <th style="padding:6px 8px;">Horário</th>
@@ -550,6 +592,8 @@ async function carregarResultados() {
                 <th style="padding:6px 8px;">Tempo</th>
                 <th style="padding:6px 8px;">Resultado</th>
                 <th style="padding:6px 8px; text-align:center;" title="Modo que aprovou o sinal">Modo</th>
+                <th style="padding:6px 8px; text-align:right;" title="Preço em que a operação foi aberta">Preço Entrada</th>
+                <th style="padding:6px 8px; text-align:right;" title="Preço em que a operação foi encerrada (o mesmo usado no resultado). -- enquanto está pendente.">Preço Final</th>
                 <th style="padding:6px 8px; text-align:right;">Favor</th>
                 <th style="padding:6px 8px; text-align:right;">Contra</th>
                 <th style="padding:6px 8px; text-align:right;">Resultado Financeiro</th>

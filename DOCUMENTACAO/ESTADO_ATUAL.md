@@ -124,14 +124,12 @@ itens achados em 28/09 (`ENGINEERING.md`, AJUSTE-037 a 041):
    simultâneo = ~3,1% do saldo); breakeven; stop por ATR (com $ fixo a
    distância do alvo varia muito por par: NZD/USD 12,5 pips ~ 7x o ATR
    de 5 min, USD/JPY 19,7 pips); blackout de notícias; carry trade.
-9. **Resultado gravado no EXTREMO da vela, não no nível do SL/TP**
-   (`js/checker.js`, MUD-03): perda gravada passa do SL em média ~15%
-   (n=6: +3% a +45%) e ganho passa do TP ~5% (n=2). Ex.: USD/JPY
-   29/09 -$5,27 com SL de $5 (mínimo da vela 1,04 pip abaixo do SL).
-   Não afeta WIN/LOSS, só o valor em dólar/saldo. Uma ordem stop real
-   preenche perto do nível (~-$5,00 + spread/derrapagem). Decidir junto
-   com spread e derrapagem; enquanto isso, análises calculam o "resultado
-   no limite" offline (-slUSD / +tpUSD) sem mudar o checker.
+9. ~~Resultado gravado no EXTREMO da vela, não no nível do SL/TP~~
+   **DECIDIDO pelo usuário em 29/09/2026: NÃO mexer, nem agora nem
+   depois** - a diferença (perda gravada ~15% acima do SL em média,
+   ganho ~5% acima do TP; ex.: -$5,27 com SL de $5) é tolerável. Não é
+   pendência: não reabrir por conta própria. (Detalhe da conferência em
+   `ENGINEERING.md`, "OBSERVAÇÃO 29/09/2026".)
 
 ### Quando descongelar
 
