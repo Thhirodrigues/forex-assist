@@ -527,6 +527,15 @@ function secaoComoLerSinal() {
           Balanceado/🟡 Conservador), que pode ser mais permissivo que
           o perfil configurado em Config quando a cascata (ver "Como o
           RMI decide") rebaixou o sinal - toque pra ver o detalhe.</li>
+        <li><b>Link "XM ↗"</b> (AJUSTE-044) - a pílula azul ao lado do
+          par abre a área da sua conta na XM (a mesma que a notificação
+          push abre) numa nova aba. Ele NÃO abre a ordem do sinal
+          pronta: a XM não permite isso por link, então você ainda
+          precisa abrir o mercado e digitar par, direção, lote, TP e
+          SL. Tocar no link não expande nem fecha o detalhe do sinal;
+          tocar no resto da linha continua expandindo. Registros de
+          cooldown não têm link (não são sinais operáveis). Aparece no
+          Histórico (tabela e lista) e em Resultados.</li>
         <li><b>Colunas "Preço Entrada" e "Preço Final"</b> (AJUSTE-043,
           na tabela do Histórico, entre "Modo" e "Favor") - o preço em
           que a operação abriu e o preço em que foi encerrada (o mesmo

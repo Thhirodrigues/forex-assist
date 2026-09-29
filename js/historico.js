@@ -43,6 +43,30 @@ function formatarPrecoPar(valor, par) {
   return numero.toFixed(casasDecimais);
 }
 
+// AJUSTE-044 (29/09/2026): link do sinal pra corretora (XM) - pedido do
+// usuário ("fazer do sinal um link pra corretora XM, ao menos pra página
+// principal"). Mesmo destino que a notificação push já usa desde a
+// FEATURE-011 (área geral da conta XM, decidida com o usuário na época:
+// a XM não expõe URL pública que abra um mercado/ordem pronta nem logue
+// sozinho - então este link NÃO abre a ordem do sinal, só a conta).
+// Ao trocar o destino, trocar os TRÊS lugares (não dá pra compartilhar
+// código entre o backend Node e o navegador): esta constante,
+// URL_XM_MEMBER em scripts/pushNotifier.js e o fallback em
+// firebase-messaging-sw.js.
+const URL_CORRETORA_XM = "https://my.xm.com/pt/member";
+
+// Pílula "XM ↗" ao lado do par. Registro de cooldown não é sinal
+// operável - sem link. stopPropagation: a linha/card inteiro alterna o
+// detalhe ao toque, o link tem que abrir a XM SEM expandir nem fechar o
+// detalhe (mesmo padrão dos checkboxes da tabela).
+function linkCorretoraXM(isCooldown) {
+  if (isCooldown) return "";
+  return ` <a href="${URL_CORRETORA_XM}" target="_blank" rel="noopener noreferrer"
+      onclick="event.stopPropagation();"
+      title="Abre a área da sua conta na XM (não abre a ordem pronta - a XM não permite isso por link)"
+      style="display:inline-block; margin-left:6px; padding:1px 6px; border-radius:6px; background:rgba(79,195,247,.15); color:#9adcf9; font-size:10px; font-weight:bold; text-decoration:none; vertical-align:middle;">XM ↗</a>`;
+}
+
 // AJUSTE-017 (24/09/2026): cópia deliberada, só das duas fórmulas
 // SEGURAS de calcularValorPip() (scripts/moneyManager.js) - a mesma
 // função que scripts/checker.js usa pra calcular o resultado
@@ -1047,7 +1071,7 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
   return `
     <tr id="sinal-${docId}" data-sinal-id="${docId}" data-resultado-filtro="${categoriaResultado}" style="cursor:pointer; ${borderStyle}">
       <td style="padding:8px; white-space:nowrap;">${horario}</td>
-      <td style="padding:8px; white-space:nowrap;">${isCooldown ? "🚫" : (sinal.direcao === "BUY" || sinal.direcao === "CALL" ? "🟢" : "🔴")} ${sinal.par || "-"}</td>
+      <td style="padding:8px; white-space:nowrap;">${isCooldown ? "🚫" : (sinal.direcao === "BUY" || sinal.direcao === "CALL" ? "🟢" : "🔴")} ${sinal.par || "-"}${linkCorretoraXM(isCooldown)}</td>
       <td style="padding:8px; white-space:nowrap;">${direcaoLabel}</td>
       <td style="padding:8px; white-space:nowrap;">${tempoLabel}</td>
       <td style="padding:8px; white-space:nowrap;">${resultadoLabel}${avisoIcone}</td>
@@ -1104,6 +1128,12 @@ function miniCard(emoji, label, valorHtml, cor, idAttr) {
   `;
 }
 
+// AJUSTE-044 (29/09/2026): corrigido um <div> sem fechar neste template
+// (o <div style="margin-top:12px;"> da "Configuração Utilizada" nunca
+// tinha o seu </div> - o último </div> fechava ELE, e o #detalhe ficava
+// aberto). Na tabela isso passava despercebido (o </td> fecha tudo), mas
+// no modo lista cada card engolia o seguinte (cards aninhados). Achado
+// testando o link da XM; erro antigo, não introduzido por ele.
 function construirDetalheSinal(sinal, docId, estaAberto) {
   const detalheId = `detalhe-${docId}`;
 
@@ -1209,6 +1239,7 @@ ${sinal.status !== "ENCERRADA"
     ? '<div style="font-size:11px;color:#999;margin-top:4px;">Disponível após o encerramento da operação</div>'
     : ""}
 
+</div>
           </div>
         `;
 }
@@ -1331,6 +1362,7 @@ async function carregarHistorico() {
             </span>
             <span style="display:flex; align-items:center; gap:8px;">
               <span>${isCooldown ? "COOLDOWN" : (sinal.resultado === "WIN" ? "✅ WIN" : sinal.resultado === "LOSS" ? "❌ LOSS" : "⏳ PENDENTE")}</span>
+              ${linkCorretoraXM(isCooldown)}
             </span>
           </div>
           <div style="margin-top:4px; font-size:12px; color:#8c95b3;">

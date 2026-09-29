@@ -12410,3 +12410,47 @@ zero erro de JavaScript depois de instalar o Firestore simulado (os 4 erros
 Firebase). Captura de tela conferida. AJUSTE-042 fica no histórico como o
 entendimento inicial (parcialmente desfeito aqui).
 --------
+
+AJUSTE-044 (29/09/2026) - link "XM ↗" no sinal (só frontend; permitido
+pelo congelamento)
+
+Pedido: "fazer do sinal um link pra corretora XM, ao menos pra página
+principal". Destino = o MESMO da notificação push (FEATURE-011, decidido
+com o usuário na época): `https://my.xm.com/pt/member` (área da conta).
+A XM não expõe URL pública que abra um mercado/ordem pronta nem logue
+sozinho - então o link leva à conta, NÃO à ordem do sinal (deep link por
+par/direção/lote fica fora enquanto a XM não oferecer). Não abri a XM a
+partir daqui: validado que o link abre essa URL, não o conteúdo do site.
+
+  - js/historico.js: constante `URL_CORRETORA_XM` + `linkCorretoraXM()`;
+    pílula "XM ↗" (target _blank, rel noopener noreferrer, title
+    explicando que não abre a ordem) ao lado do par em
+    construirLinhaTabela (Histórico tabela E Resultados, que reusa a
+    função) e no cabeçalho do card do modo lista. Cooldown sem link.
+    `onclick="event.stopPropagation()"` no <a>: a linha/card inteiro
+    alterna o detalhe ao toque; o link não pode expandir/fechar.
+  - A URL agora existe em TRÊS lugares (backend Node e navegador não
+    compartilham código): esta constante, `URL_XM_MEMBER` em
+    scripts/pushNotifier.js e o fallback em firebase-messaging-sw.js.
+    Trocar os três juntos se o destino mudar (comentado nos três).
+  - js/manual.js atualizado.
+
+BUG ANTIGO ACHADO E CORRIGIDO no caminho (não introduzido pelo link):
+construirDetalheSinal() abria 47 <div> e fechava 46 - o
+<div style="margin-top:12px;"> da "Configuração Utilizada" nunca era
+fechado, então o último </div> fechava ELE e o #detalhe ficava aberto.
+Na tabela passava despercebido (o </td> fecha tudo); no modo lista cada
+card ficava DENTRO do anterior (confirmado no código de HEAD antes da
+mudança: p1 e c1 filhos do card w1). Corrigido com 1 </div> (agora 47/47
+e 50/50); os cards ficam irmãos, filhos do container do dia. Layout da
+tabela inalterado.
+
+Validação (scratchpad/test-ajuste044.js, app REAL no Chromium; só o
+Firestore simulado e a XM interceptada): link em sinal WIN e pendente,
+nenhum em cooldown, href/target/rel corretos, clique abre nova aba na
+URL certa, clique no link NÃO mexe no detalhe, clique no resto da linha
+ainda expande, mesma coisa no modo lista e em Resultados (11 colunas
+como antes), zero erro de JavaScript. Regressão: test-ajuste043.js (filtro
+do cabeçalho, colunas de preço, modo lista) passa inteiro. Captura de
+tela conferida.
+--------
