@@ -12277,3 +12277,39 @@ Validado isolando a função com Firestore simulado (leitura ok, falha
 de leitura, valor 0). Nenhuma escrita automática no saldo foi feita
 por aqui - o usuário redefine pela tela.
 --------
+
+OBSERVAÇÃO 29/09/2026 (SEM alteração de código - pipeline congelado,
+ver ESTADO_ATUAL.md seção 0) - conferência do -$5,27 e do lote de sinais
+do regime novo, lidos do Firestore com ferramentas/checar-ultimo-sinal.js
+(só leitura, agora com campos de fechamento e 12 documentos)
+
+1. USD/JPY BUY 29/09 00:35 UTC (BALANCEADO, score 46), fechou LOSS
+   -$5,27 com SL de $5. Recomposto ao centavo: SL = 19,68 pips =
+   157,2691; mínimo da vela de fechamento = 157,2587 (1,04 pip além do
+   SL); 20,72 pips x $0,2544/pip (lote 0,04 no preço do extremo) =
+   $5,27. saldoAntes 644,59 -> saldoDepois 639,32 (bate). O rótulo LOSS
+   está correto (o preço rompeu o SL) e a conta está correta; o que
+   surpreende é o CRITÉRIO: js/checker.js detecta o SL pelo extremo da
+   vela e grava o resultado nesse extremo (MUD-03), não no nível do SL.
+   Perdas gravadas nos 6 fechamentos de 28-29/09 passaram do SL entre
+   +3% e +45% (média ~15%); ganhos (2) entre +2% e +9%. Uma ordem stop
+   real preenche perto do nível. Registrado como item 9 da fila do
+   ESTADO_ATUAL (decisão junto com spread/derrapagem).
+2. Confirmações ao vivo do que foi implementado em 28/09 (todas vistas
+   no documento salvo, não no log): regimeTPSL=CONFIG, lote 0,04, TP/SL
+   $5 nos 5 sinais; riscoPercentual 0,78% com saldo positivo (5/643,07 e
+   5/644,59) e avisoRisco corretamente ausente; avisoExpectativa do
+   AGRESSIVO/BALANCEADO sem histórico agora diz "histórico insuficiente...
+   desconhecida, não 0%" (AJUSTE-040); NZD/USD com ADX 32,3 -> adxScore 0
+   e tendenciaScore 20, sem bônus de ADX alto (AJUSTE-037); NZD/USD
+   passou de 35 só com +5 de candlestick (ESTRELA_CADENTE): score 36.
+3. Cadeia do saldo simulado consistente ponta a ponta (saldoAntes ->
+   saldoDepois em todos os 8 fechamentos lidos); a diferença de ~$1,50
+   por LOSS nos sinais antigos (lote reduzido x pips do lote
+   configurado) está confirmada: GBP/USD 7,9 pips x $0,20 = $1,58.
+4. Concentração: as 5 operações do regime novo são todas compradas em
+   dólar (USD/CHF BUY, EUR/USD SELL, AUD/USD SELL, NZD/USD SELL,
+   USD/JPY BUY) - 4 abertas = $20 de risco simultâneo (~3,1% do saldo),
+   sem teto de exposição (item 8 da fila). Reduz a amostra efetiva do
+   critério de 100 operações do congelamento.
+--------

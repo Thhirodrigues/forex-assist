@@ -70,6 +70,17 @@ reduzido) e **não são comparáveis** (alvo em pips diferente).
   havia 2 operações no regime novo). Referência de antes das mudanças:
   162 operações fechadas em 11 dias corridos (17→28/09); o replay
   projeta ~30% menos aprovações agora. Medir antes de prometer prazo.
+- **Amostra efetiva menor que 100** (achado de 29/09): as 5 operações do
+  regime novo até agora são TODAS compradas em dólar (USD/CHF BUY,
+  EUR/USD SELL, AUD/USD SELL, NZD/USD SELL, USD/JPY BUY) - na prática
+  uma aposta só repetida. Operações correlacionadas não são amostras
+  independentes; o "±10 p.p." acima assume independência, então o
+  intervalo real é mais largo. Ao analisar, agrupar por moeda/direção.
+- **Fechamento mais lento**: com alvo de $5 (10-20 pips) as operações
+  ficam horas abertas (EUR/USD e USD/CHF, ~6,5 h sem tocar TP/SL) e só
+  contam quando FECHAM - o ritmo de fechamentos será menor que o de
+  aprovações. Posição em 29/09 01:57 UTC: regime novo com 1 fechada
+  (LOSS) e 4 abertas.
 - Ferramenta pra contar as operações do regime novo: **ainda não
   existe** (o replay `diagnostico-replay-score-ajuste037.js` imprime o
   total geral, sem filtrar por regime). Criar quando for preciso.
@@ -108,8 +119,19 @@ itens achados em 28/09 (`ENGINEERING.md`, AJUSTE-037 a 041):
 7. Código morto/incorreto sem efeito prático: `memoriaOperacional`
    (lê `ultimos5` que não existe no objeto BUY/SELL), `analisarAlinhamento`
    (`a > b || a < b`), `riskEngine.js`/`positionSizing.js`.
-8. Teto de exposição entre pares correlacionados; breakeven; stop por
-   ATR; blackout de notícias; carry trade.
+8. Teto de exposição entre pares correlacionados (evidência real em
+   29/09: 4 posições abertas, todas compradas em dólar, $20 de risco
+   simultâneo = ~3,1% do saldo); breakeven; stop por ATR (com $ fixo a
+   distância do alvo varia muito por par: NZD/USD 12,5 pips ~ 7x o ATR
+   de 5 min, USD/JPY 19,7 pips); blackout de notícias; carry trade.
+9. **Resultado gravado no EXTREMO da vela, não no nível do SL/TP**
+   (`js/checker.js`, MUD-03): perda gravada passa do SL em média ~15%
+   (n=6: +3% a +45%) e ganho passa do TP ~5% (n=2). Ex.: USD/JPY
+   29/09 -$5,27 com SL de $5 (mínimo da vela 1,04 pip abaixo do SL).
+   Não afeta WIN/LOSS, só o valor em dólar/saldo. Uma ordem stop real
+   preenche perto do nível (~-$5,00 + spread/derrapagem). Decidir junto
+   com spread e derrapagem; enquanto isso, análises calculam o "resultado
+   no limite" offline (-slUSD / +tpUSD) sem mudar o checker.
 
 ### Quando descongelar
 
