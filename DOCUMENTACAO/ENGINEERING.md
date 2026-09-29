@@ -12500,3 +12500,13 @@ antes e depois desta mudança (o banco simulado dele não tem
 FieldValue.increment, que o checker ganhou depois) - pré-existente, não
 corrigido aqui.
 --------
+
+CONFIRMAÇÃO DO USUÁRIO (29/09/2026) sobre o AJUSTE-045: o usuário abriu no
+celular alguns dos links por par e informou que "se mantêm iguais ao
+padrão" do exemplo (symbol-info/<PAR sem a barra>). A lista exata de
+pares testados NÃO chegou na mensagem, então não fica registrado quais
+foram; os pares que ele não tocou seguem sem verificação individual (a
+rede do ambiente bloqueia my.xm.com). Se algum par não abrir, é um mapa
+de exceções em urlCorretoraXM (js/historico.js) e urlXmParaPar
+(scripts/pushNotifier.js).
+--------
