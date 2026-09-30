@@ -147,7 +147,7 @@ function alternarExpandirComparacao() {
     comparacao.style.position = "fixed";
     comparacao.style.inset = "0";
     comparacao.style.zIndex = "2000";
-    comparacao.style.background = "#081733";
+    comparacao.style.background = "#070b1f";
     comparacao.style.overflow = "auto";
     comparacao.style.padding = "16px";
     comparacao.dataset.expandido = "true";
@@ -192,10 +192,10 @@ function abrirComparacao() {
     const usdFormatado = usd == null ? "--" : `${usd >= 0 ? "+" : "-"}$${Math.abs(Number(usd)).toFixed(2)}`;
 
     const usdCor = usd == null
-        ? "#fff"
-        : sinal.resultado === "WIN" ? "#00d26a"
-        : sinal.resultado === "LOSS" ? "#ff5252"
-        : (usd >= 0 ? "#00d26a" : "#ff5252");
+        ? "#f9fafd"
+        : sinal.resultado === "WIN" ? "#5ef8b7"
+        : sinal.resultado === "LOSS" ? "#ff9891"
+        : (usd >= 0 ? "#5ef8b7" : "#ff9891");
 
     return `
       <tr>
@@ -204,8 +204,8 @@ function abrirComparacao() {
         <td style="padding:8px; white-space:nowrap;">${statusLabel}</td>
         <td style="padding:8px; text-align:right;">${formatarPrecoPar(sinal.precoEntrada, sinal.par)}</td>
         <td style="padding:8px; text-align:right;">${sinal.precoAtual ?? "--"}</td>
-        <td style="padding:8px; text-align:right; color:#00d26a;">${sinal.maxPipsFavor != null ? Number(sinal.maxPipsFavor).toFixed(1) : "--"}</td>
-        <td style="padding:8px; text-align:right; color:#ff5252;">${sinal.maxPipsContra != null ? Number(sinal.maxPipsContra).toFixed(1) : "--"}</td>
+        <td style="padding:8px; text-align:right; color:#5ef8b7;">${sinal.maxPipsFavor != null ? Number(sinal.maxPipsFavor).toFixed(1) : "--"}</td>
+        <td style="padding:8px; text-align:right; color:#ff9891;">${sinal.maxPipsContra != null ? Number(sinal.maxPipsContra).toFixed(1) : "--"}</td>
         <td style="padding:8px; text-align:right; font-weight:bold; color:${usdCor};">${usdFormatado}</td>
       </tr>
     `;
@@ -215,8 +215,8 @@ function abrirComparacao() {
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">
       <div style="font-weight:bold; font-size:14px;">🔍 Comparando ${sinais.length} sinais - ${par}</div>
       <div style="display:flex; gap:8px; flex-shrink:0;">
-        <button id="btnExpandirComparacao" onclick="alternarExpandirComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(79,195,247,.15); color:#9adcf9; font-size:12px; cursor:pointer;">⤢ Expandir</button>
-        <button onclick="fecharComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;">← Voltar</button>
+        <button id="btnExpandirComparacao" onclick="alternarExpandirComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(58,224,232,.15); color:#3ae0e8; font-size:12px; cursor:pointer;">⤢ Expandir</button>
+        <button onclick="fecharComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#f9fafd; font-size:12px; cursor:pointer;">← Voltar</button>
       </div>
     </div>
     <div id="comparacaoScrollWrapper" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
@@ -238,7 +238,7 @@ function abrirComparacao() {
         </tbody>
       </table>
     </div>
-    <div id="comparacaoDicaGirar" style="display:none; font-size:10px; color:#8c95b3; margin-top:8px; text-align:center;">
+    <div id="comparacaoDicaGirar" style="display:none; font-size:10px; color:#bcc4d5; margin-top:8px; text-align:center;">
       Gire o celular ou toque em "⤢ Expandir" pra ver a tabela inteira mais confortável.
     </div>
   `;
@@ -269,7 +269,7 @@ function resultadosView() {
   return `
     <div class="card">
       <div class="card-title">📊 Resultados</div>
-      <div style="font-size:12px; color:#8c95b3; margin-bottom:14px;">
+      <div style="font-size:12px; color:#bcc4d5; margin-bottom:14px;">
         Análise completa - período maior, filtros e comparação. Pode
         demorar um pouco mais que o Histórico pra carregar (dado
         centralizado aqui de propósito).
@@ -321,11 +321,11 @@ function resultadosView() {
       <div id="resultadosLista">Carregando resultados...</div>
       <div id="resultadosComparacao" style="display:none;"></div>
     </div>
-    <div id="barraComparacaoResultados" style="display:none; position:fixed; left:12px; right:12px; bottom:64px; z-index:1000; background:#132852; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:10px 14px; align-items:center; justify-content:space-between; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,.4);">
-      <span id="barraComparacaoResultadosTexto" style="font-size:12px; color:#e0e6f5;"></span>
+    <div id="barraComparacaoResultados" style="display:none; position:fixed; left:12px; right:12px; bottom:64px; z-index:1000; background:#1b2246; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:10px 14px; align-items:center; justify-content:space-between; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,.4);">
+      <span id="barraComparacaoResultadosTexto" style="font-size:12px; color:#f9fafd;"></span>
       <div style="display:flex; gap:8px;">
-        <button onclick="limparSelecaoComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#e0e6f5; font-size:12px; cursor:pointer;">Limpar</button>
-        <button onclick="abrirComparacao()" style="padding:6px 12px; border:none; border-radius:8px; background:#4fc3f7; color:#081733; font-weight:bold; font-size:12px; cursor:pointer;">Comparar</button>
+        <button onclick="limparSelecaoComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#f9fafd; font-size:12px; cursor:pointer;">Limpar</button>
+        <button onclick="abrirComparacao()" style="padding:6px 12px; border:none; border-radius:8px; background:#3ae0e8; color:#060c1e; font-weight:bold; font-size:12px; cursor:pointer;">Comparar</button>
       </div>
     </div>
   `;
@@ -429,19 +429,19 @@ async function carregarResultados() {
       : `Últimos ${filtroResultadosPeriodo} dias`;
 
     const avisoTruncado = snapshot.size >= LIMITE_RESULTADOS
-      ? `<div style="font-size:10px; color:#8c95b3; margin-top:4px;">⚠️ Mostrando só os ${LIMITE_RESULTADOS} sinais mais recentes do período - pode haver mais além desse teto.</div>`
+      ? `<div style="font-size:10px; color:#bcc4d5; margin-top:4px;">⚠️ Mostrando só os ${LIMITE_RESULTADOS} sinais mais recentes do período - pode haver mais além desse teto.</div>`
       : "";
 
     if (stats) {
       stats.innerHTML = `
         <div class="card" style="padding:10px;">
-          <div style="font-size:11px; color:#8c95b3; text-align:center; margin-bottom:4px;">
+          <div style="font-size:11px; color:#bcc4d5; text-align:center; margin-bottom:4px;">
             ${labelPeriodo}${filtroResultadosPar ? ` · ${filtroResultadosPar}` : ""}${filtroResultadosDirecao ? ` · ${filtroResultadosDirecao === "BUY" ? "Compra" : "Venda"}` : ""}${filtroResultadosPerfil ? ` · ${LEGENDA_PERFIL[filtroResultadosPerfil] || filtroResultadosPerfil}` : ""}
           </div>
           <div style="text-align:center; font-size:17px; font-weight:bold;">
             ✅ ${winsTotal} &nbsp;&nbsp;&nbsp; ❌ ${lossesTotal} &nbsp;&nbsp;&nbsp; 🎯 ${taxaGeral}%
           </div>
-          <div style="text-align:center; font-size:14px; font-weight:bold; margin-top:4px; color:${financeiroTotal >= 0 ? "#00d26a" : "#ff5252"};">
+          <div style="text-align:center; font-size:14px; font-weight:bold; margin-top:4px; color:${financeiroTotal >= 0 ? "#5ef8b7" : "#ff9891"};">
             💵 ${financeiroTotalFormatado}
           </div>
           ${avisoTruncado}
@@ -459,7 +459,7 @@ async function carregarResultados() {
       const isCooldown = sinal.status === "COOLDOWN" || sinal.origem === "cooldown";
       const isDestaque = app.sinalParaDestacar === id;
       const estaAberto = sinaisAbertos.includes(id) || isDestaque;
-      const borderStyle = isDestaque ? 'border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.1);' : '';
+      const borderStyle = isDestaque ? 'border: 2px solid #5ef8b7; background: rgba(94,248,183,0.1);' : '';
 
       const dataSinal = dataObj
         ? dataObj.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
@@ -535,7 +535,7 @@ async function carregarResultados() {
       seta.innerHTML = '▶';
   }
   "
-      style="padding:10px 12px; font-size:12px; color:#8c95b3; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.03);">
+      style="padding:10px 12px; font-size:12px; color:#bcc4d5; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.03);">
      <span><span class="seta-grupo" style="margin-right:8px;">▶</span>${label}</span>
      <span style="font-weight:normal;">✅ ${placarDia.wins} ❌ ${placarDia.losses} 🎯 ${taxaDia}% 💵 ${financeiroDiaFormatado}</span>
       </div>
@@ -581,7 +581,7 @@ if (el.style.display === 'none') {
     seta.innerHTML = '▶';
 }
 "
-    style="padding:12px; font-size:13px; color:#e0e6f5; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.06);">
+    style="padding:12px; font-size:13px; color:#f9fafd; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.06);">
    <span><span class="seta-grupo" style="margin-right:8px;">▶</span>${labelMes}</span>
    <span style="font-weight:normal; font-size:12px;">✅ ${winsDoMes} ❌ ${lossesDoMes} 🎯 ${taxaDoMes}% 💵 ${financeiroDoMesFormatado}</span>
     </div>

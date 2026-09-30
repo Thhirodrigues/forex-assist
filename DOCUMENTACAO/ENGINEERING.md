@@ -12634,3 +12634,63 @@ LIMITES (não verificáveis daqui)
     de aba a barra muda de aparência. É provisório, até as outras abas
     migrarem.
 --------
+
+AJUSTE-048 (30/09/2026) - direção visual "Aurora Glass" nas outras quatro
+abas: Histórico, Resultados, Config e Manual (só frontend; congelamento do
+pipeline intacto - nenhuma mudança em scripts/, js/checker.js ou qualquer
+lógica de decisão/risco). Continuação do AJUSTE-047, aprovada pelo usuário
+depois de ver a prévia do Painel.
+
+ABORDAGEM (risco baixo de propósito): as quatro abas somam mais de 5 mil
+linhas, com muito estilo escrito em linha dentro do JS. Em vez de
+reescrever telas, foi feito só (1) troca de CÓDIGOS DE COR, (2) CSS global e
+(3) a barra de navegação. Nenhuma função de leitura, gravação, filtro ou
+cálculo foi alterada.
+
+O QUE MUDOU
+  - Classe do <body>: `painel-aurora` (AJUSTE-047) virou `tema-aurora` e
+    agora é fixa (index.html + js/app.js). Para voltar ao visual antigo de
+    uma aba no futuro, o ponto é essa classe e o bloco de CSS.
+  - css/styles.css: o bloco do Painel virou tema do app inteiro; novo bloco
+    "ABAS ANTIGAS" restilizando .card, .card-title, .list-item, .big-number,
+    .history-*, campos de formulário (select/input/textarea, antes com o
+    visual padrão do navegador), links, piso de 12px para textos de 10/11px
+    escritos em linha (só estilo em linha; texto dentro de SVG não muda) e
+    tipografia de leitura do Manual (h2/h3/p/listas só existem nele).
+  - js/historico.js, config.js, resultados.js, manual.js, pairInsights.js:
+    SÓ literais de cor trocados (mapa antigo -> Aurora: #00d26a/#00ff88 ->
+    #5ef8b7, #ff5252/#ff4444 -> #ff9891, #8c95b3 e cinzas -> #bcc4d5,
+    #4fc3f7/#9adcf9 -> #3ae0e8, âmbar -> #f4d576, azuis escuros sólidos ->
+    superfícies de vidro, e os rgba equivalentes). Trocados por código
+    hexadecimal e NÃO por var(): vários estão em atributos de SVG
+    (stroke="#..."), onde var() não funciona. Conferido que nenhuma cor é
+    comparada em lógica. Histórico: cabeçalho fixo com vidro em vez de bloco
+    escuro. Resultados: sobreposição de comparação em tela cheia com fundo
+    opaco #070b1f. Manual: conteúdo envolvido em `.aba-manual` para as
+    tabelas largas rolarem dentro do bloco.
+  - js/app.js: barra inferior com ícone + rótulo (rótulo "Dashboard" passou
+    a "Painel"; a chave salva em localStorage continua "dashboard"). O clique
+    usa closest("[data-tab]") porque agora pode cair no ícone/rótulo.
+    Correção que esta mudança exigiu: antes só o próprio <button> respondia.
+
+VALIDAÇÃO (Firestore FALSO, Playwright, 390px, toque simulado)
+  - As 5 abas renderizam sem erro de console; troca de aba por clique no
+    ícone e no rótulo; Painel nos 4 cenários (ganho, perda, vazio, falha).
+  - Largura: nenhuma aba estica a página (o Manual esticava para 448px por
+    uma tabela de 600px; corrigido). A tabela do Histórico já rolava dentro
+    de contêiner próprio.
+
+LIMITES (não verificáveis daqui)
+  - Sem credenciais do Firestore: nada foi testado com dados reais, nem em
+    aparelho real. Os fluxos que GRAVAM (salvar Config, marcar resultado no
+    Histórico, aporte) não foram exercitados - só renderizados. Como só
+    cores e CSS mudaram, o risco é visual, mas vale abrir cada um uma vez
+    depois do merge.
+  - Histórico tem modos lista/tabela/compacto e Resultados tem comparação
+    de sinais; foram conferidos o modo padrão e a tela principal, não todas
+    as combinações.
+  - Emojis dos textos (✅ ❌ 📊 etc.) foram mantidos: fazem parte do
+    conteúdo. Se o usuário quiser um visual mais limpo, é decisão dele.
+  - Em telas muito estreitas (< 360px) a barra inferior fica apertada
+    ("Resultados" é o rótulo mais largo).
+--------

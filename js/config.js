@@ -248,7 +248,7 @@ function configView() {
 <div
 style="
 font-size:12px;
-color:#8c95b3;
+color:#bcc4d5;
 margin-bottom:20px;
 ">
 
@@ -295,7 +295,7 @@ Forex Assist
         style="
         margin-top:6px;
         font-size:11px;
-        color:#8c95b3;
+        color:#bcc4d5;
         ">
 
             Milissegundos
@@ -512,7 +512,7 @@ style="width:100%;">
 
     </label>
 
-    <div style="font-size:11px; color:#8c95b3; margin-top:6px;">
+    <div style="font-size:11px; color:#bcc4d5; margin-top:6px;">
 
         Camada secundária de confirmação - nunca aprova nem reprova um
         sinal sozinha. Quando o preço está na zona de um order block
@@ -574,13 +574,13 @@ id="btnDefinirSaldoReal"
 
 class="button"
 
-style="width:100%; padding:8px; border:none; border-radius:8px; background:#8a1f1f; color:white; font-size:12px; cursor:pointer;">
+style="width:100%; padding:8px; border:none; border-radius:8px; background:rgba(255,152,145,.25); color:white; font-size:12px; cursor:pointer;">
 
 💰 Definir Saldo Inicial da Conta Real Agora
 
 </button>
 
-<div style="font-size:11px; color:#8c95b3; margin-top:4px;">
+<div style="font-size:11px; color:#bcc4d5; margin-top:4px;">
 
 Usa o valor acima como saldo atual da Conta Real (o que você tem depositado na corretora hoje). Ação única - use só na primeira vez, ou você vai sobrescrever o saldo já acumulado por WIN/LOSS/aportes. Depois disso, registre aportes futuros pelo Dashboard.
 
@@ -594,13 +594,13 @@ id="btnDefinirSaldoSimulada"
 
 class="button"
 
-style="width:100%; padding:8px; border:none; border-radius:8px; background:#1f4e8a; color:white; font-size:12px; cursor:pointer;">
+style="width:100%; padding:8px; border:none; border-radius:8px; background:rgba(58,224,232,.22); color:white; font-size:12px; cursor:pointer;">
 
 🧪 Definir Saldo Inicial da Conta Simulada Agora
 
 </button>
 
-<div style="font-size:11px; color:#8c95b3; margin-top:4px;">
+<div style="font-size:11px; color:#bcc4d5; margin-top:4px;">
 
 Usa o valor acima como saldo atual da Conta Simulada (dinheiro fictício, pra testar o app sem risco real). <b>Substitui</b> o saldo atual - não soma nem desconta (ex.: pra ficar com $500, digite 500). A confirmação mostra o saldo atual antes de gravar. Lembre de deixar "Base de Cálculo de Risco" abaixo em "Conta Simulada" enquanto estiver testando, senão isso aqui não afeta o dimensionamento dos sinais.
 
@@ -638,7 +638,7 @@ Usar saldo da Conta Real
 
 </select>
 
-<div style="font-size:11px; color:#8c95b3; margin-top:4px;">
+<div style="font-size:11px; color:#bcc4d5; margin-top:4px;">
 
 Conta Simulada e Conta Real são sempre atualizadas juntas (ver Dashboard) - isso aqui só decide qual das duas é usada como referência pro cálculo de risco por operação (ex: SL de $5 é X% de qual saldo). Use "Conta Real" quando já estiver operando com dinheiro de verdade na corretora.
 
@@ -666,7 +666,7 @@ id="btnRestaurarConfig"
 
 class="button"
 
-style="margin-top:10px; width:100%; padding:10px; border:none; border-radius:8px; background:#132852; color:white; font-size:13px; cursor:pointer;">
+style="margin-top:10px; width:100%; padding:10px; border:none; border-radius:8px; background:#1b2246; color:white; font-size:13px; cursor:pointer;">
 
 ↩️ Voltar para a Última Configuração Salva
 
@@ -732,8 +732,8 @@ function avisoSugestaoAplicada() {
 
     return `
         <div style="
-            background:rgba(0,210,106,.12);
-            border:1px solid rgba(0,210,106,.3);
+            background:rgba(94,248,183,.12);
+            border:1px solid rgba(94,248,183,.3);
             border-radius:8px;
             padding:10px 12px;
             margin-bottom:12px;
@@ -1087,12 +1087,12 @@ function renderizarConsumoApi(config) {
     const consumo = calcularConsumoEstimadoTwelveData(config);
 
     const corFundo = consumo.excedeOrcamento
-        ? "rgba(255,82,82,.12)"
-        : "rgba(0,210,106,.12)";
+        ? "rgba(255,152,145,.12)"
+        : "rgba(94,248,183,.12)";
 
     const corBorda = consumo.excedeOrcamento
-        ? "rgba(255,82,82,.35)"
-        : "rgba(0,210,106,.3)";
+        ? "rgba(255,152,145,.35)"
+        : "rgba(94,248,183,.3)";
 
     const linhaMargem = consumo.excedeOrcamento
         ? `⚠️ Limite de pares excedido: ${Math.abs(consumo.margem)} consultas/dia acima do orçamento da TwelveData (${ORCAMENTO_DIARIO_TWELVEDATA}). Alguns ciclos podem falhar com "Quota exceeded" e nenhum par ser analisado nesse ciclo - remova pares ou reduza a janela de horário.`

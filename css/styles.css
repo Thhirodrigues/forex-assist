@@ -236,16 +236,16 @@ opacity:0.8;
 
 
 /* ===================================================
-   PAINEL — direção visual "Aurora Glass"
+   TEMA "AURORA GLASS" - app inteiro
    ---------------------------------------------------
-   Tudo abaixo vale SÓ quando a aba Dashboard está ativa
-   (js/app.js liga a classe painel-aurora no <body>). As demais
-   abas não mudam de aparência até serem aprovadas.
-   Cores em hexadecimal (convertidas do oklch do protótipo) para
-   funcionar em qualquer navegador.
+   Nasceu no Painel (AJUSTE-047) e passou para todas as abas
+   (AJUSTE-048). Vale enquanto o <body> tiver a classe tema-aurora
+   (index.html e js/app.js). Para voltar ao visual antigo de uma aba,
+   basta tirar a classe. Cores em hexadecimal (convertidas do oklch do
+   protótipo) para funcionar em qualquer navegador.
    =================================================== */
 
-body.painel-aurora{
+body.tema-aurora{
 --pa-fim:#01030b;
 --pa-fg:#f9fafd;
 --pa-muted:#bcc4d5;
@@ -266,11 +266,11 @@ padding-bottom:calc(110px + env(safe-area-inset-bottom, 0px));
 }
 
 /* o reset global força Arial em tudo; aqui a família volta a ser herdada */
-body.painel-aurora *{
+body.tema-aurora *{
 font-family:inherit;
 }
 
-body.painel-aurora .pa-num{
+body.tema-aurora .pa-num{
 font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 font-variant-numeric:tabular-nums;
 letter-spacing:-.01em;
@@ -278,7 +278,7 @@ letter-spacing:-.01em;
 
 /* fundo de ambiente: camada fixa própria. background-attachment:fixed
    trava no Safari do iPhone, esta camada não. */
-body.painel-aurora::before{
+body.tema-aurora::before{
 content:"";
 position:fixed;
 inset:0;
@@ -292,12 +292,12 @@ linear-gradient(180deg,#0b0f27 0%,#030615 55%,#01030b 100%);
 }
 
 /* cabeçalho e barra inferior compartilhados, com a pele da Aurora */
-body.painel-aurora .header{
+body.tema-aurora .header{
 padding:28px 20px 6px;
 border-bottom:0;
 }
 
-body.painel-aurora .logo{
+body.tema-aurora .logo{
 font-size:13px;
 font-weight:700;
 letter-spacing:.28em;
@@ -305,7 +305,7 @@ text-transform:uppercase;
 color:var(--pa-muted);
 }
 
-body.painel-aurora .subtitle{
+body.tema-aurora .subtitle{
 font-family:"Space Grotesk","Inter",system-ui,sans-serif;
 font-size:22px;
 font-weight:700;
@@ -314,11 +314,11 @@ color:var(--pa-fg);
 margin-top:2px;
 }
 
-body.painel-aurora .container{
+body.tema-aurora .container{
 padding:14px 20px 0;
 }
 
-body.painel-aurora .bottom-nav{
+body.tema-aurora .bottom-nav{
 height:calc(70px + env(safe-area-inset-bottom, 0px));
 padding-bottom:env(safe-area-inset-bottom, 0px);
 background:rgba(9,13,34,.72);
@@ -327,14 +327,39 @@ backdrop-filter:blur(14px);
 border-top:1px solid var(--pa-fio);
 }
 
-body.painel-aurora .nav-btn{
+body.tema-aurora .nav-btn{
+flex:1;
+min-width:0;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+gap:3px;
+padding:8px 2px;
+background:none;
+border:none;
 color:var(--pa-muted);
-font-size:13px;
+font-size:12px;
 font-weight:600;
-padding:10px 6px;
 }
 
-body.painel-aurora .nav-active{
+body.tema-aurora .nav-btn svg{
+width:22px;
+height:22px;
+fill:none;
+stroke:currentColor;
+stroke-width:1.8;
+stroke-linecap:round;
+stroke-linejoin:round;
+}
+
+body.tema-aurora .nav-btn:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:-3px;
+border-radius:12px;
+}
+
+body.tema-aurora .nav-active{
 color:var(--pa-primary);
 }
 
@@ -347,7 +372,7 @@ max-width:520px;
 margin:0 auto;
 }
 
-body.painel-aurora .pa-vidro{
+body.tema-aurora .pa-vidro{
 background:var(--pa-vidro);
 border:1px solid var(--pa-borda);
 border-radius:24px;
@@ -356,13 +381,13 @@ padding:18px;
 backdrop-filter:blur(20px) saturate(140%);
 }
 
-body.painel-aurora .pa-vidro--forte{
+body.tema-aurora .pa-vidro--forte{
 background:var(--pa-vidro-forte);
 -webkit-backdrop-filter:blur(28px) saturate(150%);
 backdrop-filter:blur(28px) saturate(150%);
 }
 
-body.painel-aurora .pa-eyebrow{
+body.tema-aurora .pa-eyebrow{
 font-size:12px;
 font-weight:600;
 letter-spacing:.14em;
@@ -370,32 +395,32 @@ text-transform:uppercase;
 color:var(--pa-muted);
 }
 
-body.painel-aurora .pa-titulo{
+body.tema-aurora .pa-titulo{
 font-family:"Space Grotesk","Inter",system-ui,sans-serif;
 font-size:18px;
 font-weight:700;
 letter-spacing:-.01em;
 }
 
-body.painel-aurora .pa-nota{
+body.tema-aurora .pa-nota{
 margin-top:6px;
 font-size:13px;
 line-height:1.45;
 color:var(--pa-muted);
 }
 
-body.painel-aurora .pa-carregando{
+body.tema-aurora .pa-carregando{
 font-size:14px;
 color:var(--pa-muted);
 }
 
 /* Scanner */
-body.painel-aurora .pa-hero{
+body.tema-aurora .pa-hero{
 position:relative;
 overflow:hidden;
 }
 
-body.painel-aurora .pa-hero::before{
+body.tema-aurora .pa-hero::before{
 content:"";
 position:absolute;
 top:-70px;
@@ -409,18 +434,18 @@ filter:blur(48px);
 pointer-events:none;
 }
 
-body.painel-aurora .pa-hero > *{
+body.tema-aurora .pa-hero > *{
 position:relative;
 }
 
-body.painel-aurora .pa-hero-topo{
+body.tema-aurora .pa-hero-topo{
 display:flex;
 justify-content:space-between;
 align-items:flex-start;
 gap:16px;
 }
 
-body.painel-aurora .pa-status{
+body.tema-aurora .pa-status{
 display:inline-flex;
 align-items:center;
 gap:10px;
@@ -432,7 +457,7 @@ letter-spacing:-.02em;
 line-height:1.1;
 }
 
-body.painel-aurora .pa-ponto{
+body.tema-aurora .pa-ponto{
 display:inline-block;
 width:12px;
 height:12px;
@@ -440,45 +465,45 @@ border-radius:50%;
 background:var(--pa-muted);
 }
 
-body.painel-aurora .pa-status--on{
+body.tema-aurora .pa-status--on{
 color:var(--pa-ganho);
 }
 
-body.painel-aurora .pa-status--on .pa-ponto{
+body.tema-aurora .pa-status--on .pa-ponto{
 background:var(--pa-ganho);
 box-shadow:0 0 12px var(--pa-ganho);
 }
 
-body.painel-aurora .pa-status--off{
+body.tema-aurora .pa-status--off{
 color:var(--pa-perda);
 }
 
-body.painel-aurora .pa-status--off .pa-ponto{
+body.tema-aurora .pa-status--off .pa-ponto{
 background:var(--pa-perda);
 }
 
-body.painel-aurora .pa-status--carregando{
+body.tema-aurora .pa-status--carregando{
 color:var(--pa-muted);
 font-size:22px;
 }
 
-body.painel-aurora .pa-status{
+body.tema-aurora .pa-status{
 white-space:nowrap;
 }
 
-body.painel-aurora .pa-modo{
+body.tema-aurora .pa-modo{
 text-align:right;
 flex-shrink:0;
 white-space:nowrap;
 }
 
-body.painel-aurora .pa-modo-valor{
+body.tema-aurora .pa-modo-valor{
 margin-top:8px;
 font-size:16px;
 font-weight:700;
 }
 
-body.painel-aurora .pa-perfil::before{
+body.tema-aurora .pa-perfil::before{
 content:"";
 display:inline-block;
 width:9px;
@@ -488,18 +513,18 @@ border-radius:50%;
 background:var(--pa-muted);
 }
 
-body.painel-aurora .pa-perfil--agressivo::before{background:var(--pa-ganho);}
-body.painel-aurora .pa-perfil--balanceado::before{background:var(--pa-primary);}
-body.painel-aurora .pa-perfil--conservador::before{background:var(--pa-espera);}
+body.tema-aurora .pa-perfil--agressivo::before{background:var(--pa-ganho);}
+body.tema-aurora .pa-perfil--balanceado::before{background:var(--pa-primary);}
+body.tema-aurora .pa-perfil--conservador::before{background:var(--pa-espera);}
 
-body.painel-aurora .pa-acoes{
+body.tema-aurora .pa-acoes{
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:10px;
 margin-top:18px;
 }
 
-body.painel-aurora .pa-btn{
+body.tema-aurora .pa-btn{
 margin-top:0;
 min-height:48px;
 padding:12px 8px;
@@ -510,26 +535,26 @@ white-space:nowrap;
 border:1px solid transparent;
 }
 
-body.painel-aurora .pa-btn.start-btn{
+body.tema-aurora .pa-btn.start-btn{
 background:var(--pa-ganho-suave);
 color:var(--pa-ganho);
 border-color:rgba(94,248,183,.4);
 }
 
-body.painel-aurora .pa-btn.stop-btn{
+body.tema-aurora .pa-btn.stop-btn{
 background:var(--pa-perda-suave);
 color:var(--pa-perda);
 border-color:rgba(255,152,145,.4);
 }
 
-body.painel-aurora .pa-btn:focus-visible,
-body.painel-aurora .pa-btn-sec:focus-visible,
-body.painel-aurora .pa-data input:focus-visible{
+body.tema-aurora .pa-btn:focus-visible,
+body.tema-aurora .pa-btn-sec:focus-visible,
+body.tema-aurora .pa-data input:focus-visible{
 outline:2px solid var(--pa-primary);
 outline-offset:2px;
 }
 
-body.painel-aurora .pa-linha{
+body.tema-aurora .pa-linha{
 display:flex;
 justify-content:space-between;
 align-items:baseline;
@@ -540,7 +565,7 @@ font-size:14px;
 color:var(--pa-muted);
 }
 
-body.painel-aurora .pa-linha b{
+body.tema-aurora .pa-linha b{
 font-size:18px;
 color:var(--pa-fg);
 }
@@ -551,7 +576,7 @@ flex-direction:column;
 gap:16px;
 }
 
-body.painel-aurora .pa-sr{
+body.tema-aurora .pa-sr{
 position:absolute;
 width:1px;
 height:1px;
@@ -561,14 +586,14 @@ white-space:nowrap;
 }
 
 /* Contas */
-body.painel-aurora .pa-conta-valor{
+body.tema-aurora .pa-conta-valor{
 margin-top:6px;
 font-size:28px;
 font-weight:700;
 white-space:nowrap;
 }
 
-body.painel-aurora .pa-btn-sec{
+body.tema-aurora .pa-btn-sec{
 width:100%;
 min-height:44px;
 margin-top:12px;
@@ -583,14 +608,14 @@ cursor:pointer;
 }
 
 /* Desempenho do dia */
-body.painel-aurora .pa-dia-topo{
+body.tema-aurora .pa-dia-topo{
 display:flex;
 justify-content:space-between;
 align-items:center;
 gap:12px;
 }
 
-body.painel-aurora .pa-data input{
+body.tema-aurora .pa-data input{
 background:rgba(255,255,255,.08);
 border:1px solid var(--pa-borda);
 border-radius:12px;
@@ -601,7 +626,7 @@ color-scheme:dark;
 min-height:40px;
 }
 
-body.painel-aurora .pa-dia-corpo{
+body.tema-aurora .pa-dia-corpo{
 display:grid;
 grid-template-columns:auto minmax(0,1fr);
 align-items:center;
@@ -609,36 +634,36 @@ gap:18px;
 margin-top:16px;
 }
 
-body.painel-aurora .pa-anel{
+body.tema-aurora .pa-anel{
 position:relative;
 width:104px;
 height:104px;
 }
 
-body.painel-aurora .pa-anel svg{
+body.tema-aurora .pa-anel svg{
 display:block;
 width:104px;
 height:104px;
 transform:rotate(-90deg);
 }
 
-body.painel-aurora .pa-anel circle{
+body.tema-aurora .pa-anel circle{
 fill:none;
 stroke-width:9;
 }
 
-body.painel-aurora .pa-anel-trilho{
+body.tema-aurora .pa-anel-trilho{
 stroke:rgba(255,255,255,.12);
 }
 
-body.painel-aurora .pa-anel-valor{
+body.tema-aurora .pa-anel-valor{
 stroke:var(--pa-primary);
 stroke-linecap:round;
 filter:drop-shadow(0 0 6px rgba(58,224,232,.45));
 transition:stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1);
 }
 
-body.painel-aurora .pa-anel-txt{
+body.tema-aurora .pa-anel-txt{
 position:absolute;
 inset:0;
 display:grid;
@@ -646,12 +671,12 @@ place-content:center;
 text-align:center;
 }
 
-body.painel-aurora .pa-anel-txt b{
+body.tema-aurora .pa-anel-txt b{
 font-size:24px;
 line-height:1;
 }
 
-body.painel-aurora .pa-anel-txt small{
+body.tema-aurora .pa-anel-txt small{
 margin-top:4px;
 font-size:12px;
 letter-spacing:.08em;
@@ -659,19 +684,19 @@ text-transform:uppercase;
 color:var(--pa-muted);
 }
 
-body.painel-aurora .pa-amostra{
+body.tema-aurora .pa-amostra{
 font-size:15px;
 font-weight:600;
 }
 
-body.painel-aurora .pa-chips{
+body.tema-aurora .pa-chips{
 display:flex;
 flex-wrap:wrap;
 gap:8px;
 margin-top:10px;
 }
 
-body.painel-aurora .pa-chip{
+body.tema-aurora .pa-chip{
 display:inline-flex;
 align-items:center;
 gap:6px;
@@ -682,17 +707,17 @@ font-weight:700;
 letter-spacing:.04em;
 }
 
-body.painel-aurora .pa-chip--ganho{
+body.tema-aurora .pa-chip--ganho{
 background:var(--pa-ganho-suave);
 color:var(--pa-ganho);
 }
 
-body.painel-aurora .pa-chip--perda{
+body.tema-aurora .pa-chip--perda{
 background:var(--pa-perda-suave);
 color:var(--pa-perda);
 }
 
-body.painel-aurora .pa-resultado{
+body.tema-aurora .pa-resultado{
 display:flex;
 justify-content:space-between;
 align-items:baseline;
@@ -702,30 +727,30 @@ padding-top:14px;
 border-top:1px solid var(--pa-fio);
 }
 
-body.painel-aurora .pa-resultado b{
+body.tema-aurora .pa-resultado b{
 font-size:20px;
 white-space:nowrap;
 }
 
-body.painel-aurora .pa-res--ganho{color:var(--pa-ganho);}
-body.painel-aurora .pa-res--perda{color:var(--pa-perda);}
-body.painel-aurora .pa-res--neutro{color:var(--pa-muted);}
+body.tema-aurora .pa-res--ganho{color:var(--pa-ganho);}
+body.tema-aurora .pa-res--perda{color:var(--pa-perda);}
+body.tema-aurora .pa-res--neutro{color:var(--pa-muted);}
 
-body.painel-aurora .pa-seta{
+body.tema-aurora .pa-seta{
 margin-right:4px;
 font-size:.65em;
 vertical-align:.12em;
 }
 
 /* Desde sempre */
-body.painel-aurora .pa-sempre{
+body.tema-aurora .pa-sempre{
 display:grid;
 grid-template-columns:repeat(3,1fr);
 gap:10px;
 margin-top:12px;
 }
 
-body.painel-aurora .pa-sempre dt{
+body.tema-aurora .pa-sempre dt{
 font-size:12px;
 font-weight:600;
 letter-spacing:.12em;
@@ -733,24 +758,184 @@ text-transform:uppercase;
 color:var(--pa-muted);
 }
 
-body.painel-aurora .pa-sempre dd{
+body.tema-aurora .pa-sempre dd{
 margin:4px 0 0;
 font-size:20px;
 font-weight:700;
 }
 
-body.painel-aurora .pa-erro{
+body.tema-aurora .pa-erro{
 font-size:14px;
 line-height:1.45;
 color:var(--pa-perda);
 }
 
-body.painel-aurora .pa-rodape{
+body.tema-aurora .pa-rodape{
 padding:0 4px;
 font-size:12px;
 color:var(--pa-muted);
 }
 
 @media (prefers-reduced-motion:reduce){
-body.painel-aurora .pa-anel-valor{transition:none;}
+body.tema-aurora .pa-anel-valor{transition:none;}
+}
+
+
+/* ---------------------------------------------------
+   ABAS ANTIGAS (Histórico, Resultados, Config, Manual)
+   Elas montam o HTML em js/*.js com classes antigas e estilo em
+   linha. Aqui as classes antigas ganham a pele da Aurora; as cores
+   escritas em linha foram trocadas direto nos js (AJUSTE-048).
+   --------------------------------------------------- */
+
+body.tema-aurora .card{
+background:var(--pa-vidro);
+border:1px solid var(--pa-borda);
+border-radius:24px;
+padding:18px;
+margin-bottom:16px;
+box-shadow:none;
+-webkit-backdrop-filter:blur(20px) saturate(140%);
+backdrop-filter:blur(20px) saturate(140%);
+}
+
+body.tema-aurora .card-title{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:18px;
+font-weight:700;
+letter-spacing:-.01em;
+color:var(--pa-fg);
+margin-bottom:12px;
+}
+
+body.tema-aurora .list-item{
+border-bottom:1px solid var(--pa-fio);
+}
+
+body.tema-aurora .list-item:last-child{
+border-bottom:0;
+}
+
+body.tema-aurora .big-number{
+font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+font-variant-numeric:tabular-nums;
+font-size:32px;
+letter-spacing:-.01em;
+}
+
+body.tema-aurora .signal{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+}
+
+body.tema-aurora .buy,
+body.tema-aurora .status-online{color:var(--pa-ganho);}
+body.tema-aurora .sell,
+body.tema-aurora .status-offline{color:var(--pa-perda);}
+body.tema-aurora .wait{color:var(--pa-espera);}
+
+body.tema-aurora .manual-title{
+color:var(--pa-primary);
+}
+
+body.tema-aurora .history-item{
+background:rgba(255,255,255,.06);
+border-left-color:var(--pa-primary);
+}
+
+body.tema-aurora .history-date{
+color:var(--pa-muted);
+}
+
+body.tema-aurora .history-result-win{color:var(--pa-ganho);}
+body.tema-aurora .history-result-loss{color:var(--pa-perda);}
+body.tema-aurora .history-result-open{color:var(--pa-espera);}
+
+body.tema-aurora .button{
+border-radius:14px;
+}
+
+/* campos de formulário: antes ficavam com o visual padrão do navegador */
+body.tema-aurora select,
+body.tema-aurora textarea,
+body.tema-aurora input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]){
+background:rgba(255,255,255,.08);
+border:1px solid var(--pa-borda);
+border-radius:12px;
+padding:9px 10px;
+color:var(--pa-fg);
+font-size:14px;
+min-height:42px;
+color-scheme:dark;
+}
+
+body.tema-aurora select:focus-visible,
+body.tema-aurora textarea:focus-visible,
+body.tema-aurora input:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:2px;
+}
+
+body.tema-aurora input[type="checkbox"],
+body.tema-aurora input[type="radio"],
+body.tema-aurora input[type="range"]{
+accent-color:var(--pa-primary);
+}
+
+body.tema-aurora a{
+color:var(--pa-primary);
+}
+
+/* piso de legibilidade: textos de 10 e 11px escritos em linha nos js
+   sobem para 12px (só afeta estilo em linha; texto de SVG não muda) */
+body.tema-aurora [style*="font-size:10px"],
+body.tema-aurora [style*="font-size:11px"],
+body.tema-aurora [style*="font-size: 10px"],
+body.tema-aurora [style*="font-size: 11px"]{
+font-size:12px !important;
+}
+
+/* Manual: texto corrido com hierarquia (h2/h3/p/listas só existem nele;
+   os títulos das outras abas usam .card-title) */
+body.tema-aurora .card h2{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:22px;
+line-height:1.2;
+letter-spacing:-.02em;
+margin:0 0 8px;
+}
+
+body.tema-aurora .card h3{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:17px;
+line-height:1.3;
+letter-spacing:-.01em;
+margin:20px 0 6px;
+color:var(--pa-fg);
+}
+
+body.tema-aurora .card p{
+font-size:15px;
+line-height:1.6;
+margin:8px 0;
+color:var(--pa-fg);
+}
+
+body.tema-aurora .card ol,
+body.tema-aurora .card ul{
+padding-left:22px;
+margin:8px 0;
+}
+
+body.tema-aurora .card li{
+font-size:15px;
+line-height:1.55;
+margin:6px 0;
+}
+
+/* Manual: tabelas mais largas que a tela rolam dentro do próprio bloco,
+   em vez de esticar a página (e a barra de navegação) */
+body.tema-aurora .aba-manual table{
+display:block;
+max-width:100%;
+overflow-x:auto;
 }

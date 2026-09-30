@@ -31,7 +31,7 @@
 // muito feios" foi o feedback da 1ª tentativa - refeito com
 // coordenadas cuidadas, aprovado antes via preview num Artifact
 // separado, com a mesma paleta de cor já usada no Histórico
-// (#00d26a/#ff5252/#4fc3f7/#8c95b3), replicado aqui igual). SVG puro,
+// (#5ef8b7/#ff9891/#3ae0e8/#bcc4d5), replicado aqui igual). SVG puro,
 // sem imagem externa - funciona offline dentro do PWA, sem depender
 // de nenhum site permanecer no ar.
 // ======================================================
@@ -58,7 +58,7 @@ function candleIconSVG(specs) {
   return `<svg viewBox="0 0 ${largura} ${altura}" width="${larguraSvg}" height="${Math.round(larguraSvg * altura / largura)}" style="display:block;">${corpos}</svg>`;
 }
 
-const CV_VERDE = "#00d26a", CV_VERMELHO = "#ff5252", CV_CINZA = "#a7b0c8";
+const CV_VERDE = "#5ef8b7", CV_VERMELHO = "#ff9891", CV_CINZA = "#bcc4d5";
 
 // Coordenadas de cada um dos 18 padrões - mesmas usadas no preview
 // aprovado pelo usuário antes desta integração.
@@ -132,8 +132,8 @@ function desenho(chave) {
 // (não reaproveita DESENHO_CANDLE porque tem texto/linhas de chamada,
 // não é um ícone de padrão).
 function anatomiaCandleSVG() {
-  const corLinha = "#5a6485";
-  const corTexto = "#c9d1e8";
+  const corLinha = "#6b7594";
+  const corTexto = "#dbe0ec";
   return `
     <svg viewBox="-14 0 334 130" width="100%" style="max-width:320px; display:block; margin:12px auto;">
       <line x1="90" y1="20" x2="90" y2="110" stroke="${CV_VERDE}" stroke-width="3" stroke-linecap="round"/>
@@ -165,9 +165,10 @@ function anatomiaCandleSVG() {
 
 function manualView() {
   return `
+    <div class="aba-manual">
     <div class="card">
       <h2>📖 Manual Forex Assist</h2>
-      <p style="font-size:12px; color:#8c95b3;">
+      <p style="font-size:12px; color:#bcc4d5;">
         Base de conhecimento completa do app - o que cada número
         significa, como o RMI decide, e um glossário de Forex pra
         nunca precisar sair daqui. Conferido contra o código real em
@@ -193,7 +194,7 @@ function secaoComoDecide() {
   return `
     <div class="card">
       <h2>🧠 Como o RMI decide um sinal</h2>
-      <p style="font-size:12px; color:#8c95b3;">
+      <p style="font-size:12px; color:#bcc4d5;">
         Conferido contra scripts/marketAnalyzer.js, scoreEngine.js e
         decisionEngine.js em 25/09/2026.
       </p>
@@ -219,7 +220,7 @@ function secaoComoDecide() {
         <li>O sinal é salvo no Histórico com TODOS esses números
           juntos - nada é decidido "no ar", tudo fica registrado.</li>
       </ol>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         Importante: a análise técnica (passos 1-4) é EXATAMENTE igual
         pros três perfis - o mercado não muda de comportamento
         dependendo de quem está olhando. O que muda entre perfis é só
@@ -251,7 +252,7 @@ function secaoComoDecide() {
         <tr><td style="padding:6px;">EMA9 e EMA21 quase coladas (diferença &lt; 0,00030)</td><td style="padding:6px;">COMPRESSÃO</td><td style="padding:6px; text-align:right;">5</td></tr>
         <tr><td style="padding:6px;">Nenhuma das anteriores</td><td style="padding:6px;">CONFLITO</td><td style="padding:6px; text-align:right;">5</td></tr>
       </table>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         COMPRESSÃO e CONFLITO nunca viram sinal - o Decision Engine
         bloqueia os dois ("Mercado sem tendência definida"), só ALTA
         vira COMPRA e só BAIXA vira VENDA.
@@ -278,14 +279,14 @@ function secaoComoDecide() {
         <tr><td style="padding:6px;">25 a 30</td><td style="padding:6px;">BOA</td><td style="padding:6px; text-align:right;">9</td></tr>
         <tr><td style="padding:6px;">30 ou mais</td><td style="padding:6px;">ESTICADA</td><td style="padding:6px; text-align:right;">0</td></tr>
       </table>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         Por que ADX alto não soma: nos dados reais do próprio RMI
         (AJUSTE-036/037), com alvo curto em M5, ADX 20-30 acertou ~56%
         e ADX 30 ou mais só ~25% - quando o ADX já está alto, o
         movimento já andou e o sinal chega tarde (reverte antes do TP).
         Até o AJUSTE-037 era o contrário: ADX alto era o que mais somava.
       </p>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         Mais um bônus de "confirmação cruzada": se EMA e RSI concordam
         na direção, +10; se ADX está moderado/bom (20 a 30), +5 extra
         (esse é o campo interno "tendenciaScore"). ADX esticado (30+)
@@ -350,7 +351,7 @@ function secaoComoDecide() {
         relevante, ou preço fora da zona: não muda nada. Nunca aprova
         nem reprova um sinal sozinha - é só um peso a mais.
       </p>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         Limitação conhecida (registrada em ENGINEERING.md): o app
         detecta a zona exata do order block internamente, mas hoje só
         guarda/mostra a direção e se o preço está na zona ou não - o
@@ -382,7 +383,7 @@ function secaoComoDecide() {
         dos 6 padrões detectado: não muda nada. Nunca aprova nem
         reprova um sinal sozinho.
       </p>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         Limitação conhecida, aceita conscientemente (mesmo nível do
         SMC): o padrão é avaliado ISOLADO, sem checar se está perto de
         um suporte/resistência real (o app não detecta suporte/
@@ -428,7 +429,7 @@ function secaoComoDecide() {
         <tr><td style="padding:6px;">Reward:Risk mínimo</td><td style="padding:6px; text-align:center;">1.0</td><td style="padding:6px; text-align:center;">1.0</td><td style="padding:6px; text-align:center;">1.2</td></tr>
       </table>
       </div>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         O Conservador exigir 30 operações de histórico ANTES de
         confiar no par é por isso que ele demora mais pra gerar
         sinal - ele está esperando ter base suficiente pra confiar
@@ -489,7 +490,7 @@ function secaoComoLerSinal() {
   return `
     <div class="card">
       <h2>🔍 Como ler um sinal salvo (Histórico/Resultados)</h2>
-      <p style="font-size:12px; color:#8c95b3;">
+      <p style="font-size:12px; color:#bcc4d5;">
         Conferido contra js/historico.js, js/checker.js e
         scripts/pairAnalyzer.js em 25/09/2026.
       </p>
@@ -609,7 +610,7 @@ function secaoComoLerSinal() {
         <li><b>MANTER</b> - nenhum ajuste, valores exatamente como
           configurados.</li>
       </ul>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         Sinais antigos (antes de 28/09) podem mostrar outros motivos -
         REDUZIR_EXPOSICAO (ADX abaixo de 20), MERCADO_LENTO (ATR baixo)
         e EXPECTATIVA_NEGATIVA - que reduziam lote e apertavam TP/SL
@@ -643,7 +644,7 @@ function secaoComoLerSinal() {
         <tr><td style="padding:6px;">SL_PIPS</td><td style="padding:6px;">Chegou a 50 pips contra sem ter batido o SL em dólar ainda</td><td style="padding:6px; text-align:center;">LOSS</td></tr>
         <tr><td style="padding:6px;">MANUAL_CORRETORA</td><td style="padding:6px;">Você fechou manualmente pelo botão, com o preço real da corretora</td><td style="padding:6px; text-align:center;">Depende do valor informado</td></tr>
       </table>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         Se TP e SL em dólar batem no mesmo ciclo de 5 minutos (o preço
         oscilou muito rápido), o sistema assume o cenário mais
         pessimista (SL) - não tem como saber qual bateu primeiro só
@@ -687,7 +688,7 @@ function secaoGestaoRisco() {
   return `
     <div class="card">
       <h2>💰 Gestão de risco e dinheiro</h2>
-      <p style="font-size:12px; color:#8c95b3;">
+      <p style="font-size:12px; color:#bcc4d5;">
         Conferido contra scripts/moneyManager.js e riskManager.js em
         25/09/2026.
       </p>
@@ -800,7 +801,7 @@ function secaoIndicadores() {
         "parado" (candles pequenos); ATR alto = mercado agitado
         (candles grandes).
       </p>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         Desde o AJUSTE-038, no <b>score</b> o ATR e as distâncias entre
         EMAs são comparados em pips, igual pra todos os pares (antes,
         pares com iene - preço perto de 150 - ganhavam pontos de graça
@@ -841,7 +842,7 @@ function secaoEstruturaMercado() {
         <tr><td style="padding:6px;">🇬🇧 Londres</td><td style="padding:6px;">04:00–13:00</td><td style="padding:6px;">Maior volume do dia, forte pra EUR, GBP, CHF</td></tr>
         <tr><td style="padding:6px;">🇺🇸 Nova York</td><td style="padding:6px;">10:00–19:00</td><td style="padding:6px;">Forte pra USD, CAD</td></tr>
       </table>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         O overlap Londres+NY (10h-13h) costuma ter a maior liquidez do
         dia pros pares com USD/EUR/GBP - é por isso que o horário
         padrão do app historicamente cobre essa faixa.
@@ -868,7 +869,7 @@ function secaoEstruturaMercado() {
       </p>
 
       <h3>Os 18 principais padrões de candlestick</h3>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         Conteúdo clássico de análise técnica (existem uns 40 padrões
         catalogados ao todo - estes são os 18 mais usados no mercado,
         mesma lista de referência que corretoras como a XP ensinam).
@@ -943,7 +944,7 @@ function secaoEstruturaMercado() {
         <li>Dê mais peso quando o padrão aparece perto de um suporte/
           resistência real e é confirmado pelo candle seguinte.</li>
       </ol>
-      <p style="font-size:11px; color:#8c95b3;">
+      <p style="font-size:11px; color:#bcc4d5;">
         Regra rápida de cor: candle verde (fechamento acima da
         abertura) = viés de alta; vermelho (fechamento abaixo da
         abertura) = viés de baixa; variação muito pequena entre
@@ -1043,6 +1044,7 @@ function secaoNotificacoes() {
         dispositivo na hora pra entregar a notificação, em vez de
         esperar um lote.
       </p>
+    </div>
     </div>
   `;
 }

@@ -347,7 +347,7 @@ async function renderSugestaoAgora() {
             <button
                 id="btnAplicarSugestao"
                 data-tab="config"
-                style="margin-top:10px; width:100%; padding:8px; border:none; border-radius:8px; background:#132852; color:white; font-size:13px; cursor:pointer;"
+                style="margin-top:10px; width:100%; padding:8px; border:none; border-radius:8px; background:#1b2246; color:white; font-size:13px; cursor:pointer;"
             >
                 Aplicar esses pares na Configuração
             </button>

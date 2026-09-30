@@ -13,7 +13,10 @@ localStorage.getItem("ultimaAba")
 
         document.addEventListener("click", (e) => {
 
-            const tab = e.target.dataset.tab;
+            // closest(): o clique pode cair no ícone ou no rótulo
+            // dentro do botão, não só no <button> em si.
+            const alvoTab = e.target.closest ? e.target.closest("[data-tab]") : null;
+            const tab = alvoTab ? alvoTab.dataset.tab : undefined;
 
             if(tab){
 
@@ -45,14 +48,8 @@ localStorage.getItem("ultimaAba")
             localStorage.setItem("ultimaAba", "dashboard");
         }
 
-        // Painel (Dashboard) usa a direção visual "Aurora Glass" - a
-        // classe no <body> escopa todo o CSS novo (css/styles.css), as
-        // outras abas continuam com a aparência antiga até serem
-        // aprovadas uma a uma.
-        document.body.classList.toggle(
-            "painel-aurora",
-            this.currentTab === "dashboard"
-        );
+        // Tema "Aurora Glass" em todas as abas (css/styles.css).
+        document.body.classList.add("tema-aurora");
 
         const app = document.getElementById("app");
 
@@ -97,27 +94,17 @@ localStorage.getItem("ultimaAba")
         </div>
 
         <div class="bottom-nav">
-
-            <button class="nav-btn ${this.currentTab==="dashboard"?"nav-active":""}" data-tab="dashboard">
-                Dashboard
-            </button>
-
-            <button class="nav-btn ${this.currentTab==="historico"?"nav-active":""}" data-tab="historico">
-                Histórico
-            </button>
-
-            <button class="nav-btn ${this.currentTab==="resultados"?"nav-active":""}" data-tab="resultados">
-                Resultados
-            </button>
-
-            <button class="nav-btn ${this.currentTab==="config"?"nav-active":""}" data-tab="config">
-                Config
-            </button>
-
-            <button class="nav-btn ${this.currentTab==="manual"?"nav-active":""}" data-tab="manual">
-                Manual
-            </button>
-
+${[
+    ["dashboard", "Painel",     "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"],
+    ["historico", "Histórico",  "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2"],
+    ["resultados","Resultados", "M5 20V11M12 20V4M19 20v-6"],
+    ["config",    "Config",     "M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4"],
+    ["manual",    "Manual",     "M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h10"]
+].map(([id, rotulo, icone]) => `
+            <button class="nav-btn ${this.currentTab===id?"nav-active":""}" data-tab="${id}" aria-label="${rotulo}"${this.currentTab===id?' aria-current="page"':""}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icone}"/></svg>
+                <span>${rotulo}</span>
+            </button>`).join("")}
         </div>
         `;
         if (this.currentTab === "dashboard") {
