@@ -10,50 +10,50 @@
 // fora do próprio arquivo, conferido antes de remover).
 function dashboardView() {
 
+    // Direção visual "Aurora Glass" (css/styles.css, bloco PAINEL).
+    // Os id abaixo são lidos por js/expert.js e js/desempenho.js -
+    // não renomear sem ajustar os dois (debugFirebase, por exemplo,
+    // é escrito sem checar se existe).
     return `
-    <div class="card">
-        <div class="card-title">Scanner Status</div>
-        <div id="scannerStatus" class="signal wait">
-            Carregando...
+    <div class="painel">
+
+        <section class="pa-vidro pa-vidro--forte pa-hero" aria-label="Scanner">
+            <div class="pa-hero-topo">
+                <div>
+                    <p class="pa-eyebrow">Scanner</p>
+                    <div id="scannerStatus" class="pa-status pa-status--carregando" role="status" aria-live="polite">
+                        <i class="pa-ponto" aria-hidden="true"></i><span>Carregando…</span>
+                    </div>
+                </div>
+
+                <div class="pa-modo">
+                    <p class="pa-eyebrow">Modo atual</p>
+                    <div id="modoAtual" class="pa-modo-valor">Carregando…</div>
+                </div>
+            </div>
+
+            <div class="pa-acoes">
+                <button class="button start-btn pa-btn" id="startScanner">
+                    Iniciar scanner
+                </button>
+
+                <button class="button stop-btn pa-btn" id="stopScanner">
+                    Parar scanner
+                </button>
+            </div>
+
+            <div class="pa-linha">
+                <span>Cooldowns hoje</span>
+                <b id="cooldownsHoje" class="pa-num">0</b>
+            </div>
+        </section>
+
+        <div id="desempenhoCard">
+            <p class="pa-carregando">Carregando…</p>
         </div>
 
-        <button
-            class="button start-btn"
-            id="startScanner"
-            style="margin-top:10px;">
+        <p class="pa-rodape">Firebase: <span id="debugFirebase">Iniciando...</span></p>
 
-            Iniciar Scanner
-
-        </button>
-
-        <button
-            class="button stop-btn"
-            id="stopScanner">
-
-            Parar Scanner
-
-        </button>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Modo Atual</div>
-        <div id="modoAtual" class="perfil-atual">Carregando...</div>
-    </div>
-
-    <div class="card">
-        <div id="desempenhoCard">Carregando...</div>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Cooldowns Hoje</div>
-        <div id="cooldownsHoje" class="big-number">0</div>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Debug Firebase</div>
-        <div id="debugFirebase">
-            Iniciando...
-        </div>
     </div>
     `;
 }
@@ -69,10 +69,25 @@ function dashboardView() {
 // ===================================================
 
 const ROTULOS_PERFIL = {
-    agressivo: "🟢 Agressivo",
-    balanceado: "🔵 Balanceado",
-    conservador: "🟡 Conservador"
+    agressivo: "Agressivo",
+    balanceado: "Balanceado",
+    conservador: "Conservador"
 };
+
+// Ponto colorido (CSS) + rótulo; perfil desconhecido cai no texto cru,
+// sem HTML vindo do banco (textContent via elemento temporário).
+function rotuloPerfilHTML(perfil) {
+
+    const conhecido = Object.prototype.hasOwnProperty.call(ROTULOS_PERFIL, perfil);
+
+    const span = document.createElement("span");
+
+    span.className = "pa-perfil" + (conhecido ? " pa-perfil--" + perfil : "");
+    span.textContent = conhecido ? ROTULOS_PERFIL[perfil] : String(perfil);
+
+    return span.outerHTML;
+
+}
 
 async function renderModoAtual() {
 
@@ -89,13 +104,13 @@ async function renderModoAtual() {
 
         const perfil = (doc.exists ? doc.data().perfil : null) || "balanceado";
 
-        el.innerHTML = ROTULOS_PERFIL[perfil] || perfil;
+        el.innerHTML = rotuloPerfilHTML(perfil);
 
     } catch (erro) {
 
         console.error("Erro ao carregar modo atual:", erro);
 
-        el.innerHTML = "Balanceado";
+        el.innerHTML = rotuloPerfilHTML("balanceado");
 
     }
 
@@ -114,7 +129,7 @@ async function renderModoAtual() {
 // quando a aba não está em primeiro plano (tela apagada, outro app
 // na frente, outra aba ativa) - celular com o app aberto em segundo
 // plano por horas era o cenário real que mais pesava na cota.
-setInterval(async () => {
+async function atualizarStatusScanner() {
 
     if (document.hidden) return;
 
@@ -125,12 +140,11 @@ setInterval(async () => {
 
     if (!status) return;
 
+    const debug = document.getElementById("debugFirebase");
+
     try {
 
-        document.getElementById(
-            "debugFirebase"
-        ).innerHTML =
-            "db encontrado";
+        if (debug) debug.innerHTML = "db encontrado";
 
         const doc =
             await window.db
@@ -141,15 +155,17 @@ setInterval(async () => {
         const dados =
             doc.data() || {};
 
-        document.getElementById(
-            "debugFirebase"
-        ).innerHTML =
-            "Firestore conectado";
+        if (debug) debug.innerHTML = "Firestore conectado";
+
+        // Aurora Glass: ponto + texto (nunca só cor) e classe de estado.
+        status.className =
+            "pa-status " +
+            (dados.ativo ? "pa-status--on" : "pa-status--off");
 
         status.innerHTML =
-            dados.ativo
-                ? "🟢 Online"
-                : "🔴 Parado";
+            '<i class="pa-ponto" aria-hidden="true"></i><span>' +
+            (dados.ativo ? "Online" : "Parado") +
+            "</span>";
 
         // AJUSTE-014: estado dos botões Iniciar/Parar (migrado de
         // js/scanner.js, mesma lógica de sempre) - atualizado junto
@@ -161,21 +177,29 @@ setInterval(async () => {
         if (startBtn) startBtn.disabled = Boolean(dados.ativo);
         if (stopBtn) stopBtn.disabled = !dados.ativo;
 
-        document.getElementById(
-            "cooldownsHoje"
-        ).innerHTML =
-            dados.cooldownsHoje || 0;
+        const cooldowns = document.getElementById("cooldownsHoje");
+
+        if (cooldowns) cooldowns.innerHTML = dados.cooldownsHoje || 0;
 
     } catch (erro) {
 
-        document.getElementById(
-            "debugFirebase"
-        ).innerHTML =
-            erro.message;
+        if (debug) debug.innerHTML = erro.message;
+
+        // Sem resposta do Firestore (cota, rede): não deixar o card
+        // eternamente em "Carregando…", mas também não afirmar Online ou
+        // Parado sem saber - mantém o último estado se já havia um.
+        if (status.classList.contains("pa-status--carregando")) {
+
+            status.innerHTML =
+                '<i class="pa-ponto" aria-hidden="true"></i><span>Sem conexão</span>';
+
+        }
 
     }
 
-}, 15000);
+}
+
+setInterval(atualizarStatusScanner, 15000);
 
 // AJUSTE-014 (24/09/2026): migrado de js/scanner.js (aba removida) -
 // única lógica que valia manter de lá.

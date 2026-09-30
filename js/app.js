@@ -45,6 +45,15 @@ localStorage.getItem("ultimaAba")
             localStorage.setItem("ultimaAba", "dashboard");
         }
 
+        // Painel (Dashboard) usa a direção visual "Aurora Glass" - a
+        // classe no <body> escopa todo o CSS novo (css/styles.css), as
+        // outras abas continuam com a aparência antiga até serem
+        // aprovadas uma a uma.
+        document.body.classList.toggle(
+            "painel-aurora",
+            this.currentTab === "dashboard"
+        );
+
         const app = document.getElementById("app");
 
         let content = "";
@@ -125,6 +134,13 @@ localStorage.getItem("ultimaAba")
 
         if (typeof renderModoAtual === "function") {
             renderModoAtual();
+        }
+
+        // Primeira leitura do status logo ao abrir a aba (antes só o
+        // setInterval de 15s preenchia, e o card ficava "Carregando..."
+        // até lá). Uma leitura a mais por visita ao Dashboard.
+        if (typeof atualizarStatusScanner === "function") {
+            atualizarStatusScanner();
         }
 
         if (typeof renderDesempenho === "function") {

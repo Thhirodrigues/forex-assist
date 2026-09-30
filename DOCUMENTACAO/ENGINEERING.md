@@ -12576,3 +12576,61 @@ event.data; toque abre XM ou "./"; firebase-messaging-sw.js usa icon/badge
 pelo escopo; badge-96.png é 96x96 RGBA, cantos transparentes, pixels
 visíveis todos brancos (~24% da área).
 --------
+
+AJUSTE-047 (30/09/2026) - Painel (aba Dashboard) na direção visual "Aurora
+Glass" (só frontend; congelamento do pipeline intacto - nenhuma mudança em
+pontuação, aprovação, risco ou em qualquer arquivo de scripts/).
+
+ORIGEM: o usuário escolheu a direção "Aurora Glass" entre 6 mockups e
+protótipos feitos no Lovable (projeto separado, repositório
+Thhirodrigues/forex-assist-visuals, PR nº 1 com as correções da revisão).
+Decisão dele: migrar SÓ o Painel agora; as outras abas seguem como estão
+até serem aprovadas uma a uma.
+
+O QUE MUDOU
+  - index.html: fontes Inter, Space Grotesk e JetBrains Mono (Google Fonts).
+  - css/styles.css: bloco novo "PAINEL", TODO escopado em
+    `body.painel-aurora` (nenhuma regra existente foi alterada).
+  - js/app.js: liga/desliga a classe `painel-aurora` no <body> conforme a
+    aba (só o Dashboard a recebe); chama `atualizarStatusScanner()` logo
+    após montar o Dashboard.
+  - js/expert.js: `dashboardView()` reescrita (mesmos id de antes:
+    scannerStatus, startScanner, stopScanner, modoAtual, desempenhoCard,
+    cooldownsHoje, debugFirebase); o polling de 15s virou a função nomeada
+    `atualizarStatusScanner()`, sem mudar a consulta (mesmo documento
+    scanner/status). Perfil vira ponto + rótulo (sem emoji), montado via
+    textContent (nada do banco entra como HTML).
+  - js/desempenho.js: só a APRESENTAÇÃO mudou. `obterDesempenhoDoDia`,
+    `obterResumoGeral`, `contarPorResultado` e `registrarAporte` estão
+    intactos.
+
+DECISÕES QUE O USUÁRIO PRECISA CONHECER
+  - Os cartões do protótipo "sinal ativo com anel de RMI", "curva de saldo"
+    e "operações recentes" NÃO foram criados: o Painel real não tem essa
+    informação hoje (a "Sugestão de Agora" foi removida no AJUSTE-014) e
+    inventá-la contraria a regra de só mostrar dado que o pipeline produz.
+  - O anel do Painel mostra a TAXA DE ACERTO DO DIA (WIN / fechadas), e
+    "X de Y fechadas" fica sempre ao lado: 1 de 1 dá 100% e não diz nada.
+    Sem operações fechadas o anel mostra "—", não "0%".
+  - Cor e seta do "Simulado no dia" seguem o sinal do número (ganho ▲,
+    perda ▼, zero •); o texto sempre leva + ou −. Antes era só "$" e "-".
+  - Formato monetário do Painel: "US$ 1.248,60" (pt-BR). O restante do app
+    ainda usa "$1248.60".
+  - Correções pequenas no caminho: o status do Scanner ficava "Carregando..."
+    por até 15s (só o setInterval preenchia); agora lê 1x ao abrir (uma
+    leitura a mais por visita ao Dashboard). Se o Firestore falhar, o status
+    mostra "Sem conexão" e o card de Desempenho mostra o erro (antes ficava
+    "Carregando..." para sempre).
+
+LIMITES (não verificáveis daqui)
+  - Sem credenciais do Firestore neste ambiente: validado com um Firestore
+    FALSO (Playwright, 390px, toque simulado) em 4 cenários (dia de ganho,
+    dia de perda com scanner parado, dia sem operações, falha do Firestore),
+    além de conferir que a aba Config não recebe a pele nova. Não testado
+    num aparelho real nem com dados reais.
+  - As fontes vêm do Google Fonts; sem rede o app cai nas fontes do sistema
+    (layout foi conferido com fontes alternativas, mais largas).
+  - Barra inferior e cabeçalho ganham a pele nova só no Dashboard; ao trocar
+    de aba a barra muda de aparência. É provisório, até as outras abas
+    migrarem.
+--------

@@ -233,3 +233,524 @@ transition:all .15s ease;
 transform:scale(0.98);
 opacity:0.8;
 }
+
+
+/* ===================================================
+   PAINEL — direção visual "Aurora Glass"
+   ---------------------------------------------------
+   Tudo abaixo vale SÓ quando a aba Dashboard está ativa
+   (js/app.js liga a classe painel-aurora no <body>). As demais
+   abas não mudam de aparência até serem aprovadas.
+   Cores em hexadecimal (convertidas do oklch do protótipo) para
+   funcionar em qualquer navegador.
+   =================================================== */
+
+body.painel-aurora{
+--pa-fim:#01030b;
+--pa-fg:#f9fafd;
+--pa-muted:#bcc4d5;
+--pa-primary:#3ae0e8;
+--pa-ganho:#5ef8b7;
+--pa-ganho-suave:rgba(94,248,183,.18);
+--pa-perda:#ff9891;
+--pa-perda-suave:rgba(255,152,145,.18);
+--pa-espera:#f4d576;
+--pa-vidro:rgba(255,255,255,.09);
+--pa-vidro-forte:rgba(255,255,255,.15);
+--pa-borda:rgba(255,255,255,.20);
+--pa-fio:rgba(255,255,255,.12);
+background:var(--pa-fim);
+color:var(--pa-fg);
+font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+padding-bottom:calc(110px + env(safe-area-inset-bottom, 0px));
+}
+
+/* o reset global força Arial em tudo; aqui a família volta a ser herdada */
+body.painel-aurora *{
+font-family:inherit;
+}
+
+body.painel-aurora .pa-num{
+font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+font-variant-numeric:tabular-nums;
+letter-spacing:-.01em;
+}
+
+/* fundo de ambiente: camada fixa própria. background-attachment:fixed
+   trava no Safari do iPhone, esta camada não. */
+body.painel-aurora::before{
+content:"";
+position:fixed;
+inset:0;
+z-index:-1;
+pointer-events:none;
+background:
+radial-gradient(115% 70% at 8% -4%, rgba(116,83,229,.52) 0%, transparent 60%),
+radial-gradient(95% 60% at 100% 6%, rgba(0,198,205,.38) 0%, transparent 58%),
+radial-gradient(80% 50% at 50% 104%, rgba(145,99,213,.26) 0%, transparent 62%),
+linear-gradient(180deg,#0b0f27 0%,#030615 55%,#01030b 100%);
+}
+
+/* cabeçalho e barra inferior compartilhados, com a pele da Aurora */
+body.painel-aurora .header{
+padding:28px 20px 6px;
+border-bottom:0;
+}
+
+body.painel-aurora .logo{
+font-size:13px;
+font-weight:700;
+letter-spacing:.28em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.painel-aurora .subtitle{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:22px;
+font-weight:700;
+letter-spacing:-.02em;
+color:var(--pa-fg);
+margin-top:2px;
+}
+
+body.painel-aurora .container{
+padding:14px 20px 0;
+}
+
+body.painel-aurora .bottom-nav{
+height:calc(70px + env(safe-area-inset-bottom, 0px));
+padding-bottom:env(safe-area-inset-bottom, 0px);
+background:rgba(9,13,34,.72);
+-webkit-backdrop-filter:blur(14px);
+backdrop-filter:blur(14px);
+border-top:1px solid var(--pa-fio);
+}
+
+body.painel-aurora .nav-btn{
+color:var(--pa-muted);
+font-size:13px;
+font-weight:600;
+padding:10px 6px;
+}
+
+body.painel-aurora .nav-active{
+color:var(--pa-primary);
+}
+
+/* estrutura do Painel */
+.painel{
+display:flex;
+flex-direction:column;
+gap:16px;
+max-width:520px;
+margin:0 auto;
+}
+
+body.painel-aurora .pa-vidro{
+background:var(--pa-vidro);
+border:1px solid var(--pa-borda);
+border-radius:24px;
+padding:18px;
+-webkit-backdrop-filter:blur(20px) saturate(140%);
+backdrop-filter:blur(20px) saturate(140%);
+}
+
+body.painel-aurora .pa-vidro--forte{
+background:var(--pa-vidro-forte);
+-webkit-backdrop-filter:blur(28px) saturate(150%);
+backdrop-filter:blur(28px) saturate(150%);
+}
+
+body.painel-aurora .pa-eyebrow{
+font-size:12px;
+font-weight:600;
+letter-spacing:.14em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.painel-aurora .pa-titulo{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:18px;
+font-weight:700;
+letter-spacing:-.01em;
+}
+
+body.painel-aurora .pa-nota{
+margin-top:6px;
+font-size:13px;
+line-height:1.45;
+color:var(--pa-muted);
+}
+
+body.painel-aurora .pa-carregando{
+font-size:14px;
+color:var(--pa-muted);
+}
+
+/* Scanner */
+body.painel-aurora .pa-hero{
+position:relative;
+overflow:hidden;
+}
+
+body.painel-aurora .pa-hero::before{
+content:"";
+position:absolute;
+top:-70px;
+right:-60px;
+width:220px;
+height:220px;
+border-radius:50%;
+background:var(--pa-primary);
+opacity:.14;
+filter:blur(48px);
+pointer-events:none;
+}
+
+body.painel-aurora .pa-hero > *{
+position:relative;
+}
+
+body.painel-aurora .pa-hero-topo{
+display:flex;
+justify-content:space-between;
+align-items:flex-start;
+gap:16px;
+}
+
+body.painel-aurora .pa-status{
+display:inline-flex;
+align-items:center;
+gap:10px;
+margin-top:8px;
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:28px;
+font-weight:700;
+letter-spacing:-.02em;
+line-height:1.1;
+}
+
+body.painel-aurora .pa-ponto{
+display:inline-block;
+width:12px;
+height:12px;
+border-radius:50%;
+background:var(--pa-muted);
+}
+
+body.painel-aurora .pa-status--on{
+color:var(--pa-ganho);
+}
+
+body.painel-aurora .pa-status--on .pa-ponto{
+background:var(--pa-ganho);
+box-shadow:0 0 12px var(--pa-ganho);
+}
+
+body.painel-aurora .pa-status--off{
+color:var(--pa-perda);
+}
+
+body.painel-aurora .pa-status--off .pa-ponto{
+background:var(--pa-perda);
+}
+
+body.painel-aurora .pa-status--carregando{
+color:var(--pa-muted);
+font-size:22px;
+}
+
+body.painel-aurora .pa-status{
+white-space:nowrap;
+}
+
+body.painel-aurora .pa-modo{
+text-align:right;
+flex-shrink:0;
+white-space:nowrap;
+}
+
+body.painel-aurora .pa-modo-valor{
+margin-top:8px;
+font-size:16px;
+font-weight:700;
+}
+
+body.painel-aurora .pa-perfil::before{
+content:"";
+display:inline-block;
+width:9px;
+height:9px;
+margin-right:7px;
+border-radius:50%;
+background:var(--pa-muted);
+}
+
+body.painel-aurora .pa-perfil--agressivo::before{background:var(--pa-ganho);}
+body.painel-aurora .pa-perfil--balanceado::before{background:var(--pa-primary);}
+body.painel-aurora .pa-perfil--conservador::before{background:var(--pa-espera);}
+
+body.painel-aurora .pa-acoes{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:18px;
+}
+
+body.painel-aurora .pa-btn{
+margin-top:0;
+min-height:48px;
+padding:12px 8px;
+border-radius:14px;
+font-size:14px;
+font-weight:700;
+white-space:nowrap;
+border:1px solid transparent;
+}
+
+body.painel-aurora .pa-btn.start-btn{
+background:var(--pa-ganho-suave);
+color:var(--pa-ganho);
+border-color:rgba(94,248,183,.4);
+}
+
+body.painel-aurora .pa-btn.stop-btn{
+background:var(--pa-perda-suave);
+color:var(--pa-perda);
+border-color:rgba(255,152,145,.4);
+}
+
+body.painel-aurora .pa-btn:focus-visible,
+body.painel-aurora .pa-btn-sec:focus-visible,
+body.painel-aurora .pa-data input:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:2px;
+}
+
+body.painel-aurora .pa-linha{
+display:flex;
+justify-content:space-between;
+align-items:baseline;
+margin-top:16px;
+padding-top:14px;
+border-top:1px solid var(--pa-fio);
+font-size:14px;
+color:var(--pa-muted);
+}
+
+body.painel-aurora .pa-linha b{
+font-size:18px;
+color:var(--pa-fg);
+}
+
+#desempenhoCard{
+display:flex;
+flex-direction:column;
+gap:16px;
+}
+
+body.painel-aurora .pa-sr{
+position:absolute;
+width:1px;
+height:1px;
+overflow:hidden;
+clip:rect(0 0 0 0);
+white-space:nowrap;
+}
+
+/* Contas */
+body.painel-aurora .pa-conta-valor{
+margin-top:6px;
+font-size:28px;
+font-weight:700;
+white-space:nowrap;
+}
+
+body.painel-aurora .pa-btn-sec{
+width:100%;
+min-height:44px;
+margin-top:12px;
+padding:10px;
+border-radius:14px;
+border:1px solid var(--pa-borda);
+background:var(--pa-vidro);
+color:var(--pa-fg);
+font-size:14px;
+font-weight:600;
+cursor:pointer;
+}
+
+/* Desempenho do dia */
+body.painel-aurora .pa-dia-topo{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:12px;
+}
+
+body.painel-aurora .pa-data input{
+background:rgba(255,255,255,.08);
+border:1px solid var(--pa-borda);
+border-radius:12px;
+padding:8px 10px;
+color:var(--pa-fg);
+font-size:14px;
+color-scheme:dark;
+min-height:40px;
+}
+
+body.painel-aurora .pa-dia-corpo{
+display:grid;
+grid-template-columns:auto minmax(0,1fr);
+align-items:center;
+gap:18px;
+margin-top:16px;
+}
+
+body.painel-aurora .pa-anel{
+position:relative;
+width:104px;
+height:104px;
+}
+
+body.painel-aurora .pa-anel svg{
+display:block;
+width:104px;
+height:104px;
+transform:rotate(-90deg);
+}
+
+body.painel-aurora .pa-anel circle{
+fill:none;
+stroke-width:9;
+}
+
+body.painel-aurora .pa-anel-trilho{
+stroke:rgba(255,255,255,.12);
+}
+
+body.painel-aurora .pa-anel-valor{
+stroke:var(--pa-primary);
+stroke-linecap:round;
+filter:drop-shadow(0 0 6px rgba(58,224,232,.45));
+transition:stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1);
+}
+
+body.painel-aurora .pa-anel-txt{
+position:absolute;
+inset:0;
+display:grid;
+place-content:center;
+text-align:center;
+}
+
+body.painel-aurora .pa-anel-txt b{
+font-size:24px;
+line-height:1;
+}
+
+body.painel-aurora .pa-anel-txt small{
+margin-top:4px;
+font-size:12px;
+letter-spacing:.08em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.painel-aurora .pa-amostra{
+font-size:15px;
+font-weight:600;
+}
+
+body.painel-aurora .pa-chips{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:10px;
+}
+
+body.painel-aurora .pa-chip{
+display:inline-flex;
+align-items:center;
+gap:6px;
+padding:5px 11px;
+border-radius:99px;
+font-size:13px;
+font-weight:700;
+letter-spacing:.04em;
+}
+
+body.painel-aurora .pa-chip--ganho{
+background:var(--pa-ganho-suave);
+color:var(--pa-ganho);
+}
+
+body.painel-aurora .pa-chip--perda{
+background:var(--pa-perda-suave);
+color:var(--pa-perda);
+}
+
+body.painel-aurora .pa-resultado{
+display:flex;
+justify-content:space-between;
+align-items:baseline;
+gap:12px;
+margin-top:16px;
+padding-top:14px;
+border-top:1px solid var(--pa-fio);
+}
+
+body.painel-aurora .pa-resultado b{
+font-size:20px;
+white-space:nowrap;
+}
+
+body.painel-aurora .pa-res--ganho{color:var(--pa-ganho);}
+body.painel-aurora .pa-res--perda{color:var(--pa-perda);}
+body.painel-aurora .pa-res--neutro{color:var(--pa-muted);}
+
+body.painel-aurora .pa-seta{
+margin-right:4px;
+font-size:.65em;
+vertical-align:.12em;
+}
+
+/* Desde sempre */
+body.painel-aurora .pa-sempre{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px;
+margin-top:12px;
+}
+
+body.painel-aurora .pa-sempre dt{
+font-size:12px;
+font-weight:600;
+letter-spacing:.12em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.painel-aurora .pa-sempre dd{
+margin:4px 0 0;
+font-size:20px;
+font-weight:700;
+}
+
+body.painel-aurora .pa-erro{
+font-size:14px;
+line-height:1.45;
+color:var(--pa-perda);
+}
+
+body.painel-aurora .pa-rodape{
+padding:0 4px;
+font-size:12px;
+color:var(--pa-muted);
+}
+
+@media (prefers-reduced-motion:reduce){
+body.painel-aurora .pa-anel-valor{transition:none;}
+}
