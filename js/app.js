@@ -140,6 +140,10 @@ ${[
         // passar a rotacionar entre todos os pares (ver
         // PENDENCIAS-ESTRATEGICAS-RMI.md, seção 6).
 
+        if (typeof renderPainel === "function") {
+            renderPainel();
+        }
+
         if (typeof renderModoAtual === "function") {
             renderModoAtual();
         }

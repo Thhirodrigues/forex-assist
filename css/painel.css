@@ -1,0 +1,514 @@
+/* ===================================================
+   PAINEL - componentes do projeto Aurora Glass
+   ---------------------------------------------------
+   Valores MEDIDOS no projeto (Lovable) rodando lado a lado:
+   raios, paddings, tamanhos e transições. Depende dos tokens
+   de css/styles.css (body.tema-aurora). js/painel.js monta o HTML.
+   =================================================== */
+
+body.tema-aurora .pa-num-sans{
+font-variant-numeric:tabular-nums;
+font-feature-settings:"tnum" 1;
+}
+
+body.tema-aurora .pn-min0{min-width:0;}
+
+@keyframes pn-surgir{
+from{opacity:0;transform:translateY(10px);}
+to{opacity:1;transform:none;}
+}
+
+body.tema-aurora .pn-surgir{
+animation:pn-surgir .55s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- cartão de sinal ---------- */
+body.tema-aurora .pn-hero{
+position:relative;
+overflow:hidden;
+}
+
+body.tema-aurora .pn-glow{
+position:absolute;
+top:-80px;
+right:-64px;
+width:224px;
+height:224px;
+border-radius:50%;
+background:var(--pn-cor);
+opacity:.16;
+filter:blur(64px);
+pointer-events:none;
+}
+
+body.tema-aurora .pn-hero-grade{
+position:relative;
+display:grid;
+grid-template-columns:minmax(0,1fr) auto;
+align-items:start;
+gap:16px;
+}
+
+body.tema-aurora .pn-par{
+margin-top:6px;
+font-size:30px;
+font-weight:700;
+line-height:1;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+}
+
+body.tema-aurora .pn-badge{
+display:inline-flex;
+align-items:center;
+gap:6px;
+padding:6px 12px;
+border-radius:9999px;
+font-size:13px;
+font-weight:600;
+line-height:1.5;
+letter-spacing:.1em;
+text-transform:uppercase;
+color:var(--pn-cor);
+background:var(--pn-fundo);
+box-shadow:inset 0 0 0 1px var(--pn-fundo);
+}
+
+body.tema-aurora .pn-badge--sm{
+padding:4px 10px;
+font-size:12px;
+}
+
+body.tema-aurora .pn-hero-base{
+position:relative;
+margin-top:20px;
+padding-top:16px;
+border-top:1px solid var(--pa-fio);
+}
+
+body.tema-aurora .pn-niveis{
+display:grid;
+grid-template-columns:repeat(3,minmax(0,1fr));
+gap:16px 12px;
+margin:0;
+}
+
+body.tema-aurora .pn-niveis dt{
+font-size:12px;
+font-weight:600;
+letter-spacing:.12em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pn-niveis dd{
+margin:4px 0 0;
+font-size:17px;
+font-weight:600;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+}
+
+body.tema-aurora .pn-atualizado{
+margin-top:16px;
+font-size:13px;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pn-texto{
+font-size:14px;
+line-height:1.625;
+color:var(--pa-muted);
+}
+
+/* ---------- anel ---------- */
+body.tema-aurora .pn-anel{
+position:relative;
+flex-shrink:0;
+}
+
+body.tema-aurora .pn-anel-brilho{
+position:absolute;
+inset:4px;
+border-radius:50%;
+background:var(--pn-cor);
+opacity:.22;
+filter:blur(24px);
+}
+
+body.tema-aurora .pn-anel svg{
+position:relative;
+display:block;
+transform:rotate(-90deg);
+}
+
+body.tema-aurora .pn-anel-valor{
+transition:stroke-dashoffset 1.1s cubic-bezier(.22,1,.36,1);
+}
+
+body.tema-aurora .pn-anel-txt{
+position:absolute;
+inset:0;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+}
+
+body.tema-aurora .pn-anel-txt .pa-num{
+font-weight:600;
+line-height:1;
+}
+
+body.tema-aurora .pn-anel-leg{
+margin-top:4px;
+font-size:10px;
+font-weight:600;
+letter-spacing:.16em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+/* ---------- saldo e resultado do dia ---------- */
+body.tema-aurora .pn-stats{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:12px;
+}
+
+body.tema-aurora .pn-stat{
+border-radius:28px;
+padding:16px;
+}
+
+body.tema-aurora .pn-stat-valor{
+margin-top:6px;
+font-size:18px;
+font-weight:700;
+line-height:1.25;
+white-space:nowrap;
+}
+
+body.tema-aurora .pn-stat-sub{
+margin-top:2px;
+font-size:13px;
+color:var(--pa-muted);
+}
+
+/* ---------- curva de saldo ---------- */
+body.tema-aurora .pn-curva{
+border-radius:24px;
+padding:16px;
+}
+
+body.tema-aurora .pn-curva-valor{
+margin-top:4px;
+font-size:17px;
+font-weight:600;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+}
+
+body.tema-aurora .pn-curva-pct{
+font-size:14px;
+font-weight:400;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pn-spark{
+display:block;
+width:100%;
+overflow:visible;
+}
+
+body.tema-aurora .pn-spark-area{
+opacity:0;
+transition:opacity .8s ease;
+}
+
+body.tema-aurora .pn-spark-linha{
+transition:stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1);
+}
+
+body.tema-aurora .pn-spark-ponto{
+opacity:0;
+transition:opacity .5s ease .7s;
+}
+
+body.tema-aurora .pn-spark--desenhado .pn-spark-area{opacity:1;}
+body.tema-aurora .pn-spark--desenhado .pn-spark-linha{stroke-dashoffset:0;}
+body.tema-aurora .pn-spark--desenhado .pn-spark-ponto{opacity:1;}
+
+body.tema-aurora .pn-chips{
+display:flex;
+align-items:center;
+gap:4px;
+margin-top:12px;
+padding:4px;
+border-radius:9999px;
+background:var(--pa-vidro);
+border:1px solid var(--pa-borda);
+-webkit-backdrop-filter:blur(20px) saturate(140%);
+backdrop-filter:blur(20px) saturate(140%);
+}
+
+body.tema-aurora .pn-chip{
+flex:1;
+padding:6px 8px;
+border:0;
+border-radius:9999px;
+background:none;
+color:var(--pa-muted);
+font-family:inherit;
+font-size:13px;
+font-weight:600;
+cursor:pointer;
+transition:color .2s;
+}
+
+body.tema-aurora .pn-chip:hover{color:var(--pa-fg);}
+
+body.tema-aurora .pn-chip--ativo{
+background:var(--pa-primary);
+color:var(--pa-primary-fg);
+}
+
+body.tema-aurora .pn-chip:focus-visible,
+body.tema-aurora .pn-ver:focus-visible,
+body.tema-aurora .pn-linha:focus-visible,
+body.tema-aurora .pn-folha-fechar:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:2px;
+}
+
+/* ---------- operações recentes ---------- */
+body.tema-aurora .pn-recentes-topo{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:12px;
+margin-bottom:8px;
+padding:0 4px;
+}
+
+body.tema-aurora .pn-h2{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:16px;
+font-weight:700;
+letter-spacing:-.02em;
+}
+
+body.tema-aurora .pn-ver{
+display:inline-flex;
+align-items:center;
+gap:4px;
+flex-shrink:0;
+padding:0;
+border:0;
+background:none;
+color:var(--pa-primary);
+font-family:inherit;
+font-size:13px;
+font-weight:600;
+cursor:pointer;
+}
+
+body.tema-aurora .pn-lista{
+display:flex;
+flex-direction:column;
+gap:8px;
+margin:0;
+padding:0;
+list-style:none;
+}
+
+body.tema-aurora .pn-linha{
+display:grid;
+grid-template-columns:auto minmax(0,1fr) auto;
+align-items:center;
+gap:12px;
+width:100%;
+padding:14px;
+border-radius:28px;
+color:inherit;
+font-family:inherit;
+text-align:left;
+cursor:pointer;
+transition:background-color .2s;
+}
+
+body.tema-aurora .pn-linha:hover{background:var(--pa-vidro-forte);}
+
+body.tema-aurora .pn-tile{
+display:grid;
+place-items:center;
+width:36px;
+height:36px;
+border-radius:24px;
+background:var(--pn-fundo);
+color:var(--pn-cor);
+}
+
+body.tema-aurora .pn-linha-par,
+body.tema-aurora .pn-linha-meta{
+display:block;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+}
+
+body.tema-aurora .pn-linha-par{font-size:15px;font-weight:600;}
+body.tema-aurora .pn-linha-meta{font-size:13px;color:var(--pa-muted);}
+
+body.tema-aurora .pn-linha-res{text-align:right;}
+
+body.tema-aurora .pn-linha-pips{display:block;font-size:15px;font-weight:600;}
+body.tema-aurora .pn-linha-usd{display:block;font-size:13px;color:var(--pa-muted);}
+body.tema-aurora .pn-linha-usd.pa-res--ganho{color:var(--pa-ganho);}
+body.tema-aurora .pn-linha-usd.pa-res--perda{color:var(--pa-perda);}
+body.tema-aurora .pn-linha-usd.pa-res--neutro{color:var(--pa-muted);}
+
+body.tema-aurora .pn-vazio{
+font-size:14px;
+line-height:1.5;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pa-vidro.pn-vazio{padding:16px;}
+
+body.tema-aurora .pn-curva .pn-vazio{margin-top:8px;}
+
+/* ---------- detalhe (folha inferior) ---------- */
+@keyframes pn-sobe{
+from{transform:translateY(100%);}
+to{transform:none;}
+}
+
+@keyframes pn-fade{
+from{opacity:0;}
+to{opacity:1;}
+}
+
+body.tema-aurora .pn-folha-fundo{
+position:fixed;
+inset:0;
+z-index:100;
+display:flex;
+align-items:flex-end;
+justify-content:center;
+background:rgba(0,0,0,.8);
+animation:pn-fade .2s ease-out both;
+}
+
+body.tema-aurora .pn-folha{
+position:relative;
+width:100%;
+max-width:430px;
+max-height:92vh;
+overflow-y:auto;
+padding:24px 24px calc(24px + env(safe-area-inset-bottom,0px));
+border:1px solid var(--pa-borda);
+border-bottom:0;
+border-radius:2rem 2rem 0 0;
+background:oklch(0.22 0.045 272 / 95%);
+-webkit-backdrop-filter:blur(40px);
+backdrop-filter:blur(40px);
+color:var(--pa-fg);
+animation:pn-sobe .35s cubic-bezier(.22,1,.36,1) both;
+}
+
+body.tema-aurora .pn-folha-fechar{
+position:absolute;
+top:16px;
+right:16px;
+display:grid;
+place-items:center;
+width:36px;
+height:36px;
+border:0;
+border-radius:50%;
+background:var(--pa-vidro);
+color:var(--pa-muted);
+cursor:pointer;
+}
+
+body.tema-aurora .pn-folha-tit{
+padding-right:44px;
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:22px;
+font-weight:700;
+letter-spacing:-.02em;
+}
+
+body.tema-aurora .pn-folha-desc{
+margin-top:4px;
+font-size:14px;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pn-folha-res{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:16px;
+margin-top:20px;
+padding:0 4px;
+}
+
+body.tema-aurora .pn-folha-pips{
+font-size:30px;
+font-weight:700;
+line-height:1.25;
+}
+
+body.tema-aurora .pn-folha-usd{
+font-size:15px;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pn-folha-grade{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:16px;
+margin:24px 0 0;
+border-radius:28px;
+}
+
+body.tema-aurora .pn-folha-grade dt{
+font-size:12px;
+font-weight:600;
+letter-spacing:.12em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pn-folha-grade dd{
+margin:4px 0 0;
+font-size:16px;
+font-weight:600;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+}
+
+body.tema-aurora .pn-folha-rodape{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:12px;
+margin-top:16px;
+padding:0 4px 8px;
+}
+
+@media (prefers-reduced-motion:reduce){
+body.tema-aurora .pn-surgir,
+body.tema-aurora .pn-folha,
+body.tema-aurora .pn-folha-fundo{animation:none;}
+body.tema-aurora .pn-anel-valor,
+body.tema-aurora .pn-spark-area,
+body.tema-aurora .pn-spark-linha,
+body.tema-aurora .pn-spark-ponto{transition:none;}
+}

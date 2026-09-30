@@ -8,48 +8,7 @@
 // dia) e os handlers de clique também migraram pra cá, únicos lugares
 // que os usavam. js/scanner.js foi apagado (nada mais o referenciava
 // fora do próprio arquivo, conferido antes de remover).
-function dashboardView() {
-
-    // Direção visual "Aurora Glass" (css/styles.css, bloco PAINEL).
-    // Os id abaixo são lidos por js/expert.js e js/desempenho.js -
-    // não renomear sem ajustar os dois (debugFirebase, por exemplo,
-    // é escrito sem checar se existe).
-    return `
-    <div class="painel">
-
-        <section class="pa-vidro pa-vidro--forte pa-hero" aria-label="Scanner">
-            <div class="pa-hero-topo">
-                <div>
-                    <p class="pa-eyebrow">Modo atual</p>
-                    <div id="modoAtual" class="pa-modo-valor">Carregando…</div>
-                </div>
-            </div>
-
-            <div class="pa-acoes">
-                <button class="button start-btn pa-btn" id="startScanner">
-                    Iniciar scanner
-                </button>
-
-                <button class="button stop-btn pa-btn" id="stopScanner">
-                    Parar scanner
-                </button>
-            </div>
-
-            <div class="pa-linha">
-                <span>Cooldowns hoje</span>
-                <b id="cooldownsHoje" class="pa-num">0</b>
-            </div>
-        </section>
-
-        <div id="desempenhoCard">
-            <p class="pa-carregando">Carregando…</p>
-        </div>
-
-        <p class="pa-rodape">Firebase: <span id="debugFirebase">Iniciando...</span></p>
-
-    </div>
-    `;
-}
+// dashboardView() (montagem da tela do Painel) fica em js/painel.js.
 
 // ===================================================
 // MODO ATUAL (perfil operacional real, lido de configuracoes/geral)
