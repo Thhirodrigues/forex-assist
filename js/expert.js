@@ -20,13 +20,6 @@ function dashboardView() {
         <section class="pa-vidro pa-vidro--forte pa-hero" aria-label="Scanner">
             <div class="pa-hero-topo">
                 <div>
-                    <p class="pa-eyebrow">Scanner</p>
-                    <div id="scannerStatus" class="pa-status pa-status--carregando" role="status" aria-live="polite">
-                        <i class="pa-ponto" aria-hidden="true"></i><span>Carregando…</span>
-                    </div>
-                </div>
-
-                <div class="pa-modo">
                     <p class="pa-eyebrow">Modo atual</p>
                     <div id="modoAtual" class="pa-modo-valor">Carregando…</div>
                 </div>
@@ -164,7 +157,7 @@ async function atualizarStatusScanner() {
 
         status.innerHTML =
             '<i class="pa-ponto" aria-hidden="true"></i><span>' +
-            (dados.ativo ? "Online" : "Parado") +
+            (dados.ativo ? "Scanner online" : "Scanner parado") +
             "</span>";
 
         // AJUSTE-014: estado dos botões Iniciar/Parar (migrado de

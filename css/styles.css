@@ -246,23 +246,28 @@ opacity:0.8;
    =================================================== */
 
 body.tema-aurora{
---pa-fim:#01030b;
---pa-fg:#f9fafd;
---pa-muted:#bcc4d5;
---pa-primary:#3ae0e8;
---pa-ganho:#5ef8b7;
---pa-ganho-suave:rgba(94,248,183,.18);
---pa-perda:#ff9891;
---pa-perda-suave:rgba(255,152,145,.18);
---pa-espera:#f4d576;
---pa-vidro:rgba(255,255,255,.09);
---pa-vidro-forte:rgba(255,255,255,.15);
---pa-borda:rgba(255,255,255,.20);
---pa-fio:rgba(255,255,255,.12);
-background:var(--pa-fim);
+/* valores copiados de src/styles.css do projeto Aurora Glass (Lovable) */
+--pa-fim:oklch(0.1 0.025 265);
+--pa-fg:oklch(0.985 0.004 265);
+--pa-muted:oklch(0.82 0.025 265);
+--pa-primary:oklch(0.83 0.13 200);
+--pa-primary-fg:oklch(0.16 0.04 268);
+--pa-card:oklch(0.22 0.045 272);
+--pa-ganho:oklch(0.88 0.16 162);
+--pa-ganho-suave:oklch(0.88 0.16 162 / 18%);
+--pa-perda:oklch(0.8 0.14 24);
+--pa-perda-suave:oklch(0.8 0.14 24 / 18%);
+--pa-espera:oklch(0.88 0.12 92);
+--pa-vidro:oklch(1 0 0 / 9%);
+--pa-vidro-forte:oklch(1 0 0 / 15%);
+--pa-borda:oklch(1 0 0 / 20%);
+--pa-fio:oklch(1 0 0 / 12%);
+background:oklch(0.1 0.02 262);
 color:var(--pa-fg);
-font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-padding-bottom:calc(110px + env(safe-area-inset-bottom, 0px));
+font-family:"Inter",ui-sans-serif,system-ui,sans-serif;
+font-feature-settings:"tnum" 1,"cv05" 1;
+letter-spacing:-0.006em;
+padding-bottom:calc(112px + env(safe-area-inset-bottom, 0px));
 }
 
 /* o reset global força Arial em tudo; aqui a família volta a ser herdada */
@@ -285,16 +290,33 @@ inset:0;
 z-index:-1;
 pointer-events:none;
 background:
-radial-gradient(115% 70% at 8% -4%, rgba(116,83,229,.66) 0%, transparent 60%),
-radial-gradient(95% 60% at 100% 6%, rgba(0,198,205,.50) 0%, transparent 58%),
-radial-gradient(80% 50% at 50% 104%, rgba(145,99,213,.26) 0%, transparent 62%),
-linear-gradient(180deg,#0b0f27 0%,#030615 55%,#01030b 100%);
+radial-gradient(115% 70% at 8% -4%, oklch(0.56 0.21 288 / 52%) 0%, transparent 60%),
+radial-gradient(95% 60% at 100% 6%, oklch(0.74 0.15 198 / 38%) 0%, transparent 58%),
+radial-gradient(80% 50% at 50% 104%, oklch(0.6 0.17 300 / 26%) 0%, transparent 62%),
+linear-gradient(180deg, oklch(0.18 0.05 274) 0%, oklch(0.13 0.035 268) 55%, oklch(0.1 0.025 265) 100%);
 }
 
 /* cabeçalho e barra inferior compartilhados, com a pele da Aurora */
 body.tema-aurora .header{
-padding:28px 20px 6px;
+padding:28px 20px 0;
 border-bottom:0;
+}
+
+body.tema-aurora .header-linha{
+display:grid;
+grid-template-columns:minmax(0,1fr) auto;
+align-items:center;
+gap:12px;
+}
+
+body.tema-aurora .header-texto{
+min-width:0;
+}
+
+body.tema-aurora .tagline{
+margin-top:4px;
+font-size:14px;
+color:var(--pa-muted);
 }
 
 body.tema-aurora .logo{
@@ -311,67 +333,111 @@ font-size:22px;
 font-weight:700;
 letter-spacing:-.02em;
 color:var(--pa-fg);
-background:linear-gradient(90deg,#f9fafd 0%,#9ff3f6 55%,#b79bff 100%);
--webkit-background-clip:text;
-background-clip:text;
--webkit-text-fill-color:transparent;
-margin-top:2px;
+margin-top:4px;
+line-height:1.25;
 }
 
 body.tema-aurora .container{
-padding:14px 20px 0;
+padding:20px 20px 0;
 }
 
 body.tema-aurora .bottom-nav{
-height:calc(70px + env(safe-area-inset-bottom, 0px));
-padding-bottom:env(safe-area-inset-bottom, 0px);
-background:rgba(9,13,34,.72);
--webkit-backdrop-filter:blur(14px);
-backdrop-filter:blur(14px);
-border-top:1px solid var(--pa-fio);
+position:fixed;
+left:0;
+right:0;
+bottom:0;
+z-index:30;
+height:auto;
+display:block;
+padding:0 16px calc(16px + env(safe-area-inset-bottom, 0px));
+background:none;
+border:0;
+-webkit-backdrop-filter:none;
+backdrop-filter:none;
+}
+
+/* degradê que apaga o conteúdo atrás da barra (igual ao projeto) */
+body.tema-aurora .bottom-nav::before{
+content:"";
+position:absolute;
+left:0;
+right:0;
+top:-40px;
+bottom:0;
+z-index:-1;
+pointer-events:none;
+background:linear-gradient(to top,oklch(0.14 0.035 268) 0%,oklch(0.14 0.035 268 / 90%) 50%,transparent 100%);
+}
+
+body.tema-aurora .bn-lista{
+position:relative;
+max-width:430px;
+margin:0 auto;
+display:grid;
+grid-template-columns:repeat(5,minmax(0,1fr));
+gap:4px;
+padding:6px;
+border-radius:1.6rem;
+background:oklch(0.22 0.045 272 / 80%);
+border:1px solid var(--pa-borda);
+-webkit-backdrop-filter:blur(28px) saturate(150%);
+backdrop-filter:blur(28px) saturate(150%);
 }
 
 body.tema-aurora .nav-btn{
-flex:1;
 min-width:0;
 display:flex;
 flex-direction:column;
 align-items:center;
-justify-content:center;
-gap:3px;
-padding:8px 2px;
+gap:4px;
+padding:8px 4px;
+border:0;
+border-radius:24px;
 background:none;
-border:none;
 color:var(--pa-muted);
 font-size:12px;
 font-weight:600;
+letter-spacing:-0.025em;
+cursor:pointer;
+transition:color .2s;
+}
+
+body.tema-aurora .nav-btn span{
+width:100%;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+text-align:center;
 }
 
 body.tema-aurora .nav-btn svg{
 width:22px;
 height:22px;
+flex:none;
 fill:none;
 stroke:currentColor;
-stroke-width:1.8;
+stroke-width:1.9;
 stroke-linecap:round;
 stroke-linejoin:round;
 }
 
-body.tema-aurora .nav-btn:focus-visible{
-outline:2px solid var(--pa-primary);
-outline-offset:-3px;
-border-radius:12px;
-}
+body.tema-aurora .nav-btn:hover{color:var(--pa-fg);}
 
 body.tema-aurora .nav-active{
 color:var(--pa-primary);
+font-weight:700;
+}
+
+body.tema-aurora .nav-btn:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:-2px;
 }
 
 /* estrutura do Painel */
 .painel{
 display:flex;
 flex-direction:column;
-gap:16px;
+gap:20px;
 max-width:520px;
 margin:0 auto;
 }
@@ -380,12 +446,14 @@ body.tema-aurora .pa-vidro{
 background:var(--pa-vidro);
 border:1px solid var(--pa-borda);
 border-radius:24px;
-padding:18px;
+padding:16px;
 -webkit-backdrop-filter:blur(20px) saturate(140%);
 backdrop-filter:blur(20px) saturate(140%);
 }
 
 body.tema-aurora .pa-vidro--forte{
+border-radius:28px;
+padding:20px;
 background:var(--pa-vidro-forte);
 -webkit-backdrop-filter:blur(28px) saturate(150%);
 backdrop-filter:blur(28px) saturate(150%);
@@ -469,34 +537,15 @@ border-radius:50%;
 background:var(--pa-muted);
 }
 
-body.tema-aurora .pa-status--on{
-color:var(--pa-ganho);
-}
-
 body.tema-aurora .pa-status--on .pa-ponto{
 background:var(--pa-ganho);
-box-shadow:0 0 12px var(--pa-ganho);
-}
-
-body.tema-aurora .pa-status--off{
-color:var(--pa-perda);
 }
 
 body.tema-aurora .pa-status--off .pa-ponto{
 background:var(--pa-perda);
 }
 
-body.tema-aurora .pa-status--carregando{
-color:var(--pa-muted);
-font-size:22px;
-}
-
-body.tema-aurora .pa-status{
-white-space:nowrap;
-}
-
 body.tema-aurora .pa-modo{
-text-align:right;
 flex-shrink:0;
 white-space:nowrap;
 }
@@ -542,13 +591,13 @@ border:1px solid transparent;
 body.tema-aurora .pa-btn.start-btn{
 background:var(--pa-ganho-suave);
 color:var(--pa-ganho);
-border-color:rgba(94,248,183,.4);
+border-color:oklch(0.88 0.16 162 / 40%);
 }
 
 body.tema-aurora .pa-btn.stop-btn{
 background:var(--pa-perda-suave);
 color:var(--pa-perda);
-border-color:rgba(255,152,145,.4);
+border-color:oklch(0.8 0.14 24 / 40%);
 }
 
 body.tema-aurora .pa-btn:focus-visible,
@@ -577,7 +626,7 @@ color:var(--pa-fg);
 #desempenhoCard{
 display:flex;
 flex-direction:column;
-gap:16px;
+gap:20px;
 }
 
 body.tema-aurora .pa-sr{
@@ -663,7 +712,7 @@ stroke:rgba(255,255,255,.12);
 body.tema-aurora .pa-anel-valor{
 stroke:var(--pa-primary);
 stroke-linecap:round;
-filter:drop-shadow(0 0 6px rgba(58,224,232,.45));
+filter:drop-shadow(0 0 6px oklch(0.83 0.13 200 / 45%));
 transition:stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1);
 }
 
@@ -796,8 +845,8 @@ body.tema-aurora .card{
 background:var(--pa-vidro);
 border:1px solid var(--pa-borda);
 border-radius:24px;
-padding:18px;
-margin-bottom:16px;
+padding:20px;
+margin-bottom:20px;
 box-shadow:none;
 -webkit-backdrop-filter:blur(20px) saturate(140%);
 backdrop-filter:blur(20px) saturate(140%);
@@ -951,12 +1000,12 @@ overflow-x:auto;
    âmbar = atenção, ciano e violeta = informação/seções.
    --------------------------------------------------- */
 body.tema-aurora{
---ic-ciano:#3ae0e8;
---ic-violeta:#b79bff;
---ic-menta:#5ef8b7;
---ic-coral:#ff9891;
---ic-ambar:#f4d576;
---ic-neutro:#bcc4d5;
+--ic-ciano:var(--pa-primary);
+--ic-violeta:oklch(0.78 0.13 292);
+--ic-menta:var(--pa-ganho);
+--ic-coral:var(--pa-perda);
+--ic-ambar:var(--pa-espera);
+--ic-neutro:var(--pa-muted);
 }
 
 body.tema-aurora .ic{
@@ -991,45 +1040,16 @@ vertical-align:middle;
 stroke-width:1.7;
 }
 
-body.tema-aurora .ic--chip.ic--ciano{background:rgba(58,224,232,.16);}
-body.tema-aurora .ic--chip.ic--violeta{background:rgba(183,155,255,.18);}
-body.tema-aurora .ic--chip.ic--menta{background:rgba(94,248,183,.16);}
-body.tema-aurora .ic--chip.ic--coral{background:rgba(255,152,145,.16);}
-body.tema-aurora .ic--chip.ic--ambar{background:rgba(244,213,118,.16);}
-body.tema-aurora .ic--chip.ic--neutro{background:rgba(255,255,255,.10);}
+body.tema-aurora .ic--chip.ic--ciano{background:oklch(0.83 0.13 200 / 16%);}
+body.tema-aurora .ic--chip.ic--violeta{background:oklch(0.78 0.13 292 / 18%);}
+body.tema-aurora .ic--chip.ic--menta{background:oklch(0.88 0.16 162 / 16%);}
+body.tema-aurora .ic--chip.ic--coral{background:oklch(0.8 0.14 24 / 16%);}
+body.tema-aurora .ic--chip.ic--ambar{background:oklch(0.88 0.12 92 / 16%);}
+body.tema-aurora .ic--chip.ic--neutro{background:oklch(1 0 0 / 10%);}
 
 /* dentro de botões o ícone acompanha a cor do texto */
 body.tema-aurora button .ic{
 color:currentColor;
-}
-
-/* ---------------------------------------------------
-   COR NAS SEÇÕES
-   --------------------------------------------------- */
-body.tema-aurora .card{
-background:linear-gradient(158deg,rgba(150,110,255,.16) 0%,rgba(255,255,255,.05) 58%);
-box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
-}
-
-body.tema-aurora .card .card:nth-of-type(3n+1){
-background:linear-gradient(158deg,rgba(150,110,255,.15) 0%,rgba(255,255,255,.05) 60%);
-}
-
-body.tema-aurora .card .card:nth-of-type(3n+2){
-background:linear-gradient(158deg,rgba(58,224,232,.14) 0%,rgba(255,255,255,.05) 60%);
-}
-
-body.tema-aurora .card .card:nth-of-type(3n+3){
-background:linear-gradient(158deg,rgba(94,248,183,.13) 0%,rgba(255,255,255,.05) 60%);
-}
-
-/* botão principal (ex.: Salvar Configurações) */
-body.tema-aurora .button.start-btn:not(.pa-btn){
-background:linear-gradient(135deg,#5ef8b7 0%,#3ae0e8 100%);
-color:#04141a;
-border:0;
-font-weight:700;
-box-shadow:0 8px 24px -8px rgba(58,224,232,.55);
 }
 
 /* palavras de direção/estado coloridas em tabelas (js/icones.js) */
@@ -1037,3 +1057,74 @@ body.tema-aurora .pal{font-weight:700;}
 body.tema-aurora .pal--menta{color:var(--ic-menta);}
 body.tema-aurora .pal--coral{color:var(--ic-coral);}
 body.tema-aurora .pal--ambar{color:var(--ic-ambar);}
+
+
+/* borda luminosa: cópia da utilidade borda-luminosa do projeto Aurora Glass,
+   aplicada aos cartões principais e à barra inferior */
+body.tema-aurora .pa-vidro--forte,
+body.tema-aurora .card{
+position:relative;
+}
+
+body.tema-aurora .pa-vidro--forte::after,
+body.tema-aurora .card::after,
+body.tema-aurora .bn-lista::after{
+content:"";
+position:absolute;
+inset:0;
+border-radius:inherit;
+padding:1px;
+background:linear-gradient(150deg,oklch(1 0 0 / 34%) 0%,oklch(1 0 0 / 4%) 42%,oklch(1 0 0 / 18%) 100%);
+-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+-webkit-mask-composite:xor;
+mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+mask-composite:exclude;
+pointer-events:none;
+}
+
+/* status do scanner: pílula de vidro com ponto pulsante (ScannerStatus do projeto) */
+body.tema-aurora .pa-status{
+display:inline-flex;
+align-items:center;
+gap:8px;
+margin-top:0;
+padding:6px 12px;
+border-radius:9999px;
+background:var(--pa-vidro);
+border:1px solid var(--pa-borda);
+-webkit-backdrop-filter:blur(20px) saturate(140%);
+backdrop-filter:blur(20px) saturate(140%);
+font-family:inherit;
+font-size:13px;
+font-weight:500;
+letter-spacing:-0.006em;
+line-height:1.4;
+color:var(--pa-fg);
+white-space:nowrap;
+}
+
+body.tema-aurora .pa-status .pa-ponto{
+position:relative;
+width:6px;
+height:6px;
+margin:1px;
+box-shadow:none;
+}
+
+body.tema-aurora .pa-status .pa-ponto::after{
+content:"";
+position:absolute;
+inset:-1px;
+border-radius:50%;
+background:inherit;
+animation:pa-pulso 2.6s ease-in-out infinite;
+}
+
+@keyframes pa-pulso{
+0%,100%{opacity:.45;transform:scale(1);}
+50%{opacity:1;transform:scale(1.35);}
+}
+
+@media (prefers-reduced-motion:reduce){
+body.tema-aurora .pa-status .pa-ponto::after{animation:none;}
+}

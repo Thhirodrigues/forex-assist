@@ -321,7 +321,7 @@ function resultadosView() {
       <div id="resultadosLista">Carregando resultados...</div>
       <div id="resultadosComparacao" style="display:none;"></div>
     </div>
-    <div id="barraComparacaoResultados" style="display:none; position:fixed; left:12px; right:12px; bottom:64px; z-index:1000; background:#1b2246; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:10px 14px; align-items:center; justify-content:space-between; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,.4);">
+    <div id="barraComparacaoResultados" style="display:none; position:fixed; left:12px; right:12px; bottom:104px; z-index:1000; background:#1b2246; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:10px 14px; align-items:center; justify-content:space-between; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,.4);">
       <span id="barraComparacaoResultadosTexto" style="font-size:12px; color:#f9fafd;"></span>
       <div style="display:flex; gap:8px;">
         <button onclick="limparSelecaoComparacao()" style="padding:6px 10px; border:none; border-radius:8px; background:rgba(255,255,255,.08); color:#f9fafd; font-size:12px; cursor:pointer;">Limpar</button>

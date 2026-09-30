@@ -12747,3 +12747,63 @@ LIMITES
   - Flags 🇬🇧 🇺🇸 viraram o ícone de globo (violeta/ciano); o texto ao lado
     (Londres, Nova York) continua dizendo qual é.
 --------
+
+AJUSTE-050 (30/09/2026) - fidelidade ao projeto Aurora Glass: fundo, vidro,
+borda luminosa, barra inferior e cabeçalho IGUAIS ao protótipo aprovado
+(só frontend; congelamento do pipeline intacto).
+
+FEEDBACK do usuário sobre o AJUSTE-049: "as cores de fundo não correspondem
+ao original que foi feito. Quero exatamente igual o projeto; não faz sentido
+ter feito aquele projeto e mudar agora."
+
+O ERRO ERA MEU: nas rodadas 047-049 eu aproximei o protótipo em vez de copiá-lo
+(cores convertidas para hexadecimal, brilho de fundo aumentado, cartões com
+degradê de cor, subtítulo em degradê, barra inferior reta). Nada disso existia
+no projeto aprovado.
+
+COMO FOI CORRIGIDO (medido, não no olho): o projeto do Lovable
+(Thhirodrigues/forex-assist-visuals) foi renderizado localmente e comparado
+com o app real, lado a lado, em 390x844:
+  - Pixels do fundo em 13 pontos: diferença 22 antes; agora 0 em todos
+    (o topo estava mais claro por causa do brilho que eu aumentei).
+  - Propriedades computadas (cor, borda, raio, padding, blur) do cartão
+    principal e dos cartões de vidro: idênticas.
+
+O QUE MUDOU (css/styles.css, js/app.js, js/expert.js)
+  - Tokens: valores `oklch` COPIADOS de src/styles.css do projeto (tema
+    aurora), no lugar das conversões em hexadecimal. Fundo: mesmo gradiente,
+    com as mesmas opacidades (52/38/26%). Base do body, tracking (-0.006em)
+    e font-feature-settings iguais.
+  - Removidos os enfeites que não existem no projeto: degradê nos cartões,
+    sombra interna, subtítulo em degradê, botão em degradê, brilho aumentado.
+  - Borda luminosa (utilidade borda-luminosa do projeto) nos cartões
+    principais e na barra inferior; raios/paddings iguais (hero 28px/20px,
+    cartões 24px, vidro 16px).
+  - Barra inferior: pílula flutuante do projeto (vidro-forte + borda
+    luminosa, degradê que apaga o conteúdo atrás, ícone 22px traço 1.9,
+    rótulo 12px, aba ativa em ciano).
+  - Cabeçalho: "FOREX ASSIST" pequeno + nome da aba (Painel, Histórico...)
+    e, no Painel, a pílula "Scanner online" à direita, como no projeto.
+    "Real Money Intelligence" fica como linha discreta sob o título nas
+    outras abas (nome de marca voltado ao usuário, ver ESTADO_ATUAL.md).
+  - Status do scanner passa a "Scanner online / parado" em pílula de vidro
+    com ponto pulsante (respeita prefers-reduced-motion).
+  - Espaçamento entre seções: 20px (gap-5 do projeto).
+
+O QUE NÃO PODE SER IDÊNTICO (e por quê)
+  - O protótipo mostra "sinal ativo com anel de RMI", "curva de saldo" e
+    "operações recentes" no Painel; o Painel real não tem esses dados hoje
+    (ver AJUSTE-047). Os cartões do app seguem o mesmo estilo, com o
+    conteúdo real (scanner, contas, desempenho).
+  - Histórico, Resultados, Config e Manual mantêm o conteúdo e a estrutura
+    atuais, com o mesmo vidro, cores, borda e tipografia do projeto. Os
+    seletores "Estado" e "Dia de exemplo" são só do protótipo.
+  - Fontes: iguais (Inter, Space Grotesk, JetBrains Mono); sem rede o
+    navegador usa a fonte do sistema, no app e no protótipo.
+  - Cores em `oklch` exigem navegador de 2023 em diante (Chrome 111+,
+    Safari 15.4+, Firefox 113+), o mesmo requisito do projeto.
+
+VALIDAÇÃO (Firestore FALSO, Playwright): 5 abas sem erro de console; troca
+de aba e cenários do Painel funcionam; nenhum emoji mapeado sobra.
+Imagem de comparação: DOCUMENTACAO/comparacao-aurora-projeto-vs-app.png.
+--------

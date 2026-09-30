@@ -1,3 +1,13 @@
+// Título de cada aba no cabeçalho (mesmo padrão do projeto Aurora Glass:
+// "FOREX ASSIST" pequeno em cima, nome da aba embaixo).
+const TITULOS_ABA = {
+    dashboard: "Painel",
+    historico: "Histórico",
+    resultados: "Resultados",
+    config: "Config",
+    manual: "Manual"
+};
+
 const app = {
 
     currentTab:
@@ -85,15 +95,25 @@ localStorage.getItem("ultimaAba")
         app.innerHTML = `
         
         <div class="header">
-            <div class="logo">Forex Assist</div>
-            <div class="subtitle">Real Money Intelligence</div>
+            <div class="header-linha">
+                <div class="header-texto">
+                    <div class="logo">Forex Assist</div>
+                    <div class="subtitle">${TITULOS_ABA[this.currentTab] || "Forex Assist"}</div>
+                    ${this.currentTab === "dashboard" ? "" : '<div class="tagline">Real Money Intelligence</div>'}
+                </div>
+                ${this.currentTab === "dashboard" ? `
+                <div id="scannerStatus" class="pa-status pa-status--carregando" role="status" aria-live="polite">
+                    <i class="pa-ponto" aria-hidden="true"></i><span>Carregando…</span>
+                </div>` : ""}
+            </div>
         </div>
 
         <div class="container">
             ${content}
         </div>
 
-        <div class="bottom-nav">
+        <nav class="bottom-nav" aria-label="Navegação principal">
+        <div class="bn-lista">
 ${[
     ["dashboard", "Painel",     "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"],
     ["historico", "Histórico",  "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2"],
@@ -106,6 +126,7 @@ ${[
                 <span>${rotulo}</span>
             </button>`).join("")}
         </div>
+        </nav>
         `;
         if (this.currentTab === "dashboard") {
 
