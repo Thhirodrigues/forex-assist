@@ -1443,7 +1443,7 @@ async function carregarHistorico() {
     // resultado), mais o botão "Minimizar Tudo".
     if (acoes) {
       acoes.innerHTML = `
-        <button id="btnMinimizarTudo" style="width:100%; padding:8px; border:none; border-radius:8px; background:#1b2246; color:white; font-size:13px; cursor:pointer;">
+        <button id="btnMinimizarTudo" style="width:100%; padding:8px; border:1px solid rgba(255,255,255,.18); border-radius:8px; background:rgba(255,255,255,.10); color:white; font-size:13px; cursor:pointer;">
           Minimizar Tudo
         </button>
       `;

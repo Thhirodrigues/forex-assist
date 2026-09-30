@@ -12694,3 +12694,56 @@ LIMITES (não verificáveis daqui)
   - Em telas muito estreitas (< 360px) a barra inferior fica apertada
     ("Resultados" é o rótulo mais largo).
 --------
+
+AJUSTE-049 (30/09/2026) - ícones no lugar dos emojis + cor nas seções
+(só frontend; congelamento do pipeline intacto). Feedback do usuário sobre o
+AJUSTE-048: "perdeu completamente as cores" e "os emojis antigos não
+combinam com o visual novo, quero coisa nova".
+
+DIAGNÓSTICO: no AJUSTE-048 só os CÓDIGOS de cor foram trocados. As telas
+ficaram quase monocromáticas (texto branco sobre vidro cinza) porque a cor
+das seções vinha dos emojis. Conferido antes: nenhum fundo sólido de cor
+semântica tinha texto claro por cima (não havia problema de contraste).
+
+O QUE MUDOU
+  - js/icones.js (NOVO, carregado antes de expert.js): conjunto próprio de
+    ~50 ícones em traço fino (SVG inline, sem biblioteca externa) e um mapa
+    emoji -> [ícone, tom]. Depois que cada tela é desenhada (MutationObserver
+    em #app, 1 passada por quadro), cada emoji CONHECIDO vira <svg> no mesmo
+    lugar. Emoji fora do mapa fica como está. Tons: menta = ganho/ok, coral =
+    perda/erro, âmbar = atenção, ciano/violeta = informação e seções.
+  - Por que em tempo de exibição e não editando os ~220 usos nos js: os
+    emojis estão em templates, strings comuns, options e textContent; a
+    troca no código exigiria tratar cada contexto e arriscaria lógica.
+    Conferido que NENHUM código lê emoji da tela de volta (o único split
+    de emoji, em historico.js, gera o símbolo, não o lê).
+  - Ícone no início de um título (.card-title, h2, h3) vira "chip" colorido.
+    <option> não aceita SVG: nela o emoji é apenas removido.
+  - Palavras ALTA/COMPRA (menta), BAIXA/VENDA (coral) e COMPRESSÃO/CONFLITO/
+    SOBRECOMPRADO/SOBREVENDIDO (âmbar) no início de célula de tabela do
+    Manual e do Histórico ganham cor (só pinta, o texto não muda).
+  - css/styles.css: variáveis de tom, estilo dos ícones e chips; cartões com
+    degradê de cor (violeta/ciano/menta em rodízio nos aninhados); botão
+    principal em degradê menta-ciano; brilho de fundo mais intenso; subtítulo
+    do cabeçalho em degradê.
+  - Botões do cabeçalho do Histórico e da Config passam a ter contorno
+    visível (antes sumiam no fundo).
+
+FICOU COMO ESTAVA DE PROPÓSITO
+  - Setas de texto ▶ ▲ ▼ → ↗ (não são emoji colorido; ▶ é o indicador de
+    expandir/recolher do código).
+  - Diálogos nativos (alert/confirm/prompt) e atributos title: continuam com
+    o texto original, inclusive emojis - o navegador não deixa estilizar.
+
+VALIDAÇÃO (Firestore FALSO, Playwright, 390px): nenhuma das 5 abas deixa
+emoji mapeado sem trocar (sobram só ▶ e ↗); sem erro de console; troca de
+aba e cenários do Painel continuam funcionando.
+
+LIMITES
+  - Não testado com dados reais nem em aparelho real.
+  - Emoji novo que alguém escrever no futuro e não estiver no mapa aparece
+    como emoji comum; para tratá-lo, acrescentar a linha em
+    EMOJI_PARA_ICONE (js/icones.js).
+  - Flags 🇬🇧 🇺🇸 viraram o ícone de globo (violeta/ciano); o texto ao lado
+    (Londres, Nova York) continua dizendo qual é.
+--------
