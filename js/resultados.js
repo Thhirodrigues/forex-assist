@@ -266,25 +266,16 @@ function resultadosView() {
     (par) => `<option value="${par}" ${filtroResultadosPar === par ? "selected" : ""}>${par}</option>`
   ).join("");
 
+  // Visão geral no padrão do projeto Aurora Glass (taxa de acerto com anel,
+  // evolução com períodos, indicadores, por par e por sessão) fica em
+  // #resultadosStats - montada por renderVisaoGeralResultados() com os MESMOS
+  // sinais filtrados que a lista abaixo usa. Filtros e lista detalhada (com a
+  // comparação de sinais) continuam como sempre.
   return `
-    <div class="card">
-      <div class="card-title">📊 Resultados</div>
-      <div style="font-size:12px; color:#bcc4d5; margin-bottom:14px;">
-        Análise completa - período maior, filtros e comparação. Pode
-        demorar um pouco mais que o Histórico pra carregar (dado
-        centralizado aqui de propósito).
-      </div>
+    <div id="resultadosStats"><p class="pa-carregando">Carregando…</p></div>
 
-      <div class="list-item">
-        Período
-        <br><br>
-        <select id="filtroResultadosPeriodo" style="width:100%;">
-          <option value="1" ${filtroResultadosPeriodo === "1" ? "selected" : ""}>Hoje</option>
-          <option value="7" ${filtroResultadosPeriodo === "7" ? "selected" : ""}>Últimos 7 dias</option>
-          <option value="30" ${filtroResultadosPeriodo === "30" ? "selected" : ""}>Últimos 30 dias</option>
-          <option value="tudo" ${filtroResultadosPeriodo === "tudo" ? "selected" : ""}>Tudo</option>
-        </select>
-      </div>
+    <div class="card">
+      <div class="card-title">Filtros</div>
 
       <div class="list-item">
         Par
@@ -300,8 +291,8 @@ function resultadosView() {
         <br><br>
         <select id="filtroResultadosDirecao" style="width:100%;">
           <option value="" ${filtroResultadosDirecao === "" ? "selected" : ""}>Todas</option>
-          <option value="BUY" ${filtroResultadosDirecao === "BUY" ? "selected" : ""}>🟢 Compra</option>
-          <option value="SELL" ${filtroResultadosDirecao === "SELL" ? "selected" : ""}>🔴 Venda</option>
+          <option value="BUY" ${filtroResultadosDirecao === "BUY" ? "selected" : ""}>Compra</option>
+          <option value="SELL" ${filtroResultadosDirecao === "SELL" ? "selected" : ""}>Venda</option>
         </select>
       </div>
 
@@ -310,14 +301,15 @@ function resultadosView() {
         <br><br>
         <select id="filtroResultadosPerfil" style="width:100%;">
           <option value="" ${filtroResultadosPerfil === "" ? "selected" : ""}>Todos</option>
-          <option value="AGRESSIVO" ${filtroResultadosPerfil === "AGRESSIVO" ? "selected" : ""}>🟢 Agressivo</option>
-          <option value="BALANCEADO" ${filtroResultadosPerfil === "BALANCEADO" ? "selected" : ""}>🔵 Balanceado</option>
-          <option value="CONSERVADOR" ${filtroResultadosPerfil === "CONSERVADOR" ? "selected" : ""}>🟡 Conservador</option>
+          <option value="AGRESSIVO" ${filtroResultadosPerfil === "AGRESSIVO" ? "selected" : ""}>Agressivo</option>
+          <option value="BALANCEADO" ${filtroResultadosPerfil === "BALANCEADO" ? "selected" : ""}>Balanceado</option>
+          <option value="CONSERVADOR" ${filtroResultadosPerfil === "CONSERVADOR" ? "selected" : ""}>Conservador</option>
         </select>
       </div>
+    </div>
 
-      <div id="resultadosStats" style="margin:15px 0;">Carregando estatísticas...</div>
-
+    <div class="card">
+      <div class="card-title">Sinais do período</div>
       <div id="resultadosLista">Carregando resultados...</div>
       <div id="resultadosComparacao" style="display:none;"></div>
     </div>
@@ -329,6 +321,174 @@ function resultadosView() {
       </div>
     </div>
   `;
+}
+
+// ======================================================
+// VISÃO GERAL (componentes do projeto Aurora Glass, dados reais)
+// ------------------------------------------------------
+// Calculada sobre o conjunto JÁ FILTRADO da tela (período + par + direção
+// + perfil), então os cartões e a lista abaixo sempre batem.
+// ======================================================
+
+const PERIODOS_RESULTADOS = [["1", "1D"], ["7", "1S"], ["30", "1M"], ["90", "3M"], ["tudo", "Tudo"]];
+
+const ROTULO_SESSAO_RESULTADOS = {
+  asia: "Ásia",
+  londres: "Londres",
+  novaYork: "Nova York",
+  personalizado: "Personalizada"
+};
+
+function mediaOuNulo(lista) {
+  return lista.length ? lista.reduce((a, b) => a + b, 0) / lista.length : null;
+}
+
+function renderVisaoGeralResultados(itens, avisoTruncado) {
+
+  const fechadas = itens
+    .map(({ sinal }) => sinal)
+    .filter((s) => (s.resultado === "WIN" || s.resultado === "LOSS")
+      && !(s.status === "COOLDOWN" || s.origem === "cooldown")
+      && Number.isFinite(Number(s.timestamp)))
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  const valorUsd = (s) => Number(s.resultadoFinanceiro ?? s.lucroEstimado) || 0;
+
+  const wins = fechadas.filter((s) => s.resultado === "WIN");
+  const losses = fechadas.filter((s) => s.resultado === "LOSS");
+  const taxa = fechadas.length ? (wins.length / fechadas.length) * 100 : 0;
+
+  const somaGanhos = wins.reduce((a, s) => a + Math.max(0, valorUsd(s)), 0);
+  const somaPerdas = losses.reduce((a, s) => a + Math.abs(Math.min(0, valorUsd(s))), 0);
+  const fator = somaPerdas > 0 ? (somaGanhos / somaPerdas).toFixed(2).replace(".", ",") : "—";
+
+  const pipsDe = (s) => Number(s.movimentoPips);
+  const ganhoMedio = mediaOuNulo(wins.map(pipsDe).filter(Number.isFinite));
+  const perdaMedia = mediaOuNulo(losses.map(pipsDe).filter(Number.isFinite));
+
+  // curva: saldo real gravado (só quando não há filtro de par/direção/perfil,
+  // porque filtrado o saldo não é a soma daquela fatia); senão resultado acumulado
+  const semFiltroDeFatia = !filtroResultadosPar && !filtroResultadosDirecao && !filtroResultadosPerfil;
+  const temSaldos = fechadas.length > 0 && fechadas.every((s) => Number.isFinite(Number(s.saldoDepois)));
+  const usarSaldo = semFiltroDeFatia && temSaldos;
+
+  let valores = [];
+  if (fechadas.length) {
+    if (usarSaldo) {
+      const ini = Number.isFinite(Number(fechadas[0].saldoAntes))
+        ? Number(fechadas[0].saldoAntes)
+        : Number(fechadas[0].saldoDepois) - valorUsd(fechadas[0]);
+      valores = [ini, ...fechadas.map((s) => Number(s.saldoDepois))];
+    } else {
+      let acc = 0;
+      valores = [0, ...fechadas.map((s) => (acc += valorUsd(s)))];
+    }
+  }
+
+  const variacao = Number(fechadas.reduce((a, s) => a + valorUsd(s), 0).toFixed(2));
+  const base = usarSaldo ? valores[0] : 0;
+  const pctVar = base > 0 ? (variacao / base) * 100 : null;
+  const rVar = tokenResultadoPainel(variacao);
+
+  const chips = PERIODOS_RESULTADOS.map(([valor, rotulo]) =>
+    `<button type="button" role="tab" class="pn-chip pa-num-sans${valor === filtroResultadosPeriodo ? " pn-chip--ativo" : ""}" aria-selected="${valor === filtroResultadosPeriodo}" data-rperiodo="${valor}">${rotulo}</button>`
+  ).join("");
+
+  // por par
+  const pares = {};
+  fechadas.forEach((s) => {
+    const p = pares[s.par] || (pares[s.par] = { par: s.par, wins: 0, total: 0, usd: 0 });
+    p.total++;
+    if (s.resultado === "WIN") p.wins++;
+    p.usd += valorUsd(s);
+  });
+  const listaPares = Object.values(pares).sort((a, b) => b.usd - a.usd);
+
+  // por sessão (só sinais que gravaram a janela de origem)
+  const sessoes = {};
+  fechadas.forEach((s) => {
+    const rot = ROTULO_SESSAO_RESULTADOS[s.janelaOrigem];
+    if (!rot) return;
+    const x = sessoes[rot] || (sessoes[rot] = { rot, wins: 0, total: 0 });
+    x.total++;
+    if (s.resultado === "WIN") x.wins++;
+  });
+  const listaSessoes = Object.values(sessoes);
+
+  const indicador = (rotulo, valor, cor) => `
+    <div class="pa-vidro rs-indicador">
+      <p class="pa-eyebrow" style="letter-spacing:.1em;">${rotulo}</p>
+      <p class="pa-num rs-indicador-valor" ${cor ? `style="color:${cor};"` : ""}>${valor}</p>
+    </div>`;
+
+  const curva = valores.length >= 2
+    ? pnSparkHTML(valores, "var(--pa-primary)", 116)
+    : `<div class="pn-vazio">${fechadas.length ? "Só uma operação neste período." : "Sem operações fechadas neste período."}</div>`;
+
+  return `
+    <section class="pa-vidro rs-lum rs-acerto" aria-label="Taxa de acerto">
+      <div class="rs-acerto-grade">
+        <div class="pn-min0">
+          <p class="pa-eyebrow" style="letter-spacing:.12em;">Taxa de acerto</p>
+          <p class="pa-num rs-acerto-valor">${fechadas.length ? taxa.toFixed(1).replace(".", ",") + "%" : "—"}</p>
+          <p class="rs-acerto-sub pa-num-sans">${wins.length} ${wins.length === 1 ? "ganho" : "ganhos"} · ${losses.length} ${losses.length === 1 ? "perda" : "perdas"}</p>
+        </div>
+        ${fechadas.length ? pnAnelHTML(taxa, { tamanho: 92, espessura: 8, cor: "var(--pa-ganho)", legenda: "Acerto" }) : ""}
+      </div>
+    </section>
+
+    <section class="pa-vidro rs-lum pn-curva" aria-label="Evolução">
+      <p class="pa-eyebrow" style="letter-spacing:.12em;">${usarSaldo ? "Evolução do saldo" : "Resultado acumulado"}</p>
+      ${fechadas.length ? `<p class="pa-num pn-curva-valor ${rVar.classe}"><span class="pa-seta" aria-hidden="true">${rVar.seta}</span>${moedaAssinadaPainel(variacao)}${pctVar !== null ? ` <span class="pn-curva-pct">${pnPct(pctVar)}</span>` : ""}</p>` : ""}
+      <div style="margin-top:12px;">${curva}</div>
+      <div class="pn-chips" role="tablist" aria-label="Período">${chips}</div>
+    </section>
+
+    <section class="rs-indicadores" aria-label="Indicadores">
+      ${indicador("Fator de lucro", fator)}
+      ${indicador("Operações", String(fechadas.length))}
+      ${indicador("Ganho médio", ganhoMedio === null ? "—" : pnPips(ganhoMedio), ganhoMedio === null ? "" : "var(--pa-ganho)")}
+      ${indicador("Perda média", perdaMedia === null ? "—" : pnPips(perdaMedia), perdaMedia === null ? "" : "var(--pa-perda)")}
+    </section>
+
+    ${listaPares.length ? `
+    <section class="pa-vidro rs-lum rs-bloco" aria-label="Por par">
+      <h2 class="pn-h2">Por par</h2>
+      <ul class="rs-lista-pares">
+        ${listaPares.map((p) => {
+          const r = tokenResultadoPainel(p.usd);
+          const acerto = Math.round((p.wins / p.total) * 100);
+          return `
+          <li class="rs-par">
+            <div class="pn-min0">
+              <div class="rs-par-topo">
+                <span class="pa-num rs-par-nome">${p.par}</span>
+                <span class="rs-par-meta pa-num-sans">${acerto}% · ${p.total} ${p.total === 1 ? "op" : "ops"}</span>
+              </div>
+              <div class="rs-barra"><div class="rs-barra-cheia ${r.classe}" style="width:${acerto}%;"></div></div>
+            </div>
+            <span class="pa-num rs-par-usd ${r.classe}">${moedaAssinadaPainel(p.usd)}</span>
+          </li>`;
+        }).join("")}
+      </ul>
+    </section>` : ""}
+
+    ${listaSessoes.length ? `
+    <section class="pa-vidro rs-lum rs-bloco" aria-label="Por sessão">
+      <h2 class="pn-h2">Por sessão</h2>
+      <ul class="rs-sessoes">
+        ${listaSessoes.map((x) => `
+          <li>
+            <p class="rs-sessao-nome">${x.rot}</p>
+            <p class="pa-num rs-sessao-valor">${Math.round((x.wins / x.total) * 100)}%</p>
+            <p class="rs-sessao-ops pa-num-sans">${x.total} ${x.total === 1 ? "op" : "ops"}</p>
+          </li>`).join("")}
+      </ul>
+    </section>` : ""}
+
+    ${avisoTruncado || ""}
+  `;
+
 }
 
 function bindFiltrosResultados() {
@@ -423,30 +583,24 @@ async function carregarResultados() {
     const taxaGeral = totalGeral > 0 ? ((winsTotal / totalGeral) * 100).toFixed(1) : "0";
     const financeiroTotalFormatado = `${financeiroTotal >= 0 ? "+" : "-"}$${Math.abs(financeiroTotal).toFixed(2)}`;
 
-    const labelPeriodo =
-      filtroResultadosPeriodo === "tudo" ? "Tudo"
-      : filtroResultadosPeriodo === "1" ? "Hoje"
-      : `Últimos ${filtroResultadosPeriodo} dias`;
-
-    const avisoTruncado = snapshot.size >= LIMITE_RESULTADOS
-      ? `<div style="font-size:10px; color:#bcc4d5; margin-top:4px;">⚠️ Mostrando só os ${LIMITE_RESULTADOS} sinais mais recentes do período - pode haver mais além desse teto.</div>`
-      : "";
 
     if (stats) {
-      stats.innerHTML = `
-        <div class="card" style="padding:10px;">
-          <div style="font-size:11px; color:#bcc4d5; text-align:center; margin-bottom:4px;">
-            ${labelPeriodo}${filtroResultadosPar ? ` · ${filtroResultadosPar}` : ""}${filtroResultadosDirecao ? ` · ${filtroResultadosDirecao === "BUY" ? "Compra" : "Venda"}` : ""}${filtroResultadosPerfil ? ` · ${LEGENDA_PERFIL[filtroResultadosPerfil] || filtroResultadosPerfil}` : ""}
-          </div>
-          <div style="text-align:center; font-size:17px; font-weight:bold;">
-            ✅ ${winsTotal} &nbsp;&nbsp;&nbsp; ❌ ${lossesTotal} &nbsp;&nbsp;&nbsp; 🎯 ${taxaGeral}%
-          </div>
-          <div style="text-align:center; font-size:14px; font-weight:bold; margin-top:4px; color:${financeiroTotal >= 0 ? "#5ef8b7" : "#ff9891"};">
-            💵 ${financeiroTotalFormatado}
-          </div>
-          ${avisoTruncado}
-        </div>
-      `;
+      stats.innerHTML = renderVisaoGeralResultados(
+        itensFiltrados,
+        snapshot.size >= LIMITE_RESULTADOS
+          ? `<p class="pn-vazio">Mostrando só os ${LIMITE_RESULTADOS} sinais mais recentes do período. Use um período menor ou um filtro para ver o resto.</p>`
+          : ""
+      );
+
+      // chips de período (1D/1S/1M/3M/Tudo) trocam o filtro e recarregam
+      stats.onclick = (e) => {
+        const b = e.target.closest("[data-rperiodo]");
+        if (!b) return;
+        filtroResultadosPeriodo = b.getAttribute("data-rperiodo");
+        carregarResultados();
+      };
+
+      pnAnimar(stats);
     }
 
     // Agrupamento por mês -> dia, com placar (é justamente o que saiu

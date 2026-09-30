@@ -12,6 +12,7 @@
 // ver js/resultados.js pra onde foram.
 function historicoView() {
   return `
+    <div id="historicoResumo"></div>
     <div class="card">
       <div id="historicoHeader" style="position:sticky; top:0; z-index:999; background:rgba(28,32,66,.86); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-radius:14px; padding:10px 10px;">
         <div class="card-title">Histórico de Sinais</div>
@@ -781,7 +782,11 @@ function mesLabelDe(dataStr) {
 // AJUSTE-008) foi removida - forçaria de volta pro card em telas
 // retrato, brigando com o novo padrão. Botão manual continua existindo
 // pra quem quiser voltar pro modo card em algum momento.
-let modoTabela = true;
+// AJUSTE-051 (30/09/2026): o padrão passou de TABELA para a LISTA no formato
+// do projeto Aurora Glass (linhas de vidro com marcador, agrupadas por dia).
+// A tabela continua a um toque, no botão "Ver como tabela" - se preferir a
+// tabela como padrão, é só trocar este valor para true.
+let modoTabela = false;
 
 // AJUSTE-012 (24/09/2026): usuário reportou que a tela demorava ~30s
 // sempre que abria/atualizava (não só na primeira vez - descartando
@@ -921,6 +926,9 @@ function formatarDuracaoMs(ms) {
 // ======================================================
 let filtroHistoricoResultado = "";
 
+// AJUSTE-051: filtro por par (chips do resumo, formato do projeto Aurora Glass).
+let filtroHistoricoPar = "";
+
 const CICLO_FILTRO_HISTORICO = ["", "WIN", "LOSS", "PENDENTE"];
 const INDICADOR_FILTRO_HISTORICO = { "": "▾", WIN: "✅", LOSS: "❌", PENDENTE: "⏳" };
 const ROTULO_FILTRO_HISTORICO = { WIN: "✅ WIN", LOSS: "❌ LOSS", PENDENTE: "⏳ Pendente" };
@@ -960,7 +968,8 @@ function aplicarFiltroHistoricoResultado() {
 
   raiz.querySelectorAll("tr[data-resultado-filtro]").forEach((tr) => {
     linhasTotal++;
-    const mostra = !filtro || tr.dataset.resultadoFiltro === filtro;
+    const okPar = !filtroHistoricoPar || (cacheSinaisHistorico[tr.dataset.sinalId]?.sinal?.par === filtroHistoricoPar);
+    const mostra = (!filtro || tr.dataset.resultadoFiltro === filtro) && okPar;
     if (mostra) linhasVisiveis++;
 
     tr.style.display = mostra ? "" : "none";
@@ -1349,6 +1358,151 @@ function aplicarModoCompactoSeNecessario() {
   }
 }
 
+// ======================================================
+// LISTA NO FORMATO DO PROJETO AURORA GLASS (AJUSTE-051)
+// ------------------------------------------------------
+// Linha de vidro com marcador redondo, par, meta e resultado, como no
+// Painel. O detalhe rico (construirDetalheSinal: marcação manual, operação
+// real, gráfico, avisos) é o MESMO de sempre e abre no toque na linha,
+// pelo listener genérico de [data-sinal-id] - nada dele foi reescrito.
+// ======================================================
+function construirItemListaAurora(sinal, docId, dataObj, isCooldown, borderStyle, detalheHtml) {
+
+  const compra = sinal.direcao === "BUY" || sinal.direcao === "CALL";
+  const tom = compra ? { cor: "var(--pa-ganho)", fundo: "var(--pa-ganho-suave)", rot: "Compra", icone: PN_ICONE.compra }
+                     : { cor: "var(--pa-perda)", fundo: "var(--pa-perda-suave)", rot: "Venda", icone: PN_ICONE.venda };
+
+  const fechado = sinal.resultado === "WIN" || sinal.resultado === "LOSS";
+  const estado = isCooldown ? "COOLDOWN" : (fechado ? sinal.resultado : "PENDENTE");
+
+  const hora = dataObj ? dataObj.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 5) : "--:--";
+  const dur = fechado ? pnDuracao(obterTempoOperacaoMs(sinal)) : "";
+  const meta = [isCooldown ? "Cooldown" : tom.rot, hora, dur].filter(Boolean).join(" · ");
+
+  const pips = Number(sinal.movimentoPips);
+  const usd = Number(sinal.resultadoFinanceiro ?? sinal.lucroEstimado);
+  const r = tokenResultadoPainel(Number.isFinite(pips) ? pips : (Number.isFinite(usd) ? usd : 0));
+
+  let direita;
+  if (isCooldown) {
+    direita = `<span class="hs-estado hs-estado--neutro">Cooldown</span>`;
+  } else if (fechado) {
+    direita = `${Number.isFinite(pips) ? `<span class="pa-num pn-linha-pips ${r.classe}">${pnPips(pips)}</span>` : ""}
+      <span class="pa-num pn-linha-usd ${Number.isFinite(pips) ? "" : r.classe}">${Number.isFinite(usd) ? moedaAssinadaPainel(usd) : "—"}</span>`;
+  } else {
+    direita = `<span class="hs-estado hs-estado--pendente">Pendente</span>
+      ${Number.isFinite(pips) ? `<span class="pa-num pn-linha-usd">${pnPips(pips)}</span>` : ""}`;
+  }
+
+  return `
+    <div class="pa-vidro hs-item" id="sinal-${docId}" style="--pn-cor:${tom.cor};--pn-fundo:${tom.fundo};${borderStyle}"
+         data-sinal-id="${docId}" data-resultado-filtro="${estado}" data-par="${sinal.par || ""}">
+      <div class="hs-linha">
+        <span class="pn-tile" aria-hidden="true">${pnSvgIcone(compra ? "compra" : "venda", 18, 2.6)}</span>
+        <span class="pn-min0">
+          <span class="pn-linha-par">${sinal.par || "-"}${linkCorretoraXM(sinal, isCooldown)}</span>
+          <span class="pn-linha-meta pa-num-sans">${meta}</span>
+        </span>
+        <span class="pn-linha-res">${direita}</span>
+      </div>
+      ${sinal.avisoRisco?.ativo ? `<div class="hs-aviso hs-aviso--ambar">⚠️ ${sinal.avisoRisco.mensagem}</div>` : ""}
+      ${sinal.avisoExpectativa?.ativo ? `<div class="hs-aviso hs-aviso--coral">📉 ${sinal.avisoExpectativa.mensagem}</div>` : ""}
+      ${detalheHtml}
+    </div>`;
+
+}
+
+// Resumo (Pips / US$ / Acerto) e chips de filtro, calculados sobre os sinais
+// dos dias carregados (cacheSinaisHistorico) - mesmo conjunto da lista.
+function renderizarResumoHistorico() {
+
+  const alvo = document.getElementById("historicoResumo");
+  if (!alvo) return;
+
+  const todos = Object.values(cacheSinaisHistorico).map(x => x.sinal)
+    .filter(sn => !(sn.status === "COOLDOWN" || sn.origem === "cooldown"));
+
+  const fechados = todos.filter(sn => sn.resultado === "WIN" || sn.resultado === "LOSS");
+  const wins = fechados.filter(sn => sn.resultado === "WIN").length;
+  const pips = fechados.reduce((a, sn) => a + (Number(sn.movimentoPips) || 0), 0);
+  const usd = fechados.reduce((a, sn) => a + (Number(sn.resultadoFinanceiro ?? sn.lucroEstimado) || 0), 0);
+  const acerto = fechados.length ? Math.round((wins / fechados.length) * 100) : null;
+
+  const rP = tokenResultadoPainel(pips), rU = tokenResultadoPainel(usd);
+
+  const contagemPar = {};
+  todos.forEach(sn => { if (sn.par) contagemPar[sn.par] = (contagemPar[sn.par] || 0) + 1; });
+  const pares = Object.keys(contagemPar).sort((a, b) => contagemPar[b] - contagemPar[a]);
+
+  const chip = (attr, valor, rotulo, ativo) =>
+    `<button type="button" class="hs-chip${ativo ? " hs-chip--ativo" : ""}" ${attr}="${valor}">${rotulo}</button>`;
+
+  alvo.innerHTML = `
+    <section class="pa-vidro pa-vidro--forte hs-resumo" aria-label="Resumo">
+      <dl class="hs-resumo-grade">
+        <div><dt>Pips</dt><dd class="pa-num ${rP.classe}">${fechados.length ? pnPips(pips).replace(" pips", "") : "—"}</dd></div>
+        <div><dt>US$</dt><dd class="pa-num ${rU.classe}">${fechados.length ? moedaAssinadaPainel(usd).replace("US$ ", "") : "—"}</dd></div>
+        <div><dt>Acerto</dt><dd class="pa-num">${acerto === null ? "—" : acerto + "%"}</dd></div>
+      </dl>
+      <p class="hs-resumo-nota pa-num-sans">${fechados.length} ${fechados.length === 1 ? "operação encerrada" : "operações encerradas"} nos dias carregados</p>
+    </section>
+    <div class="hs-chips" role="group" aria-label="Filtros">
+      ${chip("data-hres", "", "Todas", !filtroHistoricoResultado && !filtroHistoricoPar)}
+      ${chip("data-hres", "WIN", "Ganhos", filtroHistoricoResultado === "WIN")}
+      ${chip("data-hres", "LOSS", "Perdas", filtroHistoricoResultado === "LOSS")}
+      ${chip("data-hres", "PENDENTE", "Pendentes", filtroHistoricoResultado === "PENDENTE")}
+      ${pares.map(p => chip("data-hpar", p, p, filtroHistoricoPar === p)).join("")}
+    </div>`;
+
+  alvo.onclick = (e) => {
+    const b = e.target.closest("[data-hres],[data-hpar]");
+    if (!b) return;
+    if (b.hasAttribute("data-hpar")) {
+      filtroHistoricoPar = filtroHistoricoPar === b.dataset.hpar ? "" : b.dataset.hpar;
+    } else if (b.dataset.hres === "") {
+      filtroHistoricoResultado = "";
+      filtroHistoricoPar = "";
+    } else {
+      filtroHistoricoResultado = filtroHistoricoResultado === b.dataset.hres ? "" : b.dataset.hres;
+    }
+    aplicarFiltroHistoricoResultado();
+    aplicarFiltroHistoricoLista();
+    renderizarResumoHistorico();
+  };
+
+}
+
+// Filtro dos itens da lista (formato Aurora): resultado + par. A tabela usa
+// aplicarFiltroHistoricoResultado() (que também respeita o par).
+function aplicarFiltroHistoricoLista() {
+
+  const raiz = document.getElementById("historicoLista");
+  if (!raiz) return;
+
+  const itens = raiz.querySelectorAll(".hs-item");
+
+  itens.forEach((el) => {
+    const okR = !filtroHistoricoResultado || el.dataset.resultadoFiltro === filtroHistoricoResultado;
+    const okP = !filtroHistoricoPar || el.dataset.par === filtroHistoricoPar;
+    el.style.display = okR && okP ? "" : "none";
+  });
+
+  if (!itens.length) return;
+
+  raiz.querySelectorAll(".hist-dia").forEach((dia) => {
+    const its = dia.querySelectorAll(".hs-item");
+    if (!its.length) return;
+    dia.style.display = [...its].some(i => i.style.display !== "none") ? "" : "none";
+  });
+
+  raiz.querySelectorAll(".hist-mes").forEach((mes) => {
+    const dias = mes.querySelectorAll(".hist-dia");
+    if (!dias.length) return;
+    mes.style.display = [...dias].some(d => d.style.display !== "none") ? "" : "none";
+  });
+
+}
+
 async function carregarHistorico() {
   const lista = document.getElementById("historicoLista");
   const acoes = document.getElementById("historicoAcoes");
@@ -1395,43 +1549,7 @@ async function carregarHistorico() {
 
       const card = modoTabela
         ? construirLinhaTabela(sinal, doc.id, dataObj, isCooldown, borderStyle, detalheHtml, undefined, true)
-        : `
-        <div class="list-item" id="sinal-${doc.id}" style="${borderStyle}" data-sinal-id="${doc.id}">
-          <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:bold;">
-            <span>
-              ${isCooldown ? "🚫" : (sinal.direcao === "BUY" || sinal.direcao === "CALL" ? "🟢" : "🔴")}
-              ${sinal.par || "-"}
-              |
-              ${(sinal.direcao || "-").replace("CALL", "COMPRA").replace("PUT", "VENDA")}
-            </span>
-            <span style="display:flex; align-items:center; gap:8px;">
-              <span>${isCooldown ? "COOLDOWN" : (sinal.resultado === "WIN" ? "✅ WIN" : sinal.resultado === "LOSS" ? "❌ LOSS" : "⏳ PENDENTE")}</span>
-              ${linkCorretoraXM(sinal, isCooldown)}
-            </span>
-          </div>
-          <div style="margin-top:4px; font-size:12px; color:#bcc4d5;">
-            ${sinal.loteUtilizado ? `💳 Lote: <b>${sinal.loteUtilizado}</b> | ` : ""}${dataSinal} &nbsp;
-            ${dataObj ? dataObj.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" }).substring(0, 5) : "--:--"}
-            ${!isCooldown ? ` | Qualidade: ${sinal.qualidade ?? "-"}${sinal.score !== undefined ? ` (${sinal.score}%)` : ""}` : ""}
-          </div>
-          ${sinal.avisoRisco?.ativo ? `
-            <div style="margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(244,213,118,.12); border:1px solid rgba(244,213,118,.35); font-size:11px; color:#f4d576;">
-              ⚠️ ${sinal.avisoRisco.mensagem}
-            </div>
-          ` : ''}
-          ${sinal.avisoExpectativa?.ativo ? `
-            <div style="margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(255,152,145,.12); border:1px solid rgba(255,152,145,.35); font-size:11px; color:#ff9891;">
-              📉 ${sinal.avisoExpectativa.mensagem}
-            </div>
-          ` : ''}
-          ${sinal.movimentoPips !== undefined ? `
-            <div style="margin-top:6px; font-size:12px; color:${sinal.resultado === 'WIN' ? '#5ef8b7' : '#ff9891'}; font-weight:bold;">
-              📊 Movimentação: ${sinal.movimentoPips > 0 ? '+' : ''}${sinal.movimentoPips} pips
-            </div>
-          ` : ''}
-          ${detalheHtml}
-        </div>
-      `;
+        : construirItemListaAurora(sinal, doc.id, dataObj, isCooldown, borderStyle, detalheHtml);
 
       if (!gruposPorData[dataSinal]) gruposPorData[dataSinal] = "";
       gruposPorData[dataSinal] += card;
@@ -1485,7 +1603,8 @@ async function carregarHistorico() {
       datasDoMes.forEach((data) => {
         const idData = data.replaceAll("/", "");
         const isHoje = data === hojeStr;
-        const label = isHoje ? `HOJE (${data})` : data;
+        const ontemStr = new Date(Date.now() - 86400000).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        const label = isHoje ? "Hoje" : (data === ontemStr ? "Ontem" : data);
 
         const temSinalDestacado =
           app.sinalParaDestacar &&
@@ -1591,6 +1710,9 @@ if (el.style.display === 'none') {
 
     atualizarBotaoModoTabela();
     aplicarModoCompactoSeNecessario();
+
+    renderizarResumoHistorico();
+    aplicarFiltroHistoricoLista();
 
     // AJUSTE-043: reaplica o filtro do cabeçalho "Resultado" a cada
     // redesenho da lista (o estado vive em filtroHistoricoResultado).

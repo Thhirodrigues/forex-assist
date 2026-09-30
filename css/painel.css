@@ -512,3 +512,344 @@ body.tema-aurora .pn-spark-area,
 body.tema-aurora .pn-spark-linha,
 body.tema-aurora .pn-spark-ponto{transition:none;}
 }
+
+
+/* ---------- Resultados: visão geral ---------- */
+body.tema-aurora .rs-lum{position:relative;}
+
+body.tema-aurora .rs-lum::after{
+content:"";
+position:absolute;
+inset:0;
+border-radius:inherit;
+padding:1px;
+background:linear-gradient(150deg,oklch(1 0 0 / 34%) 0%,oklch(1 0 0 / 4%) 42%,oklch(1 0 0 / 18%) 100%);
+-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+-webkit-mask-composite:xor;
+mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+mask-composite:exclude;
+pointer-events:none;
+}
+
+body.tema-aurora #resultadosStats{
+display:flex;
+flex-direction:column;
+gap:20px;
+margin-bottom:20px;
+}
+
+body.tema-aurora .rs-acerto{
+padding:20px;
+border-radius:24px;
+}
+
+body.tema-aurora .rs-acerto-grade{
+display:grid;
+grid-template-columns:minmax(0,1fr) auto;
+align-items:center;
+gap:16px;
+}
+
+body.tema-aurora .rs-acerto-valor{
+margin-top:4px;
+font-size:28px;
+font-weight:700;
+line-height:1;
+}
+
+body.tema-aurora .rs-acerto-sub{
+margin-top:8px;
+font-size:13px;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .rs-indicadores{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:12px;
+}
+
+body.tema-aurora .rs-indicador{
+border-radius:28px;
+padding:16px;
+}
+
+body.tema-aurora .rs-indicador-valor{
+margin-top:4px;
+font-size:18px;
+font-weight:700;
+white-space:nowrap;
+}
+
+body.tema-aurora .rs-bloco{
+padding:16px;
+border-radius:24px;
+}
+
+body.tema-aurora .rs-bloco .pn-h2{font-size:15px;}
+
+body.tema-aurora .rs-lista-pares{
+display:flex;
+flex-direction:column;
+gap:12px;
+margin:12px 0 0;
+padding:0;
+list-style:none;
+}
+
+body.tema-aurora .rs-par{
+display:grid;
+grid-template-columns:minmax(0,1fr) auto;
+align-items:center;
+gap:12px;
+}
+
+body.tema-aurora .rs-par-topo{
+display:flex;
+align-items:baseline;
+justify-content:space-between;
+gap:8px;
+}
+
+body.tema-aurora .rs-par-nome{
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+font-size:14px;
+font-weight:600;
+}
+
+body.tema-aurora .rs-par-meta{
+flex-shrink:0;
+font-size:13px;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .rs-par-usd{
+flex-shrink:0;
+font-size:14px;
+font-weight:600;
+text-align:right;
+}
+
+body.tema-aurora .rs-barra{
+width:100%;
+height:6px;
+margin-top:6px;
+overflow:hidden;
+border-radius:9999px;
+background:var(--pa-vidro-forte);
+}
+
+body.tema-aurora .rs-barra-cheia{
+height:100%;
+border-radius:9999px;
+transition:width .7s;
+}
+
+body.tema-aurora .rs-barra-cheia.pa-res--ganho{background:var(--pa-ganho);}
+body.tema-aurora .rs-barra-cheia.pa-res--perda{background:var(--pa-perda);}
+body.tema-aurora .rs-barra-cheia.pa-res--neutro{background:var(--pa-muted);}
+
+body.tema-aurora .rs-sessoes{
+display:grid;
+grid-template-columns:repeat(3,minmax(0,1fr));
+gap:12px;
+margin:12px 0 0;
+padding:0;
+list-style:none;
+}
+
+body.tema-aurora .rs-sessao-nome{
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+font-size:13px;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .rs-sessao-valor{
+margin-top:2px;
+font-size:17px;
+font-weight:700;
+}
+
+body.tema-aurora .rs-sessao-ops{
+font-size:12px;
+color:var(--pa-muted);
+}
+
+/* ---------- Histórico: resumo, chips e lista (formato do projeto) ---------- */
+body.tema-aurora .hs-resumo{
+padding:16px;
+border-radius:24px;
+}
+
+body.tema-aurora .hs-resumo-grade{
+display:grid;
+grid-template-columns:repeat(3,minmax(0,1fr));
+gap:12px;
+margin:0;
+}
+
+body.tema-aurora .hs-resumo-grade dt{
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+font-size:12px;
+font-weight:600;
+letter-spacing:.1em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .hs-resumo-grade dd{
+margin:4px 0 0;
+font-size:16px;
+font-weight:700;
+white-space:nowrap;
+}
+
+body.tema-aurora .hs-resumo-nota{
+margin-top:12px;
+font-size:13px;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .hs-chips{
+display:flex;
+gap:8px;
+margin-top:16px;
+padding-bottom:4px;
+overflow-x:auto;
+scrollbar-width:none;
+}
+
+body.tema-aurora .hs-chips::-webkit-scrollbar{display:none;}
+
+body.tema-aurora .hs-chip{
+flex-shrink:0;
+padding:8px 14px;
+border:1px solid var(--pa-borda);
+border-radius:9999px;
+background:var(--pa-vidro);
+-webkit-backdrop-filter:blur(20px) saturate(140%);
+backdrop-filter:blur(20px) saturate(140%);
+color:var(--pa-muted);
+font-family:inherit;
+font-size:13px;
+font-weight:600;
+cursor:pointer;
+transition:color .2s;
+}
+
+body.tema-aurora .hs-chip:hover{color:var(--pa-fg);}
+
+body.tema-aurora .hs-chip--ativo{
+border-color:transparent;
+background:var(--pa-primary);
+color:var(--pa-primary-fg);
+}
+
+body.tema-aurora .hs-chip:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:2px;
+}
+
+/* o cartão que envolve a lista do Histórico não tem vidro próprio */
+body.tema-aurora .card:has(#historicoLista){
+margin-top:12px;
+padding:0;
+border:0;
+background:none;
+-webkit-backdrop-filter:none;
+backdrop-filter:none;
+}
+
+body.tema-aurora .card:has(#historicoLista)::after{display:none;}
+
+body.tema-aurora #historicoHeader{
+position:static !important;
+padding:0 !important;
+border-radius:0 !important;
+background:none !important;
+-webkit-backdrop-filter:none !important;
+backdrop-filter:none !important;
+}
+
+body.tema-aurora #historicoHeader .card-title{display:none;}
+
+/* grupos por mês e por dia: sem caixas, só o rótulo em caixa alta */
+body.tema-aurora .hist-mes,
+body.tema-aurora .hist-dia{
+margin-top:0 !important;
+border:0 !important;
+border-radius:0 !important;
+background:none !important;
+overflow:visible !important;
+}
+
+body.tema-aurora .hist-mes > div:first-child,
+body.tema-aurora .hist-dia > div:first-child{
+padding:8px 4px 4px !important;
+background:none !important;
+font-size:12px !important;
+font-weight:700 !important;
+letter-spacing:.16em;
+text-transform:uppercase;
+color:var(--pa-muted) !important;
+}
+
+body.tema-aurora .hist-mes > div:nth-child(2),
+body.tema-aurora .hist-dia > div:nth-child(2){
+padding:0 !important;
+}
+
+body.tema-aurora .hist-mes{margin-bottom:8px !important;}
+
+/* item da lista */
+body.tema-aurora .hs-item{
+margin-top:8px;
+padding:14px;
+border-radius:28px;
+cursor:pointer;
+transition:background-color .2s;
+}
+
+body.tema-aurora .hs-item:hover{background:var(--pa-vidro-forte);}
+
+body.tema-aurora .hs-linha{
+display:grid;
+grid-template-columns:auto minmax(0,1fr) auto;
+align-items:center;
+gap:12px;
+}
+
+body.tema-aurora .hs-estado{
+display:block;
+font-size:13px;
+font-weight:600;
+}
+
+body.tema-aurora .hs-estado--pendente{color:var(--pa-espera);}
+body.tema-aurora .hs-estado--neutro{color:var(--pa-muted);}
+
+body.tema-aurora .hs-aviso{
+margin-top:10px;
+padding:8px 10px;
+border-radius:12px;
+font-size:12px;
+line-height:1.45;
+}
+
+body.tema-aurora .hs-aviso--ambar{
+border:1px solid oklch(0.88 0.12 92 / 35%);
+background:oklch(0.88 0.12 92 / 12%);
+color:var(--pa-espera);
+}
+
+body.tema-aurora .hs-aviso--coral{
+border:1px solid oklch(0.8 0.14 24 / 35%);
+background:oklch(0.8 0.14 24 / 12%);
+color:var(--pa-perda);
+}

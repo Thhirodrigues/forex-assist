@@ -8,6 +8,15 @@ const TITULOS_ABA = {
     manual: "Manual"
 };
 
+// Linha de apoio sob o título nas telas secundárias (padrão do projeto:
+// título grande + subtítulo). "Real Money Intelligence" é o nome da marca.
+const SUBTITULOS_ABA = {
+    historico: "Sinais e operações, dia a dia",
+    resultados: "Desempenho da conta",
+    config: "Preferências do assistente",
+    manual: "Real Money Intelligence"
+};
+
 const app = {
 
     currentTab:
@@ -94,12 +103,12 @@ localStorage.getItem("ultimaAba")
 
         app.innerHTML = `
         
-        <div class="header">
+        <div class="header${this.currentTab === "dashboard" ? "" : " header--aba"}">
             <div class="header-linha">
                 <div class="header-texto">
-                    <div class="logo">Forex Assist</div>
+                    ${this.currentTab === "dashboard" ? '<div class="logo">Forex Assist</div>' : ""}
                     <div class="subtitle">${TITULOS_ABA[this.currentTab] || "Forex Assist"}</div>
-                    ${this.currentTab === "dashboard" ? "" : '<div class="tagline">Real Money Intelligence</div>'}
+                    ${this.currentTab === "dashboard" ? "" : `<div class="tagline">${SUBTITULOS_ABA[this.currentTab] || ""}</div>`}
                 </div>
                 ${this.currentTab === "dashboard" ? `
                 <div id="scannerStatus" class="pa-status pa-status--carregando" role="status" aria-live="polite">

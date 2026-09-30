@@ -1128,3 +1128,101 @@ animation:pa-pulso 2.6s ease-in-out infinite;
 @media (prefers-reduced-motion:reduce){
 body.tema-aurora .pa-status .pa-ponto::after{animation:none;}
 }
+
+/* ---------------------------------------------------
+   CONTROLES NO ESTILO DO PROJETO (Switch / caixa / opção)
+   O Config do projeto usa interruptor em ciano; aqui o único liga/desliga
+   real (#cfgSmcAtivo) vira interruptor, e as listas (pares, sessões) e o
+   perfil ganham caixa e botão de opção no mesmo padrão de cor.
+   --------------------------------------------------- */
+body.tema-aurora input[type="checkbox"],
+body.tema-aurora input[type="radio"]{
+-webkit-appearance:none;
+appearance:none;
+display:inline-block;
+flex:none;
+width:20px;
+height:20px;
+margin:0 10px 0 0;
+vertical-align:-5px;
+border:1.5px solid var(--pa-primary);
+background-color:transparent;
+cursor:pointer;
+transition:background-color .2s;
+}
+
+body.tema-aurora input[type="checkbox"]{
+border-radius:6px;
+}
+
+body.tema-aurora input[type="checkbox"]:checked{
+background-color:var(--pa-primary);
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23070b1f' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+background-position:center;
+background-repeat:no-repeat;
+background-size:14px 14px;
+}
+
+body.tema-aurora input[type="radio"]{
+border-radius:50%;
+}
+
+body.tema-aurora input[type="radio"]:checked{
+background-image:radial-gradient(circle,var(--pa-primary) 0 42%,transparent 46%);
+}
+
+body.tema-aurora input[type="checkbox"]:focus-visible,
+body.tema-aurora input[type="radio"]:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:2px;
+}
+
+/* interruptor (Switch do projeto: 44x24, trilho cinza/ciano, bolinha escura) */
+body.tema-aurora input#cfgSmcAtivo{
+width:44px;
+height:24px;
+margin-right:12px;
+vertical-align:-7px;
+border:0;
+border-radius:9999px;
+background-color:oklch(1 0 0 / 16%);
+background-image:radial-gradient(circle,oklch(0.14 0.035 268) 0 48%,transparent 52%);
+background-repeat:no-repeat;
+background-size:20px 20px;
+background-position:2px center;
+transition:background-color .2s,background-position .2s;
+}
+
+body.tema-aurora input#cfgSmcAtivo:checked{
+background-color:var(--pa-primary);
+background-image:radial-gradient(circle,oklch(0.14 0.035 268) 0 48%,transparent 52%);
+background-position:calc(100% - 2px) center;
+background-size:20px 20px;
+}
+
+@media (prefers-reduced-motion:reduce){
+body.tema-aurora input[type="checkbox"],
+body.tema-aurora input[type="radio"],
+body.tema-aurora input#cfgSmcAtivo{transition:none;}
+}
+
+/* Um cartão que só serve de invólucro de outros cartões (ex.: "Configurações
+   RMI" agrupa Perfil, Scanner, Mercado...) não ganha vidro próprio: vidro
+   sobre vidro acinzenta tudo. No projeto os cartões da Config são planos. */
+body.tema-aurora .card:has(> .card){
+background:none;
+border:0;
+padding:0;
+-webkit-backdrop-filter:none;
+backdrop-filter:none;
+}
+
+body.tema-aurora .card:has(> .card)::after{
+display:none;
+}
+
+/* telas secundárias: título grande + linha de apoio (ScreenHeader do projeto) */
+body.tema-aurora .header--aba .subtitle{
+margin-top:0;
+font-size:26px;
+}

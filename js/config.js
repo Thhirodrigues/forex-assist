@@ -302,6 +302,8 @@ Forex Assist
 
     </div>
 
+</div>
+
 <div class="list-item">
 
 Cooldown entre sinais

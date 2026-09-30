@@ -12807,3 +12807,76 @@ VALIDAÇÃO (Firestore FALSO, Playwright): 5 abas sem erro de console; troca
 de aba e cenários do Painel funcionam; nenhum emoji mapeado sobra.
 Imagem de comparação: DOCUMENTACAO/comparacao-aurora-projeto-vs-app.png.
 --------
+
+AJUSTE-051 (30/09/2026) - componentes do projeto Aurora Glass no Painel,
+Resultados, Histórico e Config, com DADOS REAIS (só frontend; congelamento
+do pipeline intacto - nenhuma mudança em scripts/ nem em js/checker.js).
+
+FEEDBACK do usuário sobre o AJUSTE-050: "o projeto oficial e aprovado e o que
+você fez tirou toda a beleza do que foi criado, está muito diferente".
+Ele mandou um print do projeto oficial no Lovable.
+
+O QUE ESTAVA ERRADO: nas rodadas 047-050 eu igualei fundo, vidro, tokens e
+barra, mas deixei de fora os COMPONENTES que dão a beleza ao projeto (cartão
+de sinal com anel, saldo/hoje, curva, operações com marcador, resumo do
+histórico). O argumento "o Painel real não tem esses dados" (AJUSTE-047) era
+FALSO: a operação salva já tem par, direção, score, precoEntrada, tpUSD,
+slUSD, lote, resultado, movimentoPips, saldoAntes e saldoDepois.
+
+O QUE MUDOU
+  - js/painel.js + css/painel.css (novos). Painel = componentes do projeto
+    com medidas copiadas do projeto rodando lado a lado (raios 28/24px,
+    marcador de 36px, chips de 32px, brilho 64px, transições). Ordem: sinal,
+    saldo/hoje, curva com períodos, operações recentes com folha de detalhe;
+    abaixo, os controles que só existem no app real (scanner, contas,
+    desempenho).
+      * Sinal ativo = operação mais recente SEM `resultado`, aberta há < 24h
+        (senão estado "Espera"). Anel = `score`, rotulado SCORE (o projeto o
+        chama de RMI, mas RMI é o nome da inteligência do app, não um número
+        - ver ESTADO_ATUAL.md seção 1). Stop/Alvo em US$ (`slUSD`/`tpUSD`;
+        o sistema não guarda preço de stop/alvo). Entrada = `precoEntrada`.
+      * Saldo = Conta Simulada. Hoje = soma de `resultadoFinanceiro` das
+        fechadas hoje (Brasília). Curva = `saldoDepois` encadeado.
+      * CUSTO: 1 consulta a `historico` (últimas 200, orderBy timestamp, sem
+        índice composto) + 1 leitura da config, com cache de 60s em memória.
+        É mais leitura que o Painel antigo - vigiar a cota do Firestore.
+  - Resultados: visão geral do projeto (taxa de acerto com anel, evolução com
+    períodos 1D/1S/1M/3M/Tudo, fator de lucro, operações, ganho/perda médios,
+    por par, por sessão) calculada sobre os MESMOS sinais filtrados da lista.
+    Filtros, lista detalhada e comparação de sinais continuam. Período "3M"
+    (90 dias) é novo. "Por sessão" só conta sinais que gravaram
+    `janelaOrigem`.
+  - Histórico: resumo (Pips/US$/Acerto), chips (Todas, Ganhos, Perdas,
+    Pendentes e um por par) e lista de linhas de vidro por dia, no formato
+    do projeto. O detalhe rico (construirDetalheSinal) é o mesmo e abre no
+    toque na linha. Filtros novos reaproveitam filtroHistoricoResultado e
+    aplicarFiltroHistoricoResultado (a tabela também respeita o filtro de
+    par). ATENÇÃO - MUDANÇA DE PADRÃO: `modoTabela` passou de true para false
+    (a lista é o padrão; a tabela fica em "Ver como tabela"). A tabela tinha
+    sido pedida pelo usuário em 11/09; para voltar, basta `let modoTabela =
+    true;` em js/historico.js.
+  - Config: BUG antigo de HTML corrigido - o item "Delay entre análises"
+    nunca fechava seu <div class="list-item">, então os itens seguintes e
+    todos os cartões depois de "Scanner" ficavam aninhados dentro dele
+    (invisível no visual antigo; com vidro sobre vidro acinzentava tudo).
+    Cartões que só envolvem outros cartões ficam sem vidro; interruptor
+    (#cfgSmcAtivo), caixas e opções no padrão de cor do projeto.
+  - Cabeçalho: Painel = "FOREX ASSIST" + título + pílula do scanner; demais
+    abas = título grande + linha de apoio (padrão do projeto).
+    "Real Money Intelligence" fica na linha de apoio do Manual.
+
+VALIDAÇÃO (Firestore FALSO, Playwright 390px): 5 abas sem erro de console; 4
+estados do Painel (sinal ativo, espera, vazio, falha); chips e filtros do
+Histórico em lista e tabela; abertura do detalhe; folha de detalhe do Painel.
+Comparação lado a lado: DOCUMENTACAO/comparacao-aurora-projeto-vs-app.png.
+
+LIMITES
+  - Sem credenciais do Firestore aqui: nada foi visto com dados reais nem em
+    aparelho real. Os campos usados foram conferidos no código que grava
+    (scripts/pairAnalyzer.js, riskManager.js, js/checker.js).
+  - "Sinal ativo" depende de `resultado` vazio e timestamp recente; uma
+    operação pendente esquecida há mais de 24h não aparece como ativa.
+  - As 200 últimas operações limitam a curva de "Tudo" e de "3M" no Painel.
+  - Fluxos que GRAVAM (marcar resultado, operação real, salvar Config, aporte)
+    não foram exercitados, só renderizados.
+--------
