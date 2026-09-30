@@ -1,3 +1,22 @@
+// Título de cada aba no cabeçalho (mesmo padrão do projeto Aurora Glass:
+// "FOREX ASSIST" pequeno em cima, nome da aba embaixo).
+const TITULOS_ABA = {
+    dashboard: "Painel",
+    historico: "Histórico",
+    resultados: "Resultados",
+    config: "Config",
+    manual: "Manual"
+};
+
+// Linha de apoio sob o título nas telas secundárias (padrão do projeto:
+// título grande + subtítulo). "Real Money Intelligence" é o nome da marca.
+const SUBTITULOS_ABA = {
+    historico: "Sinais e operações, dia a dia",
+    resultados: "Desempenho da conta",
+    config: "Preferências do assistente",
+    manual: "Real Money Intelligence"
+};
+
 const app = {
 
     currentTab:
@@ -13,7 +32,10 @@ localStorage.getItem("ultimaAba")
 
         document.addEventListener("click", (e) => {
 
-            const tab = e.target.dataset.tab;
+            // closest(): o clique pode cair no ícone ou no rótulo
+            // dentro do botão, não só no <button> em si.
+            const alvoTab = e.target.closest ? e.target.closest("[data-tab]") : null;
+            const tab = alvoTab ? alvoTab.dataset.tab : undefined;
 
             if(tab){
 
@@ -44,6 +66,9 @@ localStorage.getItem("ultimaAba")
             this.currentTab = "dashboard";
             localStorage.setItem("ultimaAba", "dashboard");
         }
+
+        // Tema "Aurora Glass" em todas as abas (css/styles.css).
+        document.body.classList.add("tema-aurora");
 
         const app = document.getElementById("app");
 
@@ -78,38 +103,39 @@ localStorage.getItem("ultimaAba")
 
         app.innerHTML = `
         
-        <div class="header">
-            <div class="logo">Forex Assist</div>
-            <div class="subtitle">Real Money Intelligence</div>
+        <div class="header${this.currentTab === "dashboard" ? "" : " header--aba"}">
+            <div class="header-linha">
+                <div class="header-texto">
+                    ${this.currentTab === "dashboard" ? '<div class="logo">Forex Assist</div>' : ""}
+                    <div class="subtitle">${TITULOS_ABA[this.currentTab] || "Forex Assist"}</div>
+                    ${this.currentTab === "dashboard" ? "" : `<div class="tagline">${SUBTITULOS_ABA[this.currentTab] || ""}</div>`}
+                </div>
+                ${this.currentTab === "dashboard" ? `
+                <div id="scannerStatus" class="pa-status pa-status--carregando" role="status" aria-live="polite">
+                    <i class="pa-ponto" aria-hidden="true"></i><span>Carregando…</span>
+                </div>` : ""}
+            </div>
         </div>
 
         <div class="container">
             ${content}
         </div>
 
-        <div class="bottom-nav">
-
-            <button class="nav-btn ${this.currentTab==="dashboard"?"nav-active":""}" data-tab="dashboard">
-                Dashboard
-            </button>
-
-            <button class="nav-btn ${this.currentTab==="historico"?"nav-active":""}" data-tab="historico">
-                Histórico
-            </button>
-
-            <button class="nav-btn ${this.currentTab==="resultados"?"nav-active":""}" data-tab="resultados">
-                Resultados
-            </button>
-
-            <button class="nav-btn ${this.currentTab==="config"?"nav-active":""}" data-tab="config">
-                Config
-            </button>
-
-            <button class="nav-btn ${this.currentTab==="manual"?"nav-active":""}" data-tab="manual">
-                Manual
-            </button>
-
+        <nav class="bottom-nav" aria-label="Navegação principal">
+        <div class="bn-lista">
+${[
+    ["dashboard", "Painel",     "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"],
+    ["historico", "Histórico",  "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2"],
+    ["resultados","Resultados", "M5 20V11M12 20V4M19 20v-6"],
+    ["config",    "Config",     "M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4"],
+    ["manual",    "Manual",     "M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h10"]
+].map(([id, rotulo, icone]) => `
+            <button class="nav-btn ${this.currentTab===id?"nav-active":""}" data-tab="${id}" aria-label="${rotulo}"${this.currentTab===id?' aria-current="page"':""}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icone}"/></svg>
+                <span>${rotulo}</span>
+            </button>`).join("")}
         </div>
+        </nav>
         `;
         if (this.currentTab === "dashboard") {
 
@@ -123,8 +149,19 @@ localStorage.getItem("ultimaAba")
         // passar a rotacionar entre todos os pares (ver
         // PENDENCIAS-ESTRATEGICAS-RMI.md, seção 6).
 
+        if (typeof renderPainel === "function") {
+            renderPainel();
+        }
+
         if (typeof renderModoAtual === "function") {
             renderModoAtual();
+        }
+
+        // Primeira leitura do status logo ao abrir a aba (antes só o
+        // setInterval de 15s preenchia, e o card ficava "Carregando..."
+        // até lá). Uma leitura a mais por visita ao Dashboard.
+        if (typeof atualizarStatusScanner === "function") {
+            atualizarStatusScanner();
         }
 
         if (typeof renderDesempenho === "function") {

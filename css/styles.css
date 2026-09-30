@@ -233,3 +233,996 @@ transition:all .15s ease;
 transform:scale(0.98);
 opacity:0.8;
 }
+
+
+/* ===================================================
+   TEMA "AURORA GLASS" - app inteiro
+   ---------------------------------------------------
+   Nasceu no Painel (AJUSTE-047) e passou para todas as abas
+   (AJUSTE-048). Vale enquanto o <body> tiver a classe tema-aurora
+   (index.html e js/app.js). Para voltar ao visual antigo de uma aba,
+   basta tirar a classe. Cores em hexadecimal (convertidas do oklch do
+   protótipo) para funcionar em qualquer navegador.
+   =================================================== */
+
+body.tema-aurora{
+/* valores copiados de src/styles.css do projeto Aurora Glass (Lovable) */
+--pa-fim:oklch(0.1 0.025 265);
+--pa-fg:oklch(0.985 0.004 265);
+--pa-muted:oklch(0.82 0.025 265);
+--pa-primary:oklch(0.83 0.13 200);
+--pa-primary-fg:oklch(0.16 0.04 268);
+--pa-card:oklch(0.22 0.045 272);
+--pa-ganho:oklch(0.88 0.16 162);
+--pa-ganho-suave:oklch(0.88 0.16 162 / 18%);
+--pa-perda:oklch(0.8 0.14 24);
+--pa-perda-suave:oklch(0.8 0.14 24 / 18%);
+--pa-espera:oklch(0.88 0.12 92);
+--pa-vidro:oklch(1 0 0 / 9%);
+--pa-vidro-forte:oklch(1 0 0 / 15%);
+--pa-borda:oklch(1 0 0 / 20%);
+--pa-fio:oklch(1 0 0 / 12%);
+background:oklch(0.1 0.02 262);
+color:var(--pa-fg);
+font-family:"Inter",ui-sans-serif,system-ui,sans-serif;
+font-feature-settings:"tnum" 1,"cv05" 1;
+letter-spacing:-0.006em;
+padding-bottom:calc(112px + env(safe-area-inset-bottom, 0px));
+}
+
+/* o reset global força Arial em tudo; aqui a família volta a ser herdada */
+body.tema-aurora *{
+font-family:inherit;
+}
+
+body.tema-aurora .pa-num{
+font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+font-variant-numeric:tabular-nums;
+letter-spacing:-.01em;
+}
+
+/* fundo de ambiente: camada fixa própria. background-attachment:fixed
+   trava no Safari do iPhone, esta camada não. */
+body.tema-aurora::before{
+content:"";
+position:fixed;
+inset:0;
+z-index:-1;
+pointer-events:none;
+background:
+radial-gradient(115% 70% at 8% -4%, oklch(0.56 0.21 288 / 52%) 0%, transparent 60%),
+radial-gradient(95% 60% at 100% 6%, oklch(0.74 0.15 198 / 38%) 0%, transparent 58%),
+radial-gradient(80% 50% at 50% 104%, oklch(0.6 0.17 300 / 26%) 0%, transparent 62%),
+linear-gradient(180deg, oklch(0.18 0.05 274) 0%, oklch(0.13 0.035 268) 55%, oklch(0.1 0.025 265) 100%);
+}
+
+/* cabeçalho e barra inferior compartilhados, com a pele da Aurora */
+body.tema-aurora .header{
+padding:28px 20px 0;
+border-bottom:0;
+}
+
+body.tema-aurora .header-linha{
+display:grid;
+grid-template-columns:minmax(0,1fr) auto;
+align-items:center;
+gap:12px;
+}
+
+body.tema-aurora .header-texto{
+min-width:0;
+}
+
+body.tema-aurora .tagline{
+margin-top:4px;
+font-size:14px;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .logo{
+font-size:13px;
+font-weight:700;
+letter-spacing:.28em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .subtitle{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:22px;
+font-weight:700;
+letter-spacing:-.02em;
+color:var(--pa-fg);
+margin-top:4px;
+line-height:1.25;
+}
+
+body.tema-aurora .container{
+padding:20px 20px 0;
+}
+
+body.tema-aurora .bottom-nav{
+position:fixed;
+left:0;
+right:0;
+bottom:0;
+z-index:30;
+height:auto;
+display:block;
+padding:0 16px calc(16px + env(safe-area-inset-bottom, 0px));
+background:none;
+border:0;
+-webkit-backdrop-filter:none;
+backdrop-filter:none;
+}
+
+/* degradê que apaga o conteúdo atrás da barra (igual ao projeto) */
+body.tema-aurora .bottom-nav::before{
+content:"";
+position:absolute;
+left:0;
+right:0;
+top:-40px;
+bottom:0;
+z-index:-1;
+pointer-events:none;
+background:linear-gradient(to top,oklch(0.14 0.035 268) 0%,oklch(0.14 0.035 268 / 90%) 50%,transparent 100%);
+}
+
+body.tema-aurora .bn-lista{
+position:relative;
+max-width:430px;
+margin:0 auto;
+display:grid;
+grid-template-columns:repeat(5,minmax(0,1fr));
+gap:4px;
+padding:6px;
+border-radius:1.6rem;
+background:oklch(0.22 0.045 272 / 80%);
+border:1px solid var(--pa-borda);
+-webkit-backdrop-filter:blur(28px) saturate(150%);
+backdrop-filter:blur(28px) saturate(150%);
+}
+
+body.tema-aurora .nav-btn{
+min-width:0;
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:4px;
+padding:8px 4px;
+border:0;
+border-radius:24px;
+background:none;
+color:var(--pa-muted);
+font-size:12px;
+font-weight:600;
+letter-spacing:-0.025em;
+cursor:pointer;
+transition:color .2s;
+}
+
+body.tema-aurora .nav-btn span{
+width:100%;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+text-align:center;
+}
+
+body.tema-aurora .nav-btn svg{
+width:22px;
+height:22px;
+flex:none;
+fill:none;
+stroke:currentColor;
+stroke-width:1.9;
+stroke-linecap:round;
+stroke-linejoin:round;
+}
+
+body.tema-aurora .nav-btn:hover{color:var(--pa-fg);}
+
+body.tema-aurora .nav-active{
+color:var(--pa-primary);
+font-weight:700;
+}
+
+body.tema-aurora .nav-btn:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:-2px;
+}
+
+/* estrutura do Painel */
+.painel{
+display:flex;
+flex-direction:column;
+gap:20px;
+max-width:520px;
+margin:0 auto;
+}
+
+body.tema-aurora .pa-vidro{
+background:var(--pa-vidro);
+border:1px solid var(--pa-borda);
+border-radius:24px;
+padding:16px;
+-webkit-backdrop-filter:blur(20px) saturate(140%);
+backdrop-filter:blur(20px) saturate(140%);
+}
+
+body.tema-aurora .pa-vidro--forte{
+border-radius:28px;
+padding:20px;
+background:var(--pa-vidro-forte);
+-webkit-backdrop-filter:blur(28px) saturate(150%);
+backdrop-filter:blur(28px) saturate(150%);
+}
+
+body.tema-aurora .pa-eyebrow{
+font-size:12px;
+font-weight:600;
+letter-spacing:.14em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pa-titulo{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:18px;
+font-weight:700;
+letter-spacing:-.01em;
+}
+
+body.tema-aurora .pa-nota{
+margin-top:6px;
+font-size:13px;
+line-height:1.45;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pa-carregando{
+font-size:14px;
+color:var(--pa-muted);
+}
+
+/* Scanner */
+body.tema-aurora .pa-hero{
+position:relative;
+overflow:hidden;
+}
+
+body.tema-aurora .pa-hero::before{
+content:"";
+position:absolute;
+top:-70px;
+right:-60px;
+width:220px;
+height:220px;
+border-radius:50%;
+background:var(--pa-primary);
+opacity:.14;
+filter:blur(48px);
+pointer-events:none;
+}
+
+body.tema-aurora .pa-hero > *{
+position:relative;
+}
+
+body.tema-aurora .pa-hero-topo{
+display:flex;
+justify-content:space-between;
+align-items:flex-start;
+gap:16px;
+}
+
+body.tema-aurora .pa-status{
+display:inline-flex;
+align-items:center;
+gap:10px;
+margin-top:8px;
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:28px;
+font-weight:700;
+letter-spacing:-.02em;
+line-height:1.1;
+}
+
+body.tema-aurora .pa-ponto{
+display:inline-block;
+width:12px;
+height:12px;
+border-radius:50%;
+background:var(--pa-muted);
+}
+
+body.tema-aurora .pa-status--on .pa-ponto{
+background:var(--pa-ganho);
+}
+
+body.tema-aurora .pa-status--off .pa-ponto{
+background:var(--pa-perda);
+}
+
+body.tema-aurora .pa-modo{
+flex-shrink:0;
+white-space:nowrap;
+}
+
+body.tema-aurora .pa-modo-valor{
+margin-top:8px;
+font-size:16px;
+font-weight:700;
+}
+
+body.tema-aurora .pa-perfil::before{
+content:"";
+display:inline-block;
+width:9px;
+height:9px;
+margin-right:7px;
+border-radius:50%;
+background:var(--pa-muted);
+}
+
+body.tema-aurora .pa-perfil--agressivo::before{background:var(--pa-ganho);}
+body.tema-aurora .pa-perfil--balanceado::before{background:var(--pa-primary);}
+body.tema-aurora .pa-perfil--conservador::before{background:var(--pa-espera);}
+
+body.tema-aurora .pa-acoes{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:18px;
+}
+
+body.tema-aurora .pa-btn{
+margin-top:0;
+min-height:48px;
+padding:12px 8px;
+border-radius:14px;
+font-size:14px;
+font-weight:700;
+white-space:nowrap;
+border:1px solid transparent;
+}
+
+body.tema-aurora .pa-btn.start-btn{
+background:var(--pa-ganho-suave);
+color:var(--pa-ganho);
+border-color:oklch(0.88 0.16 162 / 40%);
+}
+
+body.tema-aurora .pa-btn.stop-btn{
+background:var(--pa-perda-suave);
+color:var(--pa-perda);
+border-color:oklch(0.8 0.14 24 / 40%);
+}
+
+body.tema-aurora .pa-btn:focus-visible,
+body.tema-aurora .pa-btn-sec:focus-visible,
+body.tema-aurora .pa-data input:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:2px;
+}
+
+body.tema-aurora .pa-linha{
+display:flex;
+justify-content:space-between;
+align-items:baseline;
+margin-top:16px;
+padding-top:14px;
+border-top:1px solid var(--pa-fio);
+font-size:14px;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pa-linha b{
+font-size:18px;
+color:var(--pa-fg);
+}
+
+#desempenhoCard{
+display:flex;
+flex-direction:column;
+gap:20px;
+}
+
+body.tema-aurora .pa-sr{
+position:absolute;
+width:1px;
+height:1px;
+overflow:hidden;
+clip:rect(0 0 0 0);
+white-space:nowrap;
+}
+
+/* Contas */
+body.tema-aurora .pa-conta-valor{
+margin-top:6px;
+font-size:28px;
+font-weight:700;
+white-space:nowrap;
+}
+
+body.tema-aurora .pa-btn-sec{
+width:100%;
+min-height:44px;
+margin-top:12px;
+padding:10px;
+border-radius:14px;
+border:1px solid var(--pa-borda);
+background:var(--pa-vidro);
+color:var(--pa-fg);
+font-size:14px;
+font-weight:600;
+cursor:pointer;
+}
+
+/* Desempenho do dia */
+body.tema-aurora .pa-dia-topo{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:12px;
+}
+
+body.tema-aurora .pa-data input{
+background:rgba(255,255,255,.08);
+border:1px solid var(--pa-borda);
+border-radius:12px;
+padding:8px 10px;
+color:var(--pa-fg);
+font-size:14px;
+color-scheme:dark;
+min-height:40px;
+}
+
+body.tema-aurora .pa-dia-corpo{
+display:grid;
+grid-template-columns:auto minmax(0,1fr);
+align-items:center;
+gap:18px;
+margin-top:16px;
+}
+
+body.tema-aurora .pa-anel{
+position:relative;
+width:104px;
+height:104px;
+}
+
+body.tema-aurora .pa-anel svg{
+display:block;
+width:104px;
+height:104px;
+transform:rotate(-90deg);
+}
+
+body.tema-aurora .pa-anel circle{
+fill:none;
+stroke-width:9;
+}
+
+body.tema-aurora .pa-anel-trilho{
+stroke:rgba(255,255,255,.12);
+}
+
+body.tema-aurora .pa-anel-valor{
+stroke:var(--pa-primary);
+stroke-linecap:round;
+filter:drop-shadow(0 0 6px oklch(0.83 0.13 200 / 45%));
+transition:stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1);
+}
+
+body.tema-aurora .pa-anel-txt{
+position:absolute;
+inset:0;
+display:grid;
+place-content:center;
+text-align:center;
+}
+
+body.tema-aurora .pa-anel-txt b{
+font-size:24px;
+line-height:1;
+}
+
+body.tema-aurora .pa-anel-txt small{
+margin-top:4px;
+font-size:12px;
+letter-spacing:.08em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pa-amostra{
+font-size:15px;
+font-weight:600;
+}
+
+body.tema-aurora .pa-chips{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:10px;
+}
+
+body.tema-aurora .pa-chip{
+display:inline-flex;
+align-items:center;
+gap:6px;
+padding:5px 11px;
+border-radius:99px;
+font-size:13px;
+font-weight:700;
+letter-spacing:.04em;
+}
+
+body.tema-aurora .pa-chip--ganho{
+background:var(--pa-ganho-suave);
+color:var(--pa-ganho);
+}
+
+body.tema-aurora .pa-chip--perda{
+background:var(--pa-perda-suave);
+color:var(--pa-perda);
+}
+
+body.tema-aurora .pa-resultado{
+display:flex;
+justify-content:space-between;
+align-items:baseline;
+gap:12px;
+margin-top:16px;
+padding-top:14px;
+border-top:1px solid var(--pa-fio);
+}
+
+body.tema-aurora .pa-resultado b{
+font-size:20px;
+white-space:nowrap;
+}
+
+body.tema-aurora .pa-res--ganho{color:var(--pa-ganho);}
+body.tema-aurora .pa-res--perda{color:var(--pa-perda);}
+body.tema-aurora .pa-res--neutro{color:var(--pa-muted);}
+
+body.tema-aurora .pa-seta{
+margin-right:4px;
+font-size:.65em;
+vertical-align:.12em;
+}
+
+/* Desde sempre */
+body.tema-aurora .pa-sempre{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px;
+margin-top:12px;
+}
+
+body.tema-aurora .pa-sempre dt{
+font-size:12px;
+font-weight:600;
+letter-spacing:.12em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .pa-sempre dd{
+margin:4px 0 0;
+font-size:20px;
+font-weight:700;
+}
+
+body.tema-aurora .pa-erro{
+font-size:14px;
+line-height:1.45;
+color:var(--pa-perda);
+}
+
+body.tema-aurora .pa-rodape{
+padding:0 4px;
+font-size:12px;
+color:var(--pa-muted);
+}
+
+@media (prefers-reduced-motion:reduce){
+body.tema-aurora .pa-anel-valor{transition:none;}
+}
+
+
+/* ---------------------------------------------------
+   ABAS ANTIGAS (Histórico, Resultados, Config, Manual)
+   Elas montam o HTML em js/*.js com classes antigas e estilo em
+   linha. Aqui as classes antigas ganham a pele da Aurora; as cores
+   escritas em linha foram trocadas direto nos js (AJUSTE-048).
+   --------------------------------------------------- */
+
+body.tema-aurora .card{
+background:var(--pa-vidro);
+border:1px solid var(--pa-borda);
+border-radius:24px;
+padding:20px;
+margin-bottom:20px;
+box-shadow:none;
+-webkit-backdrop-filter:blur(20px) saturate(140%);
+backdrop-filter:blur(20px) saturate(140%);
+}
+
+body.tema-aurora .card-title{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:18px;
+font-weight:700;
+letter-spacing:-.01em;
+color:var(--pa-fg);
+margin-bottom:12px;
+}
+
+body.tema-aurora .list-item{
+border-bottom:1px solid var(--pa-fio);
+}
+
+body.tema-aurora .list-item:last-child{
+border-bottom:0;
+}
+
+body.tema-aurora .big-number{
+font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+font-variant-numeric:tabular-nums;
+font-size:32px;
+letter-spacing:-.01em;
+}
+
+body.tema-aurora .signal{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+}
+
+body.tema-aurora .buy,
+body.tema-aurora .status-online{color:var(--pa-ganho);}
+body.tema-aurora .sell,
+body.tema-aurora .status-offline{color:var(--pa-perda);}
+body.tema-aurora .wait{color:var(--pa-espera);}
+
+body.tema-aurora .manual-title{
+color:var(--pa-primary);
+}
+
+body.tema-aurora .history-item{
+background:rgba(255,255,255,.06);
+border-left-color:var(--pa-primary);
+}
+
+body.tema-aurora .history-date{
+color:var(--pa-muted);
+}
+
+body.tema-aurora .history-result-win{color:var(--pa-ganho);}
+body.tema-aurora .history-result-loss{color:var(--pa-perda);}
+body.tema-aurora .history-result-open{color:var(--pa-espera);}
+
+body.tema-aurora .button{
+border-radius:14px;
+}
+
+/* campos de formulário: antes ficavam com o visual padrão do navegador */
+body.tema-aurora select,
+body.tema-aurora textarea,
+body.tema-aurora input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]){
+background:rgba(255,255,255,.08);
+border:1px solid var(--pa-borda);
+border-radius:12px;
+padding:9px 10px;
+color:var(--pa-fg);
+font-size:14px;
+min-height:42px;
+color-scheme:dark;
+}
+
+body.tema-aurora select:focus-visible,
+body.tema-aurora textarea:focus-visible,
+body.tema-aurora input:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:2px;
+}
+
+body.tema-aurora input[type="checkbox"],
+body.tema-aurora input[type="radio"],
+body.tema-aurora input[type="range"]{
+accent-color:var(--pa-primary);
+}
+
+body.tema-aurora a{
+color:var(--pa-primary);
+}
+
+/* piso de legibilidade: textos de 10 e 11px escritos em linha nos js
+   sobem para 12px (só afeta estilo em linha; texto de SVG não muda) */
+body.tema-aurora [style*="font-size:10px"],
+body.tema-aurora [style*="font-size:11px"],
+body.tema-aurora [style*="font-size: 10px"],
+body.tema-aurora [style*="font-size: 11px"]{
+font-size:12px !important;
+}
+
+/* Manual: texto corrido com hierarquia (h2/h3/p/listas só existem nele;
+   os títulos das outras abas usam .card-title) */
+body.tema-aurora .card h2{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:22px;
+line-height:1.2;
+letter-spacing:-.02em;
+margin:0 0 8px;
+}
+
+body.tema-aurora .card h3{
+font-family:"Space Grotesk","Inter",system-ui,sans-serif;
+font-size:17px;
+line-height:1.3;
+letter-spacing:-.01em;
+margin:20px 0 6px;
+color:var(--pa-fg);
+}
+
+body.tema-aurora .card p{
+font-size:15px;
+line-height:1.6;
+margin:8px 0;
+color:var(--pa-fg);
+}
+
+body.tema-aurora .card ol,
+body.tema-aurora .card ul{
+padding-left:22px;
+margin:8px 0;
+}
+
+body.tema-aurora .card li{
+font-size:15px;
+line-height:1.55;
+margin:6px 0;
+}
+
+/* Manual: tabelas mais largas que a tela rolam dentro do próprio bloco,
+   em vez de esticar a página (e a barra de navegação) */
+body.tema-aurora .aba-manual table{
+display:block;
+max-width:100%;
+overflow-x:auto;
+}
+
+
+/* ---------------------------------------------------
+   ÍCONES (js/icones.js troca os emojis por estes)
+   Cor por função: menta = ganho/ok, coral = perda/erro,
+   âmbar = atenção, ciano e violeta = informação/seções.
+   --------------------------------------------------- */
+body.tema-aurora{
+--ic-ciano:var(--pa-primary);
+--ic-violeta:oklch(0.78 0.13 292);
+--ic-menta:var(--pa-ganho);
+--ic-coral:var(--pa-perda);
+--ic-ambar:var(--pa-espera);
+--ic-neutro:var(--pa-muted);
+}
+
+body.tema-aurora .ic{
+width:1.15em;
+height:1.15em;
+vertical-align:-.2em;
+fill:none;
+stroke:currentColor;
+stroke-width:1.8;
+stroke-linecap:round;
+stroke-linejoin:round;
+flex:none;
+}
+
+body.tema-aurora .ic--cheio{fill:currentColor;stroke:none;}
+
+body.tema-aurora .ic--ciano{color:var(--ic-ciano);}
+body.tema-aurora .ic--violeta{color:var(--ic-violeta);}
+body.tema-aurora .ic--menta{color:var(--ic-menta);}
+body.tema-aurora .ic--coral{color:var(--ic-coral);}
+body.tema-aurora .ic--ambar{color:var(--ic-ambar);}
+body.tema-aurora .ic--neutro{color:var(--ic-neutro);}
+
+/* ícone no início de um título vira um "chip" colorido */
+body.tema-aurora .ic--chip{
+width:38px;
+height:38px;
+padding:9px;
+margin-right:12px;
+border-radius:13px;
+vertical-align:middle;
+stroke-width:1.7;
+}
+
+body.tema-aurora .ic--chip.ic--ciano{background:oklch(0.83 0.13 200 / 16%);}
+body.tema-aurora .ic--chip.ic--violeta{background:oklch(0.78 0.13 292 / 18%);}
+body.tema-aurora .ic--chip.ic--menta{background:oklch(0.88 0.16 162 / 16%);}
+body.tema-aurora .ic--chip.ic--coral{background:oklch(0.8 0.14 24 / 16%);}
+body.tema-aurora .ic--chip.ic--ambar{background:oklch(0.88 0.12 92 / 16%);}
+body.tema-aurora .ic--chip.ic--neutro{background:oklch(1 0 0 / 10%);}
+
+/* dentro de botões o ícone acompanha a cor do texto */
+body.tema-aurora button .ic{
+color:currentColor;
+}
+
+/* palavras de direção/estado coloridas em tabelas (js/icones.js) */
+body.tema-aurora .pal{font-weight:700;}
+body.tema-aurora .pal--menta{color:var(--ic-menta);}
+body.tema-aurora .pal--coral{color:var(--ic-coral);}
+body.tema-aurora .pal--ambar{color:var(--ic-ambar);}
+
+
+/* borda luminosa: cópia da utilidade borda-luminosa do projeto Aurora Glass,
+   aplicada aos cartões principais e à barra inferior */
+body.tema-aurora .pa-vidro--forte,
+body.tema-aurora .card{
+position:relative;
+}
+
+body.tema-aurora .pa-vidro--forte::after,
+body.tema-aurora .card::after,
+body.tema-aurora .bn-lista::after{
+content:"";
+position:absolute;
+inset:0;
+border-radius:inherit;
+padding:1px;
+background:linear-gradient(150deg,oklch(1 0 0 / 34%) 0%,oklch(1 0 0 / 4%) 42%,oklch(1 0 0 / 18%) 100%);
+-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+-webkit-mask-composite:xor;
+mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+mask-composite:exclude;
+pointer-events:none;
+}
+
+/* status do scanner: pílula de vidro com ponto pulsante (ScannerStatus do projeto) */
+body.tema-aurora .pa-status{
+display:inline-flex;
+align-items:center;
+gap:8px;
+margin-top:0;
+padding:6px 12px;
+border-radius:9999px;
+background:var(--pa-vidro);
+border:1px solid var(--pa-borda);
+-webkit-backdrop-filter:blur(20px) saturate(140%);
+backdrop-filter:blur(20px) saturate(140%);
+font-family:inherit;
+font-size:13px;
+font-weight:500;
+letter-spacing:-0.006em;
+line-height:1.4;
+color:var(--pa-fg);
+white-space:nowrap;
+}
+
+body.tema-aurora .pa-status .pa-ponto{
+position:relative;
+width:6px;
+height:6px;
+margin:1px;
+box-shadow:none;
+}
+
+body.tema-aurora .pa-status .pa-ponto::after{
+content:"";
+position:absolute;
+inset:-1px;
+border-radius:50%;
+background:inherit;
+animation:pa-pulso 2.6s ease-in-out infinite;
+}
+
+@keyframes pa-pulso{
+0%,100%{opacity:.45;transform:scale(1);}
+50%{opacity:1;transform:scale(1.35);}
+}
+
+@media (prefers-reduced-motion:reduce){
+body.tema-aurora .pa-status .pa-ponto::after{animation:none;}
+}
+
+/* ---------------------------------------------------
+   CONTROLES NO ESTILO DO PROJETO (Switch / caixa / opção)
+   O Config do projeto usa interruptor em ciano; aqui o único liga/desliga
+   real (#cfgSmcAtivo) vira interruptor, e as listas (pares, sessões) e o
+   perfil ganham caixa e botão de opção no mesmo padrão de cor.
+   --------------------------------------------------- */
+body.tema-aurora input[type="checkbox"],
+body.tema-aurora input[type="radio"]{
+-webkit-appearance:none;
+appearance:none;
+display:inline-block;
+flex:none;
+width:20px;
+height:20px;
+margin:0 10px 0 0;
+vertical-align:-5px;
+border:1.5px solid var(--pa-primary);
+background-color:transparent;
+cursor:pointer;
+transition:background-color .2s;
+}
+
+body.tema-aurora input[type="checkbox"]{
+border-radius:6px;
+}
+
+body.tema-aurora input[type="checkbox"]:checked{
+background-color:var(--pa-primary);
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23070b1f' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+background-position:center;
+background-repeat:no-repeat;
+background-size:14px 14px;
+}
+
+body.tema-aurora input[type="radio"]{
+border-radius:50%;
+}
+
+body.tema-aurora input[type="radio"]:checked{
+background-image:radial-gradient(circle,var(--pa-primary) 0 42%,transparent 46%);
+}
+
+body.tema-aurora input[type="checkbox"]:focus-visible,
+body.tema-aurora input[type="radio"]:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:2px;
+}
+
+/* interruptor (Switch do projeto: 44x24, trilho cinza/ciano, bolinha escura) */
+body.tema-aurora input#cfgSmcAtivo{
+width:44px;
+height:24px;
+margin-right:12px;
+vertical-align:-7px;
+border:0;
+border-radius:9999px;
+background-color:oklch(1 0 0 / 16%);
+background-image:radial-gradient(circle,oklch(0.14 0.035 268) 0 48%,transparent 52%);
+background-repeat:no-repeat;
+background-size:20px 20px;
+background-position:2px center;
+transition:background-color .2s,background-position .2s;
+}
+
+body.tema-aurora input#cfgSmcAtivo:checked{
+background-color:var(--pa-primary);
+background-image:radial-gradient(circle,oklch(0.14 0.035 268) 0 48%,transparent 52%);
+background-position:calc(100% - 2px) center;
+background-size:20px 20px;
+}
+
+@media (prefers-reduced-motion:reduce){
+body.tema-aurora input[type="checkbox"],
+body.tema-aurora input[type="radio"],
+body.tema-aurora input#cfgSmcAtivo{transition:none;}
+}
+
+/* Um cartão que só serve de invólucro de outros cartões (ex.: "Configurações
+   RMI" agrupa Perfil, Scanner, Mercado...) não ganha vidro próprio: vidro
+   sobre vidro acinzenta tudo. No projeto os cartões da Config são planos. */
+body.tema-aurora .card:has(> .card){
+background:none;
+border:0;
+padding:0;
+-webkit-backdrop-filter:none;
+backdrop-filter:none;
+}
+
+body.tema-aurora .card:has(> .card)::after{
+display:none;
+}
+
+/* telas secundárias: título grande + linha de apoio (ScreenHeader do projeto) */
+body.tema-aurora .header--aba .subtitle{
+margin-top:0;
+font-size:26px;
+}

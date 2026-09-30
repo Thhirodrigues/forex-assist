@@ -206,28 +206,127 @@ function formatarContagem(valor, aproximado) {
     return aproximado ? `${valor}+` : `${valor}`;
 }
 
+// ---------------------------------------------------
+// Apresentação do Painel (direção visual "Aurora Glass").
+// Só formata e desenha - a leitura dos dados fica nas funções
+// obterDesempenhoDoDia / obterResumoGeral acima, inalteradas.
+// ---------------------------------------------------
+
+const FORMATO_MOEDA_PAINEL = new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+});
+
+// US$ 1.248,60 / −US$ 7,20 (negativo sempre com sinal, nunca só cor)
+function moedaPainel(valor) {
+
+    const n = Number((Number(valor) || 0).toFixed(2));
+
+    return `${n < 0 ? "−" : ""}US$ ${FORMATO_MOEDA_PAINEL.format(Math.abs(n))}`;
+
+}
+
+// Cor e seta de qualquer resultado seguem o sinal do número:
+// positivo = ganho, negativo = perda, zero = neutro. Nunca fixar verde.
+function tokenResultadoPainel(valor) {
+
+    const n = Number((Number(valor) || 0).toFixed(2));
+
+    if (n > 0) return { classe: "pa-res--ganho", seta: "▲", sinal: "+" };
+    if (n < 0) return { classe: "pa-res--perda", seta: "▼", sinal: "−" };
+
+    return { classe: "pa-res--neutro", seta: "•", sinal: "" };
+
+}
+
+function moedaAssinadaPainel(valor) {
+
+    const t = tokenResultadoPainel(valor);
+    const n = Math.abs(Number((Number(valor) || 0).toFixed(2)));
+
+    return `${t.sinal}US$ ${FORMATO_MOEDA_PAINEL.format(n)}`;
+
+}
+
+function anelAcertoHTML(dia) {
+
+    const R = 40;
+    const C = 2 * Math.PI * R;
+    const temAmostra = dia.total > 0;
+    const pct = temAmostra ? dia.wins * 100 / dia.total : 0;
+    const alvo = C * (1 - pct / 100);
+    const rotulo = temAmostra
+        ? `Taxa de acerto do dia: ${Math.round(pct)}%, ${dia.wins} de ${dia.total} fechadas`
+        : "Sem operações fechadas neste dia";
+
+    return `
+        <div class="pa-anel" role="img" aria-label="${rotulo}">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="pa-anel-trilho" cx="50" cy="50" r="${R}"></circle>
+                <circle class="pa-anel-valor" cx="50" cy="50" r="${R}"
+                    stroke-dasharray="${C.toFixed(2)}"
+                    stroke-dashoffset="${C.toFixed(2)}"
+                    data-alvo="${alvo.toFixed(2)}"></circle>
+            </svg>
+            <div class="pa-anel-txt">
+                <b class="pa-num">${temAmostra ? Math.round(pct) + "%" : "—"}</b>
+                <small>acerto</small>
+            </div>
+        </div>
+    `;
+
+}
+
 async function renderizarDesempenhoDiario(dataStr) {
 
     const alvo = document.getElementById("desempenhoDiario");
     if (!alvo) return;
 
-    alvo.innerHTML = "Carregando...";
+    alvo.innerHTML = '<p class="pa-carregando">Carregando…</p>';
 
-    const dia = await obterDesempenhoDoDia(dataStr);
+    let dia;
 
-    const taxa =
-        dia.total === 0
-            ? 0
-            : Number((dia.wins * 100 / dia.total).toFixed(1));
+    try {
+        dia = await obterDesempenhoDoDia(dataStr);
+    } catch (erro) {
+        console.error("Erro ao carregar desempenho do dia:", erro);
+        alvo.innerHTML = `<p class="pa-erro">Não foi possível carregar o desempenho deste dia: ${erro.message}</p>`;
+        return;
+    }
 
+    const res = tokenResultadoPainel(dia.somaSimulada);
+
+    // A taxa só faz sentido com a amostra ao lado: 1 de 1 é 100%, mas
+    // não diz nada. Por isso "X de Y fechadas" fica sempre visível.
     alvo.innerHTML = `
-        <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:14px;">
-            <span>✅ ${dia.wins}</span>
-            <span>❌ ${dia.losses}</span>
-            <span>🎯 ${taxa}%</span>
-            <span>Simulado no dia: ${formatarUSD(dia.somaSimulada)}</span>
+        <div class="pa-dia-corpo">
+            ${anelAcertoHTML(dia)}
+            <div>
+                <p class="pa-amostra">${dia.total === 0
+                    ? "Sem operações fechadas neste dia"
+                    : `${dia.wins} de ${dia.total} fechadas`}</p>
+                <div class="pa-chips">
+                    <span class="pa-chip pa-chip--ganho">WIN ${dia.wins}</span>
+                    <span class="pa-chip pa-chip--perda">LOSS ${dia.losses}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pa-resultado">
+            <span class="pa-eyebrow">Simulado no dia</span>
+            <b class="pa-num ${res.classe}"><span class="pa-seta" aria-hidden="true">${res.seta}</span>${moedaAssinadaPainel(dia.somaSimulada)}</b>
         </div>
     `;
+
+    // anima o anel: parte do vazio e vai até o valor (CSS desliga a
+    // transição com prefers-reduced-motion)
+    const anel = alvo.querySelector(".pa-anel-valor");
+
+    if (anel) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            anel.style.strokeDashoffset = anel.getAttribute("data-alvo");
+        }));
+    }
 
 }
 
@@ -236,41 +335,52 @@ async function renderDesempenho() {
     const alvo = document.getElementById("desempenhoCard");
     if (!alvo) return;
 
-    const resumo = await obterResumoGeral();
+    let resumo;
+
+    try {
+        resumo = await obterResumoGeral();
+    } catch (erro) {
+        console.error("Erro ao carregar desempenho:", erro);
+        alvo.innerHTML = `<section class="pa-vidro"><p class="pa-erro">Não foi possível carregar o desempenho: ${erro.message}</p></section>`;
+        return;
+    }
+
     const dataHoje = hojeBrasilStr();
 
     alvo.innerHTML = `
-        <div class="card-title">💰 Desempenho</div>
+        <section class="pa-vidro" aria-label="Conta real">
+            <p class="pa-eyebrow">Conta real</p>
+            <p class="pa-num pa-conta-valor">${moedaPainel(resumo.saldoReal)}</p>
+            <p class="pa-nota">Saldo verdadeiro. Se move pelas operações marcadas em Histórico e por aportes.</p>
+            <button id="btnRegistrarAporte" class="pa-btn-sec" type="button">+ Registrar aporte</button>
+        </section>
 
-        <div class="list-item">
-            Conta Real
-            <br>
-            <span style="font-size:11px; color:#8c95b3;">Saldo verdadeiro - se move pelas operações marcadas em Histórico e por aportes</span>
-            <div class="big-number">${formatarUSD(resumo.saldoReal)}</div>
-            <button id="btnRegistrarAporte" style="margin-top:8px; width:100%; padding:8px; border:none; border-radius:8px; background:#132852; color:white; font-size:12px; cursor:pointer;">
-                ➕ Registrar Aporte
-            </button>
-        </div>
+        <section class="pa-vidro" aria-label="Conta simulada">
+            <p class="pa-eyebrow">Conta simulada</p>
+            <p class="pa-num pa-conta-valor">${moedaPainel(resumo.saldoSimulado)}</p>
+            <p class="pa-nota">Acumulado desde sempre, somando todo sinal. Não reseta.</p>
+        </section>
 
-        <div class="list-item">
-            Conta Simulada
-            <br>
-            <span style="font-size:11px; color:#8c95b3;">Acumulado desde sempre, somando todo sinal (não reseta)</span>
-            <div class="big-number">${formatarUSD(resumo.saldoSimulado)}</div>
-        </div>
+        <section class="pa-vidro" aria-label="Desempenho do dia">
+            <div class="pa-dia-topo">
+                <h2 class="pa-titulo">Desempenho do dia</h2>
+                <label class="pa-data">
+                    <span class="pa-sr">Dia do desempenho</span>
+                    <input type="date" id="desempenhoDataFiltro" value="${dataHoje}">
+                </label>
+            </div>
+            <div id="desempenhoDiario"><p class="pa-carregando">Carregando…</p></div>
+        </section>
 
-        <div class="list-item">
-            Filtrar por dia
-            <br><br>
-            <input type="date" id="desempenhoDataFiltro" value="${dataHoje}" style="width:100%;">
-        </div>
-
-        <div id="desempenhoDiario">Carregando...</div>
-
-        <div class="list-item">
-            Sinais desde sempre: ✅ ${formatarContagem(resumo.winsTotal, resumo.winsAproximado)} · ❌ ${formatarContagem(resumo.lossesTotal, resumo.lossesAproximado)} · Total ${formatarContagem(resumo.totalSinais, resumo.totalAproximado)}
-            ${resumo.totalAproximado ? '<div style="font-size:10px; color:#8c95b3; margin-top:2px;">Número aproximado (piso) - agregação rápida indisponível neste momento</div>' : ''}
-        </div>
+        <section class="pa-vidro" aria-label="Sinais desde sempre">
+            <p class="pa-eyebrow">Sinais desde sempre</p>
+            <dl class="pa-sempre">
+                <div><dt>WIN</dt><dd class="pa-num pa-res--ganho">${formatarContagem(resumo.winsTotal, resumo.winsAproximado)}</dd></div>
+                <div><dt>LOSS</dt><dd class="pa-num pa-res--perda">${formatarContagem(resumo.lossesTotal, resumo.lossesAproximado)}</dd></div>
+                <div><dt>Total</dt><dd class="pa-num">${formatarContagem(resumo.totalSinais, resumo.totalAproximado)}</dd></div>
+            </dl>
+            ${resumo.totalAproximado ? '<p class="pa-nota">Número aproximado (piso): agregação rápida indisponível neste momento.</p>' : ''}
+        </section>
     `;
 
     const inputData = document.getElementById("desempenhoDataFiltro");

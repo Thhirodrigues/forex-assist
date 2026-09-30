@@ -12576,3 +12576,307 @@ event.data; toque abre XM ou "./"; firebase-messaging-sw.js usa icon/badge
 pelo escopo; badge-96.png é 96x96 RGBA, cantos transparentes, pixels
 visíveis todos brancos (~24% da área).
 --------
+
+AJUSTE-047 (30/09/2026) - Painel (aba Dashboard) na direção visual "Aurora
+Glass" (só frontend; congelamento do pipeline intacto - nenhuma mudança em
+pontuação, aprovação, risco ou em qualquer arquivo de scripts/).
+
+ORIGEM: o usuário escolheu a direção "Aurora Glass" entre 6 mockups e
+protótipos feitos no Lovable (projeto separado, repositório
+Thhirodrigues/forex-assist-visuals, PR nº 1 com as correções da revisão).
+Decisão dele: migrar SÓ o Painel agora; as outras abas seguem como estão
+até serem aprovadas uma a uma.
+
+O QUE MUDOU
+  - index.html: fontes Inter, Space Grotesk e JetBrains Mono (Google Fonts).
+  - css/styles.css: bloco novo "PAINEL", TODO escopado em
+    `body.painel-aurora` (nenhuma regra existente foi alterada).
+  - js/app.js: liga/desliga a classe `painel-aurora` no <body> conforme a
+    aba (só o Dashboard a recebe); chama `atualizarStatusScanner()` logo
+    após montar o Dashboard.
+  - js/expert.js: `dashboardView()` reescrita (mesmos id de antes:
+    scannerStatus, startScanner, stopScanner, modoAtual, desempenhoCard,
+    cooldownsHoje, debugFirebase); o polling de 15s virou a função nomeada
+    `atualizarStatusScanner()`, sem mudar a consulta (mesmo documento
+    scanner/status). Perfil vira ponto + rótulo (sem emoji), montado via
+    textContent (nada do banco entra como HTML).
+  - js/desempenho.js: só a APRESENTAÇÃO mudou. `obterDesempenhoDoDia`,
+    `obterResumoGeral`, `contarPorResultado` e `registrarAporte` estão
+    intactos.
+
+DECISÕES QUE O USUÁRIO PRECISA CONHECER
+  - Os cartões do protótipo "sinal ativo com anel de RMI", "curva de saldo"
+    e "operações recentes" NÃO foram criados: o Painel real não tem essa
+    informação hoje (a "Sugestão de Agora" foi removida no AJUSTE-014) e
+    inventá-la contraria a regra de só mostrar dado que o pipeline produz.
+  - O anel do Painel mostra a TAXA DE ACERTO DO DIA (WIN / fechadas), e
+    "X de Y fechadas" fica sempre ao lado: 1 de 1 dá 100% e não diz nada.
+    Sem operações fechadas o anel mostra "—", não "0%".
+  - Cor e seta do "Simulado no dia" seguem o sinal do número (ganho ▲,
+    perda ▼, zero •); o texto sempre leva + ou −. Antes era só "$" e "-".
+  - Formato monetário do Painel: "US$ 1.248,60" (pt-BR). O restante do app
+    ainda usa "$1248.60".
+  - Correções pequenas no caminho: o status do Scanner ficava "Carregando..."
+    por até 15s (só o setInterval preenchia); agora lê 1x ao abrir (uma
+    leitura a mais por visita ao Dashboard). Se o Firestore falhar, o status
+    mostra "Sem conexão" e o card de Desempenho mostra o erro (antes ficava
+    "Carregando..." para sempre).
+
+LIMITES (não verificáveis daqui)
+  - Sem credenciais do Firestore neste ambiente: validado com um Firestore
+    FALSO (Playwright, 390px, toque simulado) em 4 cenários (dia de ganho,
+    dia de perda com scanner parado, dia sem operações, falha do Firestore),
+    além de conferir que a aba Config não recebe a pele nova. Não testado
+    num aparelho real nem com dados reais.
+  - As fontes vêm do Google Fonts; sem rede o app cai nas fontes do sistema
+    (layout foi conferido com fontes alternativas, mais largas).
+  - Barra inferior e cabeçalho ganham a pele nova só no Dashboard; ao trocar
+    de aba a barra muda de aparência. É provisório, até as outras abas
+    migrarem.
+--------
+
+AJUSTE-048 (30/09/2026) - direção visual "Aurora Glass" nas outras quatro
+abas: Histórico, Resultados, Config e Manual (só frontend; congelamento do
+pipeline intacto - nenhuma mudança em scripts/, js/checker.js ou qualquer
+lógica de decisão/risco). Continuação do AJUSTE-047, aprovada pelo usuário
+depois de ver a prévia do Painel.
+
+ABORDAGEM (risco baixo de propósito): as quatro abas somam mais de 5 mil
+linhas, com muito estilo escrito em linha dentro do JS. Em vez de
+reescrever telas, foi feito só (1) troca de CÓDIGOS DE COR, (2) CSS global e
+(3) a barra de navegação. Nenhuma função de leitura, gravação, filtro ou
+cálculo foi alterada.
+
+O QUE MUDOU
+  - Classe do <body>: `painel-aurora` (AJUSTE-047) virou `tema-aurora` e
+    agora é fixa (index.html + js/app.js). Para voltar ao visual antigo de
+    uma aba no futuro, o ponto é essa classe e o bloco de CSS.
+  - css/styles.css: o bloco do Painel virou tema do app inteiro; novo bloco
+    "ABAS ANTIGAS" restilizando .card, .card-title, .list-item, .big-number,
+    .history-*, campos de formulário (select/input/textarea, antes com o
+    visual padrão do navegador), links, piso de 12px para textos de 10/11px
+    escritos em linha (só estilo em linha; texto dentro de SVG não muda) e
+    tipografia de leitura do Manual (h2/h3/p/listas só existem nele).
+  - js/historico.js, config.js, resultados.js, manual.js, pairInsights.js:
+    SÓ literais de cor trocados (mapa antigo -> Aurora: #00d26a/#00ff88 ->
+    #5ef8b7, #ff5252/#ff4444 -> #ff9891, #8c95b3 e cinzas -> #bcc4d5,
+    #4fc3f7/#9adcf9 -> #3ae0e8, âmbar -> #f4d576, azuis escuros sólidos ->
+    superfícies de vidro, e os rgba equivalentes). Trocados por código
+    hexadecimal e NÃO por var(): vários estão em atributos de SVG
+    (stroke="#..."), onde var() não funciona. Conferido que nenhuma cor é
+    comparada em lógica. Histórico: cabeçalho fixo com vidro em vez de bloco
+    escuro. Resultados: sobreposição de comparação em tela cheia com fundo
+    opaco #070b1f. Manual: conteúdo envolvido em `.aba-manual` para as
+    tabelas largas rolarem dentro do bloco.
+  - js/app.js: barra inferior com ícone + rótulo (rótulo "Dashboard" passou
+    a "Painel"; a chave salva em localStorage continua "dashboard"). O clique
+    usa closest("[data-tab]") porque agora pode cair no ícone/rótulo.
+    Correção que esta mudança exigiu: antes só o próprio <button> respondia.
+
+VALIDAÇÃO (Firestore FALSO, Playwright, 390px, toque simulado)
+  - As 5 abas renderizam sem erro de console; troca de aba por clique no
+    ícone e no rótulo; Painel nos 4 cenários (ganho, perda, vazio, falha).
+  - Largura: nenhuma aba estica a página (o Manual esticava para 448px por
+    uma tabela de 600px; corrigido). A tabela do Histórico já rolava dentro
+    de contêiner próprio.
+
+LIMITES (não verificáveis daqui)
+  - Sem credenciais do Firestore: nada foi testado com dados reais, nem em
+    aparelho real. Os fluxos que GRAVAM (salvar Config, marcar resultado no
+    Histórico, aporte) não foram exercitados - só renderizados. Como só
+    cores e CSS mudaram, o risco é visual, mas vale abrir cada um uma vez
+    depois do merge.
+  - Histórico tem modos lista/tabela/compacto e Resultados tem comparação
+    de sinais; foram conferidos o modo padrão e a tela principal, não todas
+    as combinações.
+  - Emojis dos textos (✅ ❌ 📊 etc.) foram mantidos: fazem parte do
+    conteúdo. Se o usuário quiser um visual mais limpo, é decisão dele.
+  - Em telas muito estreitas (< 360px) a barra inferior fica apertada
+    ("Resultados" é o rótulo mais largo).
+--------
+
+AJUSTE-049 (30/09/2026) - ícones no lugar dos emojis + cor nas seções
+(só frontend; congelamento do pipeline intacto). Feedback do usuário sobre o
+AJUSTE-048: "perdeu completamente as cores" e "os emojis antigos não
+combinam com o visual novo, quero coisa nova".
+
+DIAGNÓSTICO: no AJUSTE-048 só os CÓDIGOS de cor foram trocados. As telas
+ficaram quase monocromáticas (texto branco sobre vidro cinza) porque a cor
+das seções vinha dos emojis. Conferido antes: nenhum fundo sólido de cor
+semântica tinha texto claro por cima (não havia problema de contraste).
+
+O QUE MUDOU
+  - js/icones.js (NOVO, carregado antes de expert.js): conjunto próprio de
+    ~50 ícones em traço fino (SVG inline, sem biblioteca externa) e um mapa
+    emoji -> [ícone, tom]. Depois que cada tela é desenhada (MutationObserver
+    em #app, 1 passada por quadro), cada emoji CONHECIDO vira <svg> no mesmo
+    lugar. Emoji fora do mapa fica como está. Tons: menta = ganho/ok, coral =
+    perda/erro, âmbar = atenção, ciano/violeta = informação e seções.
+  - Por que em tempo de exibição e não editando os ~220 usos nos js: os
+    emojis estão em templates, strings comuns, options e textContent; a
+    troca no código exigiria tratar cada contexto e arriscaria lógica.
+    Conferido que NENHUM código lê emoji da tela de volta (o único split
+    de emoji, em historico.js, gera o símbolo, não o lê).
+  - Ícone no início de um título (.card-title, h2, h3) vira "chip" colorido.
+    <option> não aceita SVG: nela o emoji é apenas removido.
+  - Palavras ALTA/COMPRA (menta), BAIXA/VENDA (coral) e COMPRESSÃO/CONFLITO/
+    SOBRECOMPRADO/SOBREVENDIDO (âmbar) no início de célula de tabela do
+    Manual e do Histórico ganham cor (só pinta, o texto não muda).
+  - css/styles.css: variáveis de tom, estilo dos ícones e chips; cartões com
+    degradê de cor (violeta/ciano/menta em rodízio nos aninhados); botão
+    principal em degradê menta-ciano; brilho de fundo mais intenso; subtítulo
+    do cabeçalho em degradê.
+  - Botões do cabeçalho do Histórico e da Config passam a ter contorno
+    visível (antes sumiam no fundo).
+
+FICOU COMO ESTAVA DE PROPÓSITO
+  - Setas de texto ▶ ▲ ▼ → ↗ (não são emoji colorido; ▶ é o indicador de
+    expandir/recolher do código).
+  - Diálogos nativos (alert/confirm/prompt) e atributos title: continuam com
+    o texto original, inclusive emojis - o navegador não deixa estilizar.
+
+VALIDAÇÃO (Firestore FALSO, Playwright, 390px): nenhuma das 5 abas deixa
+emoji mapeado sem trocar (sobram só ▶ e ↗); sem erro de console; troca de
+aba e cenários do Painel continuam funcionando.
+
+LIMITES
+  - Não testado com dados reais nem em aparelho real.
+  - Emoji novo que alguém escrever no futuro e não estiver no mapa aparece
+    como emoji comum; para tratá-lo, acrescentar a linha em
+    EMOJI_PARA_ICONE (js/icones.js).
+  - Flags 🇬🇧 🇺🇸 viraram o ícone de globo (violeta/ciano); o texto ao lado
+    (Londres, Nova York) continua dizendo qual é.
+--------
+
+AJUSTE-050 (30/09/2026) - fidelidade ao projeto Aurora Glass: fundo, vidro,
+borda luminosa, barra inferior e cabeçalho IGUAIS ao protótipo aprovado
+(só frontend; congelamento do pipeline intacto).
+
+FEEDBACK do usuário sobre o AJUSTE-049: "as cores de fundo não correspondem
+ao original que foi feito. Quero exatamente igual o projeto; não faz sentido
+ter feito aquele projeto e mudar agora."
+
+O ERRO ERA MEU: nas rodadas 047-049 eu aproximei o protótipo em vez de copiá-lo
+(cores convertidas para hexadecimal, brilho de fundo aumentado, cartões com
+degradê de cor, subtítulo em degradê, barra inferior reta). Nada disso existia
+no projeto aprovado.
+
+COMO FOI CORRIGIDO (medido, não no olho): o projeto do Lovable
+(Thhirodrigues/forex-assist-visuals) foi renderizado localmente e comparado
+com o app real, lado a lado, em 390x844:
+  - Pixels do fundo em 13 pontos: diferença 22 antes; agora 0 em todos
+    (o topo estava mais claro por causa do brilho que eu aumentei).
+  - Propriedades computadas (cor, borda, raio, padding, blur) do cartão
+    principal e dos cartões de vidro: idênticas.
+
+O QUE MUDOU (css/styles.css, js/app.js, js/expert.js)
+  - Tokens: valores `oklch` COPIADOS de src/styles.css do projeto (tema
+    aurora), no lugar das conversões em hexadecimal. Fundo: mesmo gradiente,
+    com as mesmas opacidades (52/38/26%). Base do body, tracking (-0.006em)
+    e font-feature-settings iguais.
+  - Removidos os enfeites que não existem no projeto: degradê nos cartões,
+    sombra interna, subtítulo em degradê, botão em degradê, brilho aumentado.
+  - Borda luminosa (utilidade borda-luminosa do projeto) nos cartões
+    principais e na barra inferior; raios/paddings iguais (hero 28px/20px,
+    cartões 24px, vidro 16px).
+  - Barra inferior: pílula flutuante do projeto (vidro-forte + borda
+    luminosa, degradê que apaga o conteúdo atrás, ícone 22px traço 1.9,
+    rótulo 12px, aba ativa em ciano).
+  - Cabeçalho: "FOREX ASSIST" pequeno + nome da aba (Painel, Histórico...)
+    e, no Painel, a pílula "Scanner online" à direita, como no projeto.
+    "Real Money Intelligence" fica como linha discreta sob o título nas
+    outras abas (nome de marca voltado ao usuário, ver ESTADO_ATUAL.md).
+  - Status do scanner passa a "Scanner online / parado" em pílula de vidro
+    com ponto pulsante (respeita prefers-reduced-motion).
+  - Espaçamento entre seções: 20px (gap-5 do projeto).
+
+O QUE NÃO PODE SER IDÊNTICO (e por quê)
+  - O protótipo mostra "sinal ativo com anel de RMI", "curva de saldo" e
+    "operações recentes" no Painel; o Painel real não tem esses dados hoje
+    (ver AJUSTE-047). Os cartões do app seguem o mesmo estilo, com o
+    conteúdo real (scanner, contas, desempenho).
+  - Histórico, Resultados, Config e Manual mantêm o conteúdo e a estrutura
+    atuais, com o mesmo vidro, cores, borda e tipografia do projeto. Os
+    seletores "Estado" e "Dia de exemplo" são só do protótipo.
+  - Fontes: iguais (Inter, Space Grotesk, JetBrains Mono); sem rede o
+    navegador usa a fonte do sistema, no app e no protótipo.
+  - Cores em `oklch` exigem navegador de 2023 em diante (Chrome 111+,
+    Safari 15.4+, Firefox 113+), o mesmo requisito do projeto.
+
+VALIDAÇÃO (Firestore FALSO, Playwright): 5 abas sem erro de console; troca
+de aba e cenários do Painel funcionam; nenhum emoji mapeado sobra.
+Imagem de comparação: DOCUMENTACAO/comparacao-aurora-projeto-vs-app.png.
+--------
+
+AJUSTE-051 (30/09/2026) - componentes do projeto Aurora Glass no Painel,
+Resultados, Histórico e Config, com DADOS REAIS (só frontend; congelamento
+do pipeline intacto - nenhuma mudança em scripts/ nem em js/checker.js).
+
+FEEDBACK do usuário sobre o AJUSTE-050: "o projeto oficial e aprovado e o que
+você fez tirou toda a beleza do que foi criado, está muito diferente".
+Ele mandou um print do projeto oficial no Lovable.
+
+O QUE ESTAVA ERRADO: nas rodadas 047-050 eu igualei fundo, vidro, tokens e
+barra, mas deixei de fora os COMPONENTES que dão a beleza ao projeto (cartão
+de sinal com anel, saldo/hoje, curva, operações com marcador, resumo do
+histórico). O argumento "o Painel real não tem esses dados" (AJUSTE-047) era
+FALSO: a operação salva já tem par, direção, score, precoEntrada, tpUSD,
+slUSD, lote, resultado, movimentoPips, saldoAntes e saldoDepois.
+
+O QUE MUDOU
+  - js/painel.js + css/painel.css (novos). Painel = componentes do projeto
+    com medidas copiadas do projeto rodando lado a lado (raios 28/24px,
+    marcador de 36px, chips de 32px, brilho 64px, transições). Ordem: sinal,
+    saldo/hoje, curva com períodos, operações recentes com folha de detalhe;
+    abaixo, os controles que só existem no app real (scanner, contas,
+    desempenho).
+      * Sinal ativo = operação mais recente SEM `resultado`, aberta há < 24h
+        (senão estado "Espera"). Anel = `score`, rotulado SCORE (o projeto o
+        chama de RMI, mas RMI é o nome da inteligência do app, não um número
+        - ver ESTADO_ATUAL.md seção 1). Stop/Alvo em US$ (`slUSD`/`tpUSD`;
+        o sistema não guarda preço de stop/alvo). Entrada = `precoEntrada`.
+      * Saldo = Conta Simulada. Hoje = soma de `resultadoFinanceiro` das
+        fechadas hoje (Brasília). Curva = `saldoDepois` encadeado.
+      * CUSTO: 1 consulta a `historico` (últimas 200, orderBy timestamp, sem
+        índice composto) + 1 leitura da config, com cache de 60s em memória.
+        É mais leitura que o Painel antigo - vigiar a cota do Firestore.
+  - Resultados: visão geral do projeto (taxa de acerto com anel, evolução com
+    períodos 1D/1S/1M/3M/Tudo, fator de lucro, operações, ganho/perda médios,
+    por par, por sessão) calculada sobre os MESMOS sinais filtrados da lista.
+    Filtros, lista detalhada e comparação de sinais continuam. Período "3M"
+    (90 dias) é novo. "Por sessão" só conta sinais que gravaram
+    `janelaOrigem`.
+  - Histórico: resumo (Pips/US$/Acerto), chips (Todas, Ganhos, Perdas,
+    Pendentes e um por par) e lista de linhas de vidro por dia, no formato
+    do projeto. O detalhe rico (construirDetalheSinal) é o mesmo e abre no
+    toque na linha. Filtros novos reaproveitam filtroHistoricoResultado e
+    aplicarFiltroHistoricoResultado (a tabela também respeita o filtro de
+    par). ATENÇÃO - MUDANÇA DE PADRÃO: `modoTabela` passou de true para false
+    (a lista é o padrão; a tabela fica em "Ver como tabela"). A tabela tinha
+    sido pedida pelo usuário em 11/09; para voltar, basta `let modoTabela =
+    true;` em js/historico.js.
+  - Config: BUG antigo de HTML corrigido - o item "Delay entre análises"
+    nunca fechava seu <div class="list-item">, então os itens seguintes e
+    todos os cartões depois de "Scanner" ficavam aninhados dentro dele
+    (invisível no visual antigo; com vidro sobre vidro acinzentava tudo).
+    Cartões que só envolvem outros cartões ficam sem vidro; interruptor
+    (#cfgSmcAtivo), caixas e opções no padrão de cor do projeto.
+  - Cabeçalho: Painel = "FOREX ASSIST" + título + pílula do scanner; demais
+    abas = título grande + linha de apoio (padrão do projeto).
+    "Real Money Intelligence" fica na linha de apoio do Manual.
+
+VALIDAÇÃO (Firestore FALSO, Playwright 390px): 5 abas sem erro de console; 4
+estados do Painel (sinal ativo, espera, vazio, falha); chips e filtros do
+Histórico em lista e tabela; abertura do detalhe; folha de detalhe do Painel.
+Comparação lado a lado: DOCUMENTACAO/comparacao-aurora-projeto-vs-app.png.
+
+LIMITES
+  - Sem credenciais do Firestore aqui: nada foi visto com dados reais nem em
+    aparelho real. Os campos usados foram conferidos no código que grava
+    (scripts/pairAnalyzer.js, riskManager.js, js/checker.js).
+  - "Sinal ativo" depende de `resultado` vazio e timestamp recente; uma
+    operação pendente esquecida há mais de 24h não aparece como ativa.
+  - As 200 últimas operações limitam a curva de "Tudo" e de "3M" no Painel.
+  - Fluxos que GRAVAM (marcar resultado, operação real, salvar Config, aporte)
+    não foram exercitados, só renderizados.
+--------
