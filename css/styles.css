@@ -1226,3 +1226,11 @@ body.tema-aurora .header--aba .subtitle{
 margin-top:0;
 font-size:26px;
 }
+
+/* lista aberta dos menus suspensos (select): o navegador a desenha com fundo
+   próprio, e sem isto ficava branca com texto claro (ilegível) */
+body.tema-aurora select option,
+body.tema-aurora select optgroup{
+background-color:oklch(0.22 0.045 272);
+color:oklch(0.985 0.004 265);
+}
