@@ -577,8 +577,16 @@ function secaoComoLerSinal() {
           critério que realmente aprovou o sinal. Se foi mais permissivo
           que o configurado em Config, o ⓘ explica (e a etiqueta fica
           amarela).</li>
-        <li><b>Lote</b> - o tamanho de posição usado no sinal.</li>
+        <li><b>Lote</b> - o tamanho de posição usado no sinal; o ⓘ
+          lembra que vem da tela de Config e quanto o Stop Loss perde e o
+          Take Profit ganha com ele.</li>
+        <li><b>SMC</b> (quando o sinal tem) - o ⓘ mostra o Order Block
+          detectado, se o preço estava na zona e quantos pontos isso
+          somou/tirou do score. Verde = somou, vermelho = tirou.</li>
       </ul>
+      <p style="font-size:11px; color:#bcc4d5;">As etiquetas ficam sempre
+      numa linha só (AJUSTE-053); se a tela for estreita, a linha rola
+      pro lado.</p>
 
       <p>Abaixo das etiquetas, sempre visíveis com o card fechado:</p>
       <p><b>ENTRADA / SAÍDA / RSI</b> - preço de abertura, preço de
@@ -591,6 +599,14 @@ function secaoComoLerSinal() {
       hora do sinal, já formatado com as casas decimais certas (pares
       com JPY: 3 casas; outros: 5 casas - é a convenção real de
       cotação do mercado Forex, não um arredondamento nosso).</p>
+
+      <h3>Nada abre nem fecha sozinho</h3>
+      <p>A lista do Histórico se atualiza sozinha a cada 90 segundos,
+      mas isso não muda o que está aberto ou fechado (AJUSTE-053):
+      meses, dias, detalhes e os ⓘ só abrem ou fecham quando VOCÊ
+      toca, ou todos de uma vez no botão "Minimizar Tudo" (que não é
+      desfeito pela atualização). Enquanto o formulário de "Fechei
+      Manualmente" está aberto, a atualização automática espera.</p>
 
       <h3>Ao expandir o sinal (toque na linha)</h3>
       <p>Abre a janela abaixo, os avisos e o fechamento manual. Na
@@ -615,6 +631,8 @@ function secaoComoLerSinal() {
           simulado antes e depois dessa operação fechar e o resultado em
           dólar dela (positivo = WIN, negativo = LOSS). "--" enquanto
           pendente.</li>
+        <li><b>Operação Real</b> - o checkbox fica no pé desta janela;
+          só habilita depois que a operação encerra.</li>
       </ul>
       <p style="font-size:11px; color:#bcc4d5;">
         Sinais antigos (antes de 28/09) podem mostrar outros motivos no
@@ -626,10 +644,6 @@ function secaoComoLerSinal() {
         data não são diretamente comparáveis (alvos diferentes em pips).
         Sinais sem os pips gravados mostram "--" nas distâncias.
       </p>
-
-      <p><b>🧠 SMC</b> (quando aparece) - mostra a direção do order
-      block detectado, se o preço estava na zona, e quantos pontos
-      isso somou/tirou do score.</p>
 
       <p><b>🕯️ Candlestick</b> (quando aparece, sinais a partir de
       26/09/2026) - qual dos 6 padrões da Fase 1 foi detectado (ver

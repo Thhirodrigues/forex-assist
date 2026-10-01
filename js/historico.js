@@ -177,6 +177,35 @@ function calcularResultadoManual(par, precoEntrada, precoSaida, direcao, lote) {
 let cacheSinaisHistorico = {};
 
 // Gerenciar estado de sinais abertos com persistência blindada
+// AJUSTE-053 (01/10/2026): pedido do usuário - nada na tela de sinais pode abrir
+// ou fechar sozinho; só toque dele (ou "Minimizar Tudo"). O causador: a lista
+// inteira é redesenhada a cada 90s (e depois de ações) e o redesenho voltava
+// meses/dias ao estado padrão (só HOJE aberto) e apagava os ⓘ abertos. Agora o
+// estado de cada mês/dia (id do elemento -> aberto?) e dos ⓘ (id do sinal ->
+// etiqueta aberta) fica em memória e é reaplicado a cada redesenho. O estado
+// dos detalhes já era persistido (sinaisAbertos, abaixo).
+const estadoGruposHistorico = {};
+const estadoInfoSinalAberta = {};
+
+window.alternarGrupoHistorico = function (idElemento, cabecalho) {
+
+  const el = document.getElementById(idElemento);
+  if (!el) return;
+
+  const abrir = el.style.display === "none";
+  el.style.display = abrir ? "block" : "none";
+
+  const seta = cabecalho && cabecalho.querySelector(".seta-grupo");
+  if (seta) seta.innerHTML = abrir ? "▼" : "▶";
+
+  estadoGruposHistorico[idElemento] = abrir;
+
+};
+
+function grupoHistoricoAberto(idElemento, padrao) {
+  return idElemento in estadoGruposHistorico ? estadoGruposHistorico[idElemento] : padrao;
+}
+
 function obterSinaisAbertos() {
   try {
     const stored = localStorage.getItem('sinaisAbertos');
@@ -325,43 +354,27 @@ function renderizarCaminhoPrecos(sinal) {
 // salvos ANTES desta mudança, ou com a flag smcAtivo desligada, ou
 // sem nenhum order block relevante detectado no momento, não têm
 // `smcDetectado` - não renderiza nada nesses casos, não é erro.
-function bannerSMC(sinal) {
+// AJUSTE-053: o aviso do SMC saiu do detalhe - virou a etiqueta "SMC ⓘ" na
+// linha de etiquetas do card (mesmo texto de antes, sem emoji). `tom` segue o
+// sinal do score (mesmas cores do banner antigo).
+function infoSMC(sinal) {
 
-  if (!sinal.smcDetectado) return "";
+  if (!sinal.smcDetectado) return null;
 
   const { direcao, naZona } = sinal.smcDetectado;
 
   const score = Number(sinal.smcScore) || 0;
 
-  const corFundo = score > 0
-    ? "rgba(94,248,183,.10)"
-    : score < 0
-    ? "rgba(255,152,145,.10)"
-    : "rgba(255,255,255,.04)";
-
-  const corBorda = score > 0
-    ? "rgba(94,248,183,.3)"
-    : score < 0
-    ? "rgba(255,152,145,.3)"
-    : "rgba(255,255,255,.08)";
-
-  const corTexto = score > 0
-    ? "#5ef8b7"
-    : score < 0
-    ? "#ff9891"
-    : "#bcc4d5";
-
   const sinalScore = score > 0 ? "+" : "";
 
-  return `
-    <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:${corFundo}; border:1px solid ${corBorda}; font-size:11px; color:${corTexto};">
-      🧠 SMC: Order Block de ${direcao} detectado${naZona ? " (preço na zona)" : " (fora da zona)"}${score !== 0 ? ` — ${sinalScore}${score} no score` : ""}
-    </div>
-  `;
+  return {
+    tom: score > 0 ? "ganho" : score < 0 ? "coral" : "neutro",
+    texto: `Order Block de ${direcao} detectado${naZona ? " (preço na zona)" : " (fora da zona)"}${score !== 0 ? ` — ${sinalScore}${score} no score` : ""}`
+  };
 
 }
 
-// AJUSTE-025 (26/09/2026): mesmo padrão do bannerSMC acima, pro
+// AJUSTE-025 (26/09/2026): mesmo padrão do aviso de SMC acima, pro
 // padrão de candlestick clássico (Fase 1 - Martelo/Enforcado/Martelo
 // Invertido/Estrela Cadente/Engolfo de Alta/Engolfo de Baixa, ver
 // scripts/candlePatterns.js). Sinais salvos antes desta mudança não
@@ -765,10 +778,29 @@ function etiquetasInfoSinal(sinal, docId) {
   }
 
   const lote = sinal.lote ?? sinal.loteUtilizado;
-  const temLote = lote != null && lote !== "";
 
-  if (!etiquetas.length && !temLote) return "";
+  if (lote != null && lote !== "") {
+    const alvos = (sinal.tpUSD != null && sinal.slUSD != null)
+      ? ` Com ele, o Stop Loss perde US$ ${sinal.slUSD} e o Take Profit ganha US$ ${sinal.tpUSD}.`
+      : "";
+    etiquetas.push({
+      chave: "lote",
+      tom: "neutro",
+      rotulo: `Lote ${lote}`,
+      texto: `Tamanho da posição deste sinal: ${lote} lote. Vem da tela de Config.${alvos}`
+    });
+  }
 
+  const smc = infoSMC(sinal);
+
+  if (smc) {
+    etiquetas.push({ chave: "smc", tom: smc.tom, rotulo: "🧠 SMC", texto: smc.texto });
+  }
+
+  if (!etiquetas.length) return "";
+
+  // AJUSTE-053 (pedido do usuário): todas as etiquetas no mesmo formato
+  // (texto + ⓘ), pequenas, numa linha só.
   const botoes = etiquetas.map(e => `
       <button type="button" class="hs-tag hs-tag--${e.tom}" data-info-de="${docId}" data-chave="${e.chave}"
               data-tom="${e.tom}" data-info="${escaparAtributoHtml(e.texto)}" aria-expanded="false"
@@ -779,7 +811,6 @@ function etiquetasInfoSinal(sinal, docId) {
   return `
     <div class="hs-tags" onclick="event.stopPropagation();">
       ${botoes}
-      ${temLote ? `<span class="hs-tag hs-tag--lote">📦 Lote ${lote}</span>` : ""}
     </div>
     <div class="hs-aviso" id="info-${docId}" hidden role="status" onclick="event.stopPropagation();"></div>
   `;
@@ -800,6 +831,7 @@ window.alternarInfoSinal = function (ev, docId, botao) {
   if (jaAberto) {
     painel.hidden = true;
     painel.dataset.chave = "";
+    delete estadoInfoSinalAberta[docId];
     return;
   }
 
@@ -808,8 +840,23 @@ window.alternarInfoSinal = function (ev, docId, botao) {
   painel.className = `hs-aviso hs-aviso--${botao.dataset.tom || "neutro"}`;
   painel.hidden = false;
   botao.setAttribute("aria-expanded", "true");
+  estadoInfoSinalAberta[docId] = botao.dataset.chave;
 
 };
+
+// AJUSTE-053: a lista é redesenhada de tempos em tempos (carregarHistorico, a
+// cada 90s e após ações). Os ⓘ abertos são lembrados em estadoInfoSinalAberta
+// e reabertos aqui, pra nada abrir nem fechar sozinho - só por toque do
+// usuário ou por "Minimizar Tudo".
+function restaurarInfoSinaisAbertas() {
+
+  Object.keys(estadoInfoSinalAberta).forEach(docId => {
+    const botao = document.querySelector(`[data-info-de="${docId}"][data-chave="${estadoInfoSinalAberta[docId]}"]`);
+    if (!botao) { delete estadoInfoSinalAberta[docId]; return; }
+    alternarInfoSinal({ stopPropagation() {} }, docId, botao);
+  });
+
+}
 
 // AJUSTE-052 (01/10/2026): janela "Risco do sinal" do detalhe. Reúne o que
 // antes estava espalhado em "Configuração Utilizada" (TP/SL em US$) e na
@@ -817,7 +864,7 @@ window.alternarInfoSinal = function (ev, docId, botao) {
 // TP/SL não é gravado no sinal: é calculado aqui a partir da entrada e dos
 // pips de financeiro.tpPips/slPips (os mesmos que o checker usa pra fechar),
 // por isso aparece com "≈". Campo ausente (sinal antigo) -> "--".
-function blocoRiscoSinal(sinal) {
+function blocoRiscoSinal(sinal, docId) {
 
   const fin = sinal.financeiro || {};
   const tpPips = Math.abs(Number(fin.tpPips));
@@ -862,6 +909,16 @@ function blocoRiscoSinal(sinal) {
         ${linha("Saldo depois", sinal.saldoDepois == null ? "--" : "$" + Number(sinal.saldoDepois).toFixed(2), classeDepois)}
       </dl>
       ${bannerConfiguracaoAjustada(sinal)}
+      <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.10); font-size:12.5px;">
+        <span>💲 Operação Real</span>
+        <input type="checkbox"
+          ${sinal.operacaoReal ? "checked" : ""}
+          ${sinal.status !== "ENCERRADA" ? "disabled" : ""}
+          onchange="event.stopPropagation(); alternarOperacaoReal('${docId}', this.checked);">
+      </label>
+      ${sinal.status !== "ENCERRADA"
+        ? '<div style="font-size:11px; color:#bcc4d5; margin-top:4px;">Disponível após o encerramento da operação</div>'
+        : ""}
     </section>
   `;
 
@@ -1284,11 +1341,17 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
 // `id="valorEntrada-123"`) permite trocar o conteúdo do valor depois,
 // via JS, sem reconstruir o card inteiro - usado pelo fechamento
 // manual pra virar campo editável no lugar.
-function miniCard(emoji, label, valorHtml, cor, idAttr) {
+// AJUSTE-053: `compacto` (pedido do usuário - as linhas de RSI/EMAs ocupavam
+// espaço demais no card): padding, rótulo e valor menores.
+function miniCard(emoji, label, valorHtml, cor, idAttr, compacto) {
+  const pad = compacto ? "3px 4px" : "6px";
+  const fonteRotulo = compacto ? "9px" : "10px";
+  const fonteValor = compacto ? "12.5px" : "15px";
+  const margem = compacto ? "0" : "2px";
   return `
-    <div style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:6px; text-align:center;">
-      <div style="font-size:10px; color:#bcc4d5;">${emoji} ${label}</div>
-      <div ${idAttr || ""} style="margin-top:2px; font-size:15px; font-weight:bold; color:${cor || "#f9fafd"};">${valorHtml}</div>
+    <div style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:${compacto ? "7px" : "8px"}; padding:${pad}; text-align:center;">
+      <div style="font-size:${fonteRotulo}; color:#bcc4d5; white-space:nowrap;">${emoji} ${label}</div>
+      <div ${idAttr || ""} style="margin-top:${margem}; font-size:${fonteValor}; font-weight:bold; color:${cor || "#f9fafd"};">${valorHtml}</div>
     </div>
   `;
 }
@@ -1315,19 +1378,19 @@ function resumoNumerosSinal(sinal, docId) {
   // Entrada e Saída ganham IDs (`valorEntrada-`/`valorSaida-`) pra virarem
   // campo editável no fechamento manual (ativarEdicaoFechamentoManual),
   // sem reconstruir o resto do card.
-  const gradeAberta = `<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px;">`;
+  const gradeAberta = `<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:6px;">`;
 
   return `
 ${gradeAberta}
-${miniCard("💰", "ENTRADA", formatarPrecoPar(sinal.precoEntrada, sinal.par), "#f9fafd", `id="valorEntrada-${docId}"`)}
-${miniCard("🏁", "SAÍDA", formatarPrecoPar(sinal.precoSaida ?? sinal.precoFechamento, sinal.par), "#f9fafd", `id="valorSaida-${docId}"`)}
-${miniCard("📉", "RSI", (sinal.indicadores?.rsi ?? sinal.rsi) != null ? Number(sinal.indicadores?.rsi ?? sinal.rsi).toFixed(2) : "--", "#3ae0e8")}
+${miniCard("💰", "ENTRADA", formatarPrecoPar(sinal.precoEntrada, sinal.par), "#f9fafd", `id="valorEntrada-${docId}"`, true)}
+${miniCard("🏁", "SAÍDA", formatarPrecoPar(sinal.precoSaida ?? sinal.precoFechamento, sinal.par), "#f9fafd", `id="valorSaida-${docId}"`, true)}
+${miniCard("📉", "RSI", (sinal.indicadores?.rsi ?? sinal.rsi) != null ? Number(sinal.indicadores?.rsi ?? sinal.rsi).toFixed(2) : "--", "#3ae0e8", undefined, true)}
 </div>
 
 ${gradeAberta}
-${miniCard("📈", "EMA 9", formatarPrecoPar(sinal.indicadores?.ema9 ?? sinal.ema9, sinal.par))}
-${miniCard("📊", "EMA 21", formatarPrecoPar(sinal.indicadores?.ema21 ?? sinal.ema21, sinal.par))}
-${miniCard("🏠", "EMA 200", formatarPrecoPar(sinal.indicadores?.ema200 ?? sinal.ema200, sinal.par))}
+${miniCard("📈", "EMA 9", formatarPrecoPar(sinal.indicadores?.ema9 ?? sinal.ema9, sinal.par), undefined, undefined, true)}
+${miniCard("📊", "EMA 21", formatarPrecoPar(sinal.indicadores?.ema21 ?? sinal.ema21, sinal.par), undefined, undefined, true)}
+${miniCard("🏠", "EMA 200", formatarPrecoPar(sinal.indicadores?.ema200 ?? sinal.ema200, sinal.par), undefined, undefined, true)}
 </div>
   `;
 
@@ -1341,40 +1404,13 @@ function construirDetalheSinal(sinal, docId, estaAberto, incluirResumo = true) {
 
 ${incluirResumo ? etiquetasInfoSinal(sinal, docId) + resumoNumerosSinal(sinal, docId) : ""}
 
-${blocoRiscoSinal(sinal)}
-
-${bannerSMC(sinal)}
+${blocoRiscoSinal(sinal, docId)}
 
 ${bannerCandlestick(sinal)}
 
 ${botaoFecharManualmente(sinal, docId)}
 
 ${sinal.status === "ENCERRADA" ? renderizarCaminhoPrecos(sinal) : ""}
-
-    <label style="
-display:flex;
-justify-content:space-between;
-align-items:center;
-cursor:pointer;
-margin-top:10px;
-padding-top:8px;
-border-top:1px solid rgba(255,255,255,.10);
-">
-
-<span>💲 Operação Real</span>
-
-<input
-type="checkbox"
-${sinal.operacaoReal ? "checked" : ""}
-${sinal.status !== "ENCERRADA" ? "disabled" : ""}
-onchange="event.stopPropagation(); alternarOperacaoReal('${docId}', this.checked);"
->
-
-</label>
-
-${sinal.status !== "ENCERRADA"
-    ? '<div style="font-size:11px;color:#bcc4d5;margin-top:4px;">Disponível após o encerramento da operação</div>'
-    : ""}
 
           </div>
         `;
@@ -1680,7 +1716,7 @@ async function carregarHistorico() {
       const mesContemDestaque =
         app.sinalParaDestacar &&
         datasDoMes.some((data) => gruposPorData[data].includes(`id="sinal-${app.sinalParaDestacar}"`));
-      const mostrarMes = mesContemHoje || mesContemDestaque;
+      const mostrarMes = mesContemDestaque || grupoHistoricoAberto(`mes${idMes}`, mesContemHoje);
 
       let diasHtml = "";
 
@@ -1694,7 +1730,7 @@ async function carregarHistorico() {
           app.sinalParaDestacar &&
           gruposPorData[data].includes(`id="sinal-${app.sinalParaDestacar}"`);
 
-        const mostrarDia = isHoje || temSinalDestacado;
+        const mostrarDia = temSinalDestacado || grupoHistoricoAberto(`data${idData}`, isHoje);
 
         // Pedido do usuário (11/09/2026, 2a rodada): virar tabela
         // (mesma referência do checkbox "Operação Real" que ele mandou
@@ -1733,18 +1769,7 @@ async function carregarHistorico() {
         diasHtml += `
         <div class="hist-dia" style="margin-top:10px; border:1px solid rgba(255,255,255,.08); border-radius:10px; overflow:hidden;">
            <div
-  onclick="
-  const el = document.getElementById('data${idData}');
-  const seta = this.querySelector('.seta-grupo');
-
-  if (el.style.display === 'none') {
-      el.style.display = 'block';
-      seta.innerHTML = '▼';
-  } else {
-      el.style.display = 'none';
-      seta.innerHTML = '▶';
-  }
-  "
+  onclick="alternarGrupoHistorico('data${idData}', this)"
 
       style="padding:10px 12px; font-size:12px; color:#bcc4d5; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.03);">
      <span><span class="seta-grupo" style="margin-right:8px;">${mostrarDia ? "▼" : "▶"}</span>${label}</span>
@@ -1759,18 +1784,7 @@ async function carregarHistorico() {
       finalHtml += `
       <div class="hist-mes" style="margin-top:16px; border:1px solid rgba(255,255,255,.12); border-radius:10px; overflow:hidden;">
          <div
-onclick="
-const el = document.getElementById('mes${idMes}');
-const seta = this.querySelector('.seta-grupo');
-
-if (el.style.display === 'none') {
-    el.style.display = 'block';
-    seta.innerHTML = '▼';
-} else {
-    el.style.display = 'none';
-    seta.innerHTML = '▶';
-}
-"
+onclick="alternarGrupoHistorico('mes${idMes}', this)"
 
     style="padding:12px; font-size:13px; color:#f9fafd; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.06);">
    <span><span class="seta-grupo" style="margin-right:8px;">${mostrarMes ? "▼" : "▶"}</span>${labelMes}</span>
@@ -1781,6 +1795,8 @@ if (el.style.display === 'none') {
       </div>
       `;
     });
+
+    const rolagemAntes = window.scrollY;
 
     lista.innerHTML = '<div id="historicoFiltroBarra" class="list-item" style="display:none; align-items:center; justify-content:space-between; gap:10px; font-size:12px;"></div>' + (finalHtml || '<div class="list-item">Nenhum sinal encontrado.</div>') + `
       <button
@@ -1801,6 +1817,10 @@ if (el.style.display === 'none') {
     // AJUSTE-043: reaplica o filtro do cabeçalho "Resultado" a cada
     // redesenho da lista (o estado vive em filtroHistoricoResultado).
     aplicarFiltroHistoricoResultado();
+
+    restaurarInfoSinaisAbertas();
+
+    if (Math.abs(window.scrollY - rolagemAntes) > 1) window.scrollTo(0, rolagemAntes);
 
 // Adicionar listeners de clique APÓS renderizar - BLINDADO
     setTimeout(() => {
@@ -1860,6 +1880,15 @@ if (el.style.display === 'none') {
             if (seta) seta.innerHTML = '▶';
           }
         });
+        // AJUSTE-053: "Minimizar Tudo" é o ÚNICO jeito de fechar tudo de
+        // uma vez - lembra os grupos como fechados (o redesenho não reabre
+        // "Hoje"), fecha os detalhes e os ⓘ.
+        mesesOrdenados.forEach(chaveMes => { estadoGruposHistorico[`mes${chaveMes.replaceAll("/", "")}`] = false; });
+        datasOrdenadas.forEach(data => { estadoGruposHistorico[`data${data.replaceAll("/", "")}`] = false; });
+        document.querySelectorAll('#historicoLista [id^="detalhe-"]').forEach(d => { d.style.display = "none"; });
+        document.querySelectorAll('#historicoLista [id^="info-"]').forEach(d => { d.hidden = true; d.dataset.chave = ""; });
+        document.querySelectorAll('#historicoLista .hs-tag[aria-expanded="true"]').forEach(b => b.setAttribute("aria-expanded", "false"));
+        Object.keys(estadoInfoSinalAberta).forEach(k => delete estadoInfoSinalAberta[k]);
         localStorage.setItem('sinaisAbertos', JSON.stringify([]));
       };
     }
@@ -2025,6 +2054,12 @@ await configRef.update({
 setInterval(() => {
   if (document.hidden) return;
   if (app.currentTab !== "historico") return;
+  // AJUSTE-053: não redesenha a lista por cima de um fechamento manual em
+  // andamento (o usuário está digitando o preço/resultado) nem enquanto um
+  // campo da lista está em foco.
+  if (document.querySelector('[id^="inputResultadoManual-"]')) return;
+  const emFoco = document.activeElement;
+  if (emFoco && emFoco.closest && emFoco.closest("#historicoLista") && /^(INPUT|TEXTAREA|SELECT)$/.test(emFoco.tagName) && emFoco.type !== "checkbox") return;
   carregarHistorico();
 }, 90000);
 

@@ -12950,3 +12950,62 @@ continua transformando ENTRADA/SAÍDA em campos (ids intactos); tabela:
 etiquetas no topo do detalhe e ⓘ funcionando; aba Resultados abre sem erro
 de JS; nenhum erro de página.
 --------
+
+AJUSTE-053 (01/10/2026) - refino do card do sinal + nada abre/fecha sozinho
+(só frontend; congelamento do pipeline intacto).
+
+Pedidos do usuário sobre o AJUSTE-052: (1) etiquetas menores e uniformes numa
+linha só; (2) "Lote" com ⓘ como as outras; (3) etiqueta "SMC" (logo + texto)
+com ⓘ na mesma linha; (4) linhas de RSI e EMAs mais estreitas, fonte menor;
+(5) checkbox "Operação Real" dentro da janela "Risco do sinal"; (6) a tela de
+sinais "atualizava sozinha e fechava os sinais e os detalhes" - nada pode abrir
+nem fechar sem toque do usuário; só "Minimizar Tudo" fecha tudo.
+
+  - js/historico.js:
+      * etiquetasInfoSinal: ganhou "Lote N ⓘ" (texto: tamanho da posição,
+        vem da Config, quanto o SL perde/TP ganha em US$ a partir de
+        tpUSD/slUSD) e "SMC ⓘ" (`infoSMC`, mesmo texto do antigo banner;
+        tom verde se score>0, coral se <0). `bannerSMC` removido do detalhe.
+      * miniCard(..., compacto): tiles de ENTRADA/SAÍDA/RSI/EMAs com padding
+        3px, rótulo 9px, valor 12.5px, grade com gap 5px.
+      * blocoRiscoSinal(sinal, docId): recebe o checkbox "Operação Real" (e
+        o aviso "Disponível após o encerramento") no pé; saiu do fim do
+        detalhe.
+      * CAUSA do abre/fecha sozinho: a lista inteira é redesenhada a cada 90s
+        (setInterval no fim do arquivo) e após ações; o redesenho recriava
+        meses/dias no estado padrão (só "Hoje" aberto: o que o usuário
+        fechou reabria, o que abriu fechava) e apagava os ⓘ abertos; também
+        perdia o que se digitava no fechamento manual. Os detalhes já eram
+        persistidos (`sinaisAbertos`).
+        CORREÇÃO: `estadoGruposHistorico` (id do mês/dia -> aberto?) +
+        `alternarGrupoHistorico` (substitui os onclick inline) e
+        `estadoInfoSinalAberta` + `restaurarInfoSinaisAbertas`, reaplicados a
+        cada redesenho; a rolagem da página é preservada; o polling NÃO
+        redesenha enquanto o formulário de fechamento manual está aberto ou
+        há campo da lista em foco. "Minimizar Tudo" marca todos os grupos
+        como fechados (o redesenho não reabre "Hoje"), fecha detalhes e ⓘ e
+        zera `sinaisAbertos`. Estado só em memória: ao recarregar a página
+        volta o padrão (Hoje aberto) + detalhes persistidos.
+        Os dados continuam atualizando a cada 90s (resultado de sinal que
+        fechou aparece), só a interface não muda de lugar.
+  - css/painel.css: etiquetas 9.5px, altura 20px, `flex-wrap:nowrap` +
+    rolagem horizontal escondida como rede de segurança; tons `--ganho`.
+  - js/manual.js: seção do card atualizada (+ "Nada abre nem fecha sozinho").
+
+Limite: a largura das etiquetas foi medida no navegador do ambiente de teste
+(fonte mais larga que a do Android): 336px para as 4 etiquetas; cabem a partir
+de ~412px de tela nessa fonte; em 360px rolam pro lado (sem quebrar linha). No
+celular real deve sobrar mais espaço (fonte mais estreita) - conferir.
+
+Validação: scratchpad/test-ajuste053.js (Chromium, Firestore simulado e
+relógio simulado, larguras 360 e 412): etiquetas em 1 linha, altura/fonte
+uniformes, ⓘ do Lote e do SMC (com e sem score), tiles compactos, Operação
+Real dentro de "Risco do sinal" (habilitada só em sinal encerrado), banner SMC
+fora do detalhe; redesenho e polling de 90s reais (relógio simulado)
+mantendo detalhes, ⓘ, "Hoje" fechado pelo usuário e "Ontem" aberto; polling
+não redesenha com o fechamento manual aberto (valor digitado preservado) e
+volta depois; "Minimizar Tudo" fecha tudo e continua fechado após o
+redesenho; reabrir por clique mantém os detalhes minimizados fechados.
+test-ajuste047.js foi atualizado e ainda passa (ver ajustes no próprio
+arquivo).
+--------
