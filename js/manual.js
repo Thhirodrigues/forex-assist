@@ -580,7 +580,7 @@ function secaoComoLerSinal() {
         <li><b>Lote</b> - o tamanho de posição usado no sinal.</li>
       </ul>
 
-      <h3>Ao expandir o sinal (toque na linha)</h3>
+      <p>Abaixo das etiquetas, sempre visíveis com o card fechado:</p>
       <p><b>ENTRADA / SAÍDA / RSI</b> - preço de abertura, preço de
       fechamento (se já fechou) e o RSI na hora do sinal (ver Passo 2
       na seção anterior pra saber o que cada faixa significa). ENTRADA
@@ -591,6 +591,11 @@ function secaoComoLerSinal() {
       hora do sinal, já formatado com as casas decimais certas (pares
       com JPY: 3 casas; outros: 5 casas - é a convenção real de
       cotação do mercado Forex, não um arredondamento nosso).</p>
+
+      <h3>Ao expandir o sinal (toque na linha)</h3>
+      <p>Abre a janela abaixo, os avisos e o fechamento manual. Na
+      tabela (que não tem card fechado), as etiquetas e os números acima
+      aparecem no topo do detalhe.</p>
 
       <h3>Risco do sinal</h3>
       <p>Janela com o que está em jogo na operação (AJUSTE-052). Os

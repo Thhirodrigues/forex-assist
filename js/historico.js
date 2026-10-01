@@ -1299,28 +1299,25 @@ function miniCard(emoji, label, valorHtml, cor, idAttr) {
 // aberto). Na tabela isso passava despercebido (o </td> fecha tudo), mas
 // no modo lista cada card engolia o seguinte (cards aninhados). Achado
 // testando o link da XM; erro antigo, não introduzido por ele.
-// AJUSTE-052 (01/10/2026): ordem nova do detalhe (pedido do usuário):
-// ENTRADA/SAÍDA/RSI, EMA 9/21/200, janela "Risco do sinal" (TP, SL,
-// distâncias, risco/retorno, saldo antes/resultado/saldo depois), depois os
-// avisos (SMC, candle), fechamento manual, caminho do preço e "Operação
-// Real". Saíram daqui: o banner amarelo da cascata (virou o ⓘ da etiqueta do
-// modo) e o "Gerado em: perfil/janela" (removido a pedido). `comEtiquetas`:
-// no card da lista as etiquetas ficam FORA do detalhe (visíveis com o card
-// fechado); na tabela e em Resultados não existe essa área, então entram no
-// topo do detalhe.
-function construirDetalheSinal(sinal, docId, estaAberto, comEtiquetas = true) {
-  const detalheId = `detalhe-${docId}`;
+// AJUSTE-052 (01/10/2026): pedido do usuário (card fechado + detalhe):
+//  - FORA do detalhe, sempre visível no card da lista: etiquetas (ⓘ) e as
+//    duas linhas ENTRADA/SAÍDA/RSI e EMA 9/21/200 (`resumoNumerosSinal`).
+//  - DENTRO do detalhe: janela "Risco do sinal" (TP, SL, distâncias,
+//    risco/retorno, saldo antes/resultado/saldo depois), depois os avisos
+//    (SMC, candle), fechamento manual, caminho do preço e "Operação Real".
+// Saíram: o banner amarelo da cascata (virou o ⓘ da etiqueta do modo) e o
+// "Gerado em: perfil/janela" (removido a pedido).
+// `incluirResumo`: na tabela e em Resultados não existe a área fechada do
+// card, então etiquetas + números entram no topo do detalhe; o card da lista
+// passa false e os desenha fora.
+function resumoNumerosSinal(sinal, docId) {
 
   // Entrada e Saída ganham IDs (`valorEntrada-`/`valorSaida-`) pra virarem
   // campo editável no fechamento manual (ativarEdicaoFechamentoManual),
   // sem reconstruir o resto do card.
-  const gradeAberta = `<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px;">`;
+  const gradeAberta = `<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px;">`;
 
   return `
-          <div id="${detalheId}" style="display: ${estaAberto ? 'block' : 'none'}; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#bcc4d5;">
-
-${comEtiquetas ? etiquetasInfoSinal(sinal, docId) : ""}
-
 ${gradeAberta}
 ${miniCard("💰", "ENTRADA", formatarPrecoPar(sinal.precoEntrada, sinal.par), "#f9fafd", `id="valorEntrada-${docId}"`)}
 ${miniCard("🏁", "SAÍDA", formatarPrecoPar(sinal.precoSaida ?? sinal.precoFechamento, sinal.par), "#f9fafd", `id="valorSaida-${docId}"`)}
@@ -1332,6 +1329,17 @@ ${miniCard("📈", "EMA 9", formatarPrecoPar(sinal.indicadores?.ema9 ?? sinal.em
 ${miniCard("📊", "EMA 21", formatarPrecoPar(sinal.indicadores?.ema21 ?? sinal.ema21, sinal.par))}
 ${miniCard("🏠", "EMA 200", formatarPrecoPar(sinal.indicadores?.ema200 ?? sinal.ema200, sinal.par))}
 </div>
+  `;
+
+}
+
+function construirDetalheSinal(sinal, docId, estaAberto, incluirResumo = true) {
+  const detalheId = `detalhe-${docId}`;
+
+  return `
+          <div id="${detalheId}" style="display: ${estaAberto ? 'block' : 'none'}; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#bcc4d5;">
+
+${incluirResumo ? etiquetasInfoSinal(sinal, docId) + resumoNumerosSinal(sinal, docId) : ""}
 
 ${blocoRiscoSinal(sinal)}
 
@@ -1482,6 +1490,7 @@ function construirItemListaAurora(sinal, docId, dataObj, isCooldown, borderStyle
       </div>
       ${sinal.avisoRisco?.ativo ? `<div class="hs-aviso hs-aviso--ambar">⚠️ ${sinal.avisoRisco.mensagem}</div>` : ""}
       ${etiquetasInfoSinal(sinal, docId)}
+      ${resumoNumerosSinal(sinal, docId)}
       ${detalheHtml}
     </div>`;
 

@@ -12887,12 +12887,13 @@ sinal" (só frontend; congelamento do pipeline intacto - nenhuma mudança
 em pontuação, aprovação ou risco).
 
 Pedido do usuário depois de ver um mockup (ordem e conteúdo decididos por
-ele): o card FECHADO continua como era, mas o texto vermelho grande
-("Histórico insuficiente...") dá lugar a uma linha de etiquetas curtas -
-"Sem histórico ⓘ", "● Balanceado ⓘ" e "Lote" - e o toque no ⓘ mostra o
-texto completo; ao ABRIR o detalhe a ordem passa a ser ENTRADA/SAÍDA/RSI,
-EMA 9/21/200, janela "Risco do sinal" e depois os avisos; o "Gerado em:
-perfil/janela" foi removido.
+ele): no CARD FECHADO o texto vermelho grande ("Histórico insuficiente...")
+dá lugar a uma linha de etiquetas curtas - "Sem histórico ⓘ", "● Balanceado
+ⓘ" e "Lote" (o toque no ⓘ mostra o texto completo) - seguida das duas linhas
+de números, ENTRADA/SAÍDA/RSI e EMA 9/21/200 (a primeira leitura, com os
+números só dentro do detalhe, foi corrigida pelo usuário: "quero no card
+fechado"); ao ABRIR o detalhe aparece a janela "Risco do sinal" e depois os
+avisos; o "Gerado em: perfil/janela" foi removido.
 
   - js/historico.js:
       * `etiquetasInfoSinal(sinal, docId)`: etiqueta 1 = avisoExpectativa
@@ -12914,10 +12915,12 @@ perfil/janela" foi removido.
         no pé. O PREÇO de TP/SL NÃO é gravado no sinal: é calculado de
         precoEntrada ± financeiro.tpPips/slPips × tamanho do pip (JPY 0,01;
         demais 0,0001), por isso o "≈". Sinal sem `financeiro` mostra "--".
-      * `construirDetalheSinal(..., comEtiquetas = true)`: na lista as
-        etiquetas ficam fora do detalhe (visíveis com o card fechado); na
-        tabela e em Resultados entram no topo do detalhe (lá não existe a
-        área fechada). Resultado negativo agora sai "-$3.00" (antes
+      * `resumoNumerosSinal`: as duas grades de números (ids
+        `valorEntrada-`/`valorSaida-` intactos pro fechamento manual).
+      * `construirDetalheSinal(..., incluirResumo = true)`: na lista
+        etiquetas + números ficam FORA do detalhe (visíveis com o card
+        fechado); na tabela e em Resultados entram no topo do detalhe (lá
+        não existe a área fechada). Resultado negativo agora sai "-$3.00" (antes
         "$-3.00").
   - css/painel.css: `.hs-tags`, `.hs-tag(--coral|--ambar|--lote)`,
     `.hs-tag-i`, `.hs-aviso--neutro`, `.hs-risco*`, só com variáveis do
