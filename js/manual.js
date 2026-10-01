@@ -523,11 +523,19 @@ function secaoComoLerSinal() {
           Conservador): o score bateu o mínimo do perfil (55), mas o
           par ainda não tem as 30 operações próprias exigidas pra
           confiança plena - sinal liberado mesmo assim, com aviso.</li>
-        <li><b>Coluna "Modo"</b> (AJUSTE-034) - bolinha colorida com o
-          perfil que REALMENTE aprovou o sinal (🟢 Agressivo/🔵
-          Balanceado/🟡 Conservador), que pode ser mais permissivo que
-          o perfil configurado em Config quando a cascata (ver "Como o
-          RMI decide") rebaixou o sinal - toque pra ver o detalhe.</li>
+        <li><b>Coluna "Modo"</b> (AJUSTE-034, bolinha mais viva no
+          AJUSTE-055) - bolinha colorida com o perfil que REALMENTE
+          aprovou o sinal (verde = Agressivo, azul = Balanceado, amarelo
+          = Conservador), que pode ser mais permissivo que o perfil
+          configurado em Config quando a cascata (ver "Como o RMI
+          decide") rebaixou o sinal - toque pra ver o detalhe.</li>
+        <li><b>Girar o celular</b> (AJUSTE-055) - o Histórico muda
+          sozinho: <b>deitado = tabela</b>, <b>em pé = lista</b>. Abrir o
+          app já deitado mostra a tabela direto. O botão "Ver como
+          tabela/lista" continua funcionando e vale até a próxima
+          rotação. O que você abriu (meses, dias, detalhes) é mantido na
+          troca. Num computador, a janela larga conta como "deitado", então
+          lá a tabela aparece por padrão.</li>
         <li><b>Link "XM ↗"</b> (AJUSTE-044/045) - a pílula azul ao lado
           do par abre, numa nova aba, a página <b>daquele par</b> na XM
           (ex.: EUR/JPY abre <i>my.xm.com/pt/symbol-info/EURJPY</i> - o

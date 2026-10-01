@@ -1011,3 +1011,18 @@ body.tema-aurora .hs-risco-v--ganho{color:var(--pa-ganho) !important;}
 body.tema-aurora .hs-risco-v--perda{color:var(--pa-perda) !important;}
 
 body.tema-aurora .hs-risco > div:last-child{margin:10px 0 0 !important;}
+
+/* AJUSTE-055: bolinha do modo na tabela - cor viva (saturada) com brilho */
+.hs-dot{
+display:inline-block;
+width:14px;
+height:14px;
+border-radius:50%;
+vertical-align:middle;
+background:var(--hs-dot-cor);
+box-shadow:0 0 0 2px oklch(1 0 0 / 22%), 0 0 9px var(--hs-dot-cor);
+}
+.hs-dot--ganho{--hs-dot-cor:oklch(0.82 0.24 150);}
+.hs-dot--azul{--hs-dot-cor:oklch(0.66 0.24 255);}
+.hs-dot--ambar{--hs-dot-cor:oklch(0.9 0.2 95);}
+.hs-dot--neutro{--hs-dot-cor:oklch(0.7 0 0);}

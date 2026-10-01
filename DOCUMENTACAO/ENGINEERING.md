@@ -13046,3 +13046,29 @@ que APROVOU o sinal: Agressivo verde, Balanceado azul, Conservador amarelo
 demais. Observação: Balanceado e Lote são ambos azuis, por pedido; ficam em
 posições diferentes da linha (2ª e última). Teste: test-ajuste053.js.
 --------
+
+AJUSTE-055 (01/10/2026) - (a) bolinha do "Modo" mais viva na tabela; (b) o
+Histórico muda sozinho entre lista e tabela ao girar o celular (só frontend).
+
+(a) A bolinha era o emoji 🟢🔵🟡 trocado pelo tema por um ícone de cor suave.
+Agora é um <span class="hs-dot"> desenhado em CSS (14px, cor saturada + brilho),
+na cor do modo que APROVOU (`TOM_ETIQUETA_PERFIL`: Agressivo verde, Balanceado
+azul, Conservador amarelo - as mesmas das etiquetas do card). Sem perfil: "-".
+O tooltip (title) da célula segue dizendo o modo e, se rebaixado, o configurado.
+Vale também em Resultados (mesma construirLinhaTabela).
+
+(b) `matchMedia("(orientation: landscape)")`: paisagem -> `modoTabela = true`,
+retrato -> lista; no carregamento também (abrir já deitado = tabela); ao mudar
+com a aba Histórico aberta, `carregarHistorico()` redesenha (o estado
+aberto/fechado do AJUSTE-053 é preservado). O botão manual continua valendo até
+a próxima rotação. HISTÓRICO: o AJUSTE-008 tinha essa detecção; o AJUSTE-010 a
+removeu porque a tabela era o padrão em qualquer orientação; o AJUSTE-051 trocou
+o padrão para a lista, então a troca por orientação voltou a fazer sentido.
+Limite: em navegador de computador a janela quase sempre é paisagem, então lá o
+padrão passa a ser a tabela. Em paisagem de celular (altura < 500px) continua
+valendo o modo compacto antigo (cabeçalho e barra somem, botão ✕ volta).
+Validação: scratchpad/test-ajuste055.js (Chromium, viewport 400x900 <-> 900x400):
+lista em retrato; vira tabela ao girar, com o detalhe aberto mantido; volta à
+lista; botão manual; abrir já deitado = tabela; bolinhas com saturação >= 150
+(RGB), verde/azul/amarelo, 14px com brilho; sinal sem perfil mostra "-".
+--------

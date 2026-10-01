@@ -956,6 +956,37 @@ function mesLabelDe(dataStr) {
 // tabela como padrão, é só trocar este valor para true.
 let modoTabela = false;
 
+// AJUSTE-055 (01/10/2026): pedido do usuário - ao girar o celular o Histórico
+// muda sozinho para a TABELA (paisagem) e volta para a LISTA (retrato). O botão
+// "Ver como tabela/lista" continua valendo até a próxima rotação. Usa o
+// matchMedia de orientação (o mesmo critério do antigo AJUSTE-008, removido no
+// AJUSTE-010 quando a tabela era o padrão em qualquer orientação; agora o
+// padrão é a lista, então a troca volta a fazer sentido). Também vale no
+// carregamento: abrir o app já deitado mostra a tabela. Ao trocar, a lista é
+// redesenhada preservando o que o usuário abriu/fechou (AJUSTE-053). Obs.: num
+// navegador de computador a janela quase sempre é "paisagem", então lá o
+// padrão passa a ser a tabela.
+const mqPaisagemHistorico = window.matchMedia ? window.matchMedia("(orientation: landscape)") : null;
+
+function sincronizarModoComOrientacaoHistorico(redesenhar) {
+  if (!mqPaisagemHistorico) return;
+  const paisagem = mqPaisagemHistorico.matches;
+  if (modoTabela === paisagem) return;
+  modoTabela = paisagem;
+  if (redesenhar && typeof app !== "undefined" && app.currentTab === "historico" && typeof carregarHistorico === "function") {
+    carregarHistorico();
+  }
+}
+
+if (mqPaisagemHistorico) {
+  sincronizarModoComOrientacaoHistorico(false);
+  if (mqPaisagemHistorico.addEventListener) {
+    mqPaisagemHistorico.addEventListener("change", () => sincronizarModoComOrientacaoHistorico(true));
+  } else if (mqPaisagemHistorico.addListener) {
+    mqPaisagemHistorico.addListener(() => sincronizarModoComOrientacaoHistorico(true));
+  }
+}
+
 // AJUSTE-012 (24/09/2026): usuário reportou que a tela demorava ~30s
 // sempre que abria/atualizava (não só na primeira vez - descartando
 // hospedagem/cold-start como causa) - achado real: carregarHistorico()
@@ -1274,8 +1305,15 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
   const perfilDotTitle = sinal.perfil
     ? `Aprovado no modo ${LEGENDA_PERFIL[sinal.perfil] || sinal.perfil}${sinal.rebaixadoDaCascata ? ` (configurado: ${LEGENDA_PERFIL[sinal.perfilConfigurado] || sinal.perfilConfigurado})` : ""}`
     : "Perfil não registrado neste sinal";
+  // AJUSTE-055 (01/10/2026): pedido do usuário - cor mais viva na bolinha do
+  // modo na tabela. Antes era o emoji colorido (🟢🔵🟡), que o tema trocava por
+  // um ícone de cor suave; agora é uma bolinha desenhada em CSS (.hs-dot) com
+  // cor saturada e brilho, na cor do modo que APROVOU o sinal (mesmas cores
+  // das etiquetas do card: verde Agressivo, azul Balanceado, amarelo
+  // Conservador).
+  const tomDot = TOM_ETIQUETA_PERFIL[sinal.perfil];
   const perfilDot = sinal.perfil
-    ? (LEGENDA_PERFIL[sinal.perfil] || "⚪").split(" ")[0]
+    ? `<span class="hs-dot hs-dot--${tomDot || "neutro"}" aria-hidden="true"></span>`
     : "-";
 
   // AJUSTE-042: mesma regra do card de detalhe (miniCard ENTRADA/
