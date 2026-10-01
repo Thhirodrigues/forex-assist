@@ -13028,3 +13028,12 @@ eu tinha posto no AJUSTE-053).
     texto do ⓘ do Lote, frase ausente da caixa de risco) e test-ajuste047.js
     passam.
 --------
+
+AJUSTE-054b (01/10/2026) - SMC volta a ter duas cores, a pedido: VERDE quando o
+SMC somou pontos ao score (smcScore > 0), ROXO nos demais casos (zero ou
+negativo). Observação: o score negativo deixa de ter cor própria (antes era
+coral); o texto do ⓘ continua mostrando "-N no score". Se isso incomodar, é
+um terceiro tom. Teste (test-ajuste053.js) ajustado: sinal com score 0 = roxo,
+com +5 = verde. Registro do assunto do atraso sinal -> entrada em
+BACKLOG-E-VISAO.md seção 8 (nada implementado).
+--------

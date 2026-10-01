@@ -577,9 +577,10 @@ function secaoComoLerSinal() {
           critério que realmente aprovou o sinal. Se foi mais permissivo
           que o configurado em Config, o ⓘ explica (e a etiqueta fica
           amarela).</li>
-        <li><b>SMC</b> (roxo, quando o sinal tem) - o ⓘ mostra o Order
-          Block detectado, se o preço estava na zona e quantos pontos
-          isso somou/tirou do score.</li>
+        <li><b>SMC</b> (quando o sinal tem) - o ⓘ mostra o Order Block
+          detectado, se o preço estava na zona e quantos pontos isso
+          somou/tirou do score. Verde = somou pontos; roxo = não somou
+          (zero ou negativo - o texto diz o valor).</li>
         <li><b>Lote</b> (azul, sempre a última) - o tamanho de posição
           usado no sinal; o ⓘ diz se Lote/TP/SL seguem a tela de Config
           ou se o sistema ajustou algum automaticamente (e por quê).</li>

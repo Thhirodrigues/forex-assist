@@ -315,3 +315,33 @@ implementação começar:
   confirmar prioridade explicitamente, inclusive entre os próprios itens
   recomendados aqui (3.3 é o candidato mais barato, mas "mais barato" não
   é o mesmo que "mais importante" para quem vai operar a conta real depois).
+
+## 8. Atraso entre o sinal e a entrada na corretora (registrado 01/10/2026)
+
+**Origem.** EUR/JPY de 30/09: sinal às 22:50:39 (entrada do app 179.155); o
+usuário abriu na XM às 22:55:28 por 179.240 (conta demo). Atraso de 4 min 49 s
+e 8,5 pips piores, cerca de 43% da distância do SL (19,8 pips). O SL dele
+(179.041, mesma distância a partir do preço dele) foi atingido às 23:16:40
+(-US$ 5,03); o app seguiu aberto porque o SL do app (≈ 178.958) nunca foi
+tocado. Decisão do usuário: deixar o app fechar sozinho (a base de aprendizado
+mede o sinal puro) e prestar atenção ao atraso; antes de operar em conta real
+o atraso pode custar caro.
+
+**O que NÃO está resolvido** (nada implementado, só registrado - confirmar
+prioridade antes de mexer):
+
+- O app simula a entrada no preço do sinal. Quem entra depois, ou a XM
+  preenchendo a ordem a mercado, tem outro preço: o resultado real diverge do
+  simulado e a diferença é ruído de execução, não de qualidade do sinal.
+- Ideias baratas, só de tela: (a) mostrar no card do sinal pendente "há N min"
+  e a diferença em pips entre o preço atual e a entrada do sinal (precisa de um
+  preço atual; hoje o card só tem o flutuante em US$); (b) avisar quando essa
+  diferença passar de uma fração do SL (ex.: 25%), sugerindo não entrar.
+- Ideia de pipeline (mais cara, mexe no que é salvo): gravar o horário/preço em
+  que o usuário diz ter entrado (o fechamento manual já aceita entrada/saída
+  reais) para comparar simulado x real por sinal.
+- Medir o atraso real do próprio sinal: scanner roda a cada 5 min (cron do
+  GitHub Actions, que costuma atrasar) e o push vai depois; a "janela pra agir"
+  do push é uma estimativa (scripts/pushNotifier.js, estimarTempoHabilMinutos),
+  não uma medição. Valeria comparar o horário do candle analisado, o horário
+  gravado do sinal e o horário em que o push chega.
