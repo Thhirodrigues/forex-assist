@@ -853,3 +853,118 @@ border:1px solid oklch(0.8 0.14 24 / 35%);
 background:oklch(0.8 0.14 24 / 12%);
 color:var(--pa-perda);
 }
+
+body.tema-aurora .hs-aviso--neutro{
+border:1px solid var(--pa-borda);
+background:var(--pa-vidro);
+color:var(--pa-muted);
+}
+
+/* AJUSTE-052: etiquetas curtas (Sem histórico / Modo / Lote) no lugar do aviso
+   vermelho grande; o ⓘ mostra o texto completo logo abaixo */
+body.tema-aurora .hs-tags{
+display:flex;
+flex-wrap:wrap;
+gap:6px;
+margin-top:10px;
+}
+
+body.tema-aurora .hs-tag{
+display:inline-flex;
+align-items:center;
+gap:5px;
+min-height:28px;
+padding:3px 8px;
+border:1px solid var(--pa-borda);
+border-radius:9999px;
+background:transparent;
+color:var(--pa-muted);
+font-family:inherit;
+font-size:11.5px;
+font-weight:600;
+line-height:1;
+}
+
+body.tema-aurora button.hs-tag{cursor:pointer;}
+
+body.tema-aurora .hs-tag--coral{
+border-color:oklch(0.8 0.14 24 / 35%);
+background:oklch(0.8 0.14 24 / 12%);
+color:var(--pa-perda);
+}
+
+body.tema-aurora .hs-tag--ambar{
+border-color:oklch(0.88 0.12 92 / 35%);
+background:oklch(0.88 0.12 92 / 12%);
+color:var(--pa-espera);
+}
+
+body.tema-aurora .hs-tag[aria-expanded="true"]{
+box-shadow:inset 0 0 0 1px currentColor;
+}
+
+body.tema-aurora button.hs-tag:focus-visible{
+outline:2px solid var(--pa-primary);
+outline-offset:2px;
+}
+
+body.tema-aurora .hs-tag-i{
+display:inline-grid;
+place-items:center;
+width:15px;
+height:15px;
+border:1.5px solid currentColor;
+border-radius:50%;
+font-size:10px;
+font-weight:700;
+font-style:italic;
+line-height:1;
+}
+
+/* AJUSTE-052: janela "Risco do sinal" no detalhe */
+body.tema-aurora .hs-risco{
+margin:0 0 10px;
+padding:10px 12px;
+border:1px solid var(--pa-borda);
+border-radius:16px;
+background:var(--pa-vidro);
+}
+
+body.tema-aurora .hs-risco-titulo{
+margin:0 0 6px;
+font-size:11px;
+font-weight:700;
+letter-spacing:.1em;
+text-transform:uppercase;
+color:var(--pa-muted);
+}
+
+body.tema-aurora .hs-risco-grade{
+display:grid;
+gap:4px;
+margin:0;
+}
+
+body.tema-aurora .hs-risco-linha{
+display:flex;
+justify-content:space-between;
+gap:12px;
+font-size:12.5px;
+}
+
+body.tema-aurora .hs-risco-linha dt{
+color:var(--pa-muted);
+flex-shrink:0;
+}
+
+body.tema-aurora .hs-risco-linha dd{
+margin:0;
+text-align:right;
+font-variant-numeric:tabular-nums;
+color:var(--pa-fg);
+}
+
+body.tema-aurora .hs-risco-v--ganho{color:var(--pa-ganho) !important;}
+body.tema-aurora .hs-risco-v--perda{color:var(--pa-perda) !important;}
+
+body.tema-aurora .hs-risco > div:last-child{margin:10px 0 0 !important;}

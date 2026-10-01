@@ -12880,3 +12880,70 @@ LIMITES
   - Fluxos que GRAVAM (marcar resultado, operação real, salvar Config, aporte)
     não foram exercitados, só renderizados.
 --------
+
+AJUSTE-052 (01/10/2026) - card do sinal no Histórico: etiquetas com ⓘ no
+lugar do aviso vermelho + detalhe reorganizado com a janela "Risco do
+sinal" (só frontend; congelamento do pipeline intacto - nenhuma mudança
+em pontuação, aprovação ou risco).
+
+Pedido do usuário depois de ver um mockup (ordem e conteúdo decididos por
+ele): o card FECHADO continua como era, mas o texto vermelho grande
+("Histórico insuficiente...") dá lugar a uma linha de etiquetas curtas -
+"Sem histórico ⓘ", "● Balanceado ⓘ" e "Lote" - e o toque no ⓘ mostra o
+texto completo; ao ABRIR o detalhe a ordem passa a ser ENTRADA/SAÍDA/RSI,
+EMA 9/21/200, janela "Risco do sinal" e depois os avisos; o "Gerado em:
+perfil/janela" foi removido.
+
+  - js/historico.js:
+      * `etiquetasInfoSinal(sinal, docId)`: etiqueta 1 = avisoExpectativa
+        ("Sem histórico" quando historicoInsuficiente, senão "Expectativa
+        negativa"); etiqueta 2 = perfil que aprovou (âmbar com o texto da
+        cascata se rebaixadoDaCascata, senão neutra com "Aprovado no
+        critério X, o mesmo configurado em Config."); "Lote" = sinal.lote
+        ?? loteUtilizado. Sem nada disso (sinal antigo, cooldown) = nada.
+      * `alternarInfoSinal`: um painel por card; tocar no ⓘ abre, tocar de
+        novo fecha, tocar no outro troca; `stopPropagation` pra não abrir o
+        detalhe.
+      * `textoCascata` (era `bannerCascata`, o banner amarelo saiu do
+        detalhe); `bannerOrigemSinal` e `LEGENDA_JANELA_ORIGEM` removidos
+        (nada mais os usava; o campo `janelaOrigem` continua gravado e é
+        usado em Resultados).
+      * `blocoRiscoSinal`: Take Profit/Stop Loss em US$ + preço aproximado
+        (≈), distância até TP/SL em pips, risco/retorno, saldo antes/
+        resultado/saldo depois, e o aviso "Lote/TP/SL conforme configurado"
+        no pé. O PREÇO de TP/SL NÃO é gravado no sinal: é calculado de
+        precoEntrada ± financeiro.tpPips/slPips × tamanho do pip (JPY 0,01;
+        demais 0,0001), por isso o "≈". Sinal sem `financeiro` mostra "--".
+      * `construirDetalheSinal(..., comEtiquetas = true)`: na lista as
+        etiquetas ficam fora do detalhe (visíveis com o card fechado); na
+        tabela e em Resultados entram no topo do detalhe (lá não existe a
+        área fechada). Resultado negativo agora sai "-$3.00" (antes
+        "$-3.00").
+  - css/painel.css: `.hs-tags`, `.hs-tag(--coral|--ambar|--lote)`,
+    `.hs-tag-i`, `.hs-aviso--neutro`, `.hs-risco*`, só com variáveis do
+    Aurora Glass (--pa-*).
+  - js/manual.js: seção do card atualizada (etiquetas, ordem do detalhe,
+    "Risco do sinal"; "Gerado em" e "Configuração Utilizada" removidos).
+
+Observações:
+  - Antes de mexer, a branch local estava ATRÁS do main: outras sessões
+    publicaram o redesenho "Aurora Glass" (PRs #1 e #2, 30/09) depois do
+    AJUSTE-046. A branch foi atualizada por fast-forward; o AJUSTE-052 é
+    sobre o código novo.
+  - Não alterado de propósito: o aviso âmbar `avisoRisco` continua como
+    estava no card; `avisoHistorico` (🔬, Conservador com menos de 30
+    operações) continua só no ícone da tabela - não pedido.
+
+Validação: scratchpad/test-ajuste047.js (app real no Chromium, Firestore
+simulado): 40+ verificações - etiquetas visíveis com o card fechado e o
+texto vermelho grande ausente; ⓘ abre/troca/fecha sem abrir o detalhe;
+texto da cascata e do "mesmo configurado"; "Expectativa negativa"; sinal
+antigo sem etiquetas; ordem ENTRADA<SAÍDA<RSI<EMAs<Risco; "Gerado em"/
+"Configuração Utilizada"/banner amarelo ausentes; TP/SL do EUR/JPY do
+print (entrada 179.155, 11.4 pips -> ≈179.269 / ≈179.041); VENDA com TP
+abaixo e SL acima da entrada; R/R 1:1 e 1:1.25; saldos de sinal pendente e
+encerrado; sinal antigo sem `financeiro` mostra "--"; fechamento manual
+continua transformando ENTRADA/SAÍDA em campos (ids intactos); tabela:
+etiquetas no topo do detalhe e ⓘ funcionando; aba Resultados abre sem erro
+de JS; nenhum erro de página.
+--------

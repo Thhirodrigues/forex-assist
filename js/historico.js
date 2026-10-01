@@ -689,16 +689,6 @@ function bannerConfiguracaoAjustada(sinal) {
 
 }
 
-// AJUSTE-019 (24/09/2026): rótulo de qual janela admitiu o par -
-// campo novo (janelaOrigem), sinais salvos antes desta data não têm
-// esse campo (fica null/undefined, parte do banner não aparece).
-const LEGENDA_JANELA_ORIGEM = {
-  asia: "🌏 Ásia (21:00–04:00, incondicional pra JPY/AUD/NZD - independe do modo selecionado)",
-  londres: "🇬🇧 Londres (04:00–13:00)",
-  novaYork: "🇺🇸 Nova York (10:00–19:00)",
-  personalizado: "⚙️ Personalizado (janela única configurada)"
-};
-
 // AJUSTE-019c (24/09/2026): perfil (AGRESSIVO/BALANCEADO/CONSERVADOR)
 // já era persistido em cada sinal desde o PENTE-FINO-001 (10/09/2026),
 // só nunca tinha sido exibido na tela - pedido explícito do usuário
@@ -720,37 +710,159 @@ const LEGENDA_PERFIL = {
 // Este banner só aparece quando os dois divergem, deixando isso visível
 // ANTES do usuário decidir se opera, exatamente como pedido: "avisar:
 // olha, analisado no modo agressivo/balanceado".
-function bannerCascata(sinal) {
+// AJUSTE-052 (01/10/2026): o texto do aviso de cascata deixou de ser um banner
+// amarelo dentro do detalhe - virou o conteúdo do ⓘ da etiqueta do modo
+// (ver etiquetasInfoSinal). Mesma frase de sempre, sem emoji.
+function textoCascata(sinal) {
 
   if (!sinal.rebaixadoDaCascata) return "";
 
   const perfilAprovadoLabel = LEGENDA_PERFIL[sinal.perfil] || sinal.perfil;
   const perfilConfiguradoLabel = LEGENDA_PERFIL[sinal.perfilConfigurado] || sinal.perfilConfigurado;
 
+  return `Este sinal NÃO atingiu o critério de ${perfilConfiguradoLabel} (configurado em Config) - foi aprovado pelo critério mais permissivo de ${perfilAprovadoLabel}. Avalie sua própria confiança antes de operar.`;
+
+}
+
+function escaparAtributoHtml(texto) {
+  return String(texto ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// AJUSTE-052 (01/10/2026): pedido do usuário - no lugar do texto vermelho
+// grande (e do amarelo da cascata) o card mostra uma linha de etiquetas
+// curtas: "Sem histórico ⓘ", "● Balanceado ⓘ" e "Lote". Tocar no ⓘ mostra o
+// texto completo logo abaixo (o mesmo que antes ocupava o card inteiro);
+// tocar de novo, ou na outra etiqueta, troca/fecha. O conteúdo vem dos
+// mesmos campos de antes (avisoExpectativa, perfil/rebaixadoDaCascata,
+// lote) - nada de cálculo novo. Nenhuma etiqueta -> string vazia.
+function etiquetasInfoSinal(sinal, docId) {
+
+  const etiquetas = [];
+
+  if (sinal.avisoExpectativa?.ativo) {
+    etiquetas.push({
+      chave: "expectativa",
+      tom: "coral",
+      rotulo: sinal.avisoExpectativa.historicoInsuficiente ? "Sem histórico" : "Expectativa negativa",
+      texto: sinal.avisoExpectativa.mensagem
+    });
+  }
+
+  if (sinal.perfil) {
+    const rebaixado = !!sinal.rebaixadoDaCascata;
+    etiquetas.push({
+      chave: "modo",
+      tom: rebaixado ? "ambar" : "neutro",
+      rotulo: LEGENDA_PERFIL[sinal.perfil] || sinal.perfil,
+      texto: rebaixado
+        ? textoCascata(sinal)
+        : `Aprovado no critério ${(LEGENDA_PERFIL[sinal.perfil] || sinal.perfil).split(" ").slice(1).join(" ") || sinal.perfil}, o mesmo configurado em Config.`
+    });
+  }
+
+  const lote = sinal.lote ?? sinal.loteUtilizado;
+  const temLote = lote != null && lote !== "";
+
+  if (!etiquetas.length && !temLote) return "";
+
+  const botoes = etiquetas.map(e => `
+      <button type="button" class="hs-tag hs-tag--${e.tom}" data-info-de="${docId}" data-chave="${e.chave}"
+              data-tom="${e.tom}" data-info="${escaparAtributoHtml(e.texto)}" aria-expanded="false"
+              onclick="alternarInfoSinal(event, '${docId}', this)">
+        ${e.rotulo}<span class="hs-tag-i" aria-hidden="true">i</span>
+      </button>`).join("");
+
   return `
-    <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:rgba(244,213,118,.12); border:1px solid rgba(244,213,118,.4); font-size:11px; color:#f4d576;">
-      ⚠️ Este sinal NÃO atingiu o critério de ${perfilConfiguradoLabel} (configurado em Config) - foi aprovado pelo critério mais permissivo de ${perfilAprovadoLabel}. Avalie sua própria confiança antes de operar.
+    <div class="hs-tags" onclick="event.stopPropagation();">
+      ${botoes}
+      ${temLote ? `<span class="hs-tag hs-tag--lote">📦 Lote ${lote}</span>` : ""}
     </div>
+    <div class="hs-aviso" id="info-${docId}" hidden role="status" onclick="event.stopPropagation();"></div>
   `;
 
 }
 
-function bannerOrigemSinal(sinal) {
+window.alternarInfoSinal = function (ev, docId, botao) {
 
-  const perfilLabel = LEGENDA_PERFIL[sinal.perfil] || null;
-  const janelaLabel = LEGENDA_JANELA_ORIGEM[sinal.janelaOrigem] || null;
+  ev.stopPropagation();
 
-  if (!perfilLabel && !janelaLabel) return "";
+  const painel = document.getElementById(`info-${docId}`);
+  if (!painel || !botao) return;
 
-  const linhas = [
-    perfilLabel ? `Perfil: ${perfilLabel}` : null,
-    janelaLabel ? `Janela: ${janelaLabel}` : null
-  ].filter(Boolean).join(" · ");
+  const jaAberto = !painel.hidden && painel.dataset.chave === botao.dataset.chave;
+
+  document.querySelectorAll(`[data-info-de="${docId}"]`).forEach(b => b.setAttribute("aria-expanded", "false"));
+
+  if (jaAberto) {
+    painel.hidden = true;
+    painel.dataset.chave = "";
+    return;
+  }
+
+  painel.textContent = botao.dataset.info || "";
+  painel.dataset.chave = botao.dataset.chave;
+  painel.className = `hs-aviso hs-aviso--${botao.dataset.tom || "neutro"}`;
+  painel.hidden = false;
+  botao.setAttribute("aria-expanded", "true");
+
+};
+
+// AJUSTE-052 (01/10/2026): janela "Risco do sinal" do detalhe. Reúne o que
+// antes estava espalhado em "Configuração Utilizada" (TP/SL em US$) e na
+// grade de saldo, mais as distâncias em pips e o risco/retorno. O PREÇO de
+// TP/SL não é gravado no sinal: é calculado aqui a partir da entrada e dos
+// pips de financeiro.tpPips/slPips (os mesmos que o checker usa pra fechar),
+// por isso aparece com "≈". Campo ausente (sinal antigo) -> "--".
+function blocoRiscoSinal(sinal) {
+
+  const fin = sinal.financeiro || {};
+  const tpPips = Math.abs(Number(fin.tpPips));
+  const slPips = Math.abs(Number(fin.slPips));
+  const entrada = Number(sinal.precoEntrada);
+  const tamanhoPip = String(sinal.par || "").includes("JPY") ? 0.01 : 0.0001;
+  const sentido = (sinal.direcao === "BUY" || sinal.direcao === "CALL") ? 1 : -1;
+
+  const precoAlvo = (pips, lado) =>
+    Number.isFinite(entrada) && Number.isFinite(pips)
+      ? formatarPrecoPar(entrada + lado * sentido * pips * tamanhoPip, sinal.par)
+      : null;
+
+  const usd = v => (v == null || v === "") ? "--" : `$${v}`;
+  const pipsTxt = v => Number.isFinite(v) ? `${v.toFixed(1)} pips` : "--";
+
+  const tpPreco = precoAlvo(tpPips, 1);
+  const slPreco = precoAlvo(slPips, -1);
+
+  const rr = Number.isFinite(Number(fin.rewardRisk))
+    ? Number(fin.rewardRisk)
+    : (Number(sinal.tpUSD) > 0 && Number(sinal.slUSD) > 0 ? Number(sinal.tpUSD) / Number(sinal.slUSD) : null);
+
+  const resultadoValor = sinal.resultadoFinanceiro ?? sinal.lucroEstimado;
+  const classeResultado = sinal.resultado === "WIN" ? "hs-risco-v--ganho" : sinal.resultado === "LOSS" ? "hs-risco-v--perda" : "";
+  const classeDepois = sinal.saldoDepois > sinal.saldoAntes ? "hs-risco-v--ganho" : sinal.saldoDepois < sinal.saldoAntes ? "hs-risco-v--perda" : "";
+
+  const linha = (rotulo, valor, classe = "") =>
+    `<div class="hs-risco-linha"><dt>${rotulo}</dt><dd class="${classe}">${valor}</dd></div>`;
 
   return `
-    <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:rgba(188,196,213,.10); border:1px solid rgba(188,196,213,.3); font-size:11px; color:#bcc4d5;">
-      🕐 Gerado em: ${linhas}
-    </div>
+    <section class="hs-risco" aria-label="Risco do sinal" onclick="event.stopPropagation();">
+      <h4 class="hs-risco-titulo">Risco do sinal</h4>
+      <dl class="hs-risco-grade">
+        ${linha("Take Profit", `${usd(sinal.tpUSD)}${tpPreco ? ` · ≈ ${tpPreco}` : ""}`, "hs-risco-v--ganho")}
+        ${linha("Stop Loss", `${usd(sinal.slUSD)}${slPreco ? ` · ≈ ${slPreco}` : ""}`, "hs-risco-v--perda")}
+        ${linha("Distância até o TP", pipsTxt(tpPips))}
+        ${linha("Distância até o SL", pipsTxt(slPips))}
+        ${linha("Risco/retorno", rr == null ? "--" : `1 : ${Number(rr.toFixed(2))}`)}
+        ${linha("Saldo antes", sinal.saldoAntes == null ? "--" : "$" + Number(sinal.saldoAntes).toFixed(2))}
+        ${linha("Resultado", resultadoValor == null ? "--" : `${resultadoValor >= 0 ? "+" : "-"}$${Math.abs(Number(resultadoValor)).toFixed(2)}`, classeResultado)}
+        ${linha("Saldo depois", sinal.saldoDepois == null ? "--" : "$" + Number(sinal.saldoDepois).toFixed(2), classeDepois)}
+      </dl>
+      ${bannerConfiguracaoAjustada(sinal)}
+    </section>
   `;
 
 }
@@ -1100,7 +1212,7 @@ function construirLinhaTabela(sinal, docId, dataObj, isCooldown, borderStyle, de
   // 🟡 Conservador, mesmas cores de LEGENDA_PERFIL), visível na
   // tabela principal sem precisar abrir o detalhe. `sinal.perfil` já
   // é o nível REALMENTE aprovado desde o AJUSTE-028 (não
-  // necessariamente o configurado - ver bannerCascata) - correto usar
+  // necessariamente o configurado - ver textoCascata) - correto usar
   // direto aqui. "-" pra sinais salvos antes do PENTE-FINO-001
   // (perfil nunca foi persistido).
   const perfilDotTitle = sinal.perfil
@@ -1187,18 +1299,33 @@ function miniCard(emoji, label, valorHtml, cor, idAttr) {
 // aberto). Na tabela isso passava despercebido (o </td> fecha tudo), mas
 // no modo lista cada card engolia o seguinte (cards aninhados). Achado
 // testando o link da XM; erro antigo, não introduzido por ele.
-function construirDetalheSinal(sinal, docId, estaAberto) {
+// AJUSTE-052 (01/10/2026): ordem nova do detalhe (pedido do usuário):
+// ENTRADA/SAÍDA/RSI, EMA 9/21/200, janela "Risco do sinal" (TP, SL,
+// distâncias, risco/retorno, saldo antes/resultado/saldo depois), depois os
+// avisos (SMC, candle), fechamento manual, caminho do preço e "Operação
+// Real". Saíram daqui: o banner amarelo da cascata (virou o ⓘ da etiqueta do
+// modo) e o "Gerado em: perfil/janela" (removido a pedido). `comEtiquetas`:
+// no card da lista as etiquetas ficam FORA do detalhe (visíveis com o card
+// fechado); na tabela e em Resultados não existe essa área, então entram no
+// topo do detalhe.
+function construirDetalheSinal(sinal, docId, estaAberto, comEtiquetas = true) {
   const detalheId = `detalhe-${docId}`;
 
-  // AJUSTE-015: layout reorganizado em grades de 3 por linha (pedido
-  // do usuário) - linha 1 EMA9/EMA21/EMA200, linha 2 RSI/Entrada/
-  // Saída. Entrada e Saída ganham IDs (`valorEntrada-`/`valorSaida-`)
-  // pra virarem campo editável no fechamento manual, sem precisar
-  // reconstruir o resto do card.
+  // Entrada e Saída ganham IDs (`valorEntrada-`/`valorSaida-`) pra virarem
+  // campo editável no fechamento manual (ativarEdicaoFechamentoManual),
+  // sem reconstruir o resto do card.
   const gradeAberta = `<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px;">`;
 
   return `
           <div id="${detalheId}" style="display: ${estaAberto ? 'block' : 'none'}; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#bcc4d5;">
+
+${comEtiquetas ? etiquetasInfoSinal(sinal, docId) : ""}
+
+${gradeAberta}
+${miniCard("💰", "ENTRADA", formatarPrecoPar(sinal.precoEntrada, sinal.par), "#f9fafd", `id="valorEntrada-${docId}"`)}
+${miniCard("🏁", "SAÍDA", formatarPrecoPar(sinal.precoSaida ?? sinal.precoFechamento, sinal.par), "#f9fafd", `id="valorSaida-${docId}"`)}
+${miniCard("📉", "RSI", (sinal.indicadores?.rsi ?? sinal.rsi) != null ? Number(sinal.indicadores?.rsi ?? sinal.rsi).toFixed(2) : "--", "#3ae0e8")}
+</div>
 
 ${gradeAberta}
 ${miniCard("📈", "EMA 9", formatarPrecoPar(sinal.indicadores?.ema9 ?? sinal.ema9, sinal.par))}
@@ -1206,66 +1333,15 @@ ${miniCard("📊", "EMA 21", formatarPrecoPar(sinal.indicadores?.ema21 ?? sinal.
 ${miniCard("🏠", "EMA 200", formatarPrecoPar(sinal.indicadores?.ema200 ?? sinal.ema200, sinal.par))}
 </div>
 
-${gradeAberta}
-${miniCard("📉", "RSI", (sinal.indicadores?.rsi ?? sinal.rsi) != null ? Number(sinal.indicadores?.rsi ?? sinal.rsi).toFixed(2) : "--", "#3ae0e8")}
-${miniCard("💰", "ENTRADA", formatarPrecoPar(sinal.precoEntrada, sinal.par), "#f9fafd", `id="valorEntrada-${docId}"`)}
-${miniCard("🏁", "SAÍDA", formatarPrecoPar(sinal.precoSaida ?? sinal.precoFechamento, sinal.par), "#f9fafd", `id="valorSaida-${docId}"`)}
-</div>
+${blocoRiscoSinal(sinal)}
 
 ${bannerSMC(sinal)}
 
 ${bannerCandlestick(sinal)}
 
-${bannerCascata(sinal)}
-
-${bannerOrigemSinal(sinal)}
-
 ${botaoFecharManualmente(sinal, docId)}
 
 ${sinal.status === "ENCERRADA" ? renderizarCaminhoPrecos(sinal) : ""}
-
-<div style="margin-top:12px;">
-
-    <div style="
-        font-weight:bold;
-        color:#bcc4d5;
-        margin-bottom:8px;
-    ">
-        ⚙️ Configuração Utilizada
-    </div>
-
-    ${bannerConfiguracaoAjustada(sinal)}
-
-    ${gradeAberta}
-    ${miniCard("📦", "LOTE", sinal.lote)}
-    ${miniCard("🎯", "TP", `$${sinal.tpUSD}`, "#5ef8b7")}
-    ${miniCard("🛑", "SL", `$${sinal.slUSD}`, "#ff9891")}
-    </div>
-
-    <!-- CONTROLE FINANCEIRO -->
-
-    ${gradeAberta}
-    ${miniCard(
-        "💼",
-        "SALDO ANTES",
-        sinal.saldoAntes == null ? "--" : "$" + Number(sinal.saldoAntes).toFixed(2),
-        "#bcc4d5"
-    )}
-    ${miniCard(
-        "📊",
-        "RESULTADO",
-        (sinal.resultadoFinanceiro ?? sinal.lucroEstimado) == null
-            ? "--"
-            : `${(sinal.resultadoFinanceiro ?? sinal.lucroEstimado) >= 0 ? "+" : ""}$${Number(sinal.resultadoFinanceiro ?? sinal.lucroEstimado).toFixed(2)}`,
-        sinal.resultado === "WIN" ? "#5ef8b7" : sinal.resultado === "LOSS" ? "#ff9891" : "#f9fafd"
-    )}
-    ${miniCard(
-        "💰",
-        "SALDO DEPOIS",
-        sinal.saldoDepois == null ? "--" : "$" + Number(sinal.saldoDepois).toFixed(2),
-        sinal.saldoDepois > sinal.saldoAntes ? "#5ef8b7" : sinal.saldoDepois < sinal.saldoAntes ? "#ff9891" : "#f9fafd"
-    )}
-    </div>
 
     <label style="
 display:flex;
@@ -1292,7 +1368,6 @@ ${sinal.status !== "ENCERRADA"
     ? '<div style="font-size:11px;color:#bcc4d5;margin-top:4px;">Disponível após o encerramento da operação</div>'
     : ""}
 
-</div>
           </div>
         `;
 }
@@ -1406,7 +1481,7 @@ function construirItemListaAurora(sinal, docId, dataObj, isCooldown, borderStyle
         <span class="pn-linha-res">${direita}</span>
       </div>
       ${sinal.avisoRisco?.ativo ? `<div class="hs-aviso hs-aviso--ambar">⚠️ ${sinal.avisoRisco.mensagem}</div>` : ""}
-      ${sinal.avisoExpectativa?.ativo ? `<div class="hs-aviso hs-aviso--coral">📉 ${sinal.avisoExpectativa.mensagem}</div>` : ""}
+      ${etiquetasInfoSinal(sinal, docId)}
       ${detalheHtml}
     </div>`;
 
@@ -1545,7 +1620,7 @@ async function carregarHistorico() {
 
       cacheSinaisHistorico[doc.id] = { sinal, dataObj };
 
-      const detalheHtml = construirDetalheSinal(sinal, doc.id, estaAberto);
+      const detalheHtml = construirDetalheSinal(sinal, doc.id, estaAberto, modoTabela);
 
       const card = modoTabela
         ? construirLinhaTabela(sinal, doc.id, dataObj, isCooldown, borderStyle, detalheHtml, undefined, true)

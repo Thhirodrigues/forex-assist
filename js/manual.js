@@ -561,18 +561,66 @@ function secaoComoLerSinal() {
           página.</li>
       </ul>
 
+      <h3>No card, sem abrir (etiquetas)</h3>
+      <p>Logo abaixo do par aparece uma linha de etiquetas curtas
+      (AJUSTE-052). Toque no <b>ⓘ</b> de uma etiqueta pra ler o texto
+      completo logo abaixo; toque de novo pra fechar. Tocar no ⓘ não
+      abre nem fecha o detalhe do sinal.</p>
+      <ul style="padding-left:20px; font-size:13px;">
+        <li><b>Sem histórico</b> - o par ainda não tem operações
+          suficientes pra calcular a expectativa (a taxa de acerto é
+          desconhecida, não 0%). O sinal foi liberado sem essa
+          checagem: avalie com cautela. Quando o motivo é outro
+          (expectativa negativa no perfil Agressivo), a etiqueta diz
+          "Expectativa negativa".</li>
+        <li><b>● Modo</b> (Agressivo/Balanceado/Conservador) - o
+          critério que realmente aprovou o sinal. Se foi mais permissivo
+          que o configurado em Config, o ⓘ explica (e a etiqueta fica
+          amarela).</li>
+        <li><b>Lote</b> - o tamanho de posição usado no sinal.</li>
+      </ul>
+
       <h3>Ao expandir o sinal (toque na linha)</h3>
+      <p><b>ENTRADA / SAÍDA / RSI</b> - preço de abertura, preço de
+      fechamento (se já fechou) e o RSI na hora do sinal (ver Passo 2
+      na seção anterior pra saber o que cada faixa significa). ENTRADA
+      e SAÍDA ficam editáveis só depois de clicar em "Fechei
+      Manualmente na Corretora" (ver abaixo).</p>
+
       <p><b>EMA 9 / EMA 21 / EMA 200</b> - o preço de cada média na
       hora do sinal, já formatado com as casas decimais certas (pares
       com JPY: 3 casas; outros: 5 casas - é a convenção real de
       cotação do mercado Forex, não um arredondamento nosso).</p>
 
-      <p><b>RSI</b> - o valor do RSI na hora do sinal (ver Passo 2 na
-      seção anterior pra saber o que cada faixa significa).</p>
-
-      <p><b>ENTRADA / SAÍDA</b> - preço de abertura e (se já fechou)
-      de fechamento. Editáveis só depois de clicar em "Fechei
-      Manualmente na Corretora" (ver abaixo).</p>
+      <h3>Risco do sinal</h3>
+      <p>Janela com o que está em jogo na operação (AJUSTE-052). Os
+      alvos em dólar são SEMPRE os valores da tela de Config
+      (AJUSTE-039), com uma única exceção, mostrada no aviso no pé da
+      janela:</p>
+      <ul style="padding-left:20px; font-size:13px;">
+        <li><b>Take Profit / Stop Loss</b> - o alvo em US$ e, ao lado,
+          o PREÇO aproximado (≈) em que cada um bate. O preço não fica
+          gravado no sinal: é calculado a partir da entrada e dos pips
+          do TP/SL, os mesmos que o verificador usa pra fechar. Confira
+          sempre o preço real na XM.</li>
+        <li><b>Distância até o TP / SL</b> - os mesmos alvos em pips.</li>
+        <li><b>Risco/retorno</b> - 1 : 1 quando TP e SL são iguais;
+          GBP/USD usa TP de 1,5x o SL (RR_PAR, AJUSTE-004).</li>
+        <li><b>Saldo antes / Resultado / Saldo depois</b> - o saldo
+          simulado antes e depois dessa operação fechar e o resultado em
+          dólar dela (positivo = WIN, negativo = LOSS). "--" enquanto
+          pendente.</li>
+      </ul>
+      <p style="font-size:11px; color:#bcc4d5;">
+        Sinais antigos (antes de 28/09) podem mostrar outros motivos no
+        aviso - REDUZIR_EXPOSICAO (ADX abaixo de 20), MERCADO_LENTO (ATR
+        baixo) e EXPECTATIVA_NEGATIVA - que reduziam lote e apertavam
+        TP/SL pra $3 automaticamente. Foram desligados: o de ATR usava
+        um valor de preço fixo que, na prática, forçava $3 em TODO par
+        sem iene, ignorando a Config. Resultados de antes e depois dessa
+        data não são diretamente comparáveis (alvos diferentes em pips).
+        Sinais sem os pips gravados mostram "--" nas distâncias.
+      </p>
 
       <p><b>🧠 SMC</b> (quando aparece) - mostra a direção do order
       block detectado, se o preço estava na zona, e quantos pontos
@@ -583,47 +631,10 @@ function secaoComoLerSinal() {
       "Como o RMI decide") e quantos pontos isso somou/tirou do
       score.</p>
 
-      <p><b>🕐 Gerado em</b> (quando aparece, sinais a partir de
-      25/09/2026) - qual PERFIL estava ativo (Agressivo/Balanceado/
-      Conservador) e qual JANELA de horário admitiu esse par naquele
-      momento (Londres/Nova York/Ásia/Personalizado) - útil pra
-      entender por que um sinal apareceu num horário que parecia
-      "fora" da janela configurada (a janela asiática, por exemplo, é
-      incondicional pra pares JPY/AUD/NZD, independente do que está
-      selecionado na Config).</p>
-
       <p><b>📈 Movimento do Preço</b> (só em sinal já encerrado) -
       gráfico simples da trajetória do preço, do início até o
       fechamento, com uma linha tracejada marcando onde foi a
       entrada.</p>
-
-      <h3>Configuração Utilizada</h3>
-      <p>
-        LOTE / TP / SL - o tamanho de posição e os alvos em dólar
-        realmente usados nessa operação. Desde 28/09/2026 (AJUSTE-039)
-        são SEMPRE os valores da tela de Config, com uma única exceção:
-      </p>
-      <ul style="padding-left:20px; font-size:13px;">
-        <li><b>RR_PAR</b> - GBP/USD usa TP de 1,5x o SL (R/R 1,5:1),
-          regra específica desse par validada com dado real
-          (AJUSTE-004).</li>
-        <li><b>MANTER</b> - nenhum ajuste, valores exatamente como
-          configurados.</li>
-      </ul>
-      <p style="font-size:11px; color:#bcc4d5;">
-        Sinais antigos (antes de 28/09) podem mostrar outros motivos -
-        REDUZIR_EXPOSICAO (ADX abaixo de 20), MERCADO_LENTO (ATR baixo)
-        e EXPECTATIVA_NEGATIVA - que reduziam lote e apertavam TP/SL
-        pra $3 automaticamente. Foram desligados: o de ATR usava um
-        valor de preço fixo que, na prática, forçava $3 em TODO par sem
-        iene, ignorando a Config. Resultados de antes e depois dessa
-        data não são diretamente comparáveis (alvos diferentes em pips).
-      </p>
-
-      <h3>Controle Financeiro</h3>
-      <p><b>SALDO ANTES / RESULTADO / SALDO DEPOIS</b> - o saldo
-      simulado antes e depois dessa operação fechar, e o resultado em
-      dólar dela especificamente (positivo = WIN, negativo = LOSS).</p>
 
       <h3>Favor / Contra (no modo tabela)</h3>
       <p>
