@@ -926,6 +926,31 @@ background:oklch(0.85 0.14 165 / 12%);
 color:var(--pa-ganho);
 }
 
+/* AJUSTE-054: Lote em azul, SMC em roxo */
+body.tema-aurora .hs-tag--azul{
+border-color:oklch(0.76 0.14 250 / 40%);
+background:oklch(0.76 0.14 250 / 14%);
+color:oklch(0.8 0.12 250);
+}
+
+body.tema-aurora .hs-aviso--azul{
+border:1px solid oklch(0.76 0.14 250 / 40%);
+background:oklch(0.76 0.14 250 / 14%);
+color:oklch(0.82 0.1 250);
+}
+
+body.tema-aurora .hs-tag--roxo{
+border-color:oklch(0.78 0.13 292 / 40%);
+background:oklch(0.78 0.13 292 / 14%);
+color:var(--ic-violeta);
+}
+
+body.tema-aurora .hs-aviso--roxo{
+border:1px solid oklch(0.78 0.13 292 / 40%);
+background:oklch(0.78 0.13 292 / 14%);
+color:var(--ic-violeta);
+}
+
 body.tema-aurora .hs-tag-i{
 display:inline-grid;
 place-items:center;

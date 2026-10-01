@@ -577,12 +577,12 @@ function secaoComoLerSinal() {
           critério que realmente aprovou o sinal. Se foi mais permissivo
           que o configurado em Config, o ⓘ explica (e a etiqueta fica
           amarela).</li>
-        <li><b>Lote</b> - o tamanho de posição usado no sinal; o ⓘ
-          lembra que vem da tela de Config e quanto o Stop Loss perde e o
-          Take Profit ganha com ele.</li>
-        <li><b>SMC</b> (quando o sinal tem) - o ⓘ mostra o Order Block
-          detectado, se o preço estava na zona e quantos pontos isso
-          somou/tirou do score. Verde = somou, vermelho = tirou.</li>
+        <li><b>SMC</b> (roxo, quando o sinal tem) - o ⓘ mostra o Order
+          Block detectado, se o preço estava na zona e quantos pontos
+          isso somou/tirou do score.</li>
+        <li><b>Lote</b> (azul, sempre a última) - o tamanho de posição
+          usado no sinal; o ⓘ diz se Lote/TP/SL seguem a tela de Config
+          ou se o sistema ajustou algum automaticamente (e por quê).</li>
       </ul>
       <p style="font-size:11px; color:#bcc4d5;">As etiquetas ficam sempre
       numa linha só (AJUSTE-053); se a tela for estreita, a linha rola

@@ -13009,3 +13009,22 @@ redesenho; reabrir por clique mantém os detalhes minimizados fechados.
 test-ajuste047.js foi atualizado e ainda passa (ver ajustes no próprio
 arquivo).
 --------
+
+AJUSTE-054 (01/10/2026) - cores e ordem das etiquetas do card (só frontend).
+
+Pedido do usuário: Lote por último, em azul; SMC em roxo; a frase verde "Lote/
+TP/SL conforme configurado na tela de Config - sem ajuste automático" sai da
+janela "Risco do sinal" e vira o texto do ⓘ do Lote (no lugar do texto que
+eu tinha posto no AJUSTE-053).
+  - js/historico.js: ordem Sem histórico, Modo, SMC, Lote; SMC sempre roxo (a
+    cor deixou de seguir o sinal do score - o "+N/-N no score" continua no
+    texto); `bannerConfiguracaoAjustada` virou `textoConfiguracaoAjustada`
+    (mesma lógica: MANTER = "conforme configurado..."; senão "ajustados
+    automaticamente pelo sistema (motivo)...") e é o texto do ⓘ do Lote; a
+    caixa "Risco do sinal" não tem mais essa frase.
+  - css/painel.css: `.hs-tag--azul/--roxo`, `.hs-aviso--azul/--roxo`
+    (violeta reaproveita --ic-violeta do tema).
+  - js/manual.js ajustado. Teste: scratchpad/test-ajuste053.js (ordem, cores,
+    texto do ⓘ do Lote, frase ausente da caixa de risco) e test-ajuste047.js
+    passam.
+--------

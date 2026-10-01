@@ -355,8 +355,8 @@ function renderizarCaminhoPrecos(sinal) {
 // sem nenhum order block relevante detectado no momento, não têm
 // `smcDetectado` - não renderiza nada nesses casos, não é erro.
 // AJUSTE-053: o aviso do SMC saiu do detalhe - virou a etiqueta "SMC ⓘ" na
-// linha de etiquetas do card (mesmo texto de antes, sem emoji). `tom` segue o
-// sinal do score (mesmas cores do banner antigo).
+// linha de etiquetas do card (mesmo texto de antes, sem emoji). Desde o
+// AJUSTE-054 a etiqueta é sempre roxa; o score (+/-) continua no texto.
 function infoSMC(sinal) {
 
   if (!sinal.smcDetectado) return null;
@@ -368,7 +368,6 @@ function infoSMC(sinal) {
   const sinalScore = score > 0 ? "+" : "";
 
   return {
-    tom: score > 0 ? "ganho" : score < 0 ? "coral" : "neutro",
     texto: `Order Block de ${direcao} detectado${naZona ? " (preço na zona)" : " (fora da zona)"}${score !== 0 ? ` — ${sinalScore}${score} no score` : ""}`
   };
 
@@ -680,25 +679,20 @@ window.confirmarFechamentoManual = async function (docId) {
 
 };
 
-function bannerConfiguracaoAjustada(sinal) {
+// AJUSTE-054 (01/10/2026): era um banner verde/azul dentro da janela "Risco do
+// sinal"; a pedido do usuário saiu de lá e virou o texto do ⓘ da etiqueta
+// "Lote" (mesma frase, sem emoji).
+function textoConfiguracaoAjustada(sinal) {
 
   const decisao = sinal.financeiro?.decisaoMercado?.decisao;
 
   if (!decisao || decisao === "MANTER") {
-    return `
-      <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:rgba(94,248,183,.08); border:1px solid rgba(94,248,183,.25); font-size:11px; color:#5ef8b7;">
-        ✅ Lote/TP/SL conforme configurado na tela de Config - sem ajuste automático.
-      </div>
-    `;
+    return "Lote/TP/SL conforme configurado na tela de Config - sem ajuste automático.";
   }
 
   const motivo = LEGENDA_AJUSTE_MERCADO[decisao] || decisao;
 
-  return `
-    <div style="margin-bottom:12px; padding:8px 10px; border-radius:8px; background:rgba(58,224,232,.10); border:1px solid rgba(58,224,232,.3); font-size:11px; color:#3ae0e8;">
-      🤖 Lote/TP/SL ajustados automaticamente pelo sistema (${motivo}) - não é o valor bruto configurado manualmente.
-    </div>
-  `;
+  return `Lote/TP/SL ajustados automaticamente pelo sistema (${motivo}) - não é o valor bruto configurado manualmente.`;
 
 }
 
@@ -777,24 +771,22 @@ function etiquetasInfoSinal(sinal, docId) {
     });
   }
 
-  const lote = sinal.lote ?? sinal.loteUtilizado;
-
-  if (lote != null && lote !== "") {
-    const alvos = (sinal.tpUSD != null && sinal.slUSD != null)
-      ? ` Com ele, o Stop Loss perde US$ ${sinal.slUSD} e o Take Profit ganha US$ ${sinal.tpUSD}.`
-      : "";
-    etiquetas.push({
-      chave: "lote",
-      tom: "neutro",
-      rotulo: `Lote ${lote}`,
-      texto: `Tamanho da posição deste sinal: ${lote} lote. Vem da tela de Config.${alvos}`
-    });
-  }
-
+  // AJUSTE-054 (pedido do usuário): SMC em roxo e Lote por último, em azul.
   const smc = infoSMC(sinal);
 
   if (smc) {
-    etiquetas.push({ chave: "smc", tom: smc.tom, rotulo: "🧠 SMC", texto: smc.texto });
+    etiquetas.push({ chave: "smc", tom: "roxo", rotulo: "🧠 SMC", texto: smc.texto });
+  }
+
+  const lote = sinal.lote ?? sinal.loteUtilizado;
+
+  if (lote != null && lote !== "") {
+    etiquetas.push({
+      chave: "lote",
+      tom: "azul",
+      rotulo: `Lote ${lote}`,
+      texto: textoConfiguracaoAjustada(sinal)
+    });
   }
 
   if (!etiquetas.length) return "";
@@ -908,7 +900,6 @@ function blocoRiscoSinal(sinal, docId) {
         ${linha("Resultado", resultadoValor == null ? "--" : `${resultadoValor >= 0 ? "+" : "-"}$${Math.abs(Number(resultadoValor)).toFixed(2)}`, classeResultado)}
         ${linha("Saldo depois", sinal.saldoDepois == null ? "--" : "$" + Number(sinal.saldoDepois).toFixed(2), classeDepois)}
       </dl>
-      ${bannerConfiguracaoAjustada(sinal)}
       <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.10); font-size:12.5px;">
         <span>💲 Operação Real</span>
         <input type="checkbox"
