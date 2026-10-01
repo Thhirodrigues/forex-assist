@@ -13037,3 +13037,12 @@ um terceiro tom. Teste (test-ajuste053.js) ajustado: sinal com score 0 = roxo,
 com +5 = verde. Registro do assunto do atraso sinal -> entrada em
 BACKLOG-E-VISAO.md seção 8 (nada implementado).
 --------
+
+AJUSTE-054c (01/10/2026) - SMC com TRÊS cores (verde = somou pontos, roxo =
+score zero, vermelho = tirou pontos) e a etiqueta de modo colorida pelo perfil
+que APROVOU o sinal: Agressivo verde, Balanceado azul, Conservador amarelo
+(`TOM_ETIQUETA_PERFIL`, usa sinal.perfil e não perfilConfigurado; o painel do
+ⓘ usa o mesmo tom). Antes era âmbar quando rebaixado da cascata e neutro nos
+demais. Observação: Balanceado e Lote são ambos azuis, por pedido; ficam em
+posições diferentes da linha (2ª e última). Teste: test-ajuste053.js.
+--------

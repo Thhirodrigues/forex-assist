@@ -573,14 +573,16 @@ function secaoComoLerSinal() {
           checagem: avalie com cautela. Quando o motivo é outro
           (expectativa negativa no perfil Agressivo), a etiqueta diz
           "Expectativa negativa".</li>
-        <li><b>● Modo</b> (Agressivo/Balanceado/Conservador) - o
-          critério que realmente aprovou o sinal. Se foi mais permissivo
-          que o configurado em Config, o ⓘ explica (e a etiqueta fica
-          amarela).</li>
+        <li><b>● Modo</b> - o critério que realmente aprovou o sinal, na
+          cor dele: <b>verde = Agressivo, azul = Balanceado, amarelo =
+          Conservador</b>. A cor é a do modo que APROVOU, não a do modo
+          configurado em Config: se o app está no Conservador mas o sinal
+          só passou no critério Balanceado, a etiqueta é azul, e o ⓘ
+          explica a diferença.</li>
         <li><b>SMC</b> (quando o sinal tem) - o ⓘ mostra o Order Block
           detectado, se o preço estava na zona e quantos pontos isso
-          somou/tirou do score. Verde = somou pontos; roxo = não somou
-          (zero ou negativo - o texto diz o valor).</li>
+          somou/tirou do score. Verde = somou pontos; roxo = score zero;
+          vermelho = tirou pontos.</li>
         <li><b>Lote</b> (azul, sempre a última) - o tamanho de posição
           usado no sinal; o ⓘ diz se Lote/TP/SL seguem a tela de Config
           ou se o sistema ajustou algum automaticamente (e por quê).</li>

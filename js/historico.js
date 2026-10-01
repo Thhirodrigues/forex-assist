@@ -355,9 +355,9 @@ function renderizarCaminhoPrecos(sinal) {
 // sem nenhum order block relevante detectado no momento, não têm
 // `smcDetectado` - não renderiza nada nesses casos, não é erro.
 // AJUSTE-053: o aviso do SMC saiu do detalhe - virou a etiqueta "SMC ⓘ" na
-// linha de etiquetas do card (mesmo texto de antes, sem emoji). Cor (AJUSTE-054, duas
-// cores): verde quando o SMC SOMOU pontos ao score, roxo nos demais casos (o
-// "+N/-N no score" continua no texto).
+// linha de etiquetas do card (mesmo texto de antes, sem emoji). Cor (AJUSTE-054b, três
+// cores): verde = somou pontos ao score, roxo = score zero, vermelho = tirou
+// pontos (o "+N/-N no score" continua no texto).
 function infoSMC(sinal) {
 
   if (!sinal.smcDetectado) return null;
@@ -369,7 +369,7 @@ function infoSMC(sinal) {
   const sinalScore = score > 0 ? "+" : "";
 
   return {
-    tom: score > 0 ? "ganho" : "roxo",
+    tom: score > 0 ? "ganho" : score < 0 ? "coral" : "roxo",
     texto: `Order Block de ${direcao} detectado${naZona ? " (preço na zona)" : " (fora da zona)"}${score !== 0 ? ` — ${sinalScore}${score} no score` : ""}`
   };
 
@@ -748,6 +748,12 @@ function escaparAtributoHtml(texto) {
 // tocar de novo, ou na outra etiqueta, troca/fecha. O conteúdo vem dos
 // mesmos campos de antes (avisoExpectativa, perfil/rebaixadoDaCascata,
 // lote) - nada de cálculo novo. Nenhuma etiqueta -> string vazia.
+// AJUSTE-054c (pedido do usuário): a cor da etiqueta de modo segue o perfil que
+// APROVOU o sinal (sinal.perfil), mesmo que o app esteja configurado em outro
+// (cascata): Agressivo verde, Balanceado azul, Conservador amarelo - as mesmas
+// cores das bolinhas de LEGENDA_PERFIL.
+const TOM_ETIQUETA_PERFIL = { AGRESSIVO: "ganho", BALANCEADO: "azul", CONSERVADOR: "ambar" };
+
 function etiquetasInfoSinal(sinal, docId) {
 
   const etiquetas = [];
@@ -765,7 +771,7 @@ function etiquetasInfoSinal(sinal, docId) {
     const rebaixado = !!sinal.rebaixadoDaCascata;
     etiquetas.push({
       chave: "modo",
-      tom: rebaixado ? "ambar" : "neutro",
+      tom: TOM_ETIQUETA_PERFIL[sinal.perfil] || "neutro",
       rotulo: LEGENDA_PERFIL[sinal.perfil] || sinal.perfil,
       texto: rebaixado
         ? textoCascata(sinal)
