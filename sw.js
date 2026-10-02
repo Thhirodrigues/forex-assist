@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  "forex-assist-v10";
+  "forex-assist-v11";
 
 const ASSETS = [
   "./",

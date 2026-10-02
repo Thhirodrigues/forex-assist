@@ -13106,3 +13106,21 @@ carregar, esse é o splash nativo do Android para PWA instalada (ícone do
 manifest sobre background_color) - é do sistema, não do código da página, e
 não pode ser removido por aqui.
 --------
+
+AJUSTE-058 (02/10/2026) - Tentativa de esconder o logo do splash nativo do
+Android (só frontend, EXPERIMENTAL).
+
+Com o app instalado, o Android mostra, antes da página carregar, o ícone do
+manifest sobre background_color; o vídeo só começa depois. Pedido do usuário:
+tirar esse logo só da abertura, mantendo o ícone na tela inicial.
+Mudança: manifest.json passa a ter DOIS ícones - purpose "any" =
+assets/icon-vazio-512.png (liso, #081622, igual ao fundo do vídeo) e purpose
+"maskable" = assets/icon-maskable-512.png (o logo, recuado para a zona segura
+de 80%, bordas suavizadas). Hipótese: o Chrome usa o ícone "any" no splash e o
+maskable no ícone adaptativo do launcher. NÃO verificado em aparelho real (o
+splash do WebAPK não é reproduzível no Chromium daqui). Só vale depois que o
+Android atualizar o WebAPK (pode levar ~1 dia) ou após desinstalar/reinstalar.
+Se o splash seguir mostrando o logo, ou se o ícone da tela inicial ficar
+liso/errado, REVERTER: voltar manifest.json ao ícone único icon-512.png
+("any maskable"). sw.js: cache v11.
+--------
