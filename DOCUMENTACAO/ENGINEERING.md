@@ -13124,3 +13124,19 @@ Se o splash seguir mostrando o logo, ou se o ícone da tela inicial ficar
 liso/errado, REVERTER: voltar manifest.json ao ícone único icon-512.png
 ("any maskable"). sw.js: cache v11.
 --------
+
+AJUSTE-059 (02/10/2026) - Ícones do manifest lisos (esconde o logo do splash nativo
+do Android; a pedido do usuário, ciente de que o ícone do app na tela inicial
+também fica liso).
+
+O AJUSTE-058 (any liso + maskable com logo) não resolveu no aparelho: o logo
+continuou aparecendo na abertura. Agora o manifest.json aponta SÓ para
+assets/icon-vazio-512.png (liso, #081622) em "any" e "maskable". Efeito: abertura
+vai direto ao vídeo; ícone do app instalado vira quadrado escuro com o nome.
+NÃO foi alterado: root icon-192.png / icon-512.png / badge-96.png (usados pelas
+notificações em sw.js e firebase-messaging-sw.js, e cacheados em sw.js), nem
+assets/icon-*.png. Só o manifest mudou. Vale após o Android atualizar o WebAPK
+(desinstalar/reinstalar acelera). REVERTER: manifest.json com
+icon-512.png "any maskable". sw.js: cache v12. Removido assets/icon-maskable-512.png
+(sem uso).
+--------
