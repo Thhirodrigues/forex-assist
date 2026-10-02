@@ -13177,3 +13177,11 @@ AJUSTE-062 (02/10/2026) - Título do Painel: "Painel" -> "Real Money Intelligenc
 inferior continua "Painel". Em tela de ~360 px o título quebra em duas linhas
 (ao lado do selo "Scanner online") - verificado por captura no Chromium.
 --------
+
+AJUSTE-063 (02/10/2026) - Cabeçalho do Painel invertido a pedido: "Forex Assist"
+grande (24 px) e "Real Money Intelligence" menor embaixo (linha de apoio, 14 px).
+Substitui o AJUSTE-062. js/app.js: o cabeçalho de todas as abas usa o mesmo
+formato título + linha de apoio (SUBTITULOS_ABA.dashboard); classe
+`header--painel` (css/styles.css) mantém "Forex Assist" numa linha só ao lado do
+selo do scanner em telas estreitas. Verificado por captura a 360 px.
+--------

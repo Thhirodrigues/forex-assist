@@ -1227,6 +1227,13 @@ margin-top:0;
 font-size:26px;
 }
 
+/* Painel: "Forex Assist" numa linha só mesmo em tela estreita (o selo do
+   scanner divide a linha com o título) */
+body.tema-aurora .header--painel .subtitle{
+font-size:24px;
+white-space:nowrap;
+}
+
 /* lista aberta dos menus suspensos (select): o navegador a desenha com fundo
    próprio, e sem isto ficava branca com texto claro (ilegível) */
 body.tema-aurora select option,
