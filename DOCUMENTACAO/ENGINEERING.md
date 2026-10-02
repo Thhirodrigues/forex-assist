@@ -13171,3 +13171,9 @@ aí não há como separar splash e ícone: voltar ao AJUSTE-059 (manifest todo l
 um único arquivo) ou aceitar o logo. Notificações/badge (raiz) intocados.
 sw.js: cache v14.
 --------
+
+AJUSTE-062 (02/10/2026) - Título do Painel: "Painel" -> "Real Money Intelligence"
+(só frontend). js/app.js, TITULOS_ABA.dashboard. O rótulo do botão da barra
+inferior continua "Painel". Em tela de ~360 px o título quebra em duas linhas
+(ao lado do selo "Scanner online") - verificado por captura no Chromium.
+--------

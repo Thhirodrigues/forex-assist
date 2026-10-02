@@ -1,7 +1,7 @@
 // Título de cada aba no cabeçalho (mesmo padrão do projeto Aurora Glass:
 // "FOREX ASSIST" pequeno em cima, nome da aba embaixo).
 const TITULOS_ABA = {
-    dashboard: "Painel",
+    dashboard: "Real Money Intelligence",
     historico: "Histórico",
     resultados: "Resultados",
     config: "Config",
