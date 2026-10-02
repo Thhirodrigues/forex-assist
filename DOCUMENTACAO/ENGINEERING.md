@@ -13140,3 +13140,20 @@ assets/icon-*.png. Só o manifest mudou. Vale após o Android atualizar o WebAPK
 icon-512.png "any maskable". sw.js: cache v12. Removido assets/icon-maskable-512.png
 (sem uso).
 --------
+
+AJUSTE-060 (02/10/2026) - Splash abre mais rápido: vídeo pré-guardado no
+service worker (só frontend).
+
+Depois do AJUSTE-059 (ícone liso) sobrou um pequeno atraso entre abrir o app e o
+vídeo começar: o .mp4 era sempre buscado na rede. sw.js (cache v13): o vídeo é
+baixado e guardado na instalação do SW (falha não derruba a instalação) e
+servido do cache por `responderVideo()`, com suporte a Range/206 (o navegador
+pede vídeo em pedaços e o Cache API não guarda respostas parciais); sem cache,
+cai na rede como antes. Chave do cache ignora o `?v=2`.
+Validação (Chromium + Playwright): fetch completo 200 com 901230 bytes; Range
+0-99 -> 206 "bytes 0-99/901230"; Range 900000- -> 206 com 1230 bytes.
+Limites: a 1ª abertura após instalar/atualizar ainda usa a rede; o que o
+Android faz ANTES da página existir (tela escura do WebAPK) não é controlável
+daqui; index.html segue network-first (decisão antiga: garante app atualizado) e
+pode custar ~100-500 ms em rede ruim - trocar isso arrisca servir versão velha.
+--------
