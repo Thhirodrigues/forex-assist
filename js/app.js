@@ -1,7 +1,7 @@
 // Título de cada aba no cabeçalho (mesmo padrão do projeto Aurora Glass:
 // "FOREX ASSIST" pequeno em cima, nome da aba embaixo).
 const TITULOS_ABA = {
-    dashboard: "Real Money Intelligence",
+    dashboard: "Forex Assist",
     historico: "Histórico",
     resultados: "Resultados",
     config: "Config",
@@ -11,6 +11,7 @@ const TITULOS_ABA = {
 // Linha de apoio sob o título nas telas secundárias (padrão do projeto:
 // título grande + subtítulo). "Real Money Intelligence" é o nome da marca.
 const SUBTITULOS_ABA = {
+    dashboard: "Real Money Intelligence",
     historico: "Sinais e operações, dia a dia",
     resultados: "Desempenho da conta",
     config: "Preferências do assistente",
@@ -103,12 +104,11 @@ localStorage.getItem("ultimaAba")
 
         app.innerHTML = `
         
-        <div class="header${this.currentTab === "dashboard" ? "" : " header--aba"}">
+        <div class="header header--aba${this.currentTab === "dashboard" ? " header--painel" : ""}">
             <div class="header-linha">
                 <div class="header-texto">
-                    ${this.currentTab === "dashboard" ? '<div class="logo">Forex Assist</div>' : ""}
                     <div class="subtitle">${TITULOS_ABA[this.currentTab] || "Forex Assist"}</div>
-                    ${this.currentTab === "dashboard" ? "" : `<div class="tagline">${SUBTITULOS_ABA[this.currentTab] || ""}</div>`}
+                    <div class="tagline">${SUBTITULOS_ABA[this.currentTab] || ""}</div>
                 </div>
                 ${this.currentTab === "dashboard" ? `
                 <div id="scannerStatus" class="pa-status pa-status--carregando" role="status" aria-live="polite">
