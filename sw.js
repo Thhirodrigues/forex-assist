@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  "forex-assist-v12";
+  "forex-assist-v13";
 
 const ASSETS = [
   "./",
@@ -7,6 +7,48 @@ const ASSETS = [
   "./manifest.json",
   "./icon-512.png"
 ];
+
+const SPLASH_URL = "./assets/splash.mp4";
+
+// Responde ao pedido de vídeo (que vem em pedaços, Range/206) a partir do
+// arquivo inteiro guardado no cache; sem cache, cai na rede como antes.
+async function responderVideo(req) {
+
+  const cache = await caches.open(CACHE_NAME);
+  const url = new URL(req.url);
+  url.search = "";
+  const guardado = await cache.match(url.href);
+
+  if (!guardado) return fetch(req);
+
+  const corpo = await guardado.arrayBuffer();
+  const total = corpo.byteLength;
+  const faixa = /^bytes=(\d*)-(\d*)$/.exec(req.headers.get("range") || "");
+
+  if (!faixa) {
+    return new Response(corpo, {
+      status: 200,
+      headers: { "Content-Type": "video/mp4", "Content-Length": String(total), "Accept-Ranges": "bytes" }
+    });
+  }
+
+  let ini = faixa[1] === "" ? Math.max(0, total - Number(faixa[2])) : Number(faixa[1]);
+  let fim = faixa[1] === "" || faixa[2] === "" ? total - 1 : Math.min(Number(faixa[2]), total - 1);
+
+  if (ini >= total || ini > fim) {
+    return new Response(null, { status: 416, headers: { "Content-Range": "bytes */" + total } });
+  }
+
+  return new Response(corpo.slice(ini, fim + 1), {
+    status: 206,
+    headers: {
+      "Content-Type": "video/mp4",
+      "Content-Range": "bytes " + ini + "-" + fim + "/" + total,
+      "Content-Length": String(fim - ini + 1),
+      "Accept-Ranges": "bytes"
+    }
+  });
+}
 
 self.addEventListener(
   "install",
@@ -16,7 +58,11 @@ self.addEventListener(
       caches
         .open(CACHE_NAME)
         .then(cache =>
-          cache.addAll(ASSETS)
+          cache.addAll(ASSETS).then(() =>
+            // vídeo da splash guardado de antemão: abre sem esperar a rede.
+            // Falha aqui não pode derrubar a instalação do service worker.
+            cache.add(SPLASH_URL).catch(() => {})
+          )
         )
     );
 
@@ -64,9 +110,12 @@ self.addEventListener(
       )
     ) return;
 
-    // vídeo da splash: o navegador pede em pedaços (Range/206), que o cache
-    // não aceita guardar - deixa passar direto pela rede.
-    if (/\.mp4(\?|$)/.test(e.request.url)) return;
+    // vídeo da splash: pré-guardado no cache (install) e servido daqui, com
+    // suporte a Range/206 (o cache não guarda respostas parciais).
+    if (/\.mp4(\?|$)/.test(e.request.url)) {
+      e.respondWith(responderVideo(e.request));
+      return;
+    }
 
     e.respondWith(
 
