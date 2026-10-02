@@ -13072,3 +13072,23 @@ lista em retrato; vira tabela ao girar, com o detalhe aberto mantido; volta à
 lista; botão manual; abrir já deitado = tabela; bolinhas com saturação >= 150
 (RGB), verde/azul/amarelo, 14px com brilho; sinal sem perfil mostra "-".
 --------
+
+AJUSTE-056 (02/10/2026) - Splash de abertura com vídeo (só frontend).
+
+Pedido do usuário: ao abrir o app, tocar o vídeo enviado antes de mostrar o
+Painel. Arquivo: assets/splash.mp4 (remuxado com faststart, sem recodificar:
+2,1 MB -> 1,2 MB, 8 s, com áudio). Implementação: <style id="splash-css"> no
+<head> (fundo #081622 desde o primeiro quadro) + script inline no início do
+<body> em index.html; o app (js/app.js) carrega por baixo normalmente.
+Comportamento: toca uma vez por sessão (sessionStorage `splashVisto`);
+`?splash=1` força; toque na tela pula; teto de segurança de 10 s; erro no
+vídeo, vídeo que não arranca em 3,5 s ou prefers-reduced-motion abrem o app
+direto. Tenta tocar com som; se o navegador bloquear o autoplay, repete mudo
+(chave `SPLASH_COM_SOM` no script desliga o som de vez). sw.js: cache v10 e
+.mp4 passa direto pela rede (resposta 206/Range não pode ir ao cache).
+manifest.json e theme-color: #081622.
+Validação: Chromium/Playwright com cópia webm (o Chromium daqui não decodifica
+H.264): toca e some em ~8 s, não repete no reload, ?splash=1 força, toque pula,
+falha de vídeo/offline abre o app, sem erros no console.
+Limite: NÃO verificado em celular real (H.264, autoplay com som).
+--------

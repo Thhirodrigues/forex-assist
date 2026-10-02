@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  "forex-assist-v9";
+  "forex-assist-v10";
 
 const ASSETS = [
   "./",
@@ -63,6 +63,10 @@ self.addEventListener(
         "api.twelvedata.com"
       )
     ) return;
+
+    // vídeo da splash: o navegador pede em pedaços (Range/206), que o cache
+    // não aceita guardar - deixa passar direto pela rede.
+    if (/\.mp4(\?|$)/.test(e.request.url)) return;
 
     e.respondWith(
 

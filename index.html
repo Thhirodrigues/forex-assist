@@ -8,6 +8,18 @@
 
 <title>Forex Assist - Real Money Intelligence</title>
 
+<style id="splash-css">
+/* Splash de abertura (vídeo do logo). Estilo aqui no <head> para valer antes
+   de qualquer outro CSS; o elemento é criado por um script no início do <body>. */
+html.splash-ativa,
+html.splash-ativa body{overflow:hidden;}
+#splash{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:#081622;transition:opacity .45s ease;}
+#splash.splash-saindo{opacity:0;pointer-events:none;}
+#splash video{width:100%;height:100%;object-fit:cover;background:#081622;}
+@media (min-aspect-ratio:3/4){#splash video{object-fit:contain;}}
+#splash .splash-pular{position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:8px 16px;border:1px solid rgba(255,255,255,.2);border-radius:9999px;background:rgba(255,255,255,.08);color:#bcc4d5;font:600 13px Inter,system-ui,sans-serif;opacity:0;transition:opacity .4s;cursor:pointer;}
+#splash .splash-pular.visivel{opacity:1;}
+</style>
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,11 +27,85 @@
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/painel.css">
 
-<meta name="theme-color" content="#08101f">
+<meta name="theme-color" content="#081622">
 
 </head>
 
 <body class="tema-aurora">
+
+<script>
+/* SPLASH DE ABERTURA
+   Toca assets/splash.mp4 (8 s) por cima do app antes de mostrá-lo. O app
+   carrega por baixo enquanto o vídeo toca.
+   - Uma vez por sessão (abrir o app / aba nova). Recarregar a mesma aba não
+     repete; ?splash=1 na URL força.
+   - Toque na tela pula. Limite de segurança: some sozinha em 10 s.
+   - Se o vídeo não carregar (offline) ou o navegador bloquear, o app abre
+     direto, sem travar. prefers-reduced-motion: não mostra.
+   - Som: tenta com som; se o navegador bloquear, toca mudo. Para abrir
+     sempre mudo, troque SPLASH_COM_SOM para false. */
+(function () {
+    var SPLASH_COM_SOM = true;
+
+    try {
+        if (sessionStorage.getItem("splashVisto") && !/[?&]splash=1/.test(location.search)) return;
+    } catch (e) {}
+
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    var raiz = document.documentElement;
+    raiz.classList.add("splash-ativa");
+
+    var s = document.createElement("div");
+    s.id = "splash";
+    s.setAttribute("role", "presentation");
+    s.innerHTML = '<video id="splashVideo" playsinline webkit-playsinline preload="auto"></video>' +
+                  '<button type="button" class="splash-pular">Toque para pular</button>';
+    document.body.insertBefore(s, document.body.firstChild);
+
+    var v = s.querySelector("video");
+    var acabou = false;
+
+    function sair() {
+        if (acabou) return;
+        acabou = true;
+        try { sessionStorage.setItem("splashVisto", "1"); } catch (e) {}
+        s.classList.add("splash-saindo");
+        setTimeout(function () {
+            try { v.pause(); v.removeAttribute("src"); v.load(); } catch (e) {}
+            if (s.parentNode) s.parentNode.removeChild(s);
+            raiz.classList.remove("splash-ativa");
+        }, 500);
+    }
+
+    v.addEventListener("ended", sair);
+    v.addEventListener("error", sair);
+    s.addEventListener("click", sair);
+
+    setTimeout(function () { var b = s.querySelector(".splash-pular"); if (b) b.classList.add("visivel"); }, 1200);
+    setTimeout(sair, 10000);
+
+    var arrancou = setTimeout(function () { if (!v.currentTime) sair(); }, 3500);
+    v.addEventListener("playing", function () { clearTimeout(arrancou); });
+
+    v.muted = !SPLASH_COM_SOM;
+    v.src = "assets/splash.mp4";
+
+    var p = v.play();
+    if (p && p.catch) {
+        p.catch(function () {
+            if (!v.muted) {
+                v.muted = true;
+                var p2 = v.play();
+                if (p2 && p2.catch) p2.catch(sair);
+            } else {
+                sair();
+            }
+        });
+    }
+})();
+</script>
+
 
 <div id="app"></div>
 
