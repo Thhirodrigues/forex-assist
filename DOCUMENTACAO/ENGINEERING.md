@@ -13092,3 +13092,17 @@ H.264): toca e some em ~8 s, não repete no reload, ?splash=1 força, toque pula
 falha de vídeo/offline abre o app, sem erros no console.
 Limite: NÃO verificado em celular real (H.264, autoplay com som).
 --------
+
+AJUSTE-057 (02/10/2026) - Splash começa direto na animação (só frontend).
+
+Pedido do usuário: o vídeo mostrava ~0,9 s do logo parado antes de a animação
+entrar. Medido por diferença de quadros: quadros 0-21 (até 0,875 s) quase
+idênticos; o estouro começa no quadro 22. Cortei esse trecho (vídeo e áudio)
+e regravei o arquivo: 8,04 s -> 7,17 s, H.264+AAC, faststart, 0,9 MB.
+index.html passa a pedir `assets/splash.mp4?v=2` (evita o navegador reusar o
+arquivo antigo do cache HTTP; o sw.js já deixa .mp4 passar pela rede).
+Limite: se, no celular, ainda aparecer um logo parado ANTES de a página
+carregar, esse é o splash nativo do Android para PWA instalada (ícone do
+manifest sobre background_color) - é do sistema, não do código da página, e
+não pode ser removido por aqui.
+--------
