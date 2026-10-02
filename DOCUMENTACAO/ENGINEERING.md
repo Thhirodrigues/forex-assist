@@ -13157,3 +13157,17 @@ Android faz ANTES da página existir (tela escura do WebAPK) não é controláve
 daqui; index.html segue network-first (decisão antiga: garante app atualizado) e
 pode custar ~100-500 ms em rede ruim - trocar isso arrisca servir versão velha.
 --------
+
+AJUSTE-061 (02/10/2026) - Volta a separar os ícones do manifest (2ª tentativa),
+a pedido do usuário: ícone do app com logo, splash sem logo.
+
+Mesma configuração do AJUSTE-058 (any = assets/icon-vazio-512.png liso;
+maskable = assets/icon-maskable-512.png com o logo). Na 1ª tentativa o logo
+seguiu aparecendo na abertura, mas NÃO ficou confirmado se o app foi
+desinstalado/reinstalado antes do teste (o Android só atualiza o ícone assim ou
+após ~1 dia). Teste correto: desinstalar, esperar o deploy, instalar, abrir.
+Se o logo ainda aparecer na abertura => o Android usa o maskable no splash;
+aí não há como separar splash e ícone: voltar ao AJUSTE-059 (manifest todo liso,
+um único arquivo) ou aceitar o logo. Notificações/badge (raiz) intocados.
+sw.js: cache v14.
+--------
