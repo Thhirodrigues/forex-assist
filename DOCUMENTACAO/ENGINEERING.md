@@ -13344,3 +13344,18 @@ do quadro são esmaecidas por máscara (`mask-image` em degradê horizontal x ve
 (menor = logo menor). Medido em captura 390 px: wordmark ~87% -> ~74% da largura.
 Validação com cópia webm no Chromium; não verificado em celular real. sw.js cache v16.
 --------
+
+AJUSTE-069 (03/10/2026) - Splash re-renderizada: efeitos ocupam a tela e o logo
+final fica 20% menor (só frontend). Substitui o recurso CSS do AJUSTE-068.
+
+Problema do AJUSTE-068: encolher o <video> inteiro a 80% (CSS) encolhia também as
+faíscas/espiral, que deixavam de chegar às bordas, e as bordas esmaecidas ficavam
+visíveis. Agora o próprio assets/splash.mp4 foi re-renderizado (PyAV + libx264, crf
+17, 360x640, áudio copiado sem recodificar, 1,0 MB): escala 100% até 2,5 s (a
+explosão preenche a tela, como no vídeo original), transição suave (smoothstep) até
+80% em 4,3 s - antes de o logo se formar (~4,3-4,5 s) - e 80% daí em diante. Margens
+do quadro reduzido: esmaecidas até a cor de fundo (10,25,35), próxima da textura do
+vídeo. CSS volta ao simples (cover, sem transform/máscara). URL `splash.mp4?v=4`, SW v17.
+O roteiro de render está só no scratchpad da sessão (não versionado); parâmetros:
+S_FIM=0.8, T0=2.5 s, T1=4.3 s. Não verificado em celular real.
+--------
