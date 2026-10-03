@@ -13320,3 +13320,16 @@ começa em fundo escuro (~#0a1520, sem logo parado) e a animação entra por vol
 novo, AJUSTE-060). Comportamento da splash inalterado (uma vez por sessão,
 `?splash=1` força, toque pula, teto 10 s). Não verificado em celular real.
 --------
+
+AJUSTE-065 (03/10/2026) - Logo/escrito da splash menores no final (só frontend).
+
+Pedido: o logo dourado e o "FOREX ASSIST / REAL MONEY INTELLIGENCE" ficavam grandes
+demais no fim do vídeo. Em vez de recodificar o vídeo (perda de qualidade), o
+`<video>` da splash ganhou `transform:scale(.8)` (index.html, CSS no <head>): o
+quadro inteiro encolhe junto, então a animação continua uniforme, só 20% menor.
+Como o fundo do vídeo é um pouco mais claro/texturizado que o do app, as bordas
+do quadro são esmaecidas por máscara (`mask-image` em degradê horizontal x vertical,
+14% de cada lado) para não aparecer retângulo. Ajuste fino: o número do `scale(.8)`
+(menor = logo menor). Medido em captura 390 px: wordmark ~87% -> ~74% da largura.
+Validação com cópia webm no Chromium; não verificado em celular real. sw.js cache v16.
+--------

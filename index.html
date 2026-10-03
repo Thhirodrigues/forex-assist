@@ -15,7 +15,9 @@ html.splash-ativa,
 html.splash-ativa body{overflow:hidden;}
 #splash{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:#081622;transition:opacity .45s ease;}
 #splash.splash-saindo{opacity:0;pointer-events:none;}
-#splash video{width:100%;height:100%;object-fit:cover;background:#081622;}
+#splash video{width:100%;height:100%;object-fit:cover;background:#081622;transform:scale(.8);
+-webkit-mask-image:linear-gradient(to right,transparent,#000 14%,#000 86%,transparent),linear-gradient(to bottom,transparent,#000 14%,#000 86%,transparent);
+-webkit-mask-composite:source-in;mask-image:linear-gradient(to right,transparent,#000 14%,#000 86%,transparent),linear-gradient(to bottom,transparent,#000 14%,#000 86%,transparent);mask-composite:intersect;}
 @media (min-aspect-ratio:3/4){#splash video{object-fit:contain;}}
 #splash .splash-pular{position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:8px 16px;border:1px solid rgba(255,255,255,.2);border-radius:9999px;background:rgba(255,255,255,.08);color:#bcc4d5;font:600 13px Inter,system-ui,sans-serif;opacity:0;transition:opacity .4s;cursor:pointer;}
 #splash .splash-pular.visivel{opacity:1;}
