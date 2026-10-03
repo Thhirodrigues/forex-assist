@@ -13309,3 +13309,14 @@ demais, inclusive "LOSS nunca com USD positivo", passam. validate-ajuste001-gate
 depende do relógio (agora o scanner trata sexta à noite como fechada): passa com o relógio
 fixo numa quarta. Validar no primeiro fechamento real (o mercado reabre domingo ~21:00Z).
 --------
+
+AJUSTE-064 (03/10/2026) - Splash trocada pelo novo vídeo do usuário (só frontend).
+
+assets/splash.mp4 substituído pelo vídeo enviado (8,0 s, 360x640, H.264+AAC, 1,1 MB,
+já com faststart; usado como veio, sem recodificar). Diferente do anterior, este
+começa em fundo escuro (~#0a1520, sem logo parado) e a animação entra por volta de
+0,7 s - por isso o corte do AJUSTE-057 não foi repetido. index.html pede
+`splash.mp4?v=3` (quebra o cache HTTP); sw.js cache v15 (o SW pré-guarda o arquivo
+novo, AJUSTE-060). Comportamento da splash inalterado (uma vez por sessão,
+`?splash=1` força, toque pula, teto 10 s). Não verificado em celular real.
+--------
