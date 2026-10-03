@@ -222,3 +222,51 @@ antes, caindo pro Balanceado via cascata, nunca contava). É o
 mecanismo que faltava pro Conservador se autoalimentar. Ainda não
 validado ao vivo - confirmar num ciclo real que a contagem própria do
 Conservador realmente sobe.
+
+## Dias bons x dias ruins - achados e hipóteses PRÉ-REGISTRADAS (03/10/2026)
+
+Pedido do usuário: achar o que se repete nos dias de muito WIN e nos de muito LOSS.
+Ferramenta só-leitura: `ferramentas/diagnostico-dias-bons-ruins.js` (workflow
+`diagnostico-dias-bons-ruins.yml`, entradas `desde` e `somente_config`). Amostra: 265
+operações, 17/09 a 02/10 (antes de 17/09 o score era outra escala e não havia ADX;
+misturar as épocas distorceu a 1ª rodada - descartada). Acerto geral 44% com alvo 1:1
+e SEM spread modelado (precisa de >50% pra empatar). NADA foi alterado (congelamento).
+
+ACHADO PRINCIPAL (padrão que se repete): dia bom e dia ruim têm a MESMA cara - quase
+todas as operações do mesmo lado do dólar (comprado ou vendido). Dias de um lado só:
+10/09 80%, 13/09 100%, 22/09 83%, 23/09 57%, 01/10 55% (bons) e 16/09 19% (45 compradas
+em dólar, -US$154), 18/09 13%, 28/09 31% (ruins). Dias com os dois lados ficam no meio
+(20% a 48%). O sistema faz, na prática, UMA aposta direcional por dia; o resultado do
+dia é o dólar ter ido ou não pro lado dela. Os resultados do mesmo dia andam juntos
+(dispersão 1,77x a esperada por acaso, 11 dias). Variação normal: com 13-30 operações por
+dia e 44% de base, o acerto diário oscila +-9 a 14 pontos só por acaso (59% x 38% em
+01-02/10 cabe nisso).
+
+Indícios de que o score não separa ganho de perda (2 desvios-padrão ou menos; muitas
+comparações feitas, então parte disso é acaso):
+  - score >=50: 36% (n=67) x 40-44: 52% (n=66) - o score mais alto NÃO ganha mais.
+  - ADX: <25 ~50%; 30-39 39% (n=66); >=40 32% (n=34).
+  - comprado em dólar 50% (n=184) x vendido em dólar 27% (n=55) x cruzados 35% (n=26);
+    pode ser só o regime de dólar forte do período.
+  - candlestick presente (somou ou tirou) 25% (n=36) x sem padrão 47% (n=229).
+  - modo Balanceado 31% (n=48) x Agressivo 47% (n=217) (o Balanceado só existe desde 28/09).
+  - ATR >=8 pips 31% (n=29) x <8 ~46%; segunda 31% e sexta 25% (poucos dias); 06-11h BRT
+    ~36% (n=109).
+  - SMC "tirou pontos" 71% (n=14) - amostra mínima, contraintuitivo.
+  - Depois de 1/2/3 LOSS seguidos: 36%/31%/30% (perdas agrupam).
+  - NÃO sustentado na época limpa: RSI esticado (19% na mistura de épocas, 39% na limpa,
+    n=18) e carga de operações abertas do mesmo lado do dólar.
+
+HIPÓTESES PRÉ-REGISTRADAS (testar nas PRÓXIMAS 100 operações, sem mexer antes; critério
+decidido agora, pra não escolher o recorte depois):
+  H1 score >=50 tem acerto menor que score 35-49.
+  H2 ADX >=30 tem acerto menor que ADX <30 (já pontua 0 desde o AJUSTE-037; a questão é se
+     deveria VETAR).
+  H3 candlestick presente tem acerto menor que sem padrão.
+  H4 vendido em dólar tem acerto menor que comprado em dólar (se o dólar virar, deve inverter;
+     se não inverter, é viés do sistema).
+  H5 Balanceado tem acerto menor que Agressivo.
+  Regra: só vira mudança se a diferença se repetir na amostra nova (>= 10 pontos, mesmo
+  sentido) e o usuário aprovar. Medir sempre com `modeloFechamento` e por dia/lado do dólar.
+Variância: um teto de exposição por lado do dólar (item já na fila) reduz a oscilação diária
+mas NÃO melhora o valor esperado; o problema de fundo é 44% de acerto com alvo 1:1.
