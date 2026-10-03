@@ -23,7 +23,7 @@ const db = admin.firestore();
 const { getCandles } = require("../scripts/marketData");
 
 const DIAS = Number(process.env.DIAS || 14);
-const MAX_CONSULTAS_CANDLES = 6;
+const MAX_CONSULTAS_CANDLES = Number(process.env.MAX_CANDLES || 4);
 
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
 function iso(ms) { const n = Number(ms); return Number.isFinite(n) ? new Date(n).toISOString().replace(".000Z", "Z") : String(ms); }
@@ -85,7 +85,11 @@ async function main() {
     console.log(`\n==== MARCADAS: ${marcadas.length} ====`);
     marcadas.forEach(m => console.log(`${m.id} ${m.d.par} ${m.d.resultado} resultado=${m.d.resultadoFinanceiro} [${m.flags.join(",") || "referência"}]`));
 
-    // candles ao redor do fechamento das marcadas
+    // candles ao redor do fechamento: primeiro FORA_MERCADO, depois os maiores
+    // resultados absolutos (o limite de consultas protege a cota da TwelveData)
+    marcadas.sort((x, y) =>
+        (y.flags.includes("FORA_MERCADO") - x.flags.includes("FORA_MERCADO")) ||
+        (Math.abs(num(y.d.resultadoFinanceiro) || 0) - Math.abs(num(x.d.resultadoFinanceiro) || 0)));
     let consultas = 0;
     for (const m of marcadas) {
         if (!m.fim || consultas >= MAX_CONSULTAS_CANDLES) continue;
