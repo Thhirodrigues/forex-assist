@@ -13225,3 +13225,44 @@ MUDANÇA PEDIDA: todo push mostra o horário do sinal.
   - Validação: scratchpad/test-push-hora.js (11 checks), test-sw-timestamp.js (4),
     validate-push-envio.js (30) e validate-push-icone-046.js (30) passam.
 --------
+
+AJUSTE-065 (03/10/2026) - 429 da TwelveData passa a tentar a próxima chave +
+auditoria dos fechamentos (achados, NADA além do 429 foi alterado).
+
+(1) IMPLEMENTADO (pedido do usuário): scripts/marketData.js `getCandles` escolhe a
+chave a cada tentativa; 429 (HTTP 429 ou corpo {code:429}) pula pra próxima chave
+na hora e só desiste depois de passar por todas; 5xx/rede seguem com o retry de
+antes. Causa observada: o Result Check nunca chama configurarMarketData (o rodízio
+começa sempre na chave 1) e as chamadas giram 1,2,3,1,2,3 por posição na fila de
+pendentes; em 02/10 o 429 caiu nas posições 1 e 4 (21:30Z) e 1,2,4,5 (23:55Z), isto
+é, chaves 1 e depois 1+2 sem cota, chave 3 respondendo; tudo voltou às 00:00Z.
+Teste: scratchpad/test-429.js (9 cenários, axios simulado). LIMITE: se as três
+chaves estiverem sem cota (cota diária), continua falhando; o gasto estrutural é
+alto: o checker consulta CADA par pendente a cada 5 min, 24h por dia, inclusive no
+fim de semana (6 pendentes x 288 ciclos = 1.728 créditos/dia só nisso).
+
+(2) ACHADOS DA AUDITORIA (ferramentas/diagnostico-fechamentos.js, só leitura, 14 dias):
+  a) FECHAMENTO COM O MERCADO FECHADO. O stop do AUD/USD (02/10) foi no candle de
+     21:05Z de SEXTA. Candles de 5 min de 20:35 a 20:55Z tinham faixa de 1-2 pips; o
+     de 21:00Z foi O=0.69554 L=0.69404 (-15 pips) e o de 21:05Z L=0.69373 (SL do app
+     ~0.69382), depois voltou a 0.6948-0.6950. A TwelveData continua emitindo candles
+     depois do fechamento de sexta (~21:00Z no horário de verão dos EUA) e a queda
+     súbita sem notícia é a assinatura da rolagem semanal/cotação rala. O checker não
+     filtra horário de mercado, então fechou a operação nesse candle (LOSS -5,18). É
+     provável artefato, não preço negociável (não provado: falta cotação de corretora).
+  b) RESULTADO GRAVADO NO EXTREMO DO CANDLE, NÃO NO ALVO (MUD-03). 21 de ~14 dias
+     de operações fecharam com >1,25x do alvo. Os dois "11,52": GBP/USD WIN
+     (01/10 15:05Z) e USD/CHF WIN (02/10 12:30Z, candle O=0.82714 H=0.82842 L=0.82308,
+     faixa de 53 pips em 5 min - provável payroll 8:30 ET). Em ambos o TP FOI atingido
+     (a detecção está certa), mas o lucro é o do EXTREMO (47,4 pips = 2,3x o alvo de
+     ~20,6 pips) em vez de ~US$ 5; o mesmo vale pra perdas (USD/CHF LOSS -11,39 em
+     30/09 12:30Z). Em candle normal a diferença é ~4-10% (o -5,27 que o usuário aceitou
+     em 29/09 é desse tipo; na XM o mesmo tipo de operação saiu -5,03). Em candle de
+     notícia infla WIN e LOSS, mexe no saldo simulado e na expectativa aprendida.
+  c) Sem inconsistência de saldo (saldoDepois = saldoAntes + resultado em todas) e sem
+     WIN negativo/LOSS positivo.
+DECISÃO PENDENTE (alteram resultados gravados -> congelamento): (A) ignorar candles
+fora do horário do mercado (sex 17:00 NY a dom 17:00 NY, com horário de verão) ao
+verificar TP/SL; (B) gravar o resultado no PREÇO DO ALVO (TP=+tpUSD, SL=-slUSD) em vez
+do extremo do candle. Resultados antes/depois não seriam comparáveis.
+--------
