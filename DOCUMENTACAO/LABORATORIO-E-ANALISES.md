@@ -210,8 +210,8 @@ Bollinger...) sem teste: é mais mineração de dados.
 Conta Standard/Micro (sem comissão): EUR/USD 1,6-2,0 · GBP/USD 2,0-2,3 · USD/JPY 1,8-2,1 ·
 AUD/USD 1,9-2,2 · USD/CAD 2,0-2,4 · USD/CHF 2,1-2,5 · EUR/GBP 2,2-2,7 · GBP/JPY 2,8-3,5 pips.
 Ultra Low: ~0,6-1,3 nos majors. Zero: ~0-0,2 + US$7/lote ida e volta (~0,7 pip). Spreads
-flutuam e abrem em notícia e na virada de sessão. Falta: qual conta o usuário usa (e conferir
-os valores no próprio app da XM). Sem saber, usar Standard (pior caso) no cálculo.
+flutuam e abrem em notícia e na virada de sessão. RESPONDIDO (03/10/2026): a conta do usuário é STANDARD (usar a coluna Standard; falta
+conferir os valores no próprio app da XM).
 Break-even aproximado com custo s (pips) por operação: acerto mínimo ≈ (SL + s) / (TP + SL).
 Ex.: lote 0,02, TP=SL=25 pips, s=1,8 -> ~53,6%; lote 0,04 (12,5 pips) -> ~57%; TP 50/SL 25 -> ~36%.
 Hoje: 44%.
@@ -224,7 +224,7 @@ trava ~US$ 2,25 e 30:1 travaria ~US$ 75. O ganho/perda por pip é o mesmo (0,02 
 alavancagem alta permite abrir posições grandes ou muitas ao mesmo tempo com pouca margem
 (várias operações do mesmo lado do dólar somam risco).
 
-### 6.7 Laboratório em tempo real — desenho proposto (03/10/2026, aguardando "ok" do usuário)
+### 6.7 Laboratório em tempo real — desenho proposto (03/10/2026; usuário vai ler e discutir antes de começar)
 Achado: a coleção `analises` (AJUSTE-032, desde 26/09) já grava TODA análise do scanner,
 aprovada ou reprovada, com preço, tendência (direção), score e componentes, indicadores, TP/SL e
 um campo reservado `rotuloHipotetico` que nunca foi preenchido. Ou seja, o laboratório já foi
