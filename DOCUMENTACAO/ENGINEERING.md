@@ -13373,3 +13373,13 @@ recodificar; 0,9 MB; URL `splash.mp4?v=5`, SW v18. Efeito do traço de luz que v
 texto foi preservado (ele cruza as letras também no original). Substitui o AJUSTE-069.
 Não verificado em celular real.
 --------
+
+AJUSTE-071 (03/10/2026) - Splash dura 1 s a mais depois do escrito pronto (só frontend).
+
+Pedido do usuário. assets/splash.mp4: o último quadro (logo + "FOREX ASSIST" já formados)
+é segurado por mais 24 quadros (1 s): 8,0 s -> 9,0 s, 0,9 MB. O áudio continua com os
+8 s originais (acaba antes do fim da imagem). ferramentas/render-splash.py atualizado.
+index.html: teto de segurança da splash 10 s -> 13 s (com 9 s de vídeo mais o tempo de
+carregamento, 10 s cortaria o final); URL `splash.mp4?v=6`; SW v19. Não verificado
+em celular real.
+--------

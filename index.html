@@ -35,11 +35,11 @@ html.splash-ativa body{overflow:hidden;}
 
 <script>
 /* SPLASH DE ABERTURA
-   Toca assets/splash.mp4 (7 s) por cima do app antes de mostrá-lo. O app
+   Toca assets/splash.mp4 (9 s) por cima do app antes de mostrá-lo. O app
    carrega por baixo enquanto o vídeo toca.
    - Uma vez por sessão (abrir o app / aba nova). Recarregar a mesma aba não
      repete; ?splash=1 na URL força.
-   - Toque na tela pula. Limite de segurança: some sozinha em 10 s.
+   - Toque na tela pula. Limite de segurança: some sozinha em 13 s.
    - Se o vídeo não carregar (offline) ou o navegador bloquear, o app abre
      direto, sem travar. prefers-reduced-motion: não mostra.
    - Som: tenta com som; se o navegador bloquear, toca mudo. Para abrir
@@ -83,13 +83,13 @@ html.splash-ativa body{overflow:hidden;}
     s.addEventListener("click", sair);
 
     setTimeout(function () { var b = s.querySelector(".splash-pular"); if (b) b.classList.add("visivel"); }, 1200);
-    setTimeout(sair, 10000);
+    setTimeout(sair, 13000);
 
     var arrancou = setTimeout(function () { if (!v.currentTime) sair(); }, 3500);
     v.addEventListener("playing", function () { clearTimeout(arrancou); });
 
     v.muted = !SPLASH_COM_SOM;
-    v.src = "assets/splash.mp4?v=5";
+    v.src = "assets/splash.mp4?v=6";
 
     var p = v.play();
     if (p && p.catch) {

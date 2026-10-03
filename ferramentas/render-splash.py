@@ -63,6 +63,12 @@ for f in src.decode(video=0):
     fr=av.VideoFrame.from_ndarray(arr.clip(0,255).astype(np.uint8),format="rgb24")
     fr.pts=n; fr.time_base=Fraction(1,24); n+=1
     for p in ov.encode(fr): out.mux(p)
+# AJUSTE-071: segura o ultimo quadro por mais 1 s (logo + escrito ja formados)
+ULT=arr.clip(0,255).astype(np.uint8)
+for _ in range(24):
+    fr=av.VideoFrame.from_ndarray(ULT,format="rgb24")
+    fr.pts=n; fr.time_base=Fraction(1,24); n+=1
+    for p in ov.encode(fr): out.mux(p)
 for p in ov.encode(): out.mux(p)
 src2=av.open(SRC)
 for p in src2.demux(src2.streams.audio[0]):
