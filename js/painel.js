@@ -286,21 +286,42 @@ function pnContar(el, valor, formatar) {
 }
 
 // ---------- seções ----------
+// AJUSTE-068 (03/10/2026): com o mercado de forex fechado (sexta 17:00 a domingo 17:00,
+// Nova York) o scanner não procura nada e o verificador não consulta - "Sem sinal agora"
+// enganava (parecia que o scanner estava procurando). Regra única em
+// scripts/horarioMercado.js; sem ela carregada, assume aberto (comportamento de antes).
+function pnMercadoFechado() {
+    const h = window.horarioMercado;
+    return Boolean(h) && !h.mercadoForexAberto();
+}
+
+function pnTextoReabertura() {
+    const h = window.horarioMercado;
+    const t = h && h.proximaAberturaForex ? h.proximaAberturaForex() : null;
+    if (!t) return "";
+    const dia = new Date(t).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long" });
+    const hora = new Date(t).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false });
+    return `Reabre ${dia} às ${hora} (Brasília).`;
+}
+
 function pnHeroHTML(sinal) {
 
     if (!sinal) {
+        const fechado = pnMercadoFechado();
         const t = PN_TOM.espera;
         return `
         <section class="pa-vidro pa-vidro--forte pn-hero pn-surgir" style="--pn-cor:${t.cor};--pn-fundo:${t.fundo};" aria-labelledby="pn-tit-sinal">
             <div class="pn-glow" aria-hidden="true"></div>
             <div class="pn-hero-grade">
                 <div class="pn-min0">
-                    <p class="pa-eyebrow" id="pn-tit-sinal">Sem sinal agora</p>
-                    <span class="pn-badge" style="margin-top:12px;">${pnSvgIcone("espera", 16, 2.6)}${t.rotulo}</span>
+                    <p class="pa-eyebrow" id="pn-tit-sinal">${fechado ? "Mercado fechado" : "Sem sinal agora"}</p>
+                    <span class="pn-badge" style="margin-top:12px;">${pnSvgIcone("espera", 16, 2.6)}${fechado ? "Fechado" : t.rotulo}</span>
                 </div>
             </div>
             <div class="pn-hero-base">
-                <p class="pn-texto">Nenhum sinal aberto no momento. O scanner segue observando o mercado e avisa quando surgir um sinal.</p>
+                <p class="pn-texto">${fechado
+                    ? `O mercado de forex está fechado (sexta 17h a domingo 17h, horário de Nova York). O scanner não procura sinais agora. ${pnTextoReabertura()}`
+                    : "Nenhum sinal aberto no momento. O scanner segue observando o mercado e avisa quando surgir um sinal."}</p>
             </div>
         </section>`;
     }
@@ -329,6 +350,7 @@ function pnHeroHTML(sinal) {
                 <div><dt>Alvo</dt><dd class="pa-num" style="color:var(--pa-ganho);">${Number.isFinite(tp) ? "+US$ " + FORMATO_MOEDA_PAINEL.format(Math.abs(tp)) : "—"}</dd></div>
             </dl>
             <p class="pn-atualizado pa-num-sans">Aberto às ${pnHora(sinal.timestamp)}${sinal.lote ? ` · lote ${sinal.lote}` : ""}</p>
+            ${pnMercadoFechado() ? `<p class="pn-texto" style="margin-top:8px;">Mercado fechado: este sinal só volta a ser acompanhado quando o mercado reabrir. ${pnTextoReabertura()}</p>` : ""}
         </div>
     </section>`;
 

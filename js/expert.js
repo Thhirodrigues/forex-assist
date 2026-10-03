@@ -117,6 +117,8 @@ async function atualizarStatusScanner() {
         status.innerHTML =
             '<i class="pa-ponto" aria-hidden="true"></i><span>' +
             (dados.ativo ? "Scanner online" : "Scanner parado") +
+            // AJUSTE-068: com o mercado fechado o scanner fica "online" mas em pausa.
+            (dados.ativo && window.horarioMercado && !window.horarioMercado.mercadoForexAberto() ? " · mercado fechado" : "") +
             "</span>";
 
         // AJUSTE-014: estado dos botões Iniciar/Parar (migrado de

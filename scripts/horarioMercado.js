@@ -58,8 +58,31 @@ function mercadoForexAbertoParaConsulta(ms = Date.now(), gracaMin = 10) {
 
 }
 
-module.exports = {
+// Próxima abertura (epoch ms) a partir de `ms`, ou `ms` se já está aberto. Anda de 5 em 5
+// min até 4 dias (no máximo ~1.150 passos).
+function proximaAberturaForex(ms = Date.now()) {
+
+    if (mercadoForexAberto(ms)) return ms;
+
+    for (let t = ms, i = 0; i < 1152; i++, t += 5 * 60000) {
+        if (mercadoForexAberto(t)) return t;
+    }
+
+    return null;
+
+}
+
+// AJUSTE-068 (03/10/2026): este arquivo agora também roda no navegador (index.html carrega
+// scripts/horarioMercado.js) pra mostrar "Mercado fechado" no app - uma só fonte da regra.
+const api = {
     relogioNovaYork,
     mercadoForexAberto,
-    mercadoForexAbertoParaConsulta
+    mercadoForexAbertoParaConsulta,
+    proximaAberturaForex
 };
+
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+} else if (typeof window !== "undefined") {
+    window.horarioMercado = api;
+}

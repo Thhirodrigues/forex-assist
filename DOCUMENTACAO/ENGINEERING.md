@@ -13412,3 +13412,22 @@ Limite: em alguns quadros (~7,0-7,3 s) ainda dá para notar um retângulo muito 
 em volta do escrito (fundo reconstruído é mais liso que o original). URL `splash.mp4?v=8`, SW v21.
 Não verificado em celular real.
 --------
+
+AJUSTE-074 (03/10/2026) - "Mercado fechado" no app onde antes aparecia "Sem sinal / aguardando" (só frontend).
+
+Pedido: com o mercado fechado o Painel dizia "Sem sinal agora - o scanner segue observando",
+o que enganava (o scanner e o verificador não consultam nada de sexta 17:00 a domingo 17:00,
+Nova York - AJUSTE-066). Regra única em `scripts/horarioMercado.js`, agora UMD (Node `require`
++ navegador `window.horarioMercado`) e com `proximaAberturaForex(ms)`; `index.html` carrega o
+script antes de `js/icones.js`. Mudanças:
+- `js/painel.js` `pnHeroHTML`: sem sinal e mercado fechado -> eyebrow "Mercado fechado", badge
+  "Fechado" e texto com a reabertura em horário de Brasília ("Reabre domingo às 18:00 (Brasília)").
+  Com sinal ativo e mercado fechado, acrescenta aviso de que o sinal só volta a ser acompanhado
+  na reabertura. Mercado aberto: texto antigo, inalterado.
+- `js/expert.js` `atualizarStatusScanner`: "Scanner online · mercado fechado".
+Se `horarioMercado` não carregar, assume aberto (comportamento anterior). Só lugares que
+dependem de sinal AO VIVO foram trocados; o "Nenhum sinal encontrado" do Histórico é filtro,
+não estado do mercado, e ficou como está. Teste Playwright com relógio simulado (sábado/quarta,
+com/sem sinal ativo): passou. Não verificado em celular real. Dependência de data: o aviso
+usa o relógio do aparelho.
+--------
