@@ -1,0 +1,40 @@
+name: Diagnóstico - fechamentos suspeitos (AJUSTE-065)
+
+# Ferramenta administrativa avulsa, SÓ LEITURA, NÃO faz parte do pipeline de
+# análise/decisão do produto. Só dispara manualmente (workflow_dispatch), nunca
+# por cron. Roda ferramentas/diagnostico-fechamentos.js: lista as operações
+# encerradas dos últimos dias, marca fechamentos fora do horário do mercado,
+# resultados além do alvo e saldos inconsistentes, e busca na TwelveData os
+# candles ao redor do fechamento das marcadas (poucas chamadas). Não escreve
+# nada no Firestore.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Diagnóstico de fechamentos
+        env:
+          API_KEY_1: ${{ secrets.TWELVEDATA_KEY_1 }}
+          API_KEY_2: ${{ secrets.TWELVEDATA_KEY_2 }}
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+        run: |
+          node ferramentas/diagnostico-fechamentos.js

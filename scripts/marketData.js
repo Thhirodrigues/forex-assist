@@ -118,6 +118,23 @@ function deveTentarNovamente(error) {
 
 }
 
+// AJUSTE-065 (03/10/2026): 429 (limite da TwelveData) agora tenta a PRÓXIMA chave.
+// Antes a URL (com UMA chave) era montada uma vez, fora do laço, e o 429 não
+// estava na lista de erros que repetem: o par falhava e ficava sem consulta até
+// o ciclo seguinte (5 min). No Result Check de 02/10, AUD/USD e USD/CAD deram 429
+// em todo ciclo por ~3h (a posição do par na fila caía sempre nas mesmas chaves),
+// e o stop do AUD/USD, tocado às 18:05 BRT, só foi visto às 21:00 BRT. Agora:
+//  - a chave é escolhida a cada tentativa (getApiKey gira sozinho);
+//  - 429 (status HTTP 429 OU corpo {code:429}, que a TwelveData às vezes manda
+//    com HTTP 200) pula pra próxima chave na hora, sem esperar; depois de passar
+//    por TODAS as chaves sem sucesso, desiste (erro 429 como antes - o próximo
+//    ciclo tenta de novo);
+//  - 5xx/erro de rede continuam com o retry/backoff de antes.
+function ehLimiteDeRequisicoes(error, data) {
+    return (error && error.response && error.response.status === 429) ||
+        (data && Number(data.code) === 429);
+}
+
 async function getCandles(
     symbol,
     interval = null,
@@ -129,43 +146,35 @@ interval = interval || CONFIG.timeframe;
 outputsize = outputsize || CONFIG.outputsize;
 
 // NÃO chamar selecionarApi() aqui: ela reseta apiIndex.value a cada
-// requisição, o que anula a rotação round-robin feita por getApiKey()
-// e faz o Scanner usar sempre a mesma chave (causa 429 em produção).
-// selecionarApi() continua disponível para seleção manual explícita,
-// fora do caminho automático de rotação.
+// requisição, o que anula a rotação round-robin feita por getApiKey().
 
-// AJUSTE-003 (17/09/2026): sem "&timezone=UTC", a TwelveData retorna
-// "datetime" no fuso "Exchange" (padrão da API quando o parâmetro não é
-// informado) - NÃO em UTC, como js/checker.js sempre assumiu no
-// comentário de buscarCandlesDesde(). Medido em produção: offset
-// consistente de ~9h54min-55min entre o "datetime" retornado e o
-// horário real da requisição (6 medições em 25min de janela real,
-// variação de só 13s - assinatura de offset de fuso fixo, não de
-// atraso de mercado). Efeito colateral sério, não só cosmético: o
-// filtro `timestamp >= desde` em buscarCandlesDesde() comparava um
-// "timestamp" inflado (~10h no "futuro") contra `desde` (epoch real) -
-// sempre verdadeiro, então o buffer de 10 candles extras adicionado ao
-// outputsize NUNCA era cortado, deixando até 50min de candles de ANTES
-// da abertura da operação entrarem na reconstrução do caminho de preço
-// usado por calcularResultadoOperacao(). Forçar UTC aqui corrige a
-// origem pros dois efeitos (log de diagnóstico E o filtro do checker).
-const url =
+// "&timezone=UTC" (AJUSTE-003): sem ele o "datetime" vem no fuso "Exchange".
+const montarUrl = () =>
     `https://api.twelvedata.com/time_series` +
     `?symbol=${encodeURIComponent(symbol)}` +
     `&interval=${interval}` +
     `&outputsize=${outputsize}` +
     `&timezone=UTC` +
     `&apikey=${getApiKey(API_KEYS, apiIndex)}`;
-  
-for (let tentativa = 1; tentativa <= CONFIG.maxRetries; tentativa++) {
+
+let tentativasPorErro = 0;
+let chavesLimitadas = 0;
+
+while (true) {
 
     try {
 
-        const res = await axios.get(url, {
+        const res = await axios.get(montarUrl(), {
 
             timeout: CONFIG.timeout
 
         });
+
+        if (ehLimiteDeRequisicoes(null, res.data)) {
+            const e = new Error(res.data.message || "Request failed with status code 429");
+            e.response = { status: 429 };
+            throw e;
+        }
 
         if (!res.data.values) {
 
@@ -179,8 +188,23 @@ for (let tentativa = 1; tentativa <= CONFIG.maxRetries; tentativa++) {
 
     catch (error) {
 
+        if (ehLimiteDeRequisicoes(error)) {
+
+            chavesLimitadas++;
+
+            if (chavesLimitadas >= API_KEYS.length) {
+                throw error;
+            }
+
+            console.log(`Aviso: 429 em ${symbol} - tentando a próxima chave (${chavesLimitadas}/${API_KEYS.length - 1})`);
+
+            continue;
+        }
+
+        tentativasPorErro++;
+
         if (
-    tentativa === CONFIG.maxRetries ||
+    tentativasPorErro >= CONFIG.maxRetries ||
     !deveTentarNovamente(error)
 ) {
     throw error;
@@ -188,11 +212,12 @@ for (let tentativa = 1; tentativa <= CONFIG.maxRetries; tentativa++) {
 
         await esperar(
 
-            CONFIG.retryDelay * tentativa
+            CONFIG.retryDelay * tentativasPorErro
         );
     }
 }
 }
+
 module.exports = {
     configurarMarketData,
     selecionarApi,
