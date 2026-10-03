@@ -13359,3 +13359,17 @@ vídeo. CSS volta ao simples (cover, sem transform/máscara). URL `splash.mp4?v=
 O roteiro de render está só no scratchpad da sessão (não versionado); parâmetros:
 S_FIM=0.8, T0=2.5 s, T1=4.3 s. Não verificado em celular real.
 --------
+
+AJUSTE-070 (03/10/2026) - Splash: escala em degraus e escrito menor (só frontend).
+
+Pedido: mais explosão em tela cheia, logo menor ao se formar e escrito "FOREX ASSIST"
+desproporcional ao logo. assets/splash.mp4 re-renderizado a partir do vídeo original
+(roteiro em ferramentas/render-splash.py; o original não é versionado): escala 100% até
+1,9 s (explosão preenche a tela), cai para 80% até 2,5 s, mantém 80% de 2,5 a 4,0 s e cai
+para 75% até 4,8 s (o logo se forma já no tamanho final). O bloco do escrito abaixo do logo
+é separado (inpaint do fundo + camada de luz) e reduzido a 72% a partir de ~5,3 s, ancorado
+no topo do texto: largura do escrito ~84% da do logo (antes ~119%). Áudio copiado sem
+recodificar; 0,9 MB; URL `splash.mp4?v=5`, SW v18. Efeito do traço de luz que varre o
+texto foi preservado (ele cruza as letras também no original). Substitui o AJUSTE-069.
+Não verificado em celular real.
+--------
