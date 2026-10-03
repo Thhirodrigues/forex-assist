@@ -13310,7 +13310,7 @@ depende do relógio (agora o scanner trata sexta à noite como fechada): passa c
 fixo numa quarta. Validar no primeiro fechamento real (o mercado reabre domingo ~21:00Z).
 --------
 
-AJUSTE-064 (03/10/2026) - Splash trocada pelo novo vídeo do usuário (só frontend).
+AJUSTE-064b (03/10/2026) - Splash trocada pelo novo vídeo do usuário (só frontend).
 
 assets/splash.mp4 substituído pelo vídeo enviado (8,0 s, 360x640, H.264+AAC, 1,1 MB,
 já com faststart; usado como veio, sem recodificar). Diferente do anterior, este
@@ -13331,4 +13331,16 @@ Tolerância do horário de mercado (AJUSTE-066): mantida em 10 min (duas execuç
 cobrem o último candle da sexta; 5 min cobriria uma só). Só afeta QUANDO o último candle da
 sexta é visto (sexta à noite ou domingo); nada se perde, porque a reavaliação de domingo
 refaz todos os candles desde a abertura.
+
+AJUSTE-068 (03/10/2026) - Logo/escrito da splash menores no final (só frontend).
+
+Pedido: o logo dourado e o "FOREX ASSIST / REAL MONEY INTELLIGENCE" ficavam grandes
+demais no fim do vídeo. Em vez de recodificar o vídeo (perda de qualidade), o
+`<video>` da splash ganhou `transform:scale(.8)` (index.html, CSS no <head>): o
+quadro inteiro encolhe junto, então a animação continua uniforme, só 20% menor.
+Como o fundo do vídeo é um pouco mais claro/texturizado que o do app, as bordas
+do quadro são esmaecidas por máscara (`mask-image` em degradê horizontal x vertical,
+14% de cada lado) para não aparecer retângulo. Ajuste fino: o número do `scale(.8)`
+(menor = logo menor). Medido em captura 390 px: wordmark ~87% -> ~74% da largura.
+Validação com cópia webm no Chromium; não verificado em celular real. sw.js cache v16.
 --------
