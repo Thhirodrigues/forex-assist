@@ -13266,3 +13266,46 @@ fora do horário do mercado (sex 17:00 NY a dom 17:00 NY, com horário de verão
 verificar TP/SL; (B) gravar o resultado no PREÇO DO ALVO (TP=+tpUSD, SL=-slUSD) em vez
 do extremo do candle. Resultados antes/depois não seriam comparáveis.
 --------
+
+AJUSTE-066 (03/10/2026) - horário real do mercado + resultado no preço do alvo
+(js/checker.js, scripts/horarioMercado.js novo, scripts/scanner.js). Decidido pelo
+usuário depois da auditoria do AJUSTE-065 ("vamos corrigir agora, senão capaz de
+esquecermos quando descongelar"). Enquadrado como correção de bug que corrompe o
+que é salvo (permitido no congelamento); não muda score, aprovação, lote nem TP/SL.
+  1) MERCADO FECHADO NÃO É CONSULTADO. `horarioMercado.js`: forex fecha sexta 17:00 e
+     reabre domingo 17:00 no fuso America/New_York (21:00Z no verão dos EUA, 22:00Z no
+     inverno; 18:00/19:00 em Brasília) - o horário de verão se acerta sozinho. O Result
+     Check, com o mercado fechado (+10 min de tolerância pro último candle da sexta),
+     termina logo ("Mercado de forex fechado ... nada a consultar") sem ler o
+     Firestore nem chamar a TwelveData; `CHECKER_IGNORAR_HORARIO=1` força a checagem.
+     O scanner passa a usar o mesmo critério em `mercadoAberto()` (antes: só sábado e
+     domingo antes das 18h de Brasília; sexta à noite contava como aberta).
+  2) CANDLES FORA DO MERCADO SÃO DESCARTADOS em `buscarCandlesDesde` (o candle é
+     válido se o horário de INÍCIO dele cai com o mercado aberto: 20:55Z de sexta é o
+     último; 21:00Z não). Resolve o caso do AUD/USD (21:00/21:05Z de 02/10).
+  3) EXTREMOS RECOMEÇAM DA ENTRADA a cada checagem (precoMaximo/precoMinimo/maxPips),
+     em vez de partir do valor salvo: os candles desde a abertura já eram refeitos
+     por inteiro, e o salvo podia estar contaminado por candles pós-fechamento, o que
+     fecharia as operações hoje abertas no 1º candle válido de domingo.
+  4) RESULTADO NO PREÇO DO ALVO (`resolverPrecoDoAlvo`): TP/SL financeiro grava
+     +tpUSD / -slUSD exatos (preço do alvo achado por 3 refinamentos, pois o valor do pip
+     depende do preço em USD/xxx e cruzados); TP_PIPS/SL_PIPS grava entrada +/- pips.
+     precoFechamento = preço do alvo; precoMaximo/Minimo e maxPips seguem sendo os
+     extremos observados. A DETECÇÃO do alvo continua pelo extremo do candle. Se o preço
+     do alvo não puder ser calculado, cai no comportamento anterior. LIMITE: em gap/
+     spike a corretora pode executar o stop pior que o alvo; o app não modela isso.
+  5) Marcador `modeloFechamento: "ALVO_EXATO_V1"` nas operações fechadas pelo
+     checker (ver nota no ESTADO_ATUAL.md, seção 0). NÃO foram reescritas as operações
+     antigas (21 com >1,25x do alvo e o AUD/USD falso de 02/10): continuam como estão.
+Validação: scratchpad/test-ajuste066.js roda calcularResultadoOperacao e
+buscarCandlesDesde REAIS (extraídos do arquivo): USD/CHF 02/10 (+11,52 -> +5,00, preço
+0.82576, extremos preservados), SL em spike (-5,00 no preço do stop), cruzado EUR/JPY,
+mesma vela TP+SL (SL), TP_PIPS, operação sem alvo inalterada, candles do AUD/USD de
+sexta 21:00/21:05Z descartados (operação continua aberta), fim de semana inteiro
+descartado, reabertura de domingo 21:00Z válida, mínima salva contaminada ignorada;
+horário de mercado testado em verão e inverno. validate-ajuste002-precoAtual-pips
+falha em 2 asserções que codificavam a regra antiga (preço = extremo) - superado; as
+demais, inclusive "LOSS nunca com USD positivo", passam. validate-ajuste001-gate-scanner
+depende do relógio (agora o scanner trata sexta à noite como fechada): passa com o relógio
+fixo numa quarta. Validar no primeiro fechamento real (o mercado reabre domingo ~21:00Z).
+--------

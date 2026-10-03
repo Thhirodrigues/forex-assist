@@ -11,6 +11,7 @@
 // ===================================================
 
 const { db, admin } = require("./firebase");
+const { mercadoForexAberto } = require("./horarioMercado");
 
 const {
     analisarPar
@@ -356,17 +357,11 @@ function obterAgoraBrasil() {
 
 function mercadoAberto() {
 
-    const { diaSemana, minutosDoDia } = obterAgoraBrasil();
-
-    // Sábado: sempre fechado
-    if (diaSemana === 6)
-        return false;
-
-    // Domingo: fechado até 18h, quando o mercado reabre
-    if (diaSemana === 0)
-        return minutosDoDia >= (18 * 60);
-
-    return true;
+    // AJUSTE-066 (03/10/2026): usa o horário real do forex (fecha sexta 17:00 e
+    // reabre domingo 17:00, Nova York - com horário de verão), em vez de só
+    // "sábado fechado, domingo a partir das 18h de Brasília". A sexta à noite não
+    // era tratada como fechada. Ver scripts/horarioMercado.js.
+    return mercadoForexAberto();
 
 }
 

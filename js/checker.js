@@ -3,6 +3,7 @@ const { getCandles } = require("../scripts/marketData");
 const { idCacheDoPar } = require("../scripts/statisticsEngine");
 const { calcularValorPip, parEhCruzado, simboloCotacaoCruzada } = require("../scripts/moneyManager");
 const { enviarPushEncerramento } = require("../scripts/pushNotifier");
+const { mercadoForexAberto, mercadoForexAbertoParaConsulta } = require("../scripts/horarioMercado");
 
 console.log("KEY 1:", !!process.env.API_KEY_1);
 console.log("KEY 2:", !!process.env.API_KEY_2);
@@ -120,6 +121,10 @@ async function buscarCandlesDesde(par, desde) {
             close: Number(c.close)
         }))
         .filter(c => c.timestamp >= desde)
+        // AJUSTE-066: candles de depois do fechamento da sexta / antes da abertura
+        // de domingo não são preço negociável (a TwelveData os emite com cotação
+        // rala) - nunca podem fechar uma operação nem esticar máxima/mínima.
+        .filter(c => mercadoForexAberto(c.timestamp))
         .sort((a, b) => a.timestamp - b.timestamp);
 
 }
@@ -198,6 +203,67 @@ function limitesDoSinal(sinal) {
 
 }
 
+// AJUSTE-066: preço (e lucro em US$) do alvo que fechou a operação, ou null se o
+// fechamento não foi por alvo / não deu pra calcular.
+//  - TP_FINANCEIRO / SL_FINANCEIRO: acha o preço em que o lucro vale exatamente
+//    +TP_USD / -SL_USD (o valor do pip depende do preço em pares com USD na base,
+//    então refina 3 vezes a partir da entrada); lucroUSD = o próprio alvo.
+//  - TP_PIPS / SL_PIPS: entrada +/- o limite em pips; lucro calculado nesse preço.
+function resolverPrecoDoAlvo({ sinal, lote, limites, motivoEncerramento, cotacaoCruzada }) {
+
+    try {
+
+        const tamanhoPip = String(sinal.par).includes("JPY") ? 0.01 : 0.0001;
+        const casas = String(sinal.par).includes("JPY") ? 3 : 5;
+        const sentido = sinal.direcao === "BUY" ? 1 : -1;
+        const entrada = Number(sinal.precoEntrada);
+
+        if (!Number.isFinite(entrada)) return null;
+
+        if (motivoEncerramento === "TP_FINANCEIRO" || motivoEncerramento === "SL_FINANCEIRO") {
+
+            const alvoUSD = motivoEncerramento === "TP_FINANCEIRO" ? limites.TP_USD : limites.SL_USD;
+
+            let preco = entrada;
+
+            for (let i = 0; i < 3; i++) {
+
+                const valorPip = calcularValorPip(lote, sinal.par, preco, cotacaoCruzada);
+
+                if (!Number.isFinite(valorPip) || valorPip <= 0) return null;
+
+                preco = entrada + sentido * (alvoUSD / valorPip) * tamanhoPip;
+
+            }
+
+            if (!Number.isFinite(preco)) return null;
+
+            return { preco: Number(preco.toFixed(casas)), lucroUSD: Number(Number(alvoUSD).toFixed(2)) };
+
+        }
+
+        if (motivoEncerramento === "TP_PIPS" || motivoEncerramento === "SL_PIPS") {
+
+            const pips = motivoEncerramento === "TP_PIPS" ? limites.TP_PIPS : limites.SL_PIPS;
+
+            const preco = entrada + sentido * pips * tamanhoPip;
+
+            if (!Number.isFinite(preco)) return null;
+
+            return { preco: Number(preco.toFixed(casas)), lucroUSD: null };
+
+        }
+
+        return null;
+
+    } catch (erro) {
+
+        return null;
+
+    }
+
+}
+
 function calcularResultadoOperacao({
 
     sinal,
@@ -210,10 +276,16 @@ function calcularResultadoOperacao({
     const limites = limitesDoSinal(sinal);
     const lote = sinal.lote ?? 0.01;
 
-    let precoMaximo = sinal.precoMaximo ?? sinal.precoEntrada;
-    let precoMinimo = sinal.precoMinimo ?? sinal.precoEntrada;
-    let maxPipsFavor = sinal.maxPipsFavor ?? 0;
-    let maxPipsContra = sinal.maxPipsContra ?? 0;
+    // AJUSTE-066 (03/10/2026): os extremos recomeçam da ENTRADA a cada checagem,
+    // em vez de partir do valor salvo na checagem anterior. buscarCandlesDesde()
+    // já refaz TODOS os candles desde a abertura da operação (por isso o salvo
+    // nunca acrescentava informação), e o salvo podia estar CONTAMINADO por candles
+    // de depois do fechamento de sexta (ex.: -15 pips sem notícia às 21:00Z de
+    // 02/10), o que fecharia a operação no primeiro candle válido de domingo.
+    let precoMaximo = sinal.precoEntrada;
+    let precoMinimo = sinal.precoEntrada;
+    let maxPipsFavor = 0;
+    let maxPipsContra = 0;
 
     let motivoEncerramento = null;
     let candleEncerramento = null;
@@ -336,17 +408,40 @@ function calcularResultadoOperacao({
     // (precoFavoravel/precoAdverso), igual ao caminho financeiro -
     // se o critério que fechou foi o extremo intrabar, o valor em
     // dólar gravado precisa vir do mesmo extremo, não do close.
-    const precoAtual = precoExtremoEncerramento ?? candleFinal.close;
+    // AJUSTE-066 (03/10/2026): quando um alvo (TP/SL) fecha a operação, o resultado
+    // é gravado NO PREÇO DO ALVO - o que uma ordem de TP/SL na corretora faria - e
+    // não mais no extremo do candle (MUD-03/AJUSTE-002). O extremo inflava o valor
+    // em candle de notícia: USD/CHF 02/10 12:30Z, TP de US$ 5 gravado como +11,52
+    // (candle de 53 pips); em candle normal a diferença era de 4% a 10% (o -5,27 de
+    // 29/09; na XM o equivalente saiu -5,03). A DETECÇÃO do alvo continua pelos
+    // extremos do candle (acima); só o valor gravado mudou. precoMaximo/precoMinimo/
+    // maxPipsFavor/maxPipsContra seguem sendo os extremos reais observados.
+    // Limite conhecido: num gap/spike a corretora pode executar o stop pior que o
+    // alvo (derrapagem); o app não modela isso. Se o preço do alvo não puder ser
+    // calculado, cai no comportamento anterior (extremo).
+    const alvo = resolverPrecoDoAlvo({
+        sinal,
+        lote,
+        limites,
+        motivoEncerramento,
+        cotacaoCruzada
+    });
+
+    const precoAtual = alvo
+        ? alvo.preco
+        : (precoExtremoEncerramento ?? candleFinal.close);
 
     const movimentoPips = calcularMovimentoPips(sinal, precoAtual);
 
-    const lucroAtual = calcularLucroUSD(
-        movimentoPips,
-        lote,
-        sinal.par,
-        precoAtual,
-        cotacaoCruzada
-    );
+    const lucroAtual = alvo && alvo.lucroUSD != null
+        ? alvo.lucroUSD
+        : calcularLucroUSD(
+            movimentoPips,
+            lote,
+            sinal.par,
+            precoAtual,
+            cotacaoCruzada
+        );
 
     // BUG-020 (09/09/2026): saldoAntes/saldoDepois só eram calculados
     // (e configuracoes/geral.saldoSimulado só era incrementado, mais
@@ -420,6 +515,21 @@ async function verificarSinais() {
     console.log("====================================");
     console.log("Forex Assist Result Checker");
     console.log("====================================");
+
+    // AJUSTE-066 (03/10/2026): com o mercado de forex FECHADO (sexta 17:00 a domingo
+    // 17:00, horário de Nova York) a corretora trava e não acontece preço nenhum - não
+    // há o que consultar. Antes o checker consultava todo par pendente a cada 5 min,
+    // 24h por dia, gastando a cota da TwelveData (e recebendo candles de cotação rala
+    // que chegaram a fechar uma operação). Tem 10 min de tolerância depois do
+    // fechamento pro último candle válido da sexta ser visto. Pra forçar uma checagem
+    // manual: CHECKER_IGNORAR_HORARIO=1.
+    if (!mercadoForexAbertoParaConsulta() && process.env.CHECKER_IGNORAR_HORARIO !== "1") {
+
+        console.log("Mercado de forex fechado (sexta 17:00 a domingo 17:00, Nova York) - nada a consultar.");
+
+        return;
+
+    }
 
     // BUG-014: estas duas leituras (config + operações pendentes)
     // nunca tiveram proteção contra erro - diferente de
@@ -587,6 +697,12 @@ const {
             precoFechamento: precoAtual,
 
             fimOperacao: agora,
+
+            // AJUSTE-066: como o resultado foi gravado. Operações fechadas antes
+            // deste ajuste (sem o campo) usam o EXTREMO do candle; estas usam o
+            // PREÇO DO ALVO e ignoram candles fora do horário do mercado - amostras
+            // não comparáveis ao analisar acerto/expectativa.
+            modeloFechamento: "ALVO_EXATO_V1",
 
             tempoOperacao,
 

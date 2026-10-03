@@ -81,6 +81,18 @@ reduzido) e **não são comparáveis** (alvo em pips diferente).
   contam quando FECHAM - o ritmo de fechamentos será menor que o de
   aprovações. Posição em 29/09 01:57 UTC: regime novo com 1 fechada
   (LOSS) e 4 abertas.
+- **Modelo de fechamento mudou em 03/10/2026 (AJUSTE-066)**: antes, o
+  resultado de uma operação fechada era gravado no EXTREMO do candle (em
+  candle de notícia, um TP de $5 saía +$11,52) e candles de depois do
+  fechamento de sexta podiam fechar operações (AUD/USD 02/10, LOSS
+  -$5,18). Desde o AJUSTE-066 o resultado é gravado NO PREÇO DO ALVO
+  (+/-$ do TP/SL) e candles fora do horário do mercado são ignorados;
+  operações fechadas por este modelo trazem `modeloFechamento:
+  "ALVO_EXATO_V1"`. Ao contar as 100 operações e ao medir acerto/
+  expectativa, **separar** as sem esse campo (modelo antigo, valores
+  inflados em candle de notícia; não são comparáveis em magnitude). O
+  acerto (WIN/LOSS) quase não muda; o que muda é o tamanho de cada
+  resultado.
 - Ferramenta pra contar as operações do regime novo: **ainda não
   existe** (o replay `diagnostico-replay-score-ajuste037.js` imprime o
   total geral, sem filtrar por regime). Criar quando for preciso.
