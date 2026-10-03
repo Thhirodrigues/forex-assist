@@ -117,6 +117,22 @@ async function obterTokensAtivos(db) {
 // automaticamente (ativo:false), sem derrubar o envio pros outros.
 // ===================================================
 
+// AJUSTE-064 (03/10/2026): horário (Brasília, HH:MM) mostrado nas notificações.
+// Pedido do usuário: todo push informa a hora em que o sinal foi emitido. Fica
+// como linha própria no fim do corpo (o corpo já é menor que o título; o Android
+// não deixa um app escolher o tamanho da fonte do texto da notificação). Sem
+// horário válido, devolve null e a linha some.
+function horaBrasilia(ms) {
+    const n = Number(ms);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return new Date(n).toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+    });
+}
+
 async function enviarParaTokens(admin, db, tokens, payload) {
 
     if (!tokens.length) return;
@@ -180,12 +196,18 @@ async function enviarPushAbertura(admin, db, operacao) {
             notification: {
                 title: `🔔 Novo sinal: ${operacao.par} ${direcaoLabel}`,
                 body: `Entrada ~${operacao.precoEntrada} | Score ${operacao.score}% | ` +
-                    `Janela pra agir: ${min}-${max} min`
+                    `Janela pra agir: ${min}-${max} min` +
+                    (horaBrasilia(operacao.inicioOperacao)
+                        ? `\n🕐 Sinal emitido às ${horaBrasilia(operacao.inicioOperacao)}`
+                        : "")
             },
 
             data: {
                 url: urlXmParaPar(operacao.par),
                 tipo: "abertura",
+                // AJUSTE-064: epoch ms da emissão - o sw.js usa como `timestamp`
+                // nativo da notificação (hora pequena do próprio Android).
+                emitidoEm: String(Number(operacao.inicioOperacao) || ""),
                 par: String(operacao.par || ""),
                 direcao: String(operacao.direcao || "")
             },
@@ -239,7 +261,15 @@ async function enviarPushEncerramento(admin, db, sinal) {
 
             notification: {
                 title: `${emoji} ${sinal.par} encerrado: ${sinal.resultado}`,
-                body: `${valorFormatado}${sinal.motivoEncerramento ? ` | ${sinal.motivoEncerramento}` : ""}`
+                body: `${valorFormatado}${sinal.motivoEncerramento ? ` | ${sinal.motivoEncerramento}` : ""}` +
+                    // AJUSTE-064: hora do sinal e hora (do candle) em que o preço
+                    // tocou o alvo. Se o push chegar bem depois, a diferença
+                    // mostra que o verificador demorou a ver (ex.: limite 429
+                    // da TwelveData), não que o mercado fechou agora.
+                    (horaBrasilia(sinal.inicioOperacao)
+                        ? `\n🕐 Sinal das ${horaBrasilia(sinal.inicioOperacao)}` +
+                          (horaBrasilia(sinal.fimOperacao) ? ` · alvo tocado às ${horaBrasilia(sinal.fimOperacao)}` : "")
+                        : "")
             },
 
             data: {
@@ -271,6 +301,8 @@ module.exports = {
     URL_XM_SIMBOLO,
 
     urlXmParaPar,
+
+    horaBrasilia,
 
     estimarTempoHabilMinutos,
 

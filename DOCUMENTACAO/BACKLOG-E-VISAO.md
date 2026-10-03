@@ -345,3 +345,17 @@ prioridade antes de mexer):
   do push é uma estimativa (scripts/pushNotifier.js, estimarTempoHabilMinutos),
   não uma medição. Valeria comparar o horário do candle analisado, o horário
   gravado do sinal e o horário em que o push chega.
+
+## 9. Sinal pendente por 429 da TwelveData (registrado 03/10/2026)
+
+AUD/USD de 02/10: o preço tocou o SL às 18:05 BRT, mas o Result Check recebeu
+"429" nesse par por ~3 horas (21:30Z e 23:55Z confirmados nos logs; OK no primeiro
+ciclo depois de 00:00Z), então o app e o push só reagiram às 21:00 BRT. O
+resultado gravado é correto (reconstruído do histórico de candles); o atraso é de
+observação. USD/CAD teve o mesmo 429 nas mesmas execuções. Nada implementado.
+Opções, da mais barata: (a) ao receber 429, repetir a chamada com a próxima chave
+(hoje a falha é só logada); (b) alerta/linha no card quando um sinal fica
+pendente com erro de consulta por mais de N ciclos; (c) contar créditos por
+dia/minuto (scanner + checker + execuções manuais) e ver se o plano gratuito
+comporta; (d) plano pago. Relacionado ao item 8 (atraso sinal -> entrada): o
+atraso de 4 min 49 s do usuário no EUR/JPY e este de 3 h são fontes diferentes.

@@ -13185,3 +13185,43 @@ formato título + linha de apoio (SUBTITULOS_ABA.dashboard); classe
 `header--painel` (css/styles.css) mantém "Forex Assist" numa linha só ao lado do
 selo do scanner em telas estreitas. Verificado por captura a 360 px.
 --------
+
+AJUSTE-064 (03/10/2026) - horário do sinal nas notificações push + diagnóstico do
+push de encerramento que chegou 3 horas depois do alvo.
+
+PERGUNTA DO USUÁRIO: o AUD/USD "encerrado: LOSS -$5.18" chegou às 21:37 (BRT), mas
+a janela operacional acabou às 18h - por que só agora?
+DIAGNÓSTICO (dados reais: ferramentas/checar-ultimo-sinal + logs do Result Check):
+  - Sinal emitido 13:10:37Z = 10:10 BRT (janela Nova York). O candle em que o preço
+    tocou o SL é de 21:05Z = 18:05 BRT (campo fimOperacao = timestamp do candle,
+    não a hora da detecção).
+  - O checker fechou e mandou o push às 00:00:35Z = 21:00:35 BRT. Nas execuções de
+    21:30Z e 23:55Z o AUD/USD (e o USD/CAD) deram "Request failed with status code
+    429" (limite da TwelveData) e ficaram pendentes; no primeiro ciclo depois de
+    00:00Z, a chamada passou e o checker fechou na hora. 00:00 UTC é a virada do
+    dia da cota diária da TwelveData (mas a evidência é só esta coincidência; os
+    outros pares nunca falharam nas mesmas execuções, então pode ser limite por
+    chave/minuto, não só o diário).
+  - Todas as execuções do Result Check aparecem como "success" mesmo com 429
+    (o script engole o erro e só loga "Erro em X") - exatamente o aviso do CLAUDE.md
+    sobre "workflow verde".
+  - Quanto ao horário "18h": a janela só limita ABRIR sinais; operações abertas são
+    acompanhadas (e fechadas) a qualquer hora. O alvo foi realmente tocado às 18:05,
+    o resultado (-$5.18, SL_FINANCEIRO) está correto - o que atrasou foi a
+    percepção (app e push), por 3 horas. NÃO corrigido aqui (não pedido): precisa de
+    decisão (ex.: tentar de novo com outra chave ao receber 429, alerta quando um
+    sinal fica pendente com erro por mais de N ciclos, ou subir o plano da
+    TwelveData). Registrado em BACKLOG-E-VISAO.md.
+MUDANÇA PEDIDA: todo push mostra o horário do sinal.
+  - scripts/pushNotifier.js: `horaBrasilia(ms)` (HH:MM, America/Sao_Paulo). Abertura:
+    última linha do corpo "🕐 Sinal emitido às HH:MM" + data.emitidoEm (epoch ms).
+    Encerramento: "🕐 Sinal das HH:MM · alvo tocado às HH:MM" (hora do candle).
+    Sem horário válido a linha some (chamadas antigas continuam iguais).
+  - js/checker.js: passa inicioOperacao e fimOperacao ao push de encerramento.
+  - sw.js: usa data.emitidoEm como `timestamp` nativo da notificação (o Android mostra
+    a hora pequena no cabeçalho; depende do aparelho/MIUI).
+  - LIMITE: o app NÃO escolhe o tamanho da fonte do texto da notificação (é do Android).
+    A linha de horário fica no corpo, cuja fonte já é menor que a do título.
+  - Validação: scratchpad/test-push-hora.js (11 checks), test-sw-timestamp.js (4),
+    validate-push-envio.js (30) e validate-push-icone-046.js (30) passam.
+--------

@@ -642,7 +642,9 @@ const {
             par: sinal.par,
             resultado,
             resultadoFinanceiro,
-            motivoEncerramento
+            motivoEncerramento,
+            inicioOperacao: sinal.inicioOperacao,
+            fimOperacao: agora
         });
 
     } catch (erroPush) {

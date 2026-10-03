@@ -180,6 +180,9 @@ self.addEventListener(
     let url =
       "./";
 
+    let emitidoEm =
+      null;
+
     if (event.data) {
 
       try {
@@ -201,6 +204,17 @@ self.addEventListener(
           destinoNotificacao(
             payload.data?.url
           );
+
+        // AJUSTE-064: hora de emissão do sinal como timestamp nativo (o
+        // Android a mostra pequena, no cabeçalho da notificação).
+        const ts =
+          Number(
+            payload.data?.emitidoEm
+          );
+
+        if (Number.isFinite(ts) && ts > 0) {
+          emitidoEm = ts;
+        }
 
       } catch {
 
@@ -230,7 +244,11 @@ self.addEventListener(
 
             data: {
               url
-            }
+            },
+
+            ...(emitidoEm
+              ? { timestamp: emitidoEm }
+              : {})
           }
 
         )
