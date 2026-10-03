@@ -13397,3 +13397,18 @@ O roteiro `ferramentas/render-splash.py` passou a produzir tudo (escala, escrito
 lenta, áudio, pausa final); parâmetros KT, RAIO_A/B, F, HOLD_S no topo. URL `splash.mp4?v=7`,
 SW v20. Não verificado em celular real.
 --------
+
+AJUSTE-073 (03/10/2026) - Splash: o nome surge conforme o raio desce (só frontend).
+
+Pedido do usuário: "FOREX ASSIST / REAL MONEY INTELLIGENCE" aparece à medida que o raio desce,
+como se estivesse sendo gravado. No original o escrito já aparecia fantasma antes do raio
+passar. Em ferramentas/render-splash.py: a posição do raio (centro das linhas ciano) é medida
+por quadro (136-152 do original) e, na camada do escrito, só ficam visíveis as linhas acima do
+raio (degradê de 10 px); antes do raio descer (faísca, quadros 136-141) o escrito fica
+escondido; depois (153+) fica completo. O fantasma que sobrava no fundo foi eliminado baixando
+o limiar de reconstrução do fundo (60 -> 44) e as bordas da faixa são esmaecidas (16 px) para
+não aparecer retângulo. A câmera lenta (AJUSTE-072) e o áudio esticado foram mantidos.
+Limite: em alguns quadros (~7,0-7,3 s) ainda dá para notar um retângulo muito sutil mais escuro
+em volta do escrito (fundo reconstruído é mais liso que o original). URL `splash.mp4?v=8`, SW v21.
+Não verificado em celular real.
+--------

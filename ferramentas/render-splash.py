@@ -25,6 +25,7 @@ KT = 0.87                  # escala do escrito (laterais = laterais do logo)
 ANC = 22                   # ancora (px abaixo do topo da faixa) para reduzir o escrito
 RAIO_A, RAIO_B = 5.55, 6.42  # trecho do raio, em segundos do ORIGINAL
 F = 2.0                    # quantas vezes mais devagar o raio passa
+RAIO_INI, RAIO_DESCE, RAIO_FIM = 136, 142, 152   # quadros do original: faisca, descida, fim
 HOLD_S = 1.0               # tempo extra com o logo pronto no fim
 
 
@@ -43,15 +44,26 @@ def ymax_ouro(a):
     return int(ys.max()) if len(ys) else 0
 
 
-def texto(arr, t, ym):
+def posicao_raio(a):
+    """linha (y) do centro do raio ciano no quadro, ou None."""
+    r, g, b = a[..., 0].astype(int), a[..., 1].astype(int), a[..., 2].astype(int)
+    cy = ((b > 140) & (g > 120) & (r < 170) & (b - r > 40))[400:560]
+    sm = cy.sum(axis=1)
+    if sm.max() < 25:
+        return None
+    rows = np.where(sm >= 0.5 * sm.max())[0]
+    return 400 + float((rows * sm[rows]).sum() / sm[rows].sum())
+
+
+def texto(arr, t, ym, ly, i):
     a = sstep(5.2, 5.4, t)
     if a <= 0:
         return arr
     by0 = int(ym) + 5
     by1 = min(H - 1, by0 + 110)
     band = arr[by0:by1].astype(np.uint8)
-    mask = (band.max(axis=2) > 60).astype(np.uint8) * 255
-    mask = cv2.dilate(mask, np.ones((7, 7), np.uint8))
+    mask = (band.max(axis=2) > 44).astype(np.uint8) * 255
+    mask = cv2.dilate(mask, np.ones((9, 9), np.uint8))
     bg = cv2.inpaint(band, mask, 3, cv2.INPAINT_TELEA).astype(np.float32)
     layer = np.clip(band.astype(np.float32) - bg, 0, 255)
     h = by1 - by0
@@ -63,8 +75,24 @@ def texto(arr, t, ym):
     hh = min(h2, h - y0)
     nl[y0:y0 + hh, x0:x0 + w2] = ls[:hh]
     proc = np.clip(bg + nl, 0, 255)
+    # AJUSTE-073: o escrito so aparece onde o raio ja passou (de cima para baixo)
+    if RAIO_INI <= i <= RAIO_FIM and ly is not None:
+        ancora = by0 + ANC
+        ly2 = ancora + (ly - ancora) * KT - by0          # linha do raio na camada reduzida
+        if i < RAIO_DESCE:                                # fase da faisca: escrito ainda escondido
+            ly2 = min(ly2, ANC * (1 - KT) + 2)
+        yy = np.arange(h, dtype=np.float32)[:, None, None]
+        vis = np.clip(1 - (yy - (ly2 - 1)) / 10.0, 0, 1)
+        nl2 = nl * vis
+        proc = np.clip(bg + nl2, 0, 255)
+    elif i < RAIO_INI:
+        proc = bg
+    # esmaece as bordas da faixa (o fundo reconstruido e mais liso que o original)
+    yy = np.arange(h, dtype=np.float32)
+    borda = np.clip(np.minimum(yy, h - 1 - yy) / 16.0, 0, 1)[:, None, None]
+    mix = proc * borda + band.astype(np.float32) * (1 - borda)
     out = arr.copy()
-    out[by0:by1] = band.astype(np.float32) * (1 - a) + proc * a
+    out[by0:by1] = band.astype(np.float32) * (1 - a) + mix * a
     return out
 
 
@@ -101,10 +129,11 @@ ym = np.array([ymax_ouro(a) for a in frames], dtype=float)
 k = 5
 pad = np.pad(ym, (k, k), mode="edge")
 yms = np.array([np.median(pad[i:i + 2 * k + 1]) for i in range(len(ym))])
+LY = [posicao_raio(a) if RAIO_INI <= i <= RAIO_FIM else None for i, a in enumerate(frames)]
 P = []
 for i, a in enumerate(frames):
     t = i / FPS
-    x = texto(a.astype(np.float32), t, yms[i])
+    x = texto(a.astype(np.float32), t, yms[i], LY[i], i)
     P.append(reduzir(x, escala(t)).clip(0, 255).astype(np.uint8))
 N = len(P)
 
