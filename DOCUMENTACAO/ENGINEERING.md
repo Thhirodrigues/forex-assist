@@ -13321,6 +13321,17 @@ novo, AJUSTE-060). Comportamento da splash inalterado (uma vez por sessão,
 `?splash=1` força, toque pula, teto 10 s). Não verificado em celular real.
 --------
 
+AJUSTE-067 (03/10/2026) - análise de dias bons x ruins (só leitura, nada alterado).
+Ferramenta `ferramentas/diagnostico-dias-bons-ruins.js` + workflow
+`diagnostico-dias-bons-ruins.yml` (entradas `desde`, `somente_config`). Achados e
+hipóteses pré-registradas em PENDENCIAS-ESTRATEGICAS-RMI.md (seção "Dias bons x dias
+ruins"). Obs.: a 1ª rodada (564 operações desde julho) misturou épocas com escalas de
+score diferentes e foi descartada; a análise válida é desde 17/09 (265 operações).
+Tolerância do horário de mercado (AJUSTE-066): mantida em 10 min (duas execuções do cron
+cobrem o último candle da sexta; 5 min cobriria uma só). Só afeta QUANDO o último candle da
+sexta é visto (sexta à noite ou domingo); nada se perde, porque a reavaliação de domingo
+refaz todos os candles desde a abertura.
+
 AJUSTE-065 (03/10/2026) - Logo/escrito da splash menores no final (só frontend).
 
 Pedido: o logo dourado e o "FOREX ASSIST / REAL MONEY INTELLIGENCE" ficavam grandes
