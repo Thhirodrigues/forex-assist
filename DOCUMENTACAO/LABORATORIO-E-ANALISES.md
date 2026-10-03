@@ -92,6 +92,38 @@ por simplicidade).
 8. Modo Balanceado (31%) x Agressivo (47%): o filtro mais estrito não melhorou o acerto —
    indício de que o score não discrimina; o Balanceado só existe desde 28/09 (confunde com época).
 
+### 4b. Onde a conta não fecha (levantado em 03/10/2026; NÃO investigado a fundo, só anotado)
+
+1. **Lote mudou no meio da amostra.** Nos documentos que vi, as operações até a noite de
+   01/10 (BRT) têm lote 0,04 (alvo de US$5 = 12,5 pips em AUD/USD, ~19,7 em USD/JPY) e as de
+   02/10 têm lote 0,02 (25 pips, ~39 pips). O alvo em US$ é o mesmo, mas a DISTÂNCIA em pips
+   dobrou. "Ontem foi ótimo, hoje foi ruim" compara estratégias com stops de tamanhos
+   diferentes; e a amostra de 100 operações do congelamento deixa de ser homogênea. Falta
+   confirmar quem/onde mudou (Config?) e quando.
+2. **"0 de 30 operações válidas" x histórico "RUIM".** Todas as operações recentes mostram o
+   aviso de histórico insuficiente (0 de 30) mesmo em pares com dezenas de operações
+   fechadas, e ao mesmo tempo `historico = RUIM`, `pesoHistorico = -8`, `confidenceMultiplier
+   = 0,8` em todas. São duas contagens do mesmo histórico dando respostas diferentes; o
+   componente de histórico virou uma constante (-8, x0,8) que desloca todos os scores igual.
+3. **`expectativa = -5,00` gravada em todas as operações.** É o valor com taxa de acerto 0%
+   (sem dado), não uma estimativa; o gate a ignora, mas o número salvo engana quem ler.
+4. **Resultado inflado no passado.** 21 operações dos últimos 14 dias fecharam com >1,25x o
+   alvo (modelo antigo, extremo do candle). Corrigido para frente (AJUSTE-066); o passado,
+   o saldo simulado e a expectativa aprendida continuam com esses valores. Mais o AUD/USD
+   falso de 02/10.
+5. **Acerto x break-even.** 44% de acerto com alvo 1:1 e sem spread dá resultado negativo
+   por construção (≈ -US$87 no período, ainda em valores antigos).
+6. **Score x acerto.** Score ≥50 acerta menos (36%) que 40-44 (52%); Balanceado (critério
+   mais estrito) acerta menos (31%) que Agressivo (47%). Um filtro mais estrito deveria
+   melhorar, não piorar — o score não está discriminando (AUC já medido <0,5 no AJUSTE-037).
+7. **ADX ≥30 ainda sai.** Pontua 0 desde o AJUSTE-037 mas não veta: ~100 operações com 37%
+   de acerto foram liberadas nessa faixa.
+8. **Cota da TwelveData.** Só o checker usa ~1.700 créditos/dia (6 pendentes x 288 ciclos);
+   três chaves de 800/dia = 2.400, e o scanner também consome. O consumo total nunca foi
+   contado.
+9. **Dispersão dos dias.** Os resultados do mesmo dia andam juntos (1,77x o esperado por
+   acaso) — coerente com "uma aposta direcional por dia", mas com só 11 dias.
+
 ## 5. Próximas análises possíveis (em paralelo, só leitura)
 
 - Repetir `diagnostico-dias-bons-ruins` a cada ~2 semanas, só com operações novas.
@@ -103,3 +135,9 @@ por simplicidade).
   de acerto acumulado por regra) e as regras que quer acompanhar.
 
 Cada item acima só vira trabalho quando o usuário confirmar.
+
+## 6. Pendente do usuário
+
+- O amigo do usuário sugeriu métodos matemáticos de análise de mercado; o usuário vai enviar o
+  material de estudo. Quando chegar: avaliar com o mesmo critério (hipótese clara, teste fora
+  da amostra, custos de spread, dados disponíveis) antes de qualquer implementação.
