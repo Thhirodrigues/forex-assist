@@ -13383,3 +13383,17 @@ index.html: teto de segurança da splash 10 s -> 13 s (com 9 s de vídeo mais o 
 carregamento, 10 s cortaria o final); URL `splash.mp4?v=6`; SW v19. Não verificado
 em celular real.
 --------
+
+AJUSTE-072 (03/10/2026) - Splash: laterais do escrito = laterais do logo; "raio" que
+grava o nome em câmera lenta (só frontend).
+
+(a) Escrito: KT 0,72 -> 0,87. Medido no último quadro: logo x 96-264, escrito x 94-265
+(diferença de 1-2 px; antes o escrito era ~84% da largura do logo).
+(b) O raio (luz que varre "FOREX ASSIST" de cima para baixo, 5,55-6,42 s no original) passa
+2x mais devagar (F=2,0): quadros intermediários por mistura linear e o áudio desse trecho
+esticado junto com `atempo` 0,5 (mantém o tom e o sincronismo; o resto do áudio não muda).
+Duração total 8,0 -> 9,9 s (+0,87 s do raio +1 s de pausa final do AJUSTE-071 já existente).
+O roteiro `ferramentas/render-splash.py` passou a produzir tudo (escala, escrito, câmera
+lenta, áudio, pausa final); parâmetros KT, RAIO_A/B, F, HOLD_S no topo. URL `splash.mp4?v=7`,
+SW v20. Não verificado em celular real.
+--------

@@ -35,7 +35,7 @@ html.splash-ativa body{overflow:hidden;}
 
 <script>
 /* SPLASH DE ABERTURA
-   Toca assets/splash.mp4 (9 s) por cima do app antes de mostrá-lo. O app
+   Toca assets/splash.mp4 (10 s) por cima do app antes de mostrá-lo. O app
    carrega por baixo enquanto o vídeo toca.
    - Uma vez por sessão (abrir o app / aba nova). Recarregar a mesma aba não
      repete; ?splash=1 na URL força.
@@ -89,7 +89,7 @@ html.splash-ativa body{overflow:hidden;}
     v.addEventListener("playing", function () { clearTimeout(arrancou); });
 
     v.muted = !SPLASH_COM_SOM;
-    v.src = "assets/splash.mp4?v=6";
+    v.src = "assets/splash.mp4?v=7";
 
     var p = v.play();
     if (p && p.catch) {
