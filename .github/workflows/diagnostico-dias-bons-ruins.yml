@@ -1,0 +1,33 @@
+name: Diagnóstico - dias bons e ruins (AJUSTE-067)
+
+# Ferramenta administrativa avulsa, SÓ LEITURA, NÃO faz parte do pipeline de
+# análise/decisão do produto. Só dispara manualmente (workflow_dispatch), nunca por
+# cron. Agrupa as operações encerradas por dia e procura o que se repete nos dias
+# bons e nos ruins (AJUSTE-067). Não escreve nada no Firestore.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+
+      - name: Diagnóstico de fechamentos
+        run: |
+          node ferramentas/diagnostico-dias-bons-ruins.js
