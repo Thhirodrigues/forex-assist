@@ -19,6 +19,9 @@ admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
 const SOMENTE_CONFIG = process.env.SOMENTE_CONFIG === "1";
+// DESDE=AAAA-MM-DD (dia de Brasília): ignora operações anteriores. Antes de 17/09/2026 o
+// score era outra escala (~100) e não havia ADX: misturar as épocas distorce tudo.
+const DESDE = process.env.DESDE || "";
 
 const num = v => { const n = Number(v); return Number.isFinite(n) ? n : null; };
 const BRT = ms => new Date(ms - 3 * 3600000);
@@ -79,10 +82,11 @@ async function main() {
         });
     });
 
+    if (DESDE) ops = ops.filter(o => o.dia >= DESDE);
     if (SOMENTE_CONFIG) ops = ops.filter(o => o.regime === "CONFIG");
     ops.sort((a, b) => a.t - b.t);
 
-    console.log(`OPERAÇÕES ENCERRADAS ANALISADAS: ${ops.length}${SOMENTE_CONFIG ? " (só regime CONFIG)" : ""}  | primeiro dia ${ops[0]?.dia} | último ${ops[ops.length - 1]?.dia}`);
+    console.log(`OPERAÇÕES ENCERRADAS ANALISADAS: ${ops.length}${DESDE ? ` (desde ${DESDE})` : ""}${SOMENTE_CONFIG ? " (só regime CONFIG)" : ""}  | primeiro dia ${ops[0]?.dia} | último ${ops[ops.length - 1]?.dia}`);
     const W = ops.filter(o => o.win).length;
     console.log(`ACERTO GERAL: ${pct(W, ops.length)}`);
 

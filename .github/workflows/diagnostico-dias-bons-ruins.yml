@@ -7,6 +7,15 @@ name: Diagnóstico - dias bons e ruins (AJUSTE-067)
 
 on:
   workflow_dispatch:
+    inputs:
+      desde:
+        description: 'Dia inicial (AAAA-MM-DD, Brasília). Vazio = tudo'
+        required: false
+        default: ''
+      somente_config:
+        description: 'Só operações do regime CONFIG (1 = sim)'
+        required: false
+        default: '0'
 
 jobs:
   diagnostico:
@@ -28,6 +37,9 @@ jobs:
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
 
-      - name: Diagnóstico de fechamentos
+      - name: Diagnóstico de dias bons e ruins
+        env:
+          DESDE: ${{ github.event.inputs.desde }}
+          SOMENTE_CONFIG: ${{ github.event.inputs.somente_config }}
         run: |
           node ferramentas/diagnostico-dias-bons-ruins.js
