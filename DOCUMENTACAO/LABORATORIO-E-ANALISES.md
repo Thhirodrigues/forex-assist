@@ -245,6 +245,35 @@ planejado e metade da infraestrutura existe — sem mexer no scanner nem no sina
      Custo: ~1 consulta TwelveData por par por execução.
   "Tempo real" = o rótulo sai quando o alvo é tocado (horas), com atraso de até 1 execução.
 
+### 6.8 Decisões do usuário (03/10/2026) e o que já foi construído
+Decidido: (1) Laboratório em projeto Firebase SEPARADO (gratuito); (2) começar por E1 + E2;
+(3) candle de 5 min que toca TP e SL = PERDA ("melhor errar do que um falso dado"); (4) spread:
+usar a tabela do Gemini por enquanto, usuário confere na XM depois; (5) TwelveData: usar a
+KEY_3 (a menos usada, não medido); ao primeiro 429, usuário cria a 4ª; (6) não medir consumo
+antes: "só na segunda gera valor real; se a cota não der, vemos na hora"; (7) o motor oficial
+segue gerando até a meta com lote 0,02; testes e implementações novas vão para o Laboratório;
+(8) uma posição por par: cooldown de 30 min E bloqueio enquanto a anterior estiver aberta
+(isto JÁ é a regra do oficial, `riskManager.existeCooldown` - o Laboratório copia igual para
+ser comparável).
+Posição sem limite de tempo (igual ao oficial: fica ABERTA, inclusive sobre o fim de semana);
+o Laboratório registra a DURAÇÃO de cada operação.
+Critério de confiança (usuário): acerto importa para o produto ("ninguém investe num app que
+erra muito, mesmo lucrando"). Registrar SEMPRE acerto E expectativa líquida; promoção exige os
+dois (acerto mínimo a definir + expectativa > 0). Cuidado: acerto alto é fácil de fabricar
+com TP curto e SL largo (variante TP_CURTO existe para mostrar isso: com TP 12,5/SL 25 e
+spread 1,8 o acerto mínimo sobe para ~71%).
+Ideia nova (usuário): "reanalisar" a posição aberta e avisar o melhor momento de sair. NÃO entra
+no oficial agora (congelamento; e criaria um 3º tipo de desfecho no histórico do RMI, fora de
+TP/SL, contaminando a base). Entra como VARIANTE `REANALISE` do Laboratório: sai quando uma
+análise posterior do mesmo par vem com tendência contrária (usa só a coleção `analises`, sem
+chamada extra de API). Só vira recurso do app se bater "segurar até TP/SL" nos dados novos.
+Construído (offline, testado, nada ligado ao scanner): `lab/simulador.js` (função pura:
+TP/SL com spread nas barreiras, ambiguidade=perda, atraso de entrada, break-even, limite de
+tempo, reanálise), `lab/spreads.js` (NZD/USD e EUR/JPY ESTIMADOS por mim - conferir),
+`lab/simulador.test.js` (17 testes). Falta: rotulador (lê `analises` do projeto oficial, busca
+candles com KEY_3, grava no projeto lab), projeto Firebase lab + Secrets, tabela/aba.
+PENDENTE de confirmação: "10 operações" x as 100 do congelamento (ESTADO_ATUAL seção 0).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
