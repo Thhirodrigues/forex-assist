@@ -81,6 +81,10 @@ reduzido) e **não são comparáveis** (alvo em pips diferente).
   contam quando FECHAM - o ritmo de fechamentos será menor que o de
   aprovações. Posição em 29/09 01:57 UTC: regime novo com 1 fechada
   (LOSS) e 4 abertas.
+- **Lote mudou na amostra (decisão do usuário, noite de 01/10/2026 BRT)**: 0,04 -> 0,02 na
+  Config. Com TP/SL fixos em US$, a distância em pips DOBROU (ex.: AUD/USD 12,5 -> 25 pips).
+  Ao contar/medir as 100 operações, separar antes e depois dessa troca (são dois
+  experimentos). Detalhe em `LABORATORIO-E-ANALISES.md` 4b.1.
 - **Modelo de fechamento mudou em 03/10/2026 (AJUSTE-066)**: antes, o
   resultado de uma operação fechada era gravado no EXTREMO do candle (em
   candle de notícia, um TP de $5 saía +$11,52) e candles de depois do

@@ -94,12 +94,14 @@ por simplicidade).
 
 ### 4b. Onde a conta não fecha (levantado em 03/10/2026; NÃO investigado a fundo, só anotado)
 
-1. **Lote mudou no meio da amostra.** Nos documentos que vi, as operações até a noite de
-   01/10 (BRT) têm lote 0,04 (alvo de US$5 = 12,5 pips em AUD/USD, ~19,7 em USD/JPY) e as de
-   02/10 têm lote 0,02 (25 pips, ~39 pips). O alvo em US$ é o mesmo, mas a DISTÂNCIA em pips
-   dobrou. "Ontem foi ótimo, hoje foi ruim" compara estratégias com stops de tamanhos
-   diferentes; e a amostra de 100 operações do congelamento deixa de ser homogênea. Falta
-   confirmar quem/onde mudou (Config?) e quando.
+1. **Lote mudou no meio da amostra — RESPONDIDO (03/10/2026).** Foi o usuário, de propósito:
+   baixou de 0,04 para 0,02 na Config na noite de 01/10 (BRT) porque, operando de verdade,
+   viu que dá mais margem entre altos e baixos do par com saldo baixo. Com TP/SL fixos em
+   US$ 5, a distância em pips DOBROU (AUD/USD 12,5 -> 25 pips; USD/JPY ~19,7 -> ~39). Efeitos:
+   (+) o spread pesa metade em proporção ao stop; (+) ruído curto derruba menos o stop;
+   (-) as operações duram mais (mais tempo exposto, mais sobreposição entre pares, risco de
+   fim de semana); (-) a amostra do congelamento passa a ter dois "experimentos" — analisar
+   SEPARADO por lote/distância em pips (antes e depois de 01/10 à noite).
 2. **"0 de 30 operações válidas" x histórico "RUIM".** Todas as operações recentes mostram o
    aviso de histórico insuficiente (0 de 30) mesmo em pares com dezenas de operações
    fechadas, e ao mesmo tempo `historico = RUIM`, `pesoHistorico = -8`, `confidenceMultiplier
@@ -136,8 +138,75 @@ por simplicidade).
 
 Cada item acima só vira trabalho quando o usuário confirmar.
 
-## 6. Pendente do usuário
+## 6. Material de estudo recebido (03/10/2026) — leitura crítica
 
-- O amigo do usuário sugeriu métodos matemáticos de análise de mercado; o usuário vai enviar o
-  material de estudo. Quando chegar: avaliar com o mesmo critério (hipótese clara, teste fora
-  da amostra, custos de spread, dados disponíveis) antes de qualquer implementação.
+### 6.1 Documento do amigo: "IA, machine learning e trading algorítmico" (21 p., set/2026)
+O que é: metodologia de pesquisa quantitativa para CRIPTO (BTC/ETH/SOL, Binance/Bybit,
+spot/perp), com dados de livro de ofertas (L2), horizontes de segundos a minutos. O próprio
+documento avisa que foi produzido numa conversa e que as referências não foram reverificadas
+na edição (as principais existem: White 2000; Hansen 2005; Bailey & López de Prado 2014 DSR;
+Bailey et al. PBO; Zhang, Zohren & Roberts, DeepLOB).
+NÃO se aplica a nós (falta o dado ou a infraestrutura): livro de ofertas/microestrutura
+(OBI, OFI, microprice, filas), Hawkes, cross-venue/basis, DeepLOB, market making, RL,
+latência de milissegundos. Forex de varejo via XM/TwelveData não tem L2 consolidado; nosso
+dado é OHLC de 5 min com cron que atrasa minutos.
+SE APLICA (e confirma o caminho que já tomamos):
+  a) Métrica principal = expectativa LÍQUIDA: P(win)·ganho − P(loss)·perda − custos.
+     Acerto/score são auxiliares. Com 44% e alvo 1:1 já é negativa antes do spread.
+  b) "NO TRADE" é resposta de primeira classe. A nossa cascata faz o oposto: se o
+     Conservador reprova, procura um modo que aprove.
+  c) Alvo "P(TP antes do SL)" — é EXATAMENTE o que o nosso histórico registra (WIN/LOSS).
+     Dá pra treinar um modelo simples (regressão logística regularizada) sobre as
+     características da hora do sinal, com validação walk-forward, contra um baseline
+     ingênuo. É a versão com método da ideia do Laboratório.
+  d) Barreiras em unidades de VOLATILIDADE (k·σ + custo), não em US$ fixo. O nosso TP/SL em
+     US$ faz a distância em pips depender do lote (ver 4b.1) e não do mercado.
+  e) Baseline ingênuo obrigatório: um modelo só ganha crédito se bater o trivial.
+  f) Custo como variável, com estresse 1,25x/1,5x/2x; estratégia que some com custo um pouco
+     maior é frágil.
+  g) Validação: walk-forward, holdout congelado (= hipóteses pré-registradas), correção
+     por múltiplos testes (DSR, PBO, Reality Check), regimes e "concept drift".
+  h) Medir o "alpha decay": quanto o sinal perde se a entrada atrasa 5/10/15 min (temos atraso
+     de cron + push + humano; EUR/JPY 30/09 entrou 4 min 49 s depois, 8,5 pips pior).
+  i) Paper congelado -> shadow -> tiny live, com critérios de rejeição ("kill") escritos ANTES.
+  j) LLM fora do loop de execução: pesquisador/engenheiro/revisor, não quem dá BUY/SELL.
+
+### 6.2 Ebook "Forex do Zero" (Lau Américo, 11 p.) — curso introdutório de varejo
+Úteis: risco/retorno mínimo 1:2 ("errando metade ainda fica positivo"), arriscar 1-2% por
+operação (hoje: US$5 de ~US$600 = ~0,8%), stop definido antes, entrada a favor da tendência
+no recuo, não afastar stop, sem revanche, ficar de fora também é decisão, parcial/stop no
+zero a zero no meio do caminho. Cautelas: "calcule quanto quer fazer no mês e divida em dias"
+(meta diária estimula excesso de operações); "não indico conta demo" e o funil de conta/lives
+são parte do modelo comercial do material. Mudar para 1:2 NÃO é grátis: alvo maior é tocado
+menos vezes — precisa ser medido (experimento E2).
+
+### 6.3 Ebook XP "Análise Técnica" (59 p.) — manual clássico
+Úteis/hipóteses: ADX usado pra dizer SE há tendência e se ela está crescente/decrescente
+(nós usamos só o nível, não a inclinação; dado nosso: ADX alto acerta menos); candlestick
+exige confirmação e localização (topo/fundo após tendência definida) — a nossa detecção dá
+pontos sem esse contexto, coerente com H3; olhar periodicidade maior quando há conflito
+(temos 5m/15m, não H1/H4). Não se aplica: volume/OBV (forex à vista não tem volume
+centralizado). Cautela: "padrões do passado sempre se repetem" e "garantia de melhor
+desempenho" não têm respaldo; a evidência acadêmica em câmbio é de regras técnicas simples
+que já deram lucro e perderam força com o tempo (Neely, Weller & Ulrich 2009, JFQA; Menkhoff &
+Taylor 2007, Journal of Economic Literature). Não acrescentar indicadores novos (Didi, Trix,
+Bollinger...) sem teste: é mais mineração de dados.
+
+### 6.4 Experimentos propostos (todos SÓ LEITURA/offline, cabem no congelamento; nada iniciado)
+  E1 Baseline aleatório: entradas sorteadas nos mesmos pares/horários com o mesmo TP/SL.
+     Pergunta: o score bate o acaso? (se 44% < acaso, a análise atrapalha).
+  E2 Barreiras alternativas nas MESMAS entradas já registradas: 1:1, 1:1,5, 1:2, TP/SL em
+     múltiplos de ATR, stop no zero a zero na metade do caminho. Mede acerto E expectativa.
+  E3 Alpha decay: o mesmo sinal entrando 5/10/15 min depois.
+  E4 Modelo P(TP antes do SL): regressão logística regularizada, walk-forward, contra
+     baseline ingênuo; só como medição, nunca no sinal sem decisão.
+  E5 Spread por par (valores da XM informados pelo usuário) + estresse 1,25x/1,5x/2x.
+  Custo de dados: E1-E3/E5 usam candles de 5 min por par (~1 consulta por par cobre ~17 dias),
+  dentro da cota.
+  Também a escrever com o usuário ANTES de conta real: critérios de promoção e de rejeição
+  (ex.: expectativa líquida > 0 com N operações, resiste a custo 1,5x, paper ≈ real).
+
+## 7. Pendente do usuário
+
+- Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
+  quais experimentos (E1-E5) quer e em que ordem.
