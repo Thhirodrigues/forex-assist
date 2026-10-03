@@ -83,13 +83,13 @@ html.splash-ativa body{overflow:hidden;}
     s.addEventListener("click", sair);
 
     setTimeout(function () { var b = s.querySelector(".splash-pular"); if (b) b.classList.add("visivel"); }, 1200);
-    setTimeout(sair, 10000);
+    setTimeout(sair, 13000);
 
     var arrancou = setTimeout(function () { if (!v.currentTime) sair(); }, 3500);
     v.addEventListener("playing", function () { clearTimeout(arrancou); });
 
     v.muted = !SPLASH_COM_SOM;
-    v.src = "assets/splash.mp4?v=5";
+    v.src = "assets/splash.mp4?v=6";
 
     var p = v.play();
     if (p && p.catch) {
