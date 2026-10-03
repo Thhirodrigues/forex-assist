@@ -266,6 +266,14 @@ decidido agora, pra não escolher o recorte depois):
   H4 vendido em dólar tem acerto menor que comprado em dólar (se o dólar virar, deve inverter;
      se não inverter, é viés do sistema).
   H5 Balanceado tem acerto menor que Agressivo.
+  H6 (registrada em 03/10/2026, ideia do usuário) o DESCONTO de -3 do SMC (order block na
+     direção CONTRÁRIA com o preço na zona; `aplicarBonusSMC`, scoreEngine.js) não tem
+     respaldo: o SMC "só marca" um ponto de reversão e, fora da zona ou sem order block, já
+     vale 0. Dados até agora: "tirou pontos" 71% (n=14), "somou" 45% (n=22), zero 42%
+     (n=229) - amostra mínima, não prova nada. Aparece em ~14% das operações e o desconto em
+     ~5%, então testar com dados novos é inviável (centenas de operações); a decisão será
+     por simplicidade/teoria quando descongelar. Candidato: remover o desconto (e decidir
+     à parte se mantém o bônus a favor).
   Regra: só vira mudança se a diferença se repetir na amostra nova (>= 10 pontos, mesmo
   sentido) e o usuário aprovar. Medir sempre com `modeloFechamento` e por dia/lado do dólar.
 Variância: um teto de exposição por lado do dólar (item já na fila) reduz a oscilação diária

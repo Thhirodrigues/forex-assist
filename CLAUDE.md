@@ -80,6 +80,11 @@ histórico alimenta o aprendizado futuro do sistema. Por isso:
   (não é cópia cega da fonte externa). Igual ao backlog acima: registrado,
   nenhum item implementado sem decisão explícita antes.
 
+- Caderno de trabalho sobre dias bons x ruins, a ideia da aba "Laboratório"
+  (placar de filtros pré-registrados), hipóteses H1-H6 e pontas soltas:
+  `DOCUMENTACAO/LABORATORIO-E-ANALISES.md`. É caderno de discussão, não decisão;
+  nada lá foi implementado no sinal.
+
 ## Ambiente
 
 - Este repositório **não tem credenciais de Firebase/Firestore** configuradas
