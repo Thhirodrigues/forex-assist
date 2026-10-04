@@ -1,0 +1,27 @@
+name: Laboratório - validar rotulador (só leitura)
+
+# Cruza as entradas OFICIAL do laboratório com o resultado REAL em `historico` e refaz a
+# variante ATUAL sem spread para provar (ou reprovar) o simulador. NÃO grava nada.
+on:
+  workflow_dispatch:
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Keys
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - name: Validar
+        env:
+          API_KEY_1: ${{ secrets.TWELVEDATA_KEY_3 }}
+          API_KEY_2: ${{ secrets.TWELVEDATA_KEY_3 }}
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+        run: node lab/validar.js
