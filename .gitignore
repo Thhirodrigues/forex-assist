@@ -1,5 +1,6 @@
 # Credenciais - NUNCA commitar
 serviceAccount.json
+serviceAccountLab.json
 firebase-key.json
 *.pem
 .env

@@ -1,0 +1,182 @@
+// ===================================================
+// FOREX ASSIST - LABORATÓRIO - NÚCLEO DO ROTULADOR (funções puras, sem I/O)
+//
+// Recebe, para UM par: as análises novas, as entradas do laboratório ainda abertas, o estado
+// do "cooldown virtual" e os candles; devolve as entradas a gravar e os incrementos dos
+// contadores. Quem grava (Firestore) está em rotulador.js. Nada aqui toca no sinal oficial.
+//
+// Dois universos de entradas (ver caderno 6.7/6.8):
+//   OFICIAL - toda análise que o scanner APROVOU (o que virou sinal). Base do E2: o mesmo
+//             sinal visto com saídas alternativas.
+//   LAB     - fluxo virtual: toda análise com direção (tendência ALTA/BAIXA, ou a direção
+//             aprovada) respeitando o MESMO cooldown do oficial. Base das regras H1-H5.
+// ===================================================
+
+const { simularOperacao, variantesPadrao } = require("./simulador");
+const { spreadDoPar } = require("./spreads");
+const CFG = require("./config");
+
+const MIN = 60000;
+
+function direcaoDaAnalise(a) {
+    if (a.aprovado === true && (a.direcao === "BUY" || a.direcao === "SELL")) return a.direcao;
+    if (a.tendencia === "ALTA") return "BUY";
+    if (a.tendencia === "BAIXA") return "SELL";
+    return null;
+}
+
+function chaveContador(tipo, variante, preRegistro) {
+    return `${tipo}__${variante}__${preRegistro ? "pre" : "pos"}`;
+}
+
+function somarDelta(deltas, chave, meta, r) {
+    const d = deltas[chave] || (deltas[chave] = { ...meta, n: 0, pos: 0, neg: 0, zero: 0, pips: 0, dur: 0, amb: 0 });
+    d.n += 1;
+    if (r.pips > 0) d.pos += 1; else if (r.pips < 0) d.neg += 1; else d.zero += 1;
+    d.pips = Number((d.pips + r.pips).toFixed(2));
+    d.dur += r.duracaoMin || 0;
+    if (r.ambiguo) d.amb += 1;
+}
+
+function novaEntrada(tipo, id, par, a, dir, preRegistro) {
+    const tp = Math.abs(Number(a.tpPips));
+    const sl = Math.abs(Number(a.slPips));
+    const spread = spreadDoPar(par);
+    const base = {
+        id, tipo, par,
+        t: Number(a.timestamp),
+        direcao: dir,
+        precoEntrada: Number(a.precoEntrada),
+        tpPips: tp, slPips: sl, spreadPips: spread,
+        aprovado: a.aprovado === true,
+        perfil: a.perfilResolvido || null,
+        tendencia: a.tendencia || null,
+        score: a.score ?? null,
+        adx: a.indicadores?.adx ?? null,
+        rsi: a.indicadores?.rsi ?? null,
+        atr: a.indicadores?.atr ?? null,
+        candlestick: a.candlestickDetectado ? true : false,
+        smc: a.smcDetectado ? true : false,
+        preRegistro,
+        reanalises: [],
+        reanalisesAteT: Number(a.timestamp),
+        resolvida: false
+    };
+    const variantes = {};
+    for (const v of variantesPadrao({ ...a, par, tpPips: tp, slPips: sl })) {
+        variantes[v.id] = { r: "ABERTA", cfg: { tpPips: v.tpPips, slPips: v.slPips, opcoes: v.opcoes } };
+    }
+    base.variantes = variantes;
+    return base;
+}
+
+// Resimula as variantes ainda abertas de uma entrada; devolve o que mudou (para os contadores).
+function atualizarVariantes(e, candles, agora) {
+    const mudancas = [];
+    const candlesDaEntrada = candles;
+    for (const [id, v] of Object.entries(e.variantes)) {
+        if (v.r !== "ABERTA") continue;
+        const opcoes = { ...v.cfg.opcoes };
+        if (opcoes.usaReanalises) {
+            opcoes.reanalises = e.reanalises.map(([t, preco, tendencia]) => ({ t, preco, tendencia }));
+            delete opcoes.usaReanalises;
+        }
+        const r = simularOperacao({
+            par: e.par, direcao: e.direcao, tEntrada: e.t, precoEntrada: e.precoEntrada,
+            tpPips: v.cfg.tpPips, slPips: v.cfg.slPips, spreadPips: e.spreadPips,
+            candles: candlesDaEntrada, opcoes
+        });
+        if (r.resultado === "ABERTA") {
+            if (agora - e.t > CFG.MAX_DIAS_ABERTA * 24 * 60 * MIN) v.r = "EXPIRADA";
+            continue;
+        }
+        if (r.resultado === "INVALIDA") { v.r = "INVALIDA"; v.motivo = r.motivo; continue; }
+        e.variantes[id] = { ...v, r: r.resultado, p: r.pips, d: r.duracaoMin, f: r.tFechamento, amb: r.ambiguo === true };
+        mudancas.push({ variante: id, r });
+    }
+    e.resolvida = Object.values(e.variantes).every(v => v.r !== "ABERTA");
+    return mudancas;
+}
+
+/**
+ * @param {object} p
+ * @param {string} p.par
+ * @param {Array} p.analises            novas, ordenadas por timestamp (cada uma com .id)
+ * @param {Array} p.abertas             entradas já gravadas deste par ainda não resolvidas
+ * @param {object|null} p.ultimoLab     {t, atualR, atualF} da última entrada LAB deste par
+ * @param {Array} p.candles             candles de 5 min (ordenados, já filtrados por horário de mercado)
+ * @param {number} p.registradoEm
+ * @param {number} p.agora
+ * @returns {{entradas: object[], deltas: object, ultimoLab: object|null, ignoradas: object}}
+ */
+function processarPar({ par, analises, abertas, ultimoLab, candles, registradoEm, agora }) {
+
+    const deltas = {};
+    const ignoradas = { semDirecao: 0, semTpSl: 0, cooldown: 0 };
+    const entradas = new Map();   // id -> entrada (as novas e as abertas atualizadas)
+
+    for (const e of abertas) entradas.set(e.id, e);
+
+    // reanálises novas entram nas entradas já abertas (a entrada só enxerga o que veio DEPOIS dela)
+    const adicionarReanalises = (e) => {
+        for (const a of analises) {
+            if (a.timestamp <= e.reanalisesAteT) continue;
+            if (e.reanalises.length >= CFG.MAX_REANALISES) break;
+            if (a.tendencia && Number.isFinite(Number(a.precoEntrada))) {
+                e.reanalises.push([Number(a.timestamp), Number(a.precoEntrada), a.tendencia]);
+            }
+            e.reanalisesAteT = Number(a.timestamp);
+        }
+    };
+
+    let lab = ultimoLab ? { ...ultimoLab } : null;
+    const atualizarLab = (e) => {
+        if (e.tipo !== "LAB") return;
+        const v = e.variantes.ATUAL;
+        if (!lab || e.t >= lab.t) lab = { t: e.t, atualR: v.r, atualF: v.f ?? null };
+    };
+
+    // 1) entradas já abertas: reanálises novas + resimulação
+    for (const e of abertas) {
+        adicionarReanalises(e);
+        const antes = e.variantes.ATUAL.r;
+        for (const m of atualizarVariantes(e, candles, agora)) {
+            somarDelta(deltas, chaveContador(e.tipo, m.variante, e.preRegistro),
+                { tipo: e.tipo, variante: m.variante, epoca: e.preRegistro ? "pre" : "pos" }, m.r);
+        }
+        if (antes === "ABERTA") atualizarLab(e);
+    }
+
+    // 2) análises novas, em ordem cronológica
+    for (const a of analises) {
+
+        const dir = direcaoDaAnalise(a);
+        const tp = Math.abs(Number(a.tpPips)), sl = Math.abs(Number(a.slPips));
+        if (!dir) { ignoradas.semDirecao++; continue; }
+        if (!(tp > 0) || !(sl > 0) || !Number.isFinite(Number(a.precoEntrada))) { ignoradas.semTpSl++; continue; }
+
+        const preRegistro = Number(a.timestamp) < registradoEm;
+        const tipos = [];
+        if (a.aprovado === true) tipos.push("OFICIAL");
+
+        const livre = !lab ||
+            (a.timestamp >= lab.t + CFG.COOLDOWN_MIN * MIN && lab.atualR !== "ABERTA" && (lab.atualF ?? 0) <= a.timestamp);
+        if (livre) tipos.push("LAB"); else ignoradas.cooldown++;
+
+        for (const tipo of tipos) {
+            const e = novaEntrada(tipo, `${tipo}_${a.id}`, par, a, dir, preRegistro);
+            // reanálises: as análises deste par posteriores à entrada que já temos em mãos
+            adicionarReanalises(e);
+            for (const m of atualizarVariantes(e, candles, agora)) {
+                somarDelta(deltas, chaveContador(tipo, m.variante, preRegistro),
+                    { tipo, variante: m.variante, epoca: preRegistro ? "pre" : "pos" }, m.r);
+            }
+            entradas.set(e.id, e);
+            atualizarLab(e);
+        }
+    }
+
+    return { entradas: [...entradas.values()], deltas, ultimoLab: lab, ignoradas };
+}
+
+module.exports = { processarPar, direcaoDaAnalise, chaveContador };

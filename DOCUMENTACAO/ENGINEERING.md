@@ -13431,3 +13431,23 @@ não estado do mercado, e ficou como está. Teste Playwright com relógio simula
 com/sem sinal ativo): passou. Não verificado em celular real. Dependência de data: o aviso
 usa o relógio do aparelho.
 --------
+
+AJUSTE-075 (04/10/2026) - Laboratório: rotulador + workflow manual (fora do pipeline de sinais).
+
+Novo diretório `lab/` (nada do scanner/checker/decisão foi alterado):
+- `simulador.js` (função pura: TP/SL com spread nas barreiras, candle ambíguo = perda, atraso de
+  entrada, break-even na metade, limite de tempo, saída por reanálise), `spreads.js` (tabela
+  XM Standard do Gemini, não conferida; NZD/USD e EUR/JPY estimados), `config.js` (regras),
+  `nucleo.js` (por par: entradas OFICIAL = o que o scanner aprovou; entradas LAB = fluxo virtual
+  com o mesmo cooldown do oficial; resimula variantes abertas; contadores), `rotulador.js`
+  (I/O: lê `analises` do projeto oficial SÓ LEITURA, grava no projeto forex-assist-lab:
+  `entradas`, `resumo/{tipo__variante__época}`, `controle/rotulador`). Testes: 17 + 8 +
+  fumaça com Firestore falso (idempotência, par que falha não perde análises).
+- `.github/workflows/lab-rotulador.yml`: SOMENTE manual (dry_run=1 por padrão). Cron hourly
+  (minuto 17) deixado comentado até validar os primeiros ciclos. Usa só a TWELVEDATA_KEY_3
+  (decisão do usuário) com 8 s entre pares (limite de 8 req/min do plano gratuito).
+- Épocas: análises anteriores ao 1º registro = `pre` (dados que geraram a regra; NÃO é prova);
+  depois = `pos`. Acerto no placar = ganhos/n (zero a zero e saídas contam como não-ganho).
+- Pendente: aba Laboratório no app (leitura do projeto lab; regras do Firestore liberando só
+  `resumo`), regras H1-H5 com fluxo próprio por regra, E1 (baseline aleatório).
+--------

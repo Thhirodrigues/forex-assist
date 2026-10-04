@@ -1,0 +1,66 @@
+name: Laboratório - rotulador
+
+# Lê `analises` do projeto OFICIAL (SOMENTE LEITURA) e grava os desfechos hipotéticos no projeto
+# forex-assist-lab. Não mexe em `historico`, não manda push, não faz parte do pipeline de sinais.
+# Ver DOCUMENTACAO/LABORATORIO-E-ANALISES.md (6.7 e 6.8).
+#
+# Por enquanto SÓ MANUAL: validar os primeiros ciclos (dry run -> gravação) antes de ligar o
+# cron. Para ligar, descomentar o bloco `schedule` (de hora em hora, minuto 17, fora dos minutos
+# :00/:05/:15 do scanner e do checker; ~240 créditos/dia da KEY_3 no máximo).
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'dry run (1 = lê e calcula, NÃO grava nada; 0 = grava)'
+        required: false
+        default: '1'
+      backfill_horas:
+        description: 'só na 1ª execução: quantas horas de `analises` passadas entram (pré-registro)'
+        required: false
+        default: '48'
+#  schedule:
+#    - cron: '17 * * * *'
+
+concurrency:
+  group: lab-rotulador
+  cancel-in-progress: false
+
+jobs:
+  rotulador:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Create Firebase Keys
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+
+      - name: Testes do Laboratório
+        run: |
+          node lab/simulador.test.js
+          node lab/nucleo.test.js
+          node lab/rotulador.test.js
+
+      - name: Rotulador
+        env:
+          # todas apontam para a KEY_3 (decisão do usuário); no 1º 429, criar a 4ª chave
+          API_KEY_1: ${{ secrets.TWELVEDATA_KEY_3 }}
+          API_KEY_2: ${{ secrets.TWELVEDATA_KEY_3 }}
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+          LAB_DRY: ${{ github.event.inputs.dry_run == '0' && '0' || (github.event_name == 'workflow_dispatch' && '1' || '0') }}
+          LAB_BACKFILL_HORAS: ${{ github.event.inputs.backfill_horas }}
+          LAB_IGNORAR_HORARIO: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
+        run: |
+          node lab/rotulador.js
