@@ -1,5 +1,5 @@
 const assert = require("assert");
-const { montarPlacar, formatarPlacar } = require("./placar");
+const { montarPlacar, formatarPlacar, estatisticaT } = require("./placar");
 const { processarPar, contarEntradas } = require("./nucleo");
 
 const linha = (grupo, n, pos, pips = 0, extra = {}) => ({ tipo: "OFICIAL", epoca: "pos", variante: "ATUAL", grupo, n, pos, neg: n - pos, zero: 0, pips, dur: 0, amb: 0, ...extra });
@@ -35,4 +35,8 @@ for (const k of Object.keys(refeito)) if (refeito[k].n === 0) delete refeito[k];
 assert.deepEqual(Object.keys(refeito).sort(), Object.keys(r.deltas).sort());
 // `ab` (casos ainda abertos) só existe na recontagem: o incremental não o conta
 for (const k of Object.keys(refeito)) { const { ab, ...resto } = refeito[k]; const { ab: _, ...inc } = r.deltas[k]; assert.deepEqual(resto, inc, `contador ${k} difere`); }
+// estatística t: 4 operações de +25,-25,+25,+25 -> média 12,5; desvio ~25; t = 12,5/(25/2) = 1
+assert.equal(estatisticaT({ n: 4, pips: 50, pips2: 2500 }), 1);
+assert.equal(estatisticaT({ n: 1, pips: 5, pips2: 25 }), null, "n=1 não tem desvio");
+assert.equal(estatisticaT({ n: 3, pips: 10 }), null, "sem pips2 (dado antigo): não inventa");
 console.log("TESTES DO PLACAR/RECONTAGEM PASSARAM");

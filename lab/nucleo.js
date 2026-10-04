@@ -91,10 +91,11 @@ function registrarMudancas(deltas, e, mudancas) {
 }
 
 function somarDelta(deltas, chave, meta, r) {
-    const d = deltas[chave] || (deltas[chave] = { ...meta, n: 0, pos: 0, neg: 0, zero: 0, pips: 0, dur: 0, amb: 0, ab: 0 });
+    const d = deltas[chave] || (deltas[chave] = { ...meta, n: 0, pos: 0, neg: 0, zero: 0, pips: 0, pips2: 0, dur: 0, amb: 0, ab: 0 });
     d.n += 1;
     if (r.pips > 0) d.pos += 1; else if (r.pips < 0) d.neg += 1; else d.zero += 1;
     d.pips = Number((d.pips + r.pips).toFixed(2));
+    d.pips2 = Number((d.pips2 + r.pips * r.pips).toFixed(2));   // soma dos quadrados: dá o desvio e a estatística t
     d.dur += r.duracaoMin || 0;
     if (r.ambiguo) d.amb += 1;
 }
@@ -254,7 +255,7 @@ function contarEntradas(entradas, { tetos = [1, 2] } = {}) {
         for (const id of abertas) {
             for (const grupo of gruposDaEntrada(e)) {
                 const chave = chaveContador(e.tipo, id, e.preRegistro, grupo);
-                const d = deltas[chave] || (deltas[chave] = { tipo: e.tipo, variante: id, epoca: e.preRegistro ? "pre" : "pos", grupo, n: 0, pos: 0, neg: 0, zero: 0, pips: 0, dur: 0, amb: 0, ab: 0 });
+                const d = deltas[chave] || (deltas[chave] = { tipo: e.tipo, variante: id, epoca: e.preRegistro ? "pre" : "pos", grupo, n: 0, pos: 0, neg: 0, zero: 0, pips: 0, pips2: 0, dur: 0, amb: 0, ab: 0 });
                 d.ab += 1;
             }
         }

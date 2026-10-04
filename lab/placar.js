@@ -19,6 +19,14 @@ const HIPOTESES = [
 
 const acerto = (l) => (l && l.n ? (100 * l.pos) / l.n : null);
 
+// estatística t da expectativa (pips/op) de uma linha de contadores: média / (desvio / raiz de n)
+function estatisticaT(l) {
+    if (!l || !(l.n > 1) || !Number.isFinite(l.pips2)) return null;
+    const m = l.pips / l.n;
+    const v = (l.pips2 - l.n * m * m) / (l.n - 1);
+    return v > 0 ? Number((m / Math.sqrt(v / l.n)).toFixed(2)) : null;
+}
+
 function faixaAmostra(nMin) {
     if (nMin >= 300) return "teste";
     if (nMin >= 100) return "indício";
@@ -74,7 +82,7 @@ const VARIANTES = [
     { id: "ATUAL_SPREAD_2X", nome: "Sinal com spread 2x", texto: "estresse de custo" }
 ];
 
-const api = { HIPOTESES, VARIANTES, montarPlacar, formatarPlacar, faixaAmostra };
+const api = { HIPOTESES, VARIANTES, montarPlacar, formatarPlacar, faixaAmostra, estatisticaT };
 
 // Node (rotulador, testes) e navegador (aba Laboratório do app) usam o MESMO arquivo.
 if (typeof module !== "undefined" && module.exports) module.exports = api;

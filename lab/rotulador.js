@@ -128,7 +128,7 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
                         lote.set(lab.collection("resumo").doc(chave), {
                             tipo: d.tipo, variante: d.variante, epoca: d.epoca, grupo: d.grupo,
                             n: increment(d.n), pos: increment(d.pos), neg: increment(d.neg), zero: increment(d.zero),
-                            pips: increment(d.pips), dur: increment(d.dur), amb: increment(d.amb), ab: increment(d.ab || 0)
+                            pips: increment(d.pips), pips2: increment(d.pips2 || 0), dur: increment(d.dur), amb: increment(d.amb), ab: increment(d.ab || 0)
                         }, { merge: true });
                     }
                     const extra = { cursorPar: {}, ultimoLab: {} };
@@ -190,7 +190,7 @@ async function publicarPlacar(lab, linhas, agora = Date.now()) {
     const limpas = linhas.map(l => ({
         tipo: l.tipo, variante: l.variante, epoca: l.epoca, grupo: l.grupo || "TODOS",
         n: l.n || 0, pos: l.pos || 0, neg: l.neg || 0, zero: l.zero || 0,
-        pips: Number((l.pips || 0).toFixed(2)), dur: l.dur || 0, amb: l.amb || 0, ab: l.ab || 0
+        pips: Number((l.pips || 0).toFixed(2)), pips2: Number((l.pips2 || 0).toFixed(2)), dur: l.dur || 0, amb: l.amb || 0, ab: l.ab || 0
     }));
     await comTimeout(lab.collection("placar").doc("atual").set({ geradoEm: agora, registradoEm, linhas: limpas }), "gravar placar/atual");
     return { linhas: limpas.length };

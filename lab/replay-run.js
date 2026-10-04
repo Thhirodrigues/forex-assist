@@ -102,7 +102,7 @@ async function replayETudo({ lab, config, pares, split = 0.7, passo = 3, log = c
     const deltas = contarEntradas(entradasTodas);
     const linhas = Object.values(deltas).map(d => ({
         tipo: d.tipo, variante: d.variante, epoca: d.epoca, grupo: d.grupo, n: d.n, pos: d.pos, neg: d.neg, zero: d.zero,
-        pips: Number(d.pips.toFixed(2)), dur: d.dur, amb: d.amb, ab: d.ab || 0
+        pips: Number(d.pips.toFixed(2)), pips2: Number((d.pips2 || 0).toFixed(2)), dur: d.dur, amb: d.amb, ab: d.ab || 0
     }));
     return { linhas, totais, ini, fim, splitTs, entradas: entradasTodas.length };
 }
