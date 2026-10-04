@@ -228,7 +228,11 @@ if (require.main === module) {
             const splitTs = Number(process.env.LAB_SPLIT_TS) || ant.ini;   // `pre` = ANTES do período do registro (novo); `pos` = o período já visto
             console.log(`Replicação: ${new Date(ini).toISOString()} a ${new Date(fim).toISOString()}; período NOVO = antes de ${new Date(splitTs).toISOString()}`);
             const familias = await familiasETudo({ porPar, barreiras: ant.barreiras, splitTs, fim });
-            await lab.collection("replay").doc("familias_rep").set({ geradoEm: Date.now(), ini, fim, splitTs, barreiras: ant.barreiras, pares, familias });
+            const doc = { geradoEm: Date.now(), ini, fim, splitTs, barreiras: ant.barreiras, pares, familias };
+            for (let tentativa = 1; ; tentativa++) {   // a computação longa pode deixar a conexão gRPC velha: tenta de novo
+                try { await lab.collection("replay").doc("familias_rep").set(doc); break; }
+                catch (e) { if (tentativa >= 4) throw e; console.log(`gravação falhou (${e.message}); tentativa ${tentativa + 1}/4`); await new Promise(r => setTimeout(r, 3000 * tentativa)); }
+            }
             console.log("Replicação publicada em replay/familias_rep (epoca `pre` = período novo, `pos` = período já visto).");
         }
         if (modo === "familias") {
@@ -236,7 +240,10 @@ if (require.main === module) {
             const base = await replayETudo({ lab, config: configuracao, pares, split, passo });   // só para a barreira por par (stop mediano do app)
             console.log("Barreiras (stop mediano do app, pips):", JSON.stringify(base.barreiras));
             const familias = await familiasETudo({ porPar: base.porPar, barreiras: base.barreiras, splitTs: base.splitTs, fim: base.fim });
-            await publicarFamilias({ lab, familias, meta: { ini: base.ini, fim: base.fim, splitTs: base.splitTs, barreiras: base.barreiras, pares } });
+            for (let tentativa = 1; ; tentativa++) {
+                try { await publicarFamilias({ lab, familias, meta: { ini: base.ini, fim: base.fim, splitTs: base.splitTs, barreiras: base.barreiras, pares } }); break; }
+                catch (e) { if (tentativa >= 4) throw e; console.log(`gravação falhou (${e.message}); tentativa ${tentativa + 1}/4`); await new Promise(r => setTimeout(r, 3000 * tentativa)); }
+            }
             console.log("Famílias publicadas em replay/familias.");
         }
         if (modo === "baixar" || modo === "ambos") {

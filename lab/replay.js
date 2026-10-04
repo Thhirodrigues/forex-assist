@@ -111,7 +111,7 @@ async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atras
                 const r = simularOperacao({
                     par, direcao: capturaAnalise.direcao, tEntrada: simMs, precoEntrada: capturaAnalise.precoEntrada,
                     tpPips: Math.abs(capturaAnalise.tpPips), slPips: Math.abs(capturaAnalise.slPips), spreadPips: 0,
-                    candles: c5.slice(idx + 1).map(c => ({ timestamp: c.ts, open: c.o, high: c.h, low: c.l, close: c.c }))
+                    candles: c5.slice(idx + 1, idx + 1 + 4000).map(c => ({ timestamp: c.ts, open: c.o, high: c.h, low: c.l, close: c.c }))   // janela de ~14 dias de mercado
                 });
                 const fechaEm = r.resultado === "ABERTA" ? Infinity : r.tFechamento;
                 bloqueadoAte = Math.max(simMs + cooldownMs, fechaEm);

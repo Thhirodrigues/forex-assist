@@ -133,10 +133,19 @@ function novaEntrada(tipo, id, par, a, dir, preRegistro) {
     return base;
 }
 
+// Janela de candles que uma entrada precisa enxergar: do instante da entrada em diante, no máximo ~14 dias de
+// mercado (4000 candles). Com histórico longo (replay) isso evita varrer 100 mil candles por variante.
+const JANELA_CANDLES = 4000;
+function janelaDaEntrada(candles, t) {
+    let lo = 0, hi = candles.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (candles[m].timestamp < t) lo = m + 1; else hi = m; }
+    return candles.slice(lo, lo + JANELA_CANDLES);
+}
+
 // Resimula as variantes ainda abertas de uma entrada; devolve o que mudou (para os contadores).
 function atualizarVariantes(e, candles, agora) {
     const mudancas = [];
-    const candlesDaEntrada = candles;
+    const candlesDaEntrada = janelaDaEntrada(candles, e.t);
     for (const [id, v] of Object.entries(e.variantes)) {
         if (v.r !== "ABERTA") continue;
         const opcoes = { ...v.cfg.opcoes };

@@ -136,7 +136,7 @@ function sinaisParaAnalises({ par, c5, sinais, barreiraPips, cooldownMin = 30 })
         if (s.ts < bloqueadoAte) continue;
         const r = simularOperacao({
             par, direcao: s.direcao, tEntrada: s.ts, precoEntrada: s.preco, tpPips: barreiraPips, slPips: barreiraPips, spreadPips: 0,
-            candles: c5.slice(s.i + 1).map(x => ({ timestamp: x.ts, open: x.o, high: x.h, low: x.l, close: x.c }))
+            candles: c5.slice(s.i + 1, s.i + 1 + 4000).map(x => ({ timestamp: x.ts, open: x.o, high: x.h, low: x.l, close: x.c }))   // janela de ~14 dias de mercado (igual ao núcleo)
         });
         bloqueadoAte = Math.max(s.ts + cooldownMin * 60000, r.resultado === "ABERTA" ? Infinity : r.tFechamento);
         out.push({
