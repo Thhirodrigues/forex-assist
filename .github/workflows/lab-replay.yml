@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       modo:
-        description: 'baixar | replay | ambos'
+        description: 'baixar | replay | ambos | familias (famílias de sinal pré-registradas, 6.18)'
         required: false
         default: 'ambos'
       dias:
@@ -56,6 +56,7 @@ jobs:
           node lab/historico.test.js
           node lab/replay.test.js
           node lab/replay-run.test.js
+          node lab/familias.test.js
       - name: Replay
         env:
           API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}

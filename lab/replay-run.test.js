@@ -33,5 +33,11 @@ const ler = async ({ par }) => sint(3000, par === "EUR/USD" ? 3 : 9);
   assert.equal(docs.replay.atual.docsDeLinhas, n);
   const total = Object.keys(docs.replay).filter(k => k.startsWith("linhas_")).reduce((s, k) => s + docs.replay[k].linhas.length, 0);
   assert.equal(total, res.linhas.length, "nenhuma linha perdida na publicação em pedaços");
+  // famílias de sinal sobre os mesmos candles
+  assert.ok(res.barreiras["EUR/USD"] > 0 && res.porPar["EUR/USD"].length === 3000, "barreira por par e candles devolvidos");
+  const fam = await require("./replay-run").familiasETudo({ porPar: res.porPar, barreiras: res.barreiras, splitTs: res.splitTs, fim: res.fim, log: () => {} });
+  assert.deepEqual(Object.keys(fam), ["F1", "F2", "F3", "F4", "C0"]);
+  assert.ok(fam.C0.nSinais > 5 && fam.C0.linhas.some(l => l.variante === "ATUAL" && l.n > 0 && Number.isFinite(l.pips2)));
+  assert.ok(fam.C0.linhas.every(l => ["ATUAL", "ATUAL_SEM_SPREAD", "INVERSO", "ALEATORIO"].includes(l.variante)), "só as variantes pré-registradas");
   console.log(`TESTES DO REPLAY (orquestração) PASSARAM — ${res.linhas.length} linhas, ${res.entradas} entradas`);
 })().catch(e => { console.error(e); process.exit(1); });

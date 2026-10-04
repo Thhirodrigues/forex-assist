@@ -15,6 +15,7 @@ const { baixarHistorico } = require("./historico");
 const { replayPar } = require("./replay");
 const { processarPar, contarEntradas } = require("./nucleo");
 const { mercadoForexAberto } = require("../scripts/horarioMercado");
+const { FAMILIAS, sinaisParaAnalises } = require("./familias");
 
 const TAM_CHUNK = 8000;
 const LINHAS_POR_DOC = 1500;
@@ -111,12 +112,18 @@ async function replayETudo({ lab, config, pares, split = 0.7, passo = 3, log = c
             if (cs.length > 1) deriva[ep][par] = Number((lado * (cs[cs.length - 1].c - cs[0].o) * fator).toFixed(0));
         }
     }
+    // barreira por par para as famílias de sinal: mediana do stop (pips) das entradas OFICIAL do app
+    const barreiras = {};
+    for (const par of Object.keys(porPar)) {
+        const sls = entradasTodas.filter(e => e.tipo === "OFICIAL" && e.par === par).map(e => e.slPips).sort((a, b) => a - b);
+        if (sls.length) barreiras[par] = Number(sls[Math.floor(sls.length / 2)].toFixed(1));
+    }
     const deltas = contarEntradas(entradasTodas);
     const linhas = Object.values(deltas).map(d => ({
         tipo: d.tipo, variante: d.variante, epoca: d.epoca, grupo: d.grupo, n: d.n, pos: d.pos, neg: d.neg, zero: d.zero,
         pips: Number(d.pips.toFixed(2)), pips2: Number((d.pips2 || 0).toFixed(2)), dur: d.dur, amb: d.amb, ab: d.ab || 0
     }));
-    return { linhas, totais, ini, fim, splitTs, entradas: entradasTodas.length, deriva };
+    return { linhas, totais, ini, fim, splitTs, entradas: entradasTodas.length, deriva, barreiras, porPar };
 }
 
 async function publicarReplay({ lab, resultado, params, agora = Date.now() }) {
@@ -133,7 +140,39 @@ async function publicarReplay({ lab, resultado, params, agora = Date.now() }) {
     return nDocs;
 }
 
-module.exports = { empacotar, desempacotar, baixarETudo, replayETudo, publicarReplay, lerCandles, sanos };
+// ---- famílias de sinal (pré-registradas em 6.18): mesmos candles, mesma divisão de épocas, mesmo simulador ----
+const VARIANTES_FAMILIA = ["ATUAL", "ATUAL_SEM_SPREAD", "INVERSO", "ALEATORIO"];
+
+async function familiasETudo({ porPar, barreiras, splitTs, fim, log = console.log, familias = Object.keys(FAMILIAS) }) {
+    const saida = {};
+    for (const f of familias) {
+        const entradas = [];
+        let nSinais = 0;
+        for (const par of Object.keys(porPar)) {
+            if (!barreiras[par]) continue;
+            const c5 = porPar[par];
+            const sinais = FAMILIAS[f].gerar(c5, par);
+            const analises = sinaisParaAnalises({ par, c5, sinais, barreiraPips: barreiras[par] });
+            nSinais += analises.length;
+            const cm = c5.map(x => ({ timestamp: x.ts, open: x.o, high: x.h, low: x.l, close: x.c }));
+            const out = processarPar({ par, analises, abertas: [], ultimoLab: null, candles: cm, registradoEm: splitTs, agora: fim });
+            entradas.push(...out.entradas.filter(e => e.tipo === "OFICIAL"));
+        }
+        const deltas = contarEntradas(entradas, { tetos: [] });
+        const linhas = Object.values(deltas)
+            .filter(d => d.grupo === "TODOS" && VARIANTES_FAMILIA.includes(d.variante))
+            .map(d => ({ variante: d.variante, epoca: d.epoca, n: d.n, pos: d.pos, neg: d.neg, zero: d.zero, pips: Number(d.pips.toFixed(2)), pips2: Number(d.pips2.toFixed(2)), ab: d.ab || 0 }));
+        saida[f] = { nome: FAMILIAS[f].nome, nSinais, linhas };
+        log(`${f} ${FAMILIAS[f].nome}: ${nSinais} sinais, ${entradas.length} entradas`);
+    }
+    return saida;
+}
+
+async function publicarFamilias({ lab, familias, meta, agora = Date.now() }) {
+    await lab.collection("replay").doc("familias").set({ geradoEm: agora, ...meta, familias });
+}
+
+module.exports = { empacotar, desempacotar, baixarETudo, replayETudo, publicarReplay, lerCandles, sanos, familiasETudo, publicarFamilias };
 
 if (require.main === module) {
     (async () => {
@@ -156,6 +195,14 @@ if (require.main === module) {
         console.log(`Replay | modo ${modo} | pares ${pares.join(", ")} | ${dias} dias | split ${split} | passo ${passo} barras`);
         console.log(`Config real: perfil=${config.perfil} lote=${config.lote} cooldown=${config.cooldown} candles=${config.candles}`);
 
+        if (modo === "familias") {
+            const configuracao = { perfil: "balanceado", cooldown: 30, candles: 500, lote: 0.04, tp: 5, sl: 5, tipoConta: "SIMULADA", saldoInicial: 1000, ...config };
+            const base = await replayETudo({ lab, config: configuracao, pares, split, passo });   // só para a barreira por par (stop mediano do app)
+            console.log("Barreiras (stop mediano do app, pips):", JSON.stringify(base.barreiras));
+            const familias = await familiasETudo({ porPar: base.porPar, barreiras: base.barreiras, splitTs: base.splitTs, fim: base.fim });
+            await publicarFamilias({ lab, familias, meta: { ini: base.ini, fim: base.fim, splitTs: base.splitTs, barreiras: base.barreiras, pares } });
+            console.log("Famílias publicadas em replay/familias.");
+        }
         if (modo === "baixar" || modo === "ambos") {
             await baixarETudo({ lab, pares, dias, chave: process.env.API_KEY_3 || process.env.API_KEY_1, forcar: process.env.LAB_REBAIXAR === "1" });
         }
