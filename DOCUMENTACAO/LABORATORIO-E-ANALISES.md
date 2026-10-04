@@ -471,6 +471,33 @@ Direção possível (a decidir): testar, no mesmo replay, FAMÍLIAS de sinal ind
 parâmetros fixos (sem ajuste), para saber se EXISTE vantagem bruta > custo neste mercado/período; a literatura aponta que
 regras técnicas simples de câmbio perderam o lucro fora da amostra (Neely, Weller e Ulrich, 2009, JFQA).
 
+### 6.18 FAMÍLIAS DE SINAL no replay - PROTOCOLO PRÉ-REGISTRADO (autorizado pelo usuário em 04/10/2026; escrito ANTES de qualquer código/execução)
+Objetivo: saber se existe vantagem BRUTA maior que o custo (spread) neste mercado/período, com regras clássicas e SIMPLES, independentes do
+pipeline do app. Parâmetros FIXOS escolhidos agora, de convenção, sem ajuste nem escolha olhando dados (por isso, ao contrário dos recortes,
+não precisam de exploração/validação para selecionar; a divisão em duas metades serve para checar CONSISTÊNCIA entre regimes).
+Dados: mesmos candles de 5 min guardados (10 pares, 07/04-02/10/2026). Saída de todas: TP = SL = tamanho do stop do app por par (mediana das
+entradas OFICIAL do replay; o scanner usa US$ 5 com lote 0,02), spread da tabela Standard, uma posição por par com bloqueio até fechar e >= 30 min
+(igual ao oficial); avaliação "como o app mede" (sem spread) e com spread; mesmo simulador/regras (candle ambíguo = perda).
+FAMÍLIAS (4 + controle):
+ F1 Rompimento da faixa asiática: faixa = máxima/mínima das 00:00-07:00 UTC do dia (>= 60 candles); entre 07:00 e 12:00 UTC, o PRIMEIRO candle
+    de 5 min que FECHA acima da máxima = COMPRA, abaixo da mínima = VENDA; no máximo 1 sinal por par por dia; entrada no fechamento do candle.
+ F2 Reversão por RSI extremo: RSI(14, Wilder) dos fechamentos de 5 min; COMPRA no candle em que o RSI cruza para <= 30 (vindo de > 30), VENDA no
+    que cruza para >= 70 (vindo de < 70).
+ F3 Tendência com filtro de timeframe maior + pullback: tendência de 1 h = EMA(20) > EMA(50) dos fechamentos de 1 h (só horas COMPLETAS);
+    em alta, COMPRA quando o fechamento de 5 min cruza para cima da EMA(21) de 5 min (vindo de <=); em baixa, VENDA no cruzamento para baixo.
+ F4 Momentum de 1 h: no fechamento de cada hora cheia, se o retorno das últimas 12 barras de 5 min for positivo = COMPRA, negativo = VENDA
+    (entrada no fechamento da barra; uma por par por hora, sujeito ao bloqueio).
+ CONTROLE C0 Aleatório: direção sorteada (função determinística do par+instante) a cada 15 min, sujeito ao bloqueio. Deve dar ~ -spread por operação;
+    se der muito diferente, o arcabouço tem viés e NADA da rodada vale.
+ REFERÊNCIA F0: o pipeline do app (os números de 6.16/6.17).
+CRITÉRIOS (por família, sobre TODO o período e por metade):
+ - "Vantagem líquida": expectativa líquida (com spread) > 0, t >= 2,4 (Bonferroni para 4 famílias a 5%) no período todo E positiva nas duas metades.
+ - "Vantagem bruta que o custo come": expectativa SEM spread > 0, t >= 2,4, positiva nas duas metades, mas líquida <= 0 (problema de custo, não de direção).
+ - Qualquer outra coisa = sem evidência. Não há segunda rodada ajustando parâmetros de uma família "para ver se melhora": isso vira nova família com novo registro.
+ - Mesmo "vantagem líquida" só vale como pista para teste AO VIVO no Laboratório (dados novos) antes de qualquer proposta ao oficial, e exige aprovação do usuário.
+Ressalvas declaradas: horários fixos em UTC (o horário de verão de Londres desloca a abertura em 1 h parte do ano); o spread é constante (o real
+abre em notícia e na virada de sessão, então o líquido está otimista); sem limite diário e sem janela de sessão do scanner.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
