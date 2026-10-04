@@ -75,6 +75,7 @@ function gruposDaEntrada(e) {
         g.push(`X2_sessao_${h < 7 ? "asia" : h < 12 ? "londres" : h < 16 ? "sobreposicao" : h < 21 ? "ny" : "fora"}`);
     }
     if (Number.isFinite(Number(e.lote))) g.push(`X3_lote_${Number(e.lote)}`);
+    if (e.par) g.push(`X4_par_${String(e.par).replace("/", "_")}`);
     return g;
 }
 
@@ -90,7 +91,7 @@ function registrarMudancas(deltas, e, mudancas) {
 }
 
 function somarDelta(deltas, chave, meta, r) {
-    const d = deltas[chave] || (deltas[chave] = { ...meta, n: 0, pos: 0, neg: 0, zero: 0, pips: 0, dur: 0, amb: 0 });
+    const d = deltas[chave] || (deltas[chave] = { ...meta, n: 0, pos: 0, neg: 0, zero: 0, pips: 0, dur: 0, amb: 0, ab: 0 });
     d.n += 1;
     if (r.pips > 0) d.pos += 1; else if (r.pips < 0) d.neg += 1; else d.zero += 1;
     d.pips = Number((d.pips + r.pips).toFixed(2));
@@ -243,11 +244,20 @@ function contarEntradas(entradas, { tetos = [1, 2] } = {}) {
     const todas = [...entradas, ...tetos.flatMap(K => aplicarTeto(entradas, K))];
     for (const e of todas) {
         const mudancas = [];
+        const abertas = [];
         for (const [id, v] of Object.entries(e.variantes || {})) {
+            if (v.r === "ABERTA") abertas.push(id);   // só informativo: casos ainda sem desfecho (viés de sobrevivência)
             if (v.r === "ABERTA" || v.r === "EXPIRADA" || v.r === "INVALIDA" || !Number.isFinite(v.p)) continue;
             mudancas.push({ variante: id, r: { pips: v.p, duracaoMin: v.d, ambiguo: v.amb === true } });
         }
         registrarMudancas(deltas, e, mudancas);
+        for (const id of abertas) {
+            for (const grupo of gruposDaEntrada(e)) {
+                const chave = chaveContador(e.tipo, id, e.preRegistro, grupo);
+                const d = deltas[chave] || (deltas[chave] = { tipo: e.tipo, variante: id, epoca: e.preRegistro ? "pre" : "pos", grupo, n: 0, pos: 0, neg: 0, zero: 0, pips: 0, dur: 0, amb: 0, ab: 0 });
+                d.ab += 1;
+            }
+        }
     }
     return deltas;
 }

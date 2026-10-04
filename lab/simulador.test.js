@@ -90,8 +90,8 @@ t("entradas inválidas são recusadas, não simuladas", () => {
 t("variantesPadrao: ids, 1:2, TP curto e ATR em pips (JPY x100)", () => {
   const v = variantesPadrao({ par: "USD/JPY", tpPips: 25, slPips: 25, indicadores: { atr: 0.08 } });
   const ids = v.map(x => x.id);
-  assert.deepEqual(ids, ["ATUAL", "RR_1_2", "TP_CURTO", "BE_METADE", "ENTRADA_MAIS_5", "ENTRADA_MAIS_10", "REANALISE", "INVERSO", "ALEATORIO", "ATUAL_SEM_SPREAD", "ATUAL_SPREAD_1_5X", "ATUAL_SPREAD_2X", "ATR_3X", "ATR_6X"]);
-  assert.equal(v[1].tpPips, 50); assert.equal(v[2].tpPips, 12.5); assert.equal(v[12].tpPips, 24); assert.equal(v[13].tpPips, 48);
+  assert.deepEqual(ids, ["ATUAL", "RR_1_2", "TP_CURTO", "BE_METADE", "ENTRADA_MAIS_5", "ENTRADA_MAIS_10", "REANALISE", "INVERSO", "ALEATORIO", "ATUAL_SEM_SPREAD", "ESCALA_2X", "ESCALA_3X", "ATUAL_SPREAD_0_5X", "ATUAL_SPREAD_1_5X", "ATUAL_SPREAD_2X", "ATR_3X", "ATR_6X"]);
+  assert.equal(v[1].tpPips, 50); assert.equal(v[2].tpPips, 12.5); assert.equal(v[15].tpPips, 24); assert.equal(v[16].tpPips, 48);
 });
 t("INVERSO: com TP = SL é o espelho do direto (sem spread: soma dos pips = 0)", () => {
   const sobe = [c(0, 1.1, 1.1030, 1.0999, 1.1020)];

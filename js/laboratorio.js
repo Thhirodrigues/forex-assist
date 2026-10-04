@@ -30,7 +30,9 @@ const LB_ORDEM_RECORTES = [
     ["L1_score40a44_adx25menos", "Score 40–44 e ADX <25"],
     ["X1_rsi_esticado", "RSI esticado a favor (≥70 compra, ≤30 venda)"], ["X1_rsi_normal", "RSI normal"],
     ["X2_sessao_asia", "Sessão Ásia (00–07 UTC)"], ["X2_sessao_londres", "Sessão Londres (07–12)"],
-    ["X2_sessao_sobreposicao", "Londres + NY (12–16)"], ["X2_sessao_ny", "Sessão NY (16–21)"], ["X2_sessao_fora", "Fim de dia (21–24)"]
+    ["X2_sessao_sobreposicao", "Londres + NY (12–16)"], ["X2_sessao_ny", "Sessão NY (16–21)"], ["X2_sessao_fora", "Fim de dia (21–24)"],
+    ["X4_par_EUR_USD", "Par EUR/USD"], ["X4_par_GBP_USD", "Par GBP/USD"], ["X4_par_USD_JPY", "Par USD/JPY"], ["X4_par_AUD_USD", "Par AUD/USD"],
+    ["X4_par_USD_CAD", "Par USD/CAD"], ["X4_par_USD_CHF", "Par USD/CHF"], ["X4_par_NZD_USD", "Par NZD/USD"], ["X4_par_EUR_JPY", "Par EUR/JPY"]
 ];
 const LB_EPOCAS = [
     { id: "pos", rotulo: "Depois do registro" },
@@ -123,7 +125,7 @@ function lbVariantesHTML(linhas, api) {
         const exp = l.pips / l.n;
         return `<tr>
             <td class="lb-v-nome">${v.nome}<small>${v.texto}</small></td>
-            <td class="pa-num-sans">${l.n}</td>
+            <td class="pa-num-sans">${l.n}${l.ab ? `<small class="lb-ab"> +${l.ab} abertos</small>` : ""}</td>
             <td class="pa-num-sans">${lbPct(ac)}</td>
             <td class="pa-num-sans ${exp > 0 ? "lb-pos" : exp < 0 ? "lb-neg" : ""}">${lbSinal(exp)}</td>
             <td class="pa-num-sans">${Math.round(l.dur / l.n)}min</td>

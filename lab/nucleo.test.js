@@ -65,9 +65,9 @@ t("REANALISE usa as análises posteriores do par (BAIXA contra uma compra)", () 
 });
 t("grupos H1-H5 + L1: score, ADX, candle, lado do dólar, perfil", () => {
   const e = { par: "EUR/USD", direcao: "SELL", score: 42, adx: 20, candlestick: false, perfil: "AGRESSIVO" };
-  assert.deepEqual(gruposDaEntrada(e), ["TODOS", "H1_score35a49", "H2_adx_ate29", "H3_sem_candle", "H4_dolar_comprado", "H5_agressivo", "L1_score40a44_adx25menos"]);
+  assert.deepEqual(gruposDaEntrada(e), ["TODOS", "H1_score35a49", "H2_adx_ate29", "H3_sem_candle", "H4_dolar_comprado", "H5_agressivo", "L1_score40a44_adx25menos", "X4_par_EUR_USD"]);
   const f = { par: "USD/JPY", direcao: "SELL", score: 52, adx: 35, candlestick: true, perfil: "BALANCEADO" };
-  assert.deepEqual(gruposDaEntrada(f), ["TODOS", "H1_score50mais", "H2_adx30mais", "H3_com_candle", "H4_dolar_vendido", "H5_balanceado"]);
+  assert.deepEqual(gruposDaEntrada(f), ["TODOS", "H1_score50mais", "H2_adx30mais", "H3_com_candle", "H4_dolar_vendido", "H5_balanceado", "X4_par_USD_JPY"]);
   assert.ok(gruposDaEntrada({ par: "EUR/JPY", direcao: "BUY", score: 20, adx: null }).includes("H4_dolar_cruzado"));
   assert.ok(!gruposDaEntrada({ par: "EUR/JPY", direcao: "BUY", score: 20, adx: null }).some(g => g.startsWith("H1_")), "score<35 fica só em TODOS");
 });

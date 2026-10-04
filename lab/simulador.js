@@ -164,6 +164,12 @@ function variantesPadrao(analise, { atrMultiplo = 3 } = {}) {
         // ATUAL_SEM_SPREAD = como o APP mede hoje (WIN/LOSS sem custo): a diferença para ATUAL é o que a
         // corretora cobra de spread; serve para comparar o Laboratório com o histórico do app.
         { id: "ATUAL_SEM_SPREAD", tpPips: tp, slPips: sl, opcoes: { spreadMult: 0 } },
+        // 04/10/2026 - "e se o alvo e o stop fossem maiores?" (custo fixo em pips pesa menos): mesma
+        // proporção TP/SL, tamanho x2 e x3. E "e se o custo fosse menor?": spread x0,5 (~ conta Ultra Low,
+        // valor NÃO conferido). Ver caderno 6.14.
+        { id: "ESCALA_2X", tpPips: tp * 2, slPips: sl * 2, opcoes: {} },
+        { id: "ESCALA_3X", tpPips: tp * 3, slPips: sl * 3, opcoes: {} },
+        { id: "ATUAL_SPREAD_0_5X", tpPips: tp, slPips: sl, opcoes: { spreadMult: 0.5 } },
         { id: "ATUAL_SPREAD_1_5X", tpPips: tp, slPips: sl, opcoes: { spreadMult: 1.5 } },
         { id: "ATUAL_SPREAD_2X",   tpPips: tp, slPips: sl, opcoes: { spreadMult: 2 } }
     ];

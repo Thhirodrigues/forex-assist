@@ -1069,3 +1069,4 @@ body.tema-aurora .bottom-nav{padding-left:6px;padding-right:6px;}
 body.tema-aurora .bn-lista{padding:3px;gap:0;border-radius:1.4rem;}
 body.tema-aurora .nav-btn{font-size:clamp(9px,2.55vw,10.5px);letter-spacing:-0.04em;padding-left:1px;padding-right:1px;}
 }
+body.tema-aurora .lb-ab{display:block;font-size:10px;color:var(--pa-muted);}

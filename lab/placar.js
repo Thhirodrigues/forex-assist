@@ -67,6 +67,9 @@ const VARIANTES = [
     { id: "INVERSO", nome: "Sinal invertido", texto: "mesma entrada, lado oposto (com TP = SL é o espelho do direto)" },
     { id: "ALEATORIO", nome: "Lado sorteado (acaso)", texto: "baseline: mesmos alvos e custo, direção no cara ou coroa" },
     { id: "ATUAL_SEM_SPREAD", nome: "Sinal sem spread (como o app mede)", texto: "a diferença para a primeira linha é o custo da corretora" },
+    { id: "ESCALA_2X", nome: "Alvo e stop 2x maiores", texto: "mesma proporção; o custo pesa metade" },
+    { id: "ESCALA_3X", nome: "Alvo e stop 3x maiores", texto: "mesma proporção; o custo pesa um terço" },
+    { id: "ATUAL_SPREAD_0_5X", nome: "Sinal com metade do spread", texto: "~ conta de spread baixo (valor não conferido)" },
     { id: "ATUAL_SPREAD_1_5X", nome: "Sinal com spread 1,5x", texto: "estresse de custo (notícia, virada de sessão)" },
     { id: "ATUAL_SPREAD_2X", nome: "Sinal com spread 2x", texto: "estresse de custo" }
 ];

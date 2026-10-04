@@ -30,6 +30,9 @@ const candles = [c(0, 1.1, 1.1004, 1.0996, 1.1), c(1, 1.1, 1.1030, 1.0999, 1.102
 const r = processarPar({ par: "EUR/USD", analises: [an("a", 0), an("b", 60, { score: 41, adx: 20 })], abertas: [], ultimoLab: null,
   candles: [...candles, ...Array.from({ length: 20 }, (_, i) => c(i + 3, 1.1, 1.1, 1.0996, 1.1)), c(23, 1.1, 1.1, 1.0970, 1.0980)], registradoEm: T0 - 1, agora: T0 + 900 * M });
 const refeito = contarEntradas(r.entradas, { tetos: [] });   // o incremental não deriva o teto (só a recontagem)
+// a recontagem também cria linhas só com casos ABERTOS (n = 0, ab > 0); o incremental não: compara só n > 0
+for (const k of Object.keys(refeito)) if (refeito[k].n === 0) delete refeito[k];
 assert.deepEqual(Object.keys(refeito).sort(), Object.keys(r.deltas).sort());
-for (const k of Object.keys(refeito)) assert.deepEqual(refeito[k], r.deltas[k], `contador ${k} difere`);
+// `ab` (casos ainda abertos) só existe na recontagem: o incremental não o conta
+for (const k of Object.keys(refeito)) { const { ab, ...resto } = refeito[k]; const { ab: _, ...inc } = r.deltas[k]; assert.deepEqual(resto, inc, `contador ${k} difere`); }
 console.log("TESTES DO PLACAR/RECONTAGEM PASSARAM");
