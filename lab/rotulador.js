@@ -18,6 +18,14 @@ const { mercadoForexAberto } = require("../scripts/horarioMercado");
 const chavePar = (par) => par.replace("/", "_");
 const dorme = (ms) => new Promise(r => setTimeout(r, ms));
 
+// Firestore que não responde (banco não criado, API desligada, credencial errada) pode
+// ficar tentando de novo por minutos sem erro nenhum: falhar alto, com nome, em 45 s.
+function comTimeout(promessa, rotulo, ms = 45000) {
+    let t;
+    const limite = new Promise((_, rej) => { t = setTimeout(() => rej(new Error(`TIMEOUT ${ms / 1000}s em: ${rotulo} (banco criado? API Firestore ativa? credencial do projeto certo?)`)), ms); });
+    return Promise.race([promessa, limite]).finally(() => clearTimeout(t));
+}
+
 function candlesNumericos(brutos, desde) {
     return brutos
         .map(c => ({
@@ -33,7 +41,7 @@ function candlesNumericos(brutos, desde) {
 async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), dry = false, esperar = dorme, log = console.log }) {
 
     const controleRef = lab.collection("controle").doc("rotulador");
-    const ctrlSnap = await controleRef.get();
+    const ctrlSnap = await comTimeout(controleRef.get(), "ler controle/rotulador no projeto LAB");
     const ctrl = ctrlSnap.exists ? ctrlSnap.data() : {};
 
     const registradoEm = ctrl.registradoEm || agora;
@@ -43,7 +51,7 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
 
     if (!ctrlSnap.exists) {
         log(`Primeira execução: registradoEm=${new Date(registradoEm).toISOString()} (análises anteriores = pré-registro)`);
-        if (!dry) await controleRef.set({ registradoEm, criadoEm: agora });
+        if (!dry) await comTimeout(controleRef.set({ registradoEm, criadoEm: agora }), "criar controle/rotulador no projeto LAB");
     }
 
     // ---- 1) análises novas (oficial, leitura) ----
@@ -51,9 +59,9 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
     // (a leitura recomeça do menor cursor, o resto é filtrado por par abaixo).
     const cursorGlobal = ctrl.cursorGlobal ?? (agora - backfillMs);
     const cursorMin = Math.min(cursorGlobal, ...Object.values(cursorPar));
-    const snap = await ofic.collection("analises")
+    const snap = await comTimeout(ofic.collection("analises")
         .where("timestamp", ">", cursorMin)
-        .orderBy("timestamp").limit(CFG.LIMITE_LEITURA).get();
+        .orderBy("timestamp").limit(CFG.LIMITE_LEITURA).get(), "ler analises no projeto OFICIAL");
 
     const analises = [];
     snap.forEach(d => analises.push({ id: d.id, ...d.data() }));
@@ -65,7 +73,7 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
     for (const a of analises) (porPar[a.par] = porPar[a.par] || []).push(a);
 
     // ---- 2) entradas do laboratório ainda abertas ----
-    const abertasSnap = await lab.collection("entradas").where("resolvida", "==", false).get();
+    const abertasSnap = await comTimeout(lab.collection("entradas").where("resolvida", "==", false).get(), "ler entradas abertas no projeto LAB");
     const abertasPorPar = {};
     abertasSnap.forEach(d => { const e = d.data(); (abertasPorPar[e.par] = abertasPorPar[e.par] || []).push(e); });
 
@@ -126,14 +134,14 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
                     if (r.ultimoLab) extra.ultimoLab[chavePar(par)] = r.ultimoLab;
                     lote.set(controleRef, extra, { merge: true });
                 }
-                await lote.commit();
+                await comTimeout(lote.commit(), `gravar lote de ${par} no projeto LAB`);
             }
             if (!docs.length) {
                 const lote = lab.batch();
                 const extra = { cursorPar: {} };
                 if (lidoAte) extra.cursorPar[chavePar(par)] = lidoAte;
                 lote.set(controleRef, extra, { merge: true });
-                await lote.commit();
+                await comTimeout(lote.commit(), `gravar cursor de ${par} no projeto LAB`);
             }
 
         } catch (e) {
