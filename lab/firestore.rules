@@ -9,6 +9,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+    // resultados agregados do replay histórico (só contadores; candles e entradas continuam bloqueados)
+    match /replay/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
     match /{document=**} {
       allow read, write: if false;
     }

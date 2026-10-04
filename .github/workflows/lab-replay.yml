@@ -1,0 +1,62 @@
+name: Laboratório - replay histórico do pipeline
+
+# Baixa candles de 5 min (KEY_3) e/ou roda o MESMO pipeline do scanner barra a barra sobre eles, rotula pelo
+# núcleo do laboratório e publica `replay/*` (só agregados) no projeto forex-assist-lab. Só leitura no projeto
+# oficial (1 leitura: configuracoes/geral). Não manda push, não toca no sinal.
+#  - modo `baixar`: gasta créditos TwelveData (~1 por 17 dias por par) e guarda os candles no projeto LAB.
+#  - modo `replay`: usa os candles guardados (0 crédito) - serve para repetir o replay.
+#  - modo `ambos`: os dois.
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'baixar | replay | ambos'
+        required: false
+        default: 'ambos'
+      dias:
+        description: 'dias de histórico (só no modo baixar/ambos; 180 = 11 páginas por par)'
+        required: false
+        default: '180'
+      split:
+        description: 'fração do período usada para EXPLORAR (resto = validação, não olhar antes de pré-registrar)'
+        required: false
+        default: '0.7'
+      passo:
+        description: 'avaliar a cada N candles de 5 min (3 = a cada 15 min)'
+        required: false
+        default: '3'
+
+concurrency:
+  group: lab-replay
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Keys
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - name: Testes do Laboratório
+        run: |
+          node lab/simulador.test.js
+          node lab/nucleo.test.js
+          node lab/placar.test.js
+          node lab/historico.test.js
+          node lab/replay.test.js
+          node lab/replay-run.test.js
+      - name: Replay
+        env:
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+          LAB_MODO: ${{ github.event.inputs.modo }}
+          LAB_DIAS: ${{ github.event.inputs.dias }}
+          LAB_SPLIT: ${{ github.event.inputs.split }}
+          LAB_PASSO: ${{ github.event.inputs.passo }}
+        run: node lab/replay-run.js
