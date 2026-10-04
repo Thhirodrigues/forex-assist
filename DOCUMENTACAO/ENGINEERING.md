@@ -13503,3 +13503,7 @@ lab/replay-run.js, workflows lab-historico-teste e lab-replay). Candles guardado
 projeto LAB (bloqueados ao navegador); agregados em `replay/*` (legíveis; regras publicadas). Só offline/leitura;
 nada do scanner/checker/decisão foi alterado. Protocolo pré-registrado em 6.15 do caderno.
 --------
+
+AJUSTE-082 (04/10/2026) - Laboratório: replay com soma dos quadrados (estatística t) e controle da deriva do dólar por
+época. Protocolo exploração/validação cumprido (caderno 6.16/6.17). Só `lab/`.
+--------

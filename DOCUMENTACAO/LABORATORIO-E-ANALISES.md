@@ -425,7 +425,7 @@ Divisão temporal: 70% iniciais = EXPLORAÇÃO (época `pre`), 30% finais = VALI
  5. Ressalva permanente: o replay não é o ao vivo (lista acima). Qualquer candidato precisa passar também na
     época `pos` do Laboratório AO VIVO (dados novos, mercado real) antes de virar mudança no oficial.
 
-### 6.16 Replay: resultado da EXPLORAÇÃO e candidatos REGISTRADOS antes de abrir a validação (04/10/2026, ~06:00 UTC)
+### 6.16 Replay: resultado da EXPLORAÇÃO e candidatos REGISTRADOS antes de abrir a validação (04/10/2026, 05:46 UTC, commit b59749d)
 Replay: 10 pares, 07/04 a 02/10 de 2026 (~179 dias), 38.016 barras avaliadas, 1.231 sinais aprovados (OFICIAL), 3.013
 entradas rotuladas. Exploração = 07/04 a 10/08 (OFICIAL n=827); validação = 10/08 a 02/10 (NÃO foi olhada até este registro;
 o carregamento descarta a época `pos`).
@@ -451,6 +451,25 @@ SUCESSO: C1/C2 "vale testar ao vivo" = na validação mesmo sinal (inverso > 0),
 n >= 300 e mesmo resultado nas DUAS épocas, mais aprovação do usuário. Com 2 candidatos o limiar de significância ajustado é
 t >= 2,24 (Bonferroni, 5%); abaixo disso fica como exploratório. Mesmo que passe, o inverso do app NÃO seria posto em
 produção sem teste AO VIVO na época `pos` do Laboratório (dados novos, mercado real).
+
+### 6.17 Replay: VALIDAÇÃO aberta uma vez (04/10/2026) - os achados da exploração NÃO se repetiram
+Validação = 10/08 a 02/10 (OFICIAL n=399). Aberta uma única vez, só para as perguntas/candidatos de 6.16.
+Q1 vantagem bruta do direto: acerto sem spread 51,4% (+-4,9), +1,25 pips/op, t=+0,69 -> NÃO há desvantagem bruta (na exploração
+eram 43,4%, t=-2,68): o "sinal contra o acaso" da exploração desapareceu. Q2 expectativa líquida do direto: -1,29 pips/op, t=-0,71
+(exploração -5,55). INVERSO: -3,53, t=-1,97 (exploração +0,15). Sorteado -2,81. Em AMBAS as épocas a expectativa líquida do
+direto é <= 0; o spread (~2,5 pips) é maior que qualquer vantagem bruta medida (+1,25 na validação, negativa na exploração).
+C1 (inverso quando o app vende dólar): REPROVADO - validação n=118, 46,6%, -1,56 pips/op, t=-0,55 (exploração +4,63, t=+2,71).
+C2 (inverso 12-21 UTC): sinal e tamanho mantidos (validação n=151, 51,7%, +3,67, t=+1,34; exploração +3,32, t=+1,88), mas NÃO atinge
+o critério registrado (t >= 2): fica EXPLORATÓRIO. Agrupar as duas épocas depois de olhar daria t~2,3, mas isso é contar duas
+vezes; só vale acompanhar AO VIVO no Laboratório (recorte X2 "Londres+NY" e "NY") até n >= 300 nos dados novos.
+Controle da deriva do dólar (comprar USD e segurar, pips médios por par): exploração -89 (2 de 7 pares positivos), validação +198
+(6 de 7). Os dois períodos têm regimes OPOSTOS do dólar, e o desempenho do sinal e dos recortes mudou junto: indício de que o que
+parecia padrão na exploração era do regime, não do sinal. Lição do processo: a regra de separar exploração e validação impediu
+que o t=+2,71 (C1, melhor de ~20 recortes) virasse "descoberta". Para decidir algo faltam MAIS regimes, não mais recortes.
+Conclusão honesta hoje: com o código e a configuração atuais não há evidência de vantagem lucrativa nem de filtro validado.
+Direção possível (a decidir): testar, no mesmo replay, FAMÍLIAS de sinal independentes do pipeline atual, pré-registradas e com
+parâmetros fixos (sem ajuste), para saber se EXISTE vantagem bruta > custo neste mercado/período; a literatura aponta que
+regras técnicas simples de câmbio perderam o lucro fora da amostra (Neely, Weller e Ulrich, 2009, JFQA).
 
 ## 7. Pendente do usuário
 
