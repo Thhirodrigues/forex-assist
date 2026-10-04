@@ -36,7 +36,10 @@ function montarPlacar(linhas, { tipo = "OFICIAL", epoca = "pos", variante = "ATU
             nA: A ? A.n : 0, nB: B ? B.n : 0, acertoA: pa, acertoB: pb, diferenca: dif,
             expA: A && A.n ? Number((A.pips / A.n).toFixed(2)) : null, expB: B && B.n ? Number((B.pips / B.n).toFixed(2)) : null,
             amostra: faixaAmostra(nMin),
-            sentidoDaHipotese: dif !== null && dif <= -10   // A acerta pelo menos 10 pontos a menos
+            // A acerta pelo menos 10 pontos a menos E há amostra (>=100 por grupo). Com menos que
+            // isso a diferença é ruído: mostrada, mas nunca marcada como "no sentido da hipótese".
+            sentidoDaHipotese: dif !== null && dif <= -10 && nMin >= 100,
+            diferencaGrandeMasAmostraPequena: dif !== null && dif <= -10 && nMin < 100
         };
     });
 }
@@ -45,7 +48,7 @@ function formatarPlacar(placar) {
     const f = (v) => (v === null ? "  - " : `${v.toFixed(0)}%`.padStart(4));
     return placar.map(p =>
         `${p.id} ${p.texto.padEnd(42)} A: n=${String(p.nA).padStart(3)} ${f(p.acertoA)} | B: n=${String(p.nB).padStart(3)} ${f(p.acertoB)} | ` +
-        `dif ${p.diferenca === null ? "  - " : (p.diferenca > 0 ? "+" : "") + p.diferenca.toFixed(0) + " pts"} | ${p.amostra}${p.sentidoDaHipotese ? " | no sentido da hipótese (>=10 pts)" : ""}`
+        `dif ${p.diferenca === null ? "  - " : (p.diferenca > 0 ? "+" : "") + p.diferenca.toFixed(0) + " pts"} | ${p.amostra}${p.sentidoDaHipotese ? " | NO SENTIDO DA HIPÓTESE (>=10 pts, n>=100)" : (p.diferencaGrandeMasAmostraPequena ? " | diferença grande, amostra pequena = ruído" : "")}`
     ).join("\n");
 }
 

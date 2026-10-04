@@ -7,7 +7,9 @@ const linha = (grupo, n, pos, pips = 0, extra = {}) => ({ tipo: "OFICIAL", epoca
 // H1: A (score>=50) 36% x B 52% -> -16 pts, n pequeno: "só triagem" mas no sentido da hipótese
 let p = montarPlacar([linha("H1_score50mais", 25, 9), linha("H1_score35a49", 25, 13), linha("TODOS", 50, 22)]);
 const h1 = p.find(x => x.id === "H1");
-assert.equal(h1.diferenca, -16); assert.equal(h1.sentidoDaHipotese, true); assert.equal(h1.amostra, "só triagem");
+assert.equal(h1.diferenca, -16); assert.equal(h1.sentidoDaHipotese, false, "n=25: ruído, não marca"); assert.equal(h1.diferencaGrandeMasAmostraPequena, true); assert.equal(h1.amostra, "só triagem");
+const h1grande = montarPlacar([linha("H1_score50mais", 120, 43), linha("H1_score35a49", 120, 62)]).find(x => x.id === "H1");
+assert.equal(h1grande.sentidoDaHipotese, true); assert.equal(h1grande.amostra, "indício");
 // sem dados: não inventa
 const h2 = p.find(x => x.id === "H2");
 assert.equal(h2.diferenca, null); assert.equal(h2.sentidoDaHipotese, false); assert.equal(h2.nA, 0);
