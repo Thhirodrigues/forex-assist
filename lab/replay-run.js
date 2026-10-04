@@ -20,29 +20,46 @@ const TAM_CHUNK = 8000;
 const LINHAS_POR_DOC = 1500;
 const chavePar = (par) => par.replace("/", "_");
 
-// ---- compactação: arrays planos de números (o Firestore não aceita array dentro de array) ----
+// ---- compactação em BINÁRIO (Float64): o Firestore indexa cada elemento de um array e recusa >40 mil entradas
+//      de índice por documento; um campo "bytes" vale 1 entrada e cabe até ~1 MB. ----
 function empacotar(candles) {
     const chunks = [];
     for (let i = 0; i < candles.length; i += TAM_CHUNK) {
         const parte = candles.slice(i, i + TAM_CHUNK);
-        const dados = [];
-        for (const c of parte) dados.push(c.ts, c.o, c.h, c.l, c.c);
-        chunks.push({ k: chunks.length, n: parte.length, ini: parte[0].ts, fim: parte[parte.length - 1].ts, dados });
+        const f = new Float64Array(parte.length * 5);
+        parte.forEach((c, j) => { f[j * 5] = c.ts; f[j * 5 + 1] = c.o; f[j * 5 + 2] = c.h; f[j * 5 + 3] = c.l; f[j * 5 + 4] = c.c; });
+        chunks.push({ k: chunks.length, n: parte.length, ini: parte[0].ts, fim: parte[parte.length - 1].ts, dados: Buffer.from(f.buffer) });
     }
     return chunks;
+}
+function numerosDe(dados) {
+    if (Array.isArray(dados)) return dados;   // formato antigo (array de números)
+    const b = Buffer.from(dados);
+    return new Float64Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength));
 }
 function desempacotar(chunks) {
     const out = [];
     for (const ch of [...chunks].sort((a, b) => a.k - b.k)) {
-        for (let i = 0; i < ch.dados.length; i += 5) out.push({ ts: ch.dados[i], o: ch.dados[i + 1], h: ch.dados[i + 2], l: ch.dados[i + 3], c: ch.dados[i + 4] });
+        const d = numerosDe(ch.dados);
+        for (let i = 0; i < d.length; i += 5) out.push({ ts: d[i], o: d[i + 1], h: d[i + 2], l: d[i + 3], c: d[i + 4] });
     }
     return out;
 }
 
 const sanos = (cs) => cs.filter(c => [c.o, c.h, c.l, c.c].every(Number.isFinite) && c.h >= c.l && mercadoForexAberto(c.ts));
 
-async function baixarETudo({ lab, pares, dias, chave, log = console.log, baixar = baixarHistorico }) {
+async function baixarETudo({ lab, pares, dias, chave, log = console.log, baixar = baixarHistorico, forcar = false }) {
     for (const par of pares) {
+        // já guardado e cobrindo o período? pula (0 crédito), a menos que LAB_REBAIXAR=1
+        if (!forcar) {
+            const existente = await lab.collection("candles").where("par", "==", par).get();
+            const cs = [];
+            existente.forEach(d => cs.push(d.data()));
+            if (cs.length) {
+                const ini = Math.min(...cs.map(c => c.ini)), fim = Math.max(...cs.map(c => c.fim));
+                if ((fim - ini) / 86400000 >= dias * 0.95) { log(`${par}: já guardado (${((fim - ini) / 86400000).toFixed(0)} dias); pulando o download`); continue; }
+            }
+        }
         const r = await baixar({ par, dias, chave, log });
         const candles = sanos(r.candles);
         log(`${par}: ${candles.length} candles em horário de mercado (parou: ${r.parou})`);
@@ -128,7 +145,7 @@ if (require.main === module) {
         console.log(`Config real: perfil=${config.perfil} lote=${config.lote} cooldown=${config.cooldown} candles=${config.candles}`);
 
         if (modo === "baixar" || modo === "ambos") {
-            await baixarETudo({ lab, pares, dias, chave: process.env.API_KEY_3 || process.env.API_KEY_1 });
+            await baixarETudo({ lab, pares, dias, chave: process.env.API_KEY_3 || process.env.API_KEY_1, forcar: process.env.LAB_REBAIXAR === "1" });
         }
         if (modo === "replay" || modo === "ambos") {
             const configuracao = { perfil: "balanceado", cooldown: 30, candles: 500, lote: 0.04, tp: 5, sl: 5, tipoConta: "SIMULADA", saldoInicial: 1000, ...config };

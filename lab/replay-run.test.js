@@ -6,9 +6,11 @@ const base = Date.UTC(2026, 8, 7, 0, 0, 0);   // segunda
 const cs = Array.from({ length: 8500 }, (_, i) => ({ ts: base + i * 300000, o: 1.1 + i * 1e-6, h: 1.1002 + i * 1e-6, l: 1.0998 + i * 1e-6, c: 1.1001 + i * 1e-6 }));
 const ch = empacotar(cs);
 assert.equal(ch.length, 2); assert.equal(ch[0].n, 8000); assert.equal(ch[1].n, 500);
-assert.ok(ch.every(c => c.dados.every(x => typeof x === "number")), "só números planos (sem array aninhado)");
+assert.ok(ch.every(c => Buffer.isBuffer(c.dados)), "binário: 1 entrada de índice, não 40 mil");
 assert.deepEqual(desempacotar([ch[1], ch[0]]), cs, "ordem dos pedaços não importa; nada se perde");
-assert.ok(ch[0].dados.length * 8 < 900 * 1024, "um pedaço cabe folgado em 1 MB");
+assert.ok(ch[0].dados.length < 900 * 1024, "um pedaço cabe folgado em 1 MB");
+// formato antigo (array de números) ainda é lido
+assert.deepEqual(desempacotar([{ k: 0, dados: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }]), [{ ts: 1, o: 2, h: 3, l: 4, c: 5 }, { ts: 6, o: 7, h: 8, l: 9, c: 10 }]);
 // candles fora do mercado ou quebrados saem
 const sab = Date.UTC(2026, 8, 12, 12, 0, 0);
 assert.equal(sanos([{ ts: sab, o: 1, h: 1, l: 1, c: 1 }, { ts: base + 36e5, o: 1, h: 1.1, l: 0.9, c: 1 }, { ts: base + 36e5, o: 1, h: 0.9, l: 1.1, c: 1 }]).length, 1);

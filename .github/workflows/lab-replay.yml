@@ -17,6 +17,10 @@ on:
         description: 'dias de histórico (só no modo baixar/ambos; 180 = 11 páginas por par)'
         required: false
         default: '180'
+      rebaixar:
+        description: '1 = baixar de novo mesmo os pares já guardados (gasta créditos); 0 = pula os já guardados'
+        required: false
+        default: '0'
       split:
         description: 'fração do período usada para EXPLORAR (resto = validação, não olhar antes de pré-registrar)'
         required: false
@@ -57,6 +61,7 @@ jobs:
           API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
           LAB_MODO: ${{ github.event.inputs.modo }}
           LAB_DIAS: ${{ github.event.inputs.dias }}
+          LAB_REBAIXAR: ${{ github.event.inputs.rebaixar }}
           LAB_SPLIT: ${{ github.event.inputs.split }}
           LAB_PASSO: ${{ github.event.inputs.passo }}
         run: node lab/replay-run.js
