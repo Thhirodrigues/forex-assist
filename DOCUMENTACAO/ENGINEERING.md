@@ -13481,3 +13481,8 @@ Nada do scanner/checker/decisão/sinal foi alterado (compatível com o congelame
   rolagem horizontal, dados/vazio/sem projeto, ruído x sentido da hipótese. Bug pego no teste:
   `const api` do placar.js colidia com outro script (agora em IIFE). Não verificado em celular real.
 --------
+
+AJUSTE-078 (04/10/2026) - Laboratório: variantes INVERSO, ATUAL_SPREAD_1_5X e ATUAL_SPREAD_2X
+(só `lab/`; só entradas novas; nada do sinal oficial). Pré-registro de endpoints primários e limiar
+de evidência no caderno (6.12). A aba passa a mostrar 12 saídas. Testes: 19 + 11 + demais.
+--------

@@ -330,6 +330,38 @@ Cron do rotulador LIGADO (de hora em hora, minuto 17).
    como Balanceado (Conservador reprova por score <55); histórico "RUIM" (-8) e expectativa
    -5,00 constantes (já anotados em 4b).
 
+### 6.12 Sinal invertido, prioridade por aprovação e controle de múltiplas comparações (04/10/2026)
+Pergunta do usuário: não seria o caso de testar sinais invertidos e dar prioridade às análises que
+"mais aprovam"? Resposta registrada (a discutir; nada mudou no sinal oficial):
+ - INVERSO (mesma entrada, mesmo TP/SL em pips, lado oposto) foi acrescentado ao Laboratório junto de
+   ATUAL_SPREAD_1_5X e ATUAL_SPREAD_2X (só para entradas novas a partir de 04/10). Atenção: com TP = SL
+   o inverso é o ESPELHO do direto (o que o direto ganha, o inverso perde; soma dos pips = 0 antes do
+   spread). Não é um segundo experimento: é a mesma medida lida ao contrário. Só traz informação
+   nova nas entradas com TP != SL (ex.: 7,5/5 US$) e cruzado com os grupos (score, ADX...).
+ - Conta que importa: com TP = SL = 25 pips e spread 1,8, o ponto de equilíbrio do direto é ~53,6%;
+   logo o INVERSO só dá lucro se o direto acertar MENOS que ~46,4%. Medido até aqui: 44% em ~265
+   operações (erro-padrão ~3 pontos; intervalo de 95% ~38% a 50%). Isso INCLUI 46,4% e 50%: não dá para
+   afirmar nem que o sistema perde para o acaso. Inverter por ter perdido na amostra é o desvio clássico
+   de sobreajuste (Bailey et al., 2014); só vale com hipótese de mecanismo (ex.: entrada por
+   tendência/alinhamento de EMAs em 5 min num mercado que reverte) e dados novos.
+ - Prioridade "por quem mais aprova": frequência de aprovação NÃO é qualidade. O perfil que mais aprova
+   (Balanceado, via cascata) é o de menor acerto medido (31% x 47% Agressivo, n pequeno). Ranquear sinais
+   simultâneos por score também não tem respaldo hoje (score >=50: 36% x 40-44: 52%, n pequeno).
+   Critério correto = expectativa por grupo com n >= 100 (as hipóteses H1-H5). Experimento de
+   priorização/um-sinal-por-lado-do-dólar fica para quando houver amostra (ver 4b e PENDENCIAS).
+PRÉ-REGISTRO (04/10/2026, antes de olhar números da época `pos`): para não inflar falso positivo com
+~12 variantes x ~8 grupos x 2 tipos x 2 épocas (centenas de comparações), só estes são ENDPOINTS
+PRIMÁRIOS: (P1) expectativa líquida em pips/op da saída ATUAL, OFICIAL, época pos; (P2) idem do
+INVERSO; (P3) H1-H5 no OFICIAL, época pos. Todo o resto é EXPLORATÓRIO (vale para gerar hipótese,
+não para decidir). Evidência mínima para propor qualquer mudança: >= 300 casos fechados na época `pos`
+no grupo E estatística t >= 3 da expectativa (Harvey, Liu e Zhu, 2016, sugerem t > 3 contra
+comparações múltiplas) E aprovação do usuário. Antes disso: só triagem.
+Dúvidas levantadas x onde estão: E2 saídas alternativas = pronto; E3 atraso = pronto; spread 1,25-2x =
+pronto (1,5x e 2x); E1 baseline aleatório = o direto e o inverso juntos o cobrem (média dos dois =
+acaso com custo) para TP = SL; H1-H5 = prontos, esperando amostra; score invertido/ADX veto = H1/H2;
+H6 SMC = inviável por amostra; lote antes/depois de 01/10 = separar na leitura; RSI sem veto, teto de
+exposição por lado do dólar = precisam de fluxo próprio no Laboratório (próximo passo).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
