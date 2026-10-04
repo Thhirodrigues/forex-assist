@@ -388,6 +388,22 @@ operação (de -1,61 para -3,65 pips/op). Ou seja: o acerto que o app mostra sup
 Mesmo sem spread o sinal fica em -1,61 pips/op (43% < 50% com alvo = stop), mas 43% +-7,9 inclui 50%.
 TP_CURTO: acerto 50% mas -3,23 pips/op (acerto alto não é lucro).
 
+### 6.14 "E se o alvo/stop fossem maiores? E o custo menor?" (04/10/2026, mesmas 8 dias, exploratório)
+OFICIAL (n~151; "+N abertos" = casos ainda sem desfecho, viés de sobrevivência nas barreiras grandes):
+ sem spread (como o app mede) 43,0% / -1,61 pips/op | metade do spread 38,4% / -2,59 | spread da tabela 35,1% /
+ -3,65 | alvo e stop 2x: 42,0% / -5,38 (14 abertos, duração média 8 h) | 3x: 42,9% / -9,10 (31 abertos, 17 h).
+Leitura: com direção sem vantagem, aumentar a barreira NÃO ajuda em pips: o resultado bruto negativo
+(-1,61 pips/op = -0,064 R por operação; acerto 43% em vez de 50%) cresce junto com a barreira. Em R
+(risco) o custo relativo cai (-0,146 R -> -0,108 R no 2x), mas continua negativo. Para ficar positivo
+precisa de VANTAGEM BRUTA (acerto >= ~53,6% com alvo = stop e spread 1,8), não só de custo menor: nem
+com metade do spread fecha. Quem diz se existe vantagem é a direção do sinal, e com ~150 casos o acerto
+bruto de 43% tem margem +-7,9 (inclui 50%). Por par (n=11 a 35, só olhar): EUR/USD 45,7% e USD/CAD 45,5%
+são os melhores; EUR/JPY 18,2% e GBP/USD 28,6% os piores; com 8 pares algum sempre parece bom por acaso.
+Próximo passo proposto (aguardando OK do usuário): REPLAY HISTÓRICO do pipeline real sobre candles de
+5/15 min de ~100 dias (TwelveData, `end_date`, ~66 créditos uma vez; profundidade do plano grátis A TESTAR)
+para obter milhares de sinais virtuais em vez de ~150, com separação temporal (explorar nos primeiros
+~70 dias, validar nos últimos ~30) e hipóteses pré-registradas antes. Só leitura; nada do oficial.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher

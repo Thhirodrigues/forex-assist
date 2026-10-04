@@ -13493,3 +13493,7 @@ sessão, lote), teto de exposição (OFICIAL_TETO1/2, só na recontagem diária 
 espelho (`lab-diagnostico.yml`). Aba com tipos de teto e tabela por recorte (direto x invertido). Só `lab/`,
 `js/laboratorio.js` e workflows `lab-*`; nada do sinal oficial. Resultados do 1º olhar para trás: caderno 6.13.
 --------
+
+AJUSTE-080 (04/10/2026) - Laboratório: variantes ESCALA_2X/3X e ATUAL_SPREAD_0_5X, recorte por par (X4),
+contador de casos ABERTOS (`ab`, só na recontagem). Só `lab/`/`js/laboratorio.js`. Resultado em 6.14.
+--------
