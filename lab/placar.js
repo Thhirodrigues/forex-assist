@@ -7,6 +7,8 @@
 // Faixas de amostra (caderno 6.7): < 100 por grupo = "só triagem"; >= 300 = "teste".
 // ===================================================
 
+(function () {
+
 const HIPOTESES = [
     { id: "H1", texto: "score >=50 acerta MENOS que 35-49", a: "H1_score50mais", b: "H1_score35a49" },
     { id: "H2", texto: "ADX >=30 acerta MENOS que <30", a: "H2_adx30mais", b: "H2_adx_ate29" },
@@ -52,4 +54,22 @@ function formatarPlacar(placar) {
     ).join("\n");
 }
 
-module.exports = { HIPOTESES, montarPlacar, formatarPlacar, faixaAmostra };
+const VARIANTES = [
+    { id: "ATUAL", nome: "Saída do sinal (referência)", texto: "TP e SL do próprio sinal" },
+    { id: "RR_1_2", nome: "Alvo dobrado (1:2)", texto: "TP = 2x o stop" },
+    { id: "TP_CURTO", nome: "Alvo curto (1:0,5)", texto: "TP = metade do stop: acerta mais, ganha menos" },
+    { id: "BE_METADE", nome: "Zero a zero na metade", texto: "andou metade do alvo, stop vai para a entrada" },
+    { id: "ENTRADA_MAIS_5", nome: "Entrando 5 min depois", texto: "quanto custa o atraso" },
+    { id: "ENTRADA_MAIS_10", nome: "Entrando 10 min depois", texto: "quanto custa o atraso" },
+    { id: "REANALISE", nome: "Sair se a análise virar", texto: "fecha quando a análise seguinte aponta o lado contrário" },
+    { id: "ATR_3X", nome: "Barreira de 3x ATR", texto: "alvo e stop curtos (2-15 pips)" },
+    { id: "ATR_6X", nome: "Barreira de 6x ATR", texto: "do tamanho do alvo real do sistema" }
+];
+
+const api = { HIPOTESES, VARIANTES, montarPlacar, formatarPlacar, faixaAmostra };
+
+// Node (rotulador, testes) e navegador (aba Laboratório do app) usam o MESMO arquivo.
+if (typeof module !== "undefined" && module.exports) module.exports = api;
+else if (typeof window !== "undefined") window.labPlacar = api;
+
+})();

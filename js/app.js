@@ -5,7 +5,8 @@ const TITULOS_ABA = {
     historico: "Histórico",
     resultados: "Resultados",
     config: "Config",
-    manual: "Manual"
+    manual: "Manual",
+    laboratorio: "Laboratório"
 };
 
 // Linha de apoio sob o título nas telas secundárias (padrão do projeto:
@@ -15,7 +16,8 @@ const SUBTITULOS_ABA = {
     historico: "Sinais e operações, dia a dia",
     resultados: "Desempenho da conta",
     config: "Preferências do assistente",
-    manual: "Real Money Intelligence"
+    manual: "Real Money Intelligence",
+    laboratorio: "Testes em paralelo, fora do sinal oficial"
 };
 
 const app = {
@@ -96,6 +98,11 @@ localStorage.getItem("ultimaAba")
                 content = manualView();
                 break;
 
+            // AJUSTE-077 (04/10/2026): placar do Laboratório (só leitura). Ver js/laboratorio.js.
+            case "laboratorio":
+                content = laboratorioView();
+                break;
+
             case "config":
                 content = configView();
                 break;
@@ -128,7 +135,8 @@ ${[
     ["historico", "Histórico",  "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2"],
     ["resultados","Resultados", "M5 20V11M12 20V4M19 20v-6"],
     ["config",    "Config",     "M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4"],
-    ["manual",    "Manual",     "M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h10"]
+    ["manual",    "Manual",     "M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h10"],
+    ["laboratorio", "Lab",      "M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3M8 15h8"]
 ].map(([id, rotulo, icone]) => `
             <button class="nav-btn ${this.currentTab===id?"nav-active":""}" data-tab="${id}" aria-label="${rotulo}"${this.currentTab===id?' aria-current="page"':""}>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icone}"/></svg>
@@ -190,6 +198,18 @@ ${[
 
         if (typeof carregarResultados === "function") {
             carregarResultados();
+        }
+
+    }, 100);
+
+        }
+
+        if (this.currentTab === "laboratorio") {
+
+    setTimeout(() => {
+
+        if (typeof carregarLaboratorio === "function") {
+            carregarLaboratorio();
         }
 
     }, 100);

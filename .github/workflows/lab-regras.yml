@@ -1,0 +1,20 @@
+name: Laboratório - publicar regras do Firestore
+
+# Publica lab/firestore.rules SOMENTE no projeto forex-assist-lab (placar/atual legível pelo app;
+# o resto bloqueado). Rodar de novo só se o arquivo de regras mudar.
+on:
+  workflow_dispatch:
+
+jobs:
+  regras:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Key (só o laboratório)
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - run: node lab/publicar-regras.js

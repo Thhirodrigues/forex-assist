@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// Projeto forex-assist-lab. A aba Laboratório do app lê UM documento agregado (placar/atual:
+// só contadores, nada por operação). Tudo o mais é bloqueado para o navegador; o rotulador
+// grava com credencial de administrador, que ignora estas regras.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /placar/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1026,3 +1026,46 @@ box-shadow:0 0 0 2px oklch(1 0 0 / 22%), 0 0 9px var(--hs-dot-cor);
 .hs-dot--azul{--hs-dot-cor:oklch(0.66 0.24 255);}
 .hs-dot--ambar{--hs-dot-cor:oklch(0.9 0.2 95);}
 .hs-dot--neutro{--hs-dot-cor:oklch(0.7 0 0);}
+
+/* ===================================================
+   LABORATÓRIO (AJUSTE-077) - aba de leitura do placar; js/laboratorio.js
+   =================================================== */
+body.tema-aurora .lb-cartao{margin-bottom:14px;}
+body.tema-aurora .lb-chips{margin-top:10px;flex-wrap:wrap;}
+body.tema-aurora .lb-ajuda{margin:8px 0 0;font-size:13px;line-height:1.45;color:var(--pa-muted);}
+body.tema-aurora .lb-vazio{margin:8px 0 0;font-size:13px;color:var(--pa-muted);}
+body.tema-aurora .lb-alerta{margin:12px 0 0;padding:10px 12px;border-radius:14px;font-size:13px;line-height:1.45;background:oklch(0.88 0.12 92 / 12%);border:1px solid oklch(0.88 0.12 92 / 30%);color:var(--pa-fg);}
+body.tema-aurora .lb-hip{margin-top:14px;padding-top:14px;border-top:1px solid var(--pa-fio);}
+body.tema-aurora .lb-hip header{font-size:14px;line-height:1.35;}
+body.tema-aurora .lb-hip header span{color:var(--pa-muted);}
+body.tema-aurora .lb-par{display:grid;grid-template-columns:92px minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:8px;font-size:13px;}
+body.tema-aurora .lb-par-rot{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+body.tema-aurora .lb-par-num{text-align:right;white-space:nowrap;}
+body.tema-aurora .lb-par-num small{color:var(--pa-muted);font-size:11px;margin-left:2px;}
+body.tema-aurora .lb-barra{display:block;height:8px;border-radius:999px;background:var(--pa-fio);overflow:hidden;}
+body.tema-aurora .lb-barra i{display:block;height:100%;border-radius:999px;}
+body.tema-aurora .lb-dif{margin:10px 0 0;font-size:13px;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;}
+body.tema-aurora .lb-selo{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid var(--pa-borda);color:var(--pa-muted);}
+body.tema-aurora .lb-selo--sim{color:var(--pa-ganho);border-color:var(--pa-ganho);}
+body.tema-aurora .lb-selo--ruido{color:var(--pa-espera);border-color:oklch(0.88 0.12 92 / 45%);}
+body.tema-aurora .lb-tabela-wrap{margin-top:10px;overflow-x:auto;}
+body.tema-aurora .lb-tabela{width:100%;border-collapse:collapse;font-size:13px;}
+body.tema-aurora .lb-tabela th{padding:6px 4px 8px;text-align:right;font-size:11px;font-weight:600;color:var(--pa-muted);white-space:nowrap;}
+body.tema-aurora .lb-tabela th:first-child{text-align:left;}
+body.tema-aurora .lb-tabela td{padding:9px 4px;text-align:right;border-top:1px solid var(--pa-fio);white-space:nowrap;}
+body.tema-aurora .lb-tabela td.lb-v-nome{text-align:left;white-space:normal;min-width:104px;}
+body.tema-aurora .lb-v-nome small{display:block;margin-top:2px;font-size:11px;line-height:1.3;color:var(--pa-muted);}
+body.tema-aurora .lb-v-vazio{color:var(--pa-muted);text-align:right;}
+body.tema-aurora .lb-pos{color:var(--pa-ganho);}
+body.tema-aurora .lb-neg{color:var(--pa-perda);}
+body.tema-aurora .lb-notas{margin:10px 0 0;padding-left:18px;font-size:13px;line-height:1.5;color:var(--pa-muted);}
+body.tema-aurora .lb-notas li{margin-top:6px;}
+body.tema-aurora .lb-notas b{color:var(--pa-fg);}
+/* 6 botões na barra de baixo: sem folga lateral sobrando e rótulo proporcional à largura da tela
+   (medido: "Resultados" é o mais largo; a fonte do site é a Inter, ~5% mais larga que a Arial). */
+body.tema-aurora .nav-btn{font-size:11px;letter-spacing:-0.035em;padding-left:2px;padding-right:2px;}
+@media (max-width:430px){
+body.tema-aurora .bottom-nav{padding-left:6px;padding-right:6px;}
+body.tema-aurora .bn-lista{padding:3px;gap:0;border-radius:1.4rem;}
+body.tema-aurora .nav-btn{font-size:clamp(9px,2.55vw,10.5px);letter-spacing:-0.04em;padding-left:1px;padding-right:1px;}
+}

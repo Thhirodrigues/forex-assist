@@ -40,7 +40,8 @@ if (require.main === module) {
         const lab = admin.initializeApp({ credential: admin.credential.cert(require("../serviceAccountLab.json")) }, "lab").firestore();
         lab.settings({ ignoreUndefinedProperties: true });
         await recontar({ lab });
-        const { imprimirResumo } = require("./rotulador");
-        await imprimirResumo(lab);
+        const { imprimirResumo, publicarPlacar } = require("./rotulador");
+        const linhas = await imprimirResumo(lab);
+        await publicarPlacar(lab, linhas);
     })().catch(e => { console.error("ERRO FATAL:", e); process.exit(1); });
 }

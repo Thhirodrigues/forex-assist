@@ -1,6 +1,6 @@
 // Teste de fumaça do rotulador com um Firestore falso em memória (sem rede, sem credencial).
 const assert = require("assert");
-const { executar } = require("./rotulador");
+const { executar, imprimirResumo, publicarPlacar } = require("./rotulador");
 
 function criarFake(dadosIniciais = {}) {
     const cols = JSON.parse(JSON.stringify(dadosIniciais));
@@ -69,6 +69,14 @@ const candles = (n, alvoNo) => Array.from({ length: n }, (_, i) => ({ datetime: 
     // 2ª execução idêntica: nada novo, contadores NÃO dobram
     await executar(args);
     assert.equal(JSON.stringify(lab.cols.resumo), antes, "reexecução não pode contar duas vezes");
+
+    // publicação do placar: UM documento com todos os contadores (a aba do app lê só ele)
+    const linhasPublicadas = await imprimirResumo(lab, () => {});
+    const pub = await publicarPlacar(lab, linhasPublicadas, T0);
+    const doc = lab.cols.placar.atual;
+    assert.equal(doc.geradoEm, T0); assert.ok(doc.registradoEm); assert.equal(doc.linhas.length, pub.linhas);
+    assert.ok(doc.linhas.length > 0 && doc.linhas.every(l => l.grupo && Number.isFinite(l.n)));
+    assert.ok(doc.linhas.find(l => l.tipo === "OFICIAL" && l.variante === "ATUAL" && l.grupo === "TODOS" && l.n === 1));
 
     // par que falha: cursor segura e outras análises não se perdem
     const ofic2 = criarFake({ analises: { z1: an("z1", "EUR/USD", 0), z2: an("z2", "GBP/USD", 0) } });

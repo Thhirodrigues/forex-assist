@@ -13464,3 +13464,20 @@ cruza entradas OFICIAL do lab com `historico` real (14/15 iguais; ver caderno 6.
 a partir de `entradas` quando uma definição de grupo mudar. Cron do rotulador: de hora em hora
 (minuto 17), ligado após a validação.
 --------
+
+AJUSTE-077 (04/10/2026) - Aba "Laboratório" (frontend só de leitura) + publicação do placar.
+Nada do scanner/checker/decisão/sinal foi alterado (compatível com o congelamento).
+- `lab/rotulador.js` agora publica UM documento agregado `placar/atual` no projeto forex-assist-lab
+  (`publicarPlacar`; `recontar.js` também). A aba lê só ele (1 leitura por abertura).
+- `lab/firestore.rules` + `lab/publicar-regras.js` + workflow `lab-regras.yml`: só `placar/*` é
+  legível pelo navegador; o resto bloqueado (rotulador usa credencial de administrador).
+  Os documentos `placar/atual` são só contadores agregados, sem dado por operação.
+- `js/firebase-config-lab.js` (config web PÚBLICA do projeto lab; falhar nunca derruba o app),
+  `js/laboratorio.js` (aba: recorte tipo x época, hipóteses H1-H5 em barras A x B com faixa de amostra
+  e selo "no sentido da hipótese" só com >=10 pontos e n>=100, tabela das 9 saídas, "como ler"),
+  `lab/placar.js` (UMD, mesma lógica do rotulador), CSS `.lb-*` em css/painel.css, 6º botão "Lab" na
+  barra de baixo (rótulo proporcional à largura da tela, medido: não corta "Resultados"), seção
+  "Laboratório" no Manual. Teste Playwright com Firestore falso: 6 botões sem corte em 360/390 px, sem
+  rolagem horizontal, dados/vazio/sem projeto, ruído x sentido da hipótese. Bug pego no teste:
+  `const api` do placar.js colidia com outro script (agora em IIFE). Não verificado em celular real.
+--------

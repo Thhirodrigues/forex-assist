@@ -177,9 +177,24 @@ async function imprimirResumo(lab, log = console.log) {
             log(formatarPlacar(montarPlacar(linhas, { tipo, epoca })));
         }
     }
+    return linhas;
 }
 
-module.exports = { executar, imprimirResumo, candlesNumericos };
+// Publica UM documento (`placar/atual`) com todos os contadores: a aba Laboratório do app lê só
+// ele (1 leitura por abertura, em vez de varrer `resumo`). Só números agregados, nada por operação.
+async function publicarPlacar(lab, linhas, agora = Date.now()) {
+    const ctrl = await comTimeout(lab.collection("controle").doc("rotulador").get(), "ler controle/rotulador");
+    const registradoEm = ctrl.exists ? ctrl.data().registradoEm || null : null;
+    const limpas = linhas.map(l => ({
+        tipo: l.tipo, variante: l.variante, epoca: l.epoca, grupo: l.grupo || "TODOS",
+        n: l.n || 0, pos: l.pos || 0, neg: l.neg || 0, zero: l.zero || 0,
+        pips: Number((l.pips || 0).toFixed(2)), dur: l.dur || 0, amb: l.amb || 0
+    }));
+    await comTimeout(lab.collection("placar").doc("atual").set({ geradoEm: agora, registradoEm, linhas: limpas }), "gravar placar/atual");
+    return { linhas: limpas.length };
+}
+
+module.exports = { executar, imprimirResumo, publicarPlacar, candlesNumericos };
 
 if (require.main === module) {
     (async () => {
@@ -196,7 +211,7 @@ if (require.main === module) {
         }
         console.log(`Rotulador do Laboratório${dry ? " (DRY: não grava nada)" : ""}`);
         const { falhas } = await executar({ ofic, lab, getCandles, increment: admin.firestore.FieldValue.increment, dry });
-        if (!dry) await imprimirResumo(lab);
+        if (!dry) { const linhas = await imprimirResumo(lab); await publicarPlacar(lab, linhas); console.log("Placar publicado em placar/atual."); }
         if (falhas) { console.log(`\n${falhas} par(es) com ERRO - ver acima.`); process.exitCode = 1; }
     })().catch(e => { console.error("ERRO FATAL:", e); process.exit(1); });
 }

@@ -183,6 +183,7 @@ function manualView() {
     ${secaoEstruturaMercado()}
     ${secaoPsicologia()}
     ${secaoNotificacoes()}
+    ${secaoLaboratorio()}
   `;
 }
 
@@ -1086,6 +1087,44 @@ function secaoNotificacoes() {
         esperar um lote.
       </p>
     </div>
+    </div>
+  `;
+}
+
+// ======================================================
+// LABORATÓRIO (AJUSTE-077, 04/10/2026)
+// ======================================================
+
+function secaoLaboratorio() {
+  return `
+    <div class="card">
+      <h2>🧪 Laboratório</h2>
+      <p>
+        Aba de testes que roda <strong>em paralelo</strong> ao sinal
+        oficial, num projeto separado. Ela <strong>não gera sinal, não
+        manda aviso e não altera o RMI</strong>: só mostra o que teria
+        acontecido se a saída fosse outra (alvo maior ou menor, zero a zero,
+        entrar mais tarde, sair quando a análise vira) e se as hipóteses
+        anotadas se confirmam.
+      </p>
+      <h3>Como ler</h3>
+      <p>
+        <strong>Acerto</strong> é ganhos dividido pelos casos; zero a zero
+        não conta como ganho. <strong>Pips/op</strong> é o ganho médio por
+        operação já descontado o spread da conta Standard: o que decide se
+        uma saída vale a pena não é só acertar mais, é sobrar no fim.
+        Se o preço toca alvo e stop no mesmo candle de 5 minutos, conta como
+        perda (melhor errar contra do que inventar um ganho).
+      </p>
+      <h3>Cuidados</h3>
+      <p>
+        Abaixo de 100 casos por grupo é só triagem; para separar 55% de 44%
+        são cerca de 300 por grupo. A parte "Antes do registro" são os dados
+        que originaram as hipóteses e não valem como prova. O scanner não
+        analisa par com operação aberta, então "Todas as análises" não é o
+        mercado inteiro. Mudança no sinal oficial só depois das 100
+        operações do congelamento e com aprovação.
+      </p>
     </div>
   `;
 }
