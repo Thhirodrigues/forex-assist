@@ -145,7 +145,7 @@ function atualizarVariantes(e, candles, agora) {
         }
         const r = simularOperacao({
             par: e.par, direcao: e.direcao, tEntrada: e.t, precoEntrada: e.precoEntrada,
-            tpPips: v.cfg.tpPips, slPips: v.cfg.slPips, spreadPips: e.spreadPips * (opcoes.spreadMult || 1),
+            tpPips: v.cfg.tpPips, slPips: v.cfg.slPips, spreadPips: e.spreadPips * (opcoes.spreadMult ?? 1),
             candles: candlesDaEntrada, opcoes
         });
         if (r.resultado === "ABERTA") {

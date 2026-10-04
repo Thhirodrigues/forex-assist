@@ -161,6 +161,9 @@ function variantesPadrao(analise, { atrMultiplo = 3 } = {}) {
         // ALEATORIO = baseline (E1): mesma entrada, mesmos TP/SL, direção sorteada de forma
         // determinística pelo id da entrada (reprodutível). Mostra o que o ACASO faria com o mesmo custo.
         { id: "ALEATORIO", tpPips: tp,      slPips: sl, opcoes: { aleatorio: true } },
+        // ATUAL_SEM_SPREAD = como o APP mede hoje (WIN/LOSS sem custo): a diferença para ATUAL é o que a
+        // corretora cobra de spread; serve para comparar o Laboratório com o histórico do app.
+        { id: "ATUAL_SEM_SPREAD", tpPips: tp, slPips: sl, opcoes: { spreadMult: 0 } },
         { id: "ATUAL_SPREAD_1_5X", tpPips: tp, slPips: sl, opcoes: { spreadMult: 1.5 } },
         { id: "ATUAL_SPREAD_2X",   tpPips: tp, slPips: sl, opcoes: { spreadMult: 2 } }
     ];

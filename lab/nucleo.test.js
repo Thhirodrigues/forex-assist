@@ -118,4 +118,9 @@ t("contarEntradas inclui os tipos com teto (OFICIAL_TETO1/2) além do base", () 
   assert.equal(d["OFICIAL_TETO1__ATUAL__pos__TODOS"].n, 1, "a 2ª entra com a 1ª ainda aberta no mesmo lado: barrada");
   assert.equal(d["OFICIAL_TETO2__ATUAL__pos__TODOS"].n, 2);
 });
+t("sem spread: o candle que só bate 25 pips exatos dá WIN sem spread e fica ABERTA com spread", () => {
+  const candles = [flat(0), c(1, 1.1, 1.1025, 1.0999, 1.1020)];
+  const v = processarPar({ ...base, candles, analises: [an("a", 0)] }).entradas.find(x => x.id === "LAB_a").variantes;
+  assert.equal(v.ATUAL_SEM_SPREAD.r, "WIN"); assert.equal(v.ATUAL.r, "ABERTA");
+});
 console.log(`TODOS OS ${n} TESTES PASSARAM`);
