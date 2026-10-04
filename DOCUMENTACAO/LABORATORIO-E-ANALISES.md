@@ -535,6 +535,37 @@ tamanho de alvo ou filtro de sessão fecha no positivo. O que ficou NÃO provado
 não deixam "padrões" frágeis virarem decisão (C1 do pipeline, C2, F1: todos caíram na replicação ou no controle).
 Estado do Laboratório AO VIVO: rotulador de hora em hora e recontagem diária continuam; a época `pos` ao vivo começa na reabertura (dom 21:00 UTC).
 
+### 6.21 HORIZONTE DIÁRIO (projeto novo) - PROTOCOLO PRÉ-REGISTRADO (autorizado pelo usuário em 04/10/2026; escrito ANTES de baixar/rodar)
+Decisões do usuário: (1) "constância" = SEMANAS/MESES POSITIVOS (não acerto por operação); (2) baixar candles DIÁRIOS e registrar o protocolo; (3) tentar
+risco menor por operação - vale para o PROJETO NOVO (o scanner oficial segue congelado, inclusive o lote). Regra de risco do projeto novo: no máximo 1% da
+banca em risco por operação (stop = 2 x ATR(14) diário; tamanho = 1% / distância do stop).
+Por quê: o custo fixo (~2 pips) pesa ~8% de um alvo de 25 pips mas ~1,5% de um movimento diário; a literatura relevante (momentum/tendência em câmbio:
+Moskowitz-Ooi-Pedersen 2012; Menkhoff et al. 2012; Hsu-Taylor-Wang 2016, evidência MISTA) é de horizonte diário a mensal; sinal 1x/dia após o fechamento de NY
+tolera atraso humano. Dados: TwelveData `1day`, outputsize 5000 (~19 anos), 10 pares, `timezone=UTC` (limitação: o "dia" da TwelveData corta em 00:00 UTC, não no
+fechamento de NY). Janela de aquecimento: primeiros 260 candles fora da avaliação. Rebalanceamento: último dia útil de cada mês (exceto D5, diário).
+FAMÍLIAS (parâmetros FIXOS, de convenção; nada será ajustado depois de ver resultado; família nova = novo registro):
+ D1 Momentum de série temporal 12 meses: sinal por par = sinal do retorno dos últimos 252 dias; compra se > 0, vende se < 0.
+ D2 Momentum de série temporal 3 meses: idem com 63 dias.
+ D3 Momentum entre moedas (cortes transversais, só os 7 pares com USD): força da moeda contra o USD nos últimos 63 dias (par com USD na cotação: retorno do par;
+    par com USD na base: retorno invertido); compra as 2 moedas mais fortes e vende as 2 mais fracas contra o USD.
+ D4 Dólar como fator único: índice do dólar = média dos retornos log (sinal ajustado) dos 7 pares com USD; sinal = sinal da variação do índice em 126 dias;
+    posição única "dólar sobe/desce" aplicada igualmente aos 7 pares.
+ D5 Rompimento de Donchian 55/20 (diário, por par): compra se fechar acima da máxima dos 55 dias anteriores, vende abaixo da mínima; sai da compra abaixo da
+    mínima de 20 dias, da venda acima da máxima de 20 dias.
+ CONTROLE: 500 sorteios de posição aleatória (sinal sorteado por par a cada mês) com a MESMA máquina de pesos/custos: distribuição nula do Sharpe.
+Carteira: peso por par = sinal x (10% a.a. / (volatilidade EWMA de 60 dias do par x raiz de 252)) / N de pares da família, teto de alavancagem 3x (a priori, sem olhar
+adiante). Retorno do dia seguinte ao sinal (sem atraso); robustez com atraso de 1 dia. Custo: spread da tabela Standard x |mudança de posição| em fração do preço;
+estresse de 2x o spread. SWAP/rolagem NÃO modelado (dado indisponível): ressalva permanente, sensibilidade de -0,5 pip/dia por unidade de posição.
+Medidas: Sharpe líquido, % de meses e de semanas positivos, pior drawdown, retorno por ano; intervalo de confiança por bootstrap em BLOCOS mensais (3.000 sorteios).
+CRITÉRIOS (por família; todas reportadas, inclusive as reprovadas):
+ A1 Sharpe líquido > 0, limite inferior do IC de 95% (bootstrap mensal) > 0 E Sharpe >= percentil 99 da distribuição nula (Bonferroni para 5 famílias).
+ A2 Sharpe líquido > 0 na primeira E na segunda metade da amostra e em >= 3 de 4 blocos iguais.
+ A3 Sharpe líquido > 0 também com atraso de 1 dia e com spread 2x.
+ A4 (uso no app) >= 55% dos meses positivos e drawdown máximo <= 25% no alvo de 10% a.a.
+ "Vantagem demonstrada" = A1+A2+A3. "Utilizável" = A1+A2+A3+A4. Resto = sem evidência (e se algo parecer bom só em um critério, é ruído).
+Ressalvas declaradas: horário de corte do dia, swap ausente, sem stops (a regra de 1% de risco por operação é fase seguinte, só se houver vantagem), regimes
+(2008, 2015, 2020, 2022 estão na amostra: é de propósito).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
