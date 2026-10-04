@@ -12,8 +12,13 @@ function criarFake(dadosIniciais = {}) {
             else alvo[k] = v;
         }
     };
+    // o Firestore real recusa array dentro de array (e valor undefined): o falso também
+    const validar = (v, caminho = "") => {
+        if (Array.isArray(v)) v.forEach((x, i) => { if (Array.isArray(x)) throw new Error(`3 INVALID_ARGUMENT: Nested arrays are not allowed (${caminho}[${i}])`); validar(x, `${caminho}[${i}]`); });
+        else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) { if (x === undefined) throw new Error(`undefined em ${caminho}.${k}`); validar(x, `${caminho}.${k}`); }
+    };
     const ref = (col, id) => ({ col, id, async get() { const d = (cols[col] || {})[id]; return { exists: !!d, data: () => JSON.parse(JSON.stringify(d)) }; },
-        async set(v, o) { cols[col] = cols[col] || {}; if (o && o.merge) merge(cols[col][id] = cols[col][id] || {}, v); else { cols[col][id] = {}; merge(cols[col][id], v); } } });
+        async set(v, o) { validar(v, `${col}/${id}`); cols[col] = cols[col] || {}; if (o && o.merge) merge(cols[col][id] = cols[col][id] || {}, v); else { cols[col][id] = {}; merge(cols[col][id], v); } } });
     const consulta = (col, filtros = [], ord = null, lim = 1e9) => ({
         where: (f, op, v) => consulta(col, [...filtros, [f, op, v]], ord, lim),
         orderBy: (f) => consulta(col, filtros, f, lim), limit: (n) => consulta(col, filtros, ord, n),

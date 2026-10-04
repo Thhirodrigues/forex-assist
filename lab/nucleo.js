@@ -78,7 +78,7 @@ function atualizarVariantes(e, candles, agora) {
         if (v.r !== "ABERTA") continue;
         const opcoes = { ...v.cfg.opcoes };
         if (opcoes.usaReanalises) {
-            opcoes.reanalises = e.reanalises.map(([t, preco, tendencia]) => ({ t, preco, tendencia }));
+            opcoes.reanalises = e.reanalises.map(r => ({ t: r.t, preco: r.p, tendencia: r.d }));
             delete opcoes.usaReanalises;
         }
         const r = simularOperacao({
@@ -123,7 +123,8 @@ function processarPar({ par, analises, abertas, ultimoLab, candles, registradoEm
             if (a.timestamp <= e.reanalisesAteT) continue;
             if (e.reanalises.length >= CFG.MAX_REANALISES) break;
             if (a.tendencia && Number.isFinite(Number(a.precoEntrada))) {
-                e.reanalises.push([Number(a.timestamp), Number(a.precoEntrada), a.tendencia]);
+                // objeto, não array de arrays: o Firestore não aceita array aninhado
+                e.reanalises.push({ t: Number(a.timestamp), p: Number(a.precoEntrada), d: a.tendencia });
             }
             e.reanalisesAteT = Number(a.timestamp);
         }
