@@ -39,5 +39,26 @@ const ler = async ({ par }) => sint(3000, par === "EUR/USD" ? 3 : 9);
   assert.deepEqual(Object.keys(fam), ["F1", "F2", "F3", "F4", "C0"]);
   assert.ok(fam.C0.nSinais > 5 && fam.C0.linhas.some(l => l.variante === "ATUAL" && l.n > 0 && Number.isFinite(l.pips2)));
   assert.ok(fam.C0.linhas.every(l => ["ATUAL", "ATUAL_SEM_SPREAD", "INVERSO", "ALEATORIO"].includes(l.variante)), "só as variantes pré-registradas");
+  // estender para trás: só baixa o que falta, mescla sem duplicar e mantém a ordem
+  const { estenderHistorico } = require("./replay-run");
+  const guardado = {};
+  const labE = { collection: () => ({ where: () => ({ get: async () => ({ docs: Object.keys(guardado).map(id => ({ ref: { delete: async () => { delete guardado[id]; } } })) }) }), doc: (id) => ({ set: async (v) => { guardado[id] = v; } }) }) };
+  const base0 = Date.UTC(2026, 3, 7, 5, 0, 0);   // terça, mercado aberto
+  const existentes = sint(800, 5).map((c, i) => ({ ...c, ts: base0 + i * 300000 }));
+  const chamadas = [];
+  const baixarFalso = async ({ agora }) => {
+    chamadas.push(agora);
+    const novos = Array.from({ length: 300 }, (_, i) => ({ ts: base0 - (300 - i) * 300000, o: 1, h: 1.001, l: 0.999, c: 1 }));
+    return { candles: [...novos, existentes[0]], parou: "ok" };   // devolve também um candle que já existia (duplicado)
+  };
+  await estenderHistorico({ lab: labE, pares: ["EUR/USD"], ateDias: 400, chave: "k", agora: base0 + 800 * 300000, log: () => {}, baixar: baixarFalso, ler: async () => existentes });
+  assert.equal(chamadas.length, 1); assert.equal(chamadas[0], existentes[0].ts - 1000, "pede só o que vem ANTES do que já existe");
+  const mesclado = require("./replay-run").desempacotar(Object.values(guardado));
+  assert.equal(mesclado.length, 800 + 300, "300 novos + 800 antigos, sem duplicar");
+  assert.ok(mesclado.every((c, i) => i === 0 || c.ts > mesclado[i - 1].ts), "ordenado do mais antigo ao mais novo");
+  // já cobre o período: não baixa
+  chamadas.length = 0;
+  await estenderHistorico({ lab: labE, pares: ["EUR/USD"], ateDias: 1, chave: "k", agora: base0 + 800 * 300000, log: () => {}, baixar: baixarFalso, ler: async () => existentes });
+  assert.equal(chamadas.length, 0);
   console.log(`TESTES DO REPLAY (orquestração) PASSARAM — ${res.linhas.length} linhas, ${res.entradas} entradas`);
 })().catch(e => { console.error(e); process.exit(1); });

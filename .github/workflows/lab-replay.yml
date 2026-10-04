@@ -10,11 +10,11 @@ on:
   workflow_dispatch:
     inputs:
       modo:
-        description: 'baixar | replay | ambos | familias (famílias de sinal pré-registradas, 6.18)'
+        description: 'baixar | replay | ambos | familias (6.18) | estender (histórico para trás até DIAS) | familias-rep (replicação 6.19)'
         required: false
         default: 'ambos'
       dias:
-        description: 'dias de histórico (só no modo baixar/ambos; 180 = 11 páginas por par)'
+        description: 'dias de histórico (baixar/ambos/estender; 180 = 11 páginas por par; estender 360 baixa só os 180 que faltam)'
         required: false
         default: '180'
       rebaixar:

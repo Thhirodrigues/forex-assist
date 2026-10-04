@@ -72,6 +72,27 @@ async function baixarETudo({ lab, pares, dias, chave, log = console.log, baixar 
     }
 }
 
+// Estende o histórico guardado PARA TRÁS (só baixa o trecho que falta; reescreve os pedaços já ordenados)
+async function estenderHistorico({ lab, pares, ateDias, chave, agora = Date.now(), log = console.log, baixar = baixarHistorico, ler = lerCandles }) {
+    const alvo = agora - ateDias * 86400000;
+    for (const par of pares) {
+        const existentes = await ler({ lab, par });
+        if (!existentes.length) { log(`${par}: nada guardado; use o modo baixar`); continue; }
+        const ini = existentes[0].ts;
+        if (ini <= alvo + 86400000) { log(`${par}: já cobre até ${new Date(ini).toISOString().slice(0, 10)}; pulando`); continue; }
+        const r = await baixar({ par, dias: (ini - alvo) / 86400000 + 0.5, chave, agora: ini - 1000, log });
+        const novos = sanos(r.candles).filter(c => c.ts < ini);
+        log(`${par}: +${novos.length} candles antigos (parou: ${r.parou})`);
+        if (!novos.length) continue;
+        const porTs = new Map();
+        for (const c of [...novos, ...existentes]) porTs.set(c.ts, c);
+        const todos = [...porTs.values()].sort((a, b) => a.ts - b.ts);
+        const antigos = await lab.collection("candles").where("par", "==", par).get();
+        for (const d of antigos.docs || []) await d.ref.delete();
+        for (const ch of empacotar(todos)) await lab.collection("candles").doc(`${chavePar(par)}_${ch.k}`).set({ par, ...ch });
+    }
+}
+
 async function lerCandles({ lab, par }) {
     const snap = await lab.collection("candles").where("par", "==", par).get();
     const chunks = [];
@@ -172,7 +193,7 @@ async function publicarFamilias({ lab, familias, meta, agora = Date.now() }) {
     await lab.collection("replay").doc("familias").set({ geradoEm: agora, ...meta, familias });
 }
 
-module.exports = { empacotar, desempacotar, baixarETudo, replayETudo, publicarReplay, lerCandles, sanos, familiasETudo, publicarFamilias };
+module.exports = { empacotar, desempacotar, baixarETudo, estenderHistorico, replayETudo, publicarReplay, lerCandles, sanos, familiasETudo, publicarFamilias };
 
 if (require.main === module) {
     (async () => {
@@ -195,6 +216,21 @@ if (require.main === module) {
         console.log(`Replay | modo ${modo} | pares ${pares.join(", ")} | ${dias} dias | split ${split} | passo ${passo} barras`);
         console.log(`Config real: perfil=${config.perfil} lote=${config.lote} cooldown=${config.cooldown} candles=${config.candles}`);
 
+        if (modo === "estender") {
+            await estenderHistorico({ lab, pares, ateDias: dias, chave: process.env.API_KEY_3 || process.env.API_KEY_1 });
+        }
+        if (modo === "familias-rep") {
+            // MESMAS famílias/parâmetros/barreiras do registro 6.18, agora em período independente (6.19)
+            const ant = (await lab.collection("replay").doc("familias").get()).data();
+            const porPar = {};
+            let ini = Infinity, fim = -Infinity;
+            for (const par of pares) { const c = await lerCandles({ lab, par }); if (c.length > 700) { porPar[par] = c; ini = Math.min(ini, c[0].ts); fim = Math.max(fim, c[c.length - 1].ts); } }
+            const splitTs = Number(process.env.LAB_SPLIT_TS) || ant.ini;   // `pre` = ANTES do período do registro (novo); `pos` = o período já visto
+            console.log(`Replicação: ${new Date(ini).toISOString()} a ${new Date(fim).toISOString()}; período NOVO = antes de ${new Date(splitTs).toISOString()}`);
+            const familias = await familiasETudo({ porPar, barreiras: ant.barreiras, splitTs, fim });
+            await lab.collection("replay").doc("familias_rep").set({ geradoEm: Date.now(), ini, fim, splitTs, barreiras: ant.barreiras, pares, familias });
+            console.log("Replicação publicada em replay/familias_rep (epoca `pre` = período novo, `pos` = período já visto).");
+        }
         if (modo === "familias") {
             const configuracao = { perfil: "balanceado", cooldown: 30, candles: 500, lote: 0.04, tp: 5, sl: 5, tipoConta: "SIMULADA", saldoInicial: 1000, ...config };
             const base = await replayETudo({ lab, config: configuracao, pares, split, passo });   // só para a barreira por par (stop mediano do app)
