@@ -13497,3 +13497,9 @@ espelho (`lab-diagnostico.yml`). Aba com tipos de teto e tabela por recorte (dir
 AJUSTE-080 (04/10/2026) - Laboratório: variantes ESCALA_2X/3X e ATUAL_SPREAD_0_5X, recorte por par (X4),
 contador de casos ABERTOS (`ab`, só na recontagem). Só `lab/`/`js/laboratorio.js`. Resultado em 6.14.
 --------
+
+AJUSTE-081 (04/10/2026) - Laboratório: replay histórico do pipeline real (lab/historico.js, lab/replay.js,
+lab/replay-run.js, workflows lab-historico-teste e lab-replay). Candles guardados compactos em `candles/*` no
+projeto LAB (bloqueados ao navegador); agregados em `replay/*` (legíveis; regras publicadas). Só offline/leitura;
+nada do scanner/checker/decisão foi alterado. Protocolo pré-registrado em 6.15 do caderno.
+--------

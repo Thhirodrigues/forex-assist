@@ -404,6 +404,27 @@ Próximo passo proposto (aguardando OK do usuário): REPLAY HISTÓRICO do pipeli
 para obter milhares de sinais virtuais em vez de ~150, com separação temporal (explorar nos primeiros
 ~70 dias, validar nos últimos ~30) e hipóteses pré-registradas antes. Só leitura; nada do oficial.
 
+### 6.15 Replay histórico do pipeline real - PROTOCOLO PRÉ-REGISTRADO (04/10/2026, antes de ver qualquer resultado)
+Teste de profundidade (TwelveData, KEY_3): o plano entrega >= 90 dias de candles de 5 min (6 páginas de 5000, até
+22/06) com 1 crédito por página. O replay roda o MESMO `analisarPar` do scanner (código atual) sobre candles de
+~180 dias de 8 pares, barra a barra com relógio simulado (avalia a cada 15 min; ~2 ms por barra), com cooldown de
+30 min + posição aberta bloqueando o par (como o oficial, fechamento "como o app mede"). NÃO reproduz: janelas de
+sessão do scanner (recortes por sessão são feitos depois), limite diário/disjuntor, histórico estatístico do par
+(fica SEM_DADOS, como nos logs de produção), atraso real da TwelveData. Candles de fim de semana/fora do horário
+saem (mesma regra do checker). Código: `lab/replay.js`, `lab/replay-run.js`, workflow `lab-replay.yml` (modos
+baixar/replay/ambos: os candles ficam guardados no projeto LAB, repetir o replay custa 0 crédito).
+Divisão temporal: 70% iniciais = EXPLORAÇÃO (época `pre`), 30% finais = VALIDAÇÃO (época `pos`). Regras:
+ 1. Primeiro só se olha a EXPLORAÇÃO. Hipóteses candidatas saem dela e são escritas AQUI (data/hora e texto)
+    antes de abrir a validação. No máximo 3 recortes candidatos, escolhidos só por: n >= 150 na exploração e maior
+    expectativa líquida (pips/op, com spread) entre os recortes com n >= 150; mecanismo explicável por escrito.
+ 2. A validação é aberta UMA vez para os candidatos escritos. Cada olhada extra queima o dado de validação.
+ 3. Perguntas centrais (sem escolher recorte): Q1 o sinal tem vantagem BRUTA? (acerto sem spread vs 50% e vs o
+    baseline ALEATORIO, n >= 300); Q2 a expectativa líquida (spread da tabela) é > 0? Responder em `pos`.
+ 4. Critérios: "propor mudança" = t >= 3 na validação, n >= 300 casos fechados no grupo, mesmo sinal da exploração,
+    e aprovação do usuário. "Vale testar ao vivo" = t >= 2 e mesmo sinal. Abaixo disso: descartar, não "ajustar".
+ 5. Ressalva permanente: o replay não é o ao vivo (lista acima). Qualquer candidato precisa passar também na
+    época `pos` do Laboratório AO VIVO (dados novos, mercado real) antes de virar mudança no oficial.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
