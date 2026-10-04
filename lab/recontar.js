@@ -17,15 +17,15 @@ async function recontar({ lab, log = console.log }) {
     const antigos = await lab.collection("resumo").get();
     const ids = [];
     antigos.forEach(d => ids.push(d.id));
-    for (let i = 0; i < ids.length; i += 400) {
+    for (let i = 0; i < ids.length; i += 200) {
         const b = lab.batch();
-        ids.slice(i, i + 400).forEach(id => b.delete(lab.collection("resumo").doc(id)));
+        ids.slice(i, i + 200).forEach(id => b.delete(lab.collection("resumo").doc(id)));
         await b.commit();
     }
     const novos = Object.entries(deltas);
-    for (let i = 0; i < novos.length; i += 400) {
+    for (let i = 0; i < novos.length; i += 200) {
         const b = lab.batch();
-        novos.slice(i, i + 400).forEach(([chave, d]) => b.set(lab.collection("resumo").doc(chave), d));
+        novos.slice(i, i + 200).forEach(([chave, d]) => b.set(lab.collection("resumo").doc(chave), d));
         await b.commit();
     }
     log(`Recontagem: ${entradas.length} entradas -> ${novos.length} contadores (apagados ${ids.length} antigos).`);

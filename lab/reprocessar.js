@@ -10,7 +10,7 @@
 async function apagarColecao(lab, nome, log) {
     let total = 0;
     for (;;) {
-        const snap = await lab.collection(nome).limit(400).get();
+        const snap = await lab.collection(nome).limit(60).get();
         if (snap.empty) break;
         const b = lab.batch();
         snap.forEach(d => b.delete(d.ref));

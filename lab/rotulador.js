@@ -118,10 +118,12 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
 
             // entradas (idempotente) em lotes; contadores + cursor + estado no ÚLTIMO lote do par
             const docs = r.entradas;
-            for (let i = 0; i < docs.length; i += 400) {
+            // lotes pequenos: cada entrada carrega até 400 reanálises e o Firestore limita o lote a ~10 MB
+            const TAM = 60;
+            for (let i = 0; i < docs.length; i += TAM) {
                 const lote = lab.batch();
-                docs.slice(i, i + 400).forEach(e => lote.set(lab.collection("entradas").doc(e.id), e));
-                if (i + 400 >= docs.length) {
+                docs.slice(i, i + TAM).forEach(e => lote.set(lab.collection("entradas").doc(e.id), e));
+                if (i + TAM >= docs.length) {
                     for (const [chave, d] of Object.entries(r.deltas)) {
                         lote.set(lab.collection("resumo").doc(chave), {
                             tipo: d.tipo, variante: d.variante, epoca: d.epoca, grupo: d.grupo,
