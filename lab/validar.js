@@ -28,9 +28,10 @@ async function validar({ ofic, lab, getCandles, esperar = (ms) => new Promise(r 
     const reais = [];
     snapH.forEach(d => {
         const o = d.data();
-        if (o.resultado === "WIN" || o.resultado === "LOSS") reais.push({ id: d.id, ...o });
+        // inclui as AINDA ABERTAS: sinal aprovado e salvo que o checker ainda não fechou (ex.: fim de semana)
+        if (o.resultado === "WIN" || o.resultado === "LOSS" || o.status === "ABERTA") reais.push({ id: d.id, ...o });
     });
-    log(`Entradas OFICIAL do lab: ${entradas.length} | operações reais encerradas desde ${iso(minT)}: ${reais.length}`);
+    log(`Entradas OFICIAL do lab: ${entradas.length} | operações reais (encerradas + abertas) desde ${iso(minT)}: ${reais.length}`);
 
     // casamento: mesmo par, mesma direção, mesmo preço de entrada, início real até 5 min depois da análise
     const usadas = new Set();
@@ -66,13 +67,25 @@ async function validar({ ofic, lab, getCandles, esperar = (ms) => new Promise(r 
         let real = "sem sinal real ", obs = "";
         if (r) {
             comReal++;
-            real = `${r.resultado.padEnd(4)} ${iso(r.fimOperacao)}  `;
-            const igual0 = s0.resultado === r.resultado, igualC = sc.resultado === r.resultado;
+            const resReal = r.resultado === "WIN" || r.resultado === "LOSS" ? r.resultado : "ABERTA";
+            real = `${resReal.padEnd(6)} ${resReal === "ABERTA" ? "           " : iso(r.fimOperacao)} `;
+            const igual0 = s0.resultado === resReal, igualC = sc.resultado === resReal;
             if (igual0) igualSem++; if (igualC) igualCom++;
             obs = igual0 ? (igualC ? "ok" : "ok sem spread; spread muda o desfecho") : "DIVERGE sem spread -> investigar";
+            if (resReal === "ABERTA" && igual0) obs = "ok (real e lab ainda abertas)";
             if (r.modeloFechamento) obs += ` [${r.modeloFechamento}]`;
         } else obs = "aprovada na análise mas sem operação real casada";
         log(`${e.par.padEnd(8)} ${e.direcao.padEnd(4)}  ${iso(e.t)} | ${real} | ${fmt(s0)} | ${fmt(sc)} | ${obs}`);
+    }
+    // ATR por par (unidade de `indicadores.atr`): em pips = atr x (JPY 100, demais 10000)
+    const fator = (par) => (par.includes("JPY") ? 100 : 10000);
+    const atr = {};
+    for (const e of entradas) if (Number.isFinite(e.atr)) (atr[e.par] = atr[e.par] || []).push(Number((e.atr * fator(e.par)).toFixed(1)));
+    log("\nATR de 5 min em pips por par (das entradas OFICIAL; x3 = alvo da variante ATR_3X) | TP/SL em pips das análises:");
+    for (const [par, v] of Object.entries(atr)) {
+        v.sort((a, b) => a - b);
+        const tps = entradas.filter(e => e.par === par).map(e => e.tpPips);
+        log(`  ${par.padEnd(8)} ATR min ${v[0]} / mediana ${v[Math.floor(v.length / 2)]} / máx ${v[v.length - 1]} (n=${v.length}) | TP pips ${Math.min(...tps)}-${Math.max(...tps)}`);
     }
     const semLab = reais.filter(o => !usadas.has(o.id) && o.timestamp > minT);
     log(`\nCasadas: ${comReal}/${entradas.length}. Concordância do simulador SEM spread com o oficial: ${igualSem}/${comReal}. COM spread: ${igualCom}/${comReal}.`);

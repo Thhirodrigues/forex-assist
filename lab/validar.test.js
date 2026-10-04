@@ -20,5 +20,11 @@ const brutos = [0, 1, 2].map(i => ({ datetime: dt(i), open: "1.1", high: i === 1
   await validar({ lab: { collection: () => col([entrada]) }, ofic: { collection: () => col([{ ...real, precoEntrada: 1.2 }]) },
     getCandles: async () => brutos, esperar: async () => {}, log: m => logs2.push(m) });
   assert.ok(logs2.join("\n").includes("sem operação real casada") && logs2.join("\n").includes("sem entrada OFICIAL"));
+  // real ainda ABERTA e lab ABERTA = consistente (antes virava 'sem operação real')
+  const logs3 = [];
+  const aberta = { ...real, resultado: undefined, status: "ABERTA", fimOperacao: undefined };
+  const so = [0, 1, 2].map(i => ({ datetime: dt(i), open: "1.1", high: "1.1004", low: "1.0996", close: "1.1" }));
+  await validar({ lab: { collection: () => col([entrada]) }, ofic: { collection: () => col([aberta]) }, getCandles: async () => so, esperar: async () => {}, log: m => logs3.push(m) });
+  assert.ok(logs3.join("\n").includes("ok (real e lab ainda abertas)"), logs3.join("\n"));
   console.log("TESTES DA VALIDAÇÃO PASSARAM");
 })().catch(e => { console.error(e); process.exit(1); });
