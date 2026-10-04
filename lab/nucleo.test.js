@@ -1,5 +1,5 @@
 const assert = require("assert");
-const { processarPar, gruposDaEntrada } = require("./nucleo");
+const { processarPar, gruposDaEntrada, aplicarTeto, paridadeDoId, contarEntradas } = require("./nucleo");
 let n = 0;
 const t = (nome, fn) => { fn(); n++; console.log("[OK] " + nome); };
 
@@ -83,5 +83,39 @@ t("spread 2x: o mesmo candle que dá WIN com spread normal fica ABERTA com 2x", 
   const r = processarPar({ ...base, candles, analises: [an("a", 0)] });
   const v = r.entradas.find(x => x.id === "LAB_a").variantes;
   assert.equal(v.ATUAL.r, "WIN"); assert.equal(v.ATUAL_SPREAD_2X.r, "ABERTA");
+});
+t("grupos exploratórios: RSI esticado a favor, sessão por hora UTC, lote", () => {
+  const g1 = gruposDaEntrada({ par: "EUR/USD", direcao: "BUY", rsi: 72, t: Date.UTC(2026, 9, 7, 13, 0), lote: 0.02 });
+  assert.ok(g1.includes("X1_rsi_esticado") && g1.includes("X2_sessao_sobreposicao") && g1.includes("X3_lote_0.02"));
+  assert.ok(gruposDaEntrada({ par: "EUR/USD", direcao: "SELL", rsi: 72, t: Date.UTC(2026, 9, 7, 3, 0) }).includes("X1_rsi_normal"), "RSI 72 vendendo não é esticado A FAVOR");
+  assert.ok(gruposDaEntrada({ par: "EUR/USD", direcao: "SELL", rsi: 28, t: Date.UTC(2026, 9, 7, 3, 0) }).includes("X1_rsi_esticado"));
+  assert.ok(gruposDaEntrada({ par: "EUR/USD", direcao: "BUY", rsi: 50, t: Date.UTC(2026, 9, 7, 22, 0) }).includes("X2_sessao_fora"));
+});
+t("ALEATORIO: direção sorteada é determinística (mesmo id, mesma direção) e varia entre ids", () => {
+  assert.equal(paridadeDoId("OFICIAL_abc"), paridadeDoId("OFICIAL_abc"));
+  const v = new Set(Array.from({ length: 40 }, (_, i) => paridadeDoId("x" + i)));
+  assert.equal(v.size, 2, "com 40 ids aparecem os dois lados");
+});
+t("teto de exposição: com K=1 uma segunda compra de USD aberta é barrada; cruzado passa; fechada libera", () => {
+  const e = (id, par, direcao, t, r, f) => ({ id, tipo: "OFICIAL", par, direcao, t, variantes: { ATUAL: { r, f } } });
+  const H = 3600e3;
+  const lista = [
+    e("a", "EUR/USD", "SELL", 0, "WIN", 5 * H),          // comprado em dólar, fecha em 5 h
+    e("b", "USD/JPY", "BUY", 1 * H, "ABERTA"),            // comprado em dólar de novo, com a primeira aberta -> barrada (K=1)
+    e("c", "EUR/JPY", "BUY", 2 * H, "ABERTA"),            // cruzado: sem lado, passa
+    e("d", "GBP/USD", "SELL", 6 * H, "LOSS", 8 * H),     // comprado em dólar, a primeira já fechou -> passa
+    e("x", "EUR/USD", "BUY", 3 * H, "ABERTA")             // vendido em dólar: outro lado, passa
+  ];
+  assert.deepEqual(aplicarTeto(lista, 1).map(x => x.id), ["a", "c", "x", "d"].sort((p, q) => lista.find(z => z.id === p).t - lista.find(z => z.id === q).t));
+  assert.equal(aplicarTeto(lista, 2).length, 5, "K=2: ninguém é barrado aqui");
+  assert.ok(aplicarTeto(lista, 1).every(x => x.tipo === "OFICIAL_TETO1"));
+});
+t("contarEntradas inclui os tipos com teto (OFICIAL_TETO1/2) além do base", () => {
+  const e = (id, t, r, f, p) => ({ id, tipo: "OFICIAL", par: "EUR/USD", direcao: "SELL", t, preRegistro: false, score: 45, adx: 20, perfil: "AGRESSIVO",
+    variantes: { ATUAL: { r, f, p, d: 10, amb: false } } });
+  const d = contarEntradas([e("1", 0, "WIN", 100000, 25), e("2", 50000, "LOSS", 90000, -25)]);
+  assert.equal(d["OFICIAL__ATUAL__pos__TODOS"].n, 2);
+  assert.equal(d["OFICIAL_TETO1__ATUAL__pos__TODOS"].n, 1, "a 2ª entra com a 1ª ainda aberta no mesmo lado: barrada");
+  assert.equal(d["OFICIAL_TETO2__ATUAL__pos__TODOS"].n, 2);
 });
 console.log(`TODOS OS ${n} TESTES PASSARAM`);

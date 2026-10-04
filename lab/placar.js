@@ -65,6 +65,7 @@ const VARIANTES = [
     { id: "ATR_3X", nome: "Barreira de 3x ATR", texto: "alvo e stop curtos (2-15 pips)" },
     { id: "ATR_6X", nome: "Barreira de 6x ATR", texto: "do tamanho do alvo real do sistema" },
     { id: "INVERSO", nome: "Sinal invertido", texto: "mesma entrada, lado oposto (com TP = SL é o espelho do direto)" },
+    { id: "ALEATORIO", nome: "Lado sorteado (acaso)", texto: "baseline: mesmos alvos e custo, direção no cara ou coroa" },
     { id: "ATUAL_SPREAD_1_5X", nome: "Sinal com spread 1,5x", texto: "estresse de custo (notícia, virada de sessão)" },
     { id: "ATUAL_SPREAD_2X", nome: "Sinal com spread 2x", texto: "estresse de custo" }
 ];

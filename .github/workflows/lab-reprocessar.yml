@@ -1,0 +1,53 @@
+name: Laboratório - reprocessar histórico recente
+
+# Apaga os dados derivados do laboratório (SÓ no projeto forex-assist-lab), zera os cursores (mantém
+# registradoEm), refaz tudo a partir de `analises` com o código atual (backfill longo) e recontagem
+# (inclui os cenários com teto de exposição). Usar depois de acrescentar variante/grupo.
+# Gasta 1 consulta TwelveData por par (KEY_3) e ~1 leitura por análise do projeto oficial.
+on:
+  workflow_dispatch:
+    inputs:
+      backfill_horas:
+        description: 'quantas horas de `analises` reprocessar (padrão 240 = 10 dias; `analises` existe desde 26/09)'
+        required: false
+        default: '240'
+
+concurrency:
+  group: lab-rotulador
+  cancel-in-progress: false
+
+jobs:
+  reprocessar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Keys
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - name: Testes do Laboratório
+        run: |
+          node lab/simulador.test.js
+          node lab/nucleo.test.js
+          node lab/rotulador.test.js
+          node lab/placar.test.js
+          node lab/validar.test.js
+          node lab/reprocessar.test.js
+      - name: Apagar derivados e zerar cursores
+        run: node lab/reprocessar.js
+      - name: Rotular o histórico recente
+        env:
+          API_KEY_1: ${{ secrets.TWELVEDATA_KEY_3 }}
+          API_KEY_2: ${{ secrets.TWELVEDATA_KEY_3 }}
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+          LAB_DRY: '0'
+          LAB_BACKFILL_HORAS: ${{ github.event.inputs.backfill_horas }}
+          LAB_IGNORAR_HORARIO: '1'
+        run: node lab/rotulador.js
+      - name: Recontar (inclui teto de exposição) e publicar o placar
+        run: node lab/recontar.js

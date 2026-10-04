@@ -18,6 +18,13 @@ const CFG = require("./config");
 
 const MIN = 60000;
 
+// FNV-1a: sorteio determinístico (mesmo id -> mesma direção) para o baseline ALEATORIO
+function paridadeDoId(id) {
+    let h = 0x811c9dc5;
+    for (const ch of String(id)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+    return (h & 1) === 1;
+}
+
 function direcaoDaAnalise(a) {
     if (a.aprovado === true && (a.direcao === "BUY" || a.direcao === "SELL")) return a.direcao;
     if (a.tendencia === "ALTA") return "BUY";
@@ -56,6 +63,18 @@ function gruposDaEntrada(e) {
         g.push(`H5_${e.perfil.toLowerCase()}`);
     }
     if (Number.isFinite(score) && Number.isFinite(adx) && score >= 40 && score < 45 && adx < 25) g.push("L1_score40a44_adx25menos");
+
+    // ---- EXPLORATÓRIOS (declarados em 04/10/2026, antes dos dados `pos`; NÃO decidem nada) ----
+    const rsi = Number(e.rsi);
+    if (Number.isFinite(rsi)) {
+        const esticado = (e.direcao === "BUY" && rsi >= 70) || (e.direcao === "SELL" && rsi <= 30);
+        g.push(esticado ? "X1_rsi_esticado" : "X1_rsi_normal");
+    }
+    if (Number.isFinite(Number(e.t))) {
+        const h = new Date(Number(e.t)).getUTCHours();
+        g.push(`X2_sessao_${h < 7 ? "asia" : h < 12 ? "londres" : h < 16 ? "sobreposicao" : h < 21 ? "ny" : "fora"}`);
+    }
+    if (Number.isFinite(Number(e.lote))) g.push(`X3_lote_${Number(e.lote)}`);
     return g;
 }
 
@@ -96,6 +115,7 @@ function novaEntrada(tipo, id, par, a, dir, preRegistro) {
         adx: a.indicadores?.adx ?? null,
         rsi: a.indicadores?.rsi ?? null,
         atr: a.indicadores?.atr ?? null,
+        lote: Number.isFinite(Number(a.lote)) ? Number(a.lote) : null,
         candlestick: a.candlestickDetectado ? true : false,
         smc: a.smcDetectado ? true : false,
         preRegistro,
@@ -118,6 +138,7 @@ function atualizarVariantes(e, candles, agora) {
     for (const [id, v] of Object.entries(e.variantes)) {
         if (v.r !== "ABERTA") continue;
         const opcoes = { ...v.cfg.opcoes };
+        if (opcoes.aleatorio) { opcoes.inverter = paridadeDoId(e.id); delete opcoes.aleatorio; }
         if (opcoes.usaReanalises) {
             opcoes.reanalises = e.reanalises.map(r => ({ t: r.t, preco: r.p, tendencia: r.d }));
             delete opcoes.usaReanalises;
@@ -217,9 +238,10 @@ function processarPar({ par, analises, abertas, ultimoLab, candles, registradoEm
 
 // Reconstrói TODOS os contadores a partir das entradas gravadas (variantes já resolvidas).
 // Serve para trocar a definição de um grupo sem perder dado e para recuperar contadores.
-function contarEntradas(entradas) {
+function contarEntradas(entradas, { tetos = [1, 2] } = {}) {
     const deltas = {};
-    for (const e of entradas) {
+    const todas = [...entradas, ...tetos.flatMap(K => aplicarTeto(entradas, K))];
+    for (const e of todas) {
         const mudancas = [];
         for (const [id, v] of Object.entries(e.variantes || {})) {
             if (v.r === "ABERTA" || v.r === "EXPIRADA" || v.r === "INVALIDA" || !Number.isFinite(v.p)) continue;
@@ -230,4 +252,21 @@ function contarEntradas(entradas) {
     return deltas;
 }
 
-module.exports = { contarEntradas, processarPar, direcaoDaAnalise, chaveContador, gruposDaEntrada, registrarMudancas, somarDelta };
+// Teto de exposição (pendência da auditoria): "e se o app só mantivesse K sinais abertos por LADO
+// DO DÓLAR ao mesmo tempo?". Sobre as entradas OFICIAL (o que virou sinal) em ordem de tempo:
+// aceita a entrada se, naquele instante, houver menos de K aceitas e ainda abertas (variante ATUAL)
+// do mesmo lado; cruzados (EUR/JPY...) não têm lado e passam sempre. Só mede - nada é bloqueado de verdade.
+function aplicarTeto(entradas, K) {
+    const base = entradas.filter(e => e.tipo === "OFICIAL").sort((a, b) => a.t - b.t);
+    const aceitas = [];
+    const resultado = [];
+    for (const e of base) {
+        const lado = ladoDolar(e.par, e.direcao);
+        const abertas = lado === "cruzado" ? 0 : aceitas.filter(x => x.lado === lado &&
+            (x.e.variantes.ATUAL.r === "ABERTA" || (x.e.variantes.ATUAL.f ?? Infinity) > e.t)).length;
+        if (abertas < K) { aceitas.push({ e, lado }); resultado.push({ ...e, tipo: `OFICIAL_TETO${K}` }); }
+    }
+    return resultado;
+}
+
+module.exports = { aplicarTeto, paridadeDoId, contarEntradas, processarPar, direcaoDaAnalise, chaveContador, gruposDaEntrada, registrarMudancas, somarDelta };

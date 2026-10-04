@@ -16,7 +16,21 @@ const LB_TTL_MS = 2 * 60 * 1000;
 
 const LB_TIPOS = [
     { id: "OFICIAL", rotulo: "Sinais do app", ajuda: "Só o que o scanner aprovou e virou sinal." },
-    { id: "LAB", rotulo: "Todas as análises", ajuda: "Toda análise com direção, com a mesma pausa de 30 min por par. Não é sinal." }
+    { id: "LAB", rotulo: "Todas as análises", ajuda: "Toda análise com direção, com a mesma pausa de 30 min por par. Não é sinal." },
+    { id: "OFICIAL_TETO1", rotulo: "Teto: 1 por lado", ajuda: "E se o app mantivesse no máximo 1 sinal aberto por lado do dólar? (cruzados passam). Recalculado 1 vez por dia." },
+    { id: "OFICIAL_TETO2", rotulo: "Teto: 2 por lado", ajuda: "O mesmo, com no máximo 2 sinais abertos por lado do dólar. Recalculado 1 vez por dia." }
+];
+
+const LB_ORDEM_RECORTES = [
+    ["H1_score50mais", "Score 50 ou mais"], ["H1_score35a49", "Score 35 a 49"],
+    ["H2_adx30mais", "ADX 30 ou mais"], ["H2_adx_ate29", "ADX abaixo de 30"],
+    ["H3_com_candle", "Com candlestick"], ["H3_sem_candle", "Sem candlestick"],
+    ["H4_dolar_vendido", "Vendido em dólar"], ["H4_dolar_comprado", "Comprado em dólar"], ["H4_dolar_cruzado", "Par cruzado (sem lado)"],
+    ["H5_balanceado", "Perfil Balanceado"], ["H5_agressivo", "Perfil Agressivo"], ["H5_conservador", "Perfil Conservador"],
+    ["L1_score40a44_adx25menos", "Score 40–44 e ADX <25"],
+    ["X1_rsi_esticado", "RSI esticado a favor (≥70 compra, ≤30 venda)"], ["X1_rsi_normal", "RSI normal"],
+    ["X2_sessao_asia", "Sessão Ásia (00–07 UTC)"], ["X2_sessao_londres", "Sessão Londres (07–12)"],
+    ["X2_sessao_sobreposicao", "Londres + NY (12–16)"], ["X2_sessao_ny", "Sessão NY (16–21)"], ["X2_sessao_fora", "Fim de dia (21–24)"]
 ];
 const LB_EPOCAS = [
     { id: "pos", rotulo: "Depois do registro" },
@@ -124,6 +138,34 @@ function lbVariantesHTML(linhas, api) {
     </div>`;
 }
 
+function lbRecortesHTML(linhas) {
+    const doTipo = linhas.filter(l => l.tipo === lbTipo && l.epoca === lbEpoca && l.variante === "ATUAL" && l.grupo && l.grupo !== "TODOS" && l.n > 0);
+    if (!doTipo.length) return `<p class="lb-vazio">Sem casos nesta combinação ainda.</p>`;
+    const conhecidos = new Map(LB_ORDEM_RECORTES);
+    const ordem = [...LB_ORDEM_RECORTES.map(r => r[0]), ...doTipo.map(l => l.grupo).filter(g => !conhecidos.has(g)).sort()];
+    const corpo = ordem.map(g => {
+        const d = doTipo.find(l => l.grupo === g);
+        if (!d) return "";
+        const inv = lbLinha(linhas, lbTipo, lbEpoca, "INVERSO", g);
+        const nome = conhecidos.get(g) || (g.startsWith("X3_lote_") ? `Lote ${g.slice(8).replace(".", ",")}` : g);
+        const e = d.pips / d.n, ei = inv && inv.n ? inv.pips / inv.n : null;
+        return `<tr>
+            <td class="lb-v-nome">${nome}</td>
+            <td class="pa-num-sans">${d.n}</td>
+            <td class="pa-num-sans">${lbPct((100 * d.pos) / d.n)}</td>
+            <td class="pa-num-sans ${e > 0 ? "lb-pos" : e < 0 ? "lb-neg" : ""}">${lbSinal(e)}</td>
+            <td class="pa-num-sans ${ei > 0 ? "lb-pos" : ei < 0 ? "lb-neg" : ""}">${ei === null ? "—" : lbSinal(ei)}</td>
+        </tr>`;
+    }).join("");
+    return `
+    <div class="lb-tabela-wrap">
+        <table class="lb-tabela">
+            <thead><tr><th>Recorte</th><th>Casos</th><th>Acerto</th><th>Pips/op</th><th>Invertido</th></tr></thead>
+            <tbody>${corpo}</tbody>
+        </table>
+    </div>`;
+}
+
 function lbRender(doc, erro) {
     const raiz = document.getElementById("lbRaiz");
     if (!raiz) return;
@@ -177,6 +219,12 @@ function lbRender(doc, erro) {
             <p class="pa-eyebrow" style="letter-spacing:.12em;">E se a saída fosse outra?</p>
             <p class="lb-ajuda">Mesmas entradas, saídas diferentes. “Pips/op” é o ganho médio por operação (positivo = lucro). O que importa é Pips/op, não só o acerto.</p>
             ${lbVariantesHTML(linhas, api)}
+        </section>
+
+        <section class="pa-vidro lb-cartao">
+            <p class="pa-eyebrow" style="letter-spacing:.12em;">Por recorte (exploratório)</p>
+            <p class="lb-ajuda">Só gera hipótese, <b>não decide nada</b>: são muitos recortes e alguns parecem bons por acaso. “Invertido” é o resultado do lado oposto na mesma entrada.</p>
+            ${lbRecortesHTML(linhas)}
         </section>
 
         <section class="pa-vidro lb-cartao">

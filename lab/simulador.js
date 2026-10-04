@@ -158,6 +158,9 @@ function variantesPadrao(analise, { atrMultiplo = 3 } = {}) {
         // 04/10/2026: INVERSO = direção oposta (ver nota acima); ATUAL_SPREAD_* = o mesmo sinal com
         // custo 1,5x e 2x (spread real abre em notícia e na virada de sessão; só estresse).
         { id: "INVERSO",   tpPips: tp,       slPips: sl, opcoes: { inverter: true } },
+        // ALEATORIO = baseline (E1): mesma entrada, mesmos TP/SL, direção sorteada de forma
+        // determinística pelo id da entrada (reprodutível). Mostra o que o ACASO faria com o mesmo custo.
+        { id: "ALEATORIO", tpPips: tp,      slPips: sl, opcoes: { aleatorio: true } },
         { id: "ATUAL_SPREAD_1_5X", tpPips: tp, slPips: sl, opcoes: { spreadMult: 1.5 } },
         { id: "ATUAL_SPREAD_2X",   tpPips: tp, slPips: sl, opcoes: { spreadMult: 2 } }
     ];

@@ -29,7 +29,7 @@ const an = (id, min, extra = {}) => ({ id, timestamp: T0 + min * M, par: "EUR/US
 const candles = [c(0, 1.1, 1.1004, 1.0996, 1.1), c(1, 1.1, 1.1030, 1.0999, 1.1020), c(2, 1.1, 1.1004, 1.0996, 1.1)];
 const r = processarPar({ par: "EUR/USD", analises: [an("a", 0), an("b", 60, { score: 41, adx: 20 })], abertas: [], ultimoLab: null,
   candles: [...candles, ...Array.from({ length: 20 }, (_, i) => c(i + 3, 1.1, 1.1, 1.0996, 1.1)), c(23, 1.1, 1.1, 1.0970, 1.0980)], registradoEm: T0 - 1, agora: T0 + 900 * M });
-const refeito = contarEntradas(r.entradas);
+const refeito = contarEntradas(r.entradas, { tetos: [] });   // o incremental não deriva o teto (só a recontagem)
 assert.deepEqual(Object.keys(refeito).sort(), Object.keys(r.deltas).sort());
 for (const k of Object.keys(refeito)) assert.deepEqual(refeito[k], r.deltas[k], `contador ${k} difere`);
 console.log("TESTES DO PLACAR/RECONTAGEM PASSARAM");
