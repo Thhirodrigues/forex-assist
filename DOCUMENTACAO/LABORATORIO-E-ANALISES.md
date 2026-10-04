@@ -295,6 +295,21 @@ Pontas abertas descobertas:
     de `indicadores.atr` por par (ferramenta `diagnostico-atr-pips.js`) antes de confiar.
  4. TP/SL em pips por análise não vêm fixos (variam por par/ATR): `ATUAL` usa o da análise.
 
+### 6.10 Validação do rotulador contra o `historico` real (04/10/2026 00:55Z) - ponta 1 resolvida
+`lab/validar.js` (só leitura; workflow `lab-validar.yml`). 19 entradas OFICIAL do lab (02/10),
+15 casadas com operação real encerrada. Variante ATUAL sem spread: **14 de 15 iguais** ao
+resultado real (WIN/LOSS). A única divergência é AUD/USD 02/10 13:10: real LOSS às 21:05Z
+(o candle fora do mercado do AJUSTE-066) x lab ABERTA - o simulador está certo e o oficial
+daquele dia estava errado. Horários de fechamento batem com 5 min de diferença (o checker
+grava a hora em que DETECTA). O spread muda QUANDO fecha (ex.: USD/CHF 07:10: WIN às 08:05 sem
+spread, às 11:55 com spread), não o WIN/LOSS nesta amostra. Limite: n=15, um dia; valida a
+variante ATUAL, não as outras (BE, 1:2, atraso, reanálise).
+Achado novo: 4 de 19 aprovações na análise NÃO viraram operação real (GBP/USD 12:45, NZD/USD
+13:01, USD/CHF 20:00, EUR/USD 21:20): causa NÃO verificada (hipóteses: portão de risco/limite
+diário depois da análise, ou diferença de preço no casamento). Se for portão, o oficial aprova
+na análise mas não salva - conferir antes de comparar contagens oficial x lab.
+Cron do rotulador LIGADO (de hora em hora, minuto 17).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher

@@ -4,9 +4,10 @@ name: Laboratório - rotulador
 # forex-assist-lab. Não mexe em `historico`, não manda push, não faz parte do pipeline de sinais.
 # Ver DOCUMENTACAO/LABORATORIO-E-ANALISES.md (6.7 e 6.8).
 #
-# Por enquanto SÓ MANUAL: validar os primeiros ciclos (dry run -> gravação) antes de ligar o
-# cron. Para ligar, descomentar o bloco `schedule` (de hora em hora, minuto 17, fora dos minutos
-# :00/:05/:15 do scanner e do checker; ~240 créditos/dia da KEY_3 no máximo).
+# Cron de hora em hora (minuto 17, fora dos minutos :00/:05/:15 do scanner e do checker; no
+# máximo ~240 créditos/dia da KEY_3), ligado em 04/10/2026 DEPOIS da validação contra o
+# `historico` real (lab/validar.js: 14 de 15 iguais; a divergência é o bug já corrigido do
+# AJUSTE-066). Agendado só roda com mercado aberto; manual ignora o horário e começa em dry run.
 on:
   workflow_dispatch:
     inputs:
@@ -18,8 +19,8 @@ on:
         description: 'só na 1ª execução: quantas horas de `analises` passadas entram (pré-registro)'
         required: false
         default: '48'
-#  schedule:
-#    - cron: '17 * * * *'
+  schedule:
+    - cron: '17 * * * *'
 
 concurrency:
   group: lab-rotulador
