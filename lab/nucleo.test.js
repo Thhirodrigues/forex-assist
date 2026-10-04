@@ -78,4 +78,10 @@ t("contadores por grupo: o mesmo desfecho entra em TODOS e em cada grupo da entr
   assert.equal(r.deltas["OFICIAL__ATUAL__pos__H4_dolar_vendido"].n, 1);   // compra de EUR/USD = vendido em dólar
   assert.equal(r.deltas["OFICIAL__ATUAL__pos__H1_score35a49"], undefined);
 });
+t("spread 2x: o mesmo candle que dá WIN com spread normal fica ABERTA com 2x", () => {
+  const candles = [flat(0), c(1, 1.1, 1.10275, 1.0999, 1.1020)];   // +27,5 pips: bate 25+1,8, não bate 25+3,6
+  const r = processarPar({ ...base, candles, analises: [an("a", 0)] });
+  const v = r.entradas.find(x => x.id === "LAB_a").variantes;
+  assert.equal(v.ATUAL.r, "WIN"); assert.equal(v.ATUAL_SPREAD_2X.r, "ABERTA");
+});
 console.log(`TODOS OS ${n} TESTES PASSARAM`);

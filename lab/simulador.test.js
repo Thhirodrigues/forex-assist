@@ -90,7 +90,21 @@ t("entradas inválidas são recusadas, não simuladas", () => {
 t("variantesPadrao: ids, 1:2, TP curto e ATR em pips (JPY x100)", () => {
   const v = variantesPadrao({ par: "USD/JPY", tpPips: 25, slPips: 25, indicadores: { atr: 0.08 } });
   const ids = v.map(x => x.id);
-  assert.deepEqual(ids, ["ATUAL", "RR_1_2", "TP_CURTO", "BE_METADE", "ENTRADA_MAIS_5", "ENTRADA_MAIS_10", "REANALISE", "ATR_3X", "ATR_6X"]);
-  assert.equal(v[1].tpPips, 50); assert.equal(v[2].tpPips, 12.5); assert.equal(v[7].tpPips, 24); assert.equal(v[8].tpPips, 48);
+  assert.deepEqual(ids, ["ATUAL", "RR_1_2", "TP_CURTO", "BE_METADE", "ENTRADA_MAIS_5", "ENTRADA_MAIS_10", "REANALISE", "INVERSO", "ATUAL_SPREAD_1_5X", "ATUAL_SPREAD_2X", "ATR_3X", "ATR_6X"]);
+  assert.equal(v[1].tpPips, 50); assert.equal(v[2].tpPips, 12.5); assert.equal(v[10].tpPips, 24); assert.equal(v[11].tpPips, 48);
+});
+t("INVERSO: com TP = SL é o espelho do direto (sem spread: soma dos pips = 0)", () => {
+  const sobe = [c(0, 1.1, 1.1030, 1.0999, 1.1020)];
+  const direto = simularOperacao({ ...base, candles: sobe });
+  const inverso = simularOperacao({ ...base, candles: sobe, opcoes: { inverter: true } });
+  assert.equal(direto.resultado, "WIN"); assert.equal(inverso.resultado, "LOSS", "o que o direto ganha, o espelho perde"); assert.equal(direto.pips + inverso.pips, 0);
+  const cai = [c(0, 1.1, 1.1004, 1.0970, 1.0980)];
+  assert.equal(simularOperacao({ ...base, candles: cai }).resultado, "LOSS");
+  const inv2 = simularOperacao({ ...base, candles: cai, opcoes: { inverter: true } });
+  assert.equal(inv2.resultado, "WIN"); assert.equal(inv2.pips, 25);
+});
+t("INVERSO + spread: o espelho também paga o custo (LOSS do direto vira WIN de +25, mas precisa andar 26,8)", () => {
+  const cai = [c(0, 1.1, 1.1004, 1.0974, 1.0980)];   // cai 26 pips: com spread 1,8 o inverso precisa de 26,8
+  assert.equal(simularOperacao({ ...base, spreadPips: 1.8, candles: cai, opcoes: { inverter: true } }).resultado, "ABERTA");
 });
 console.log(`TODOS OS ${n} TESTES PASSARAM`);

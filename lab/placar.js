@@ -63,7 +63,10 @@ const VARIANTES = [
     { id: "ENTRADA_MAIS_10", nome: "Entrando 10 min depois", texto: "quanto custa o atraso" },
     { id: "REANALISE", nome: "Sair se a análise virar", texto: "fecha quando a análise seguinte aponta o lado contrário" },
     { id: "ATR_3X", nome: "Barreira de 3x ATR", texto: "alvo e stop curtos (2-15 pips)" },
-    { id: "ATR_6X", nome: "Barreira de 6x ATR", texto: "do tamanho do alvo real do sistema" }
+    { id: "ATR_6X", nome: "Barreira de 6x ATR", texto: "do tamanho do alvo real do sistema" },
+    { id: "INVERSO", nome: "Sinal invertido", texto: "mesma entrada, lado oposto (com TP = SL é o espelho do direto)" },
+    { id: "ATUAL_SPREAD_1_5X", nome: "Sinal com spread 1,5x", texto: "estresse de custo (notícia, virada de sessão)" },
+    { id: "ATUAL_SPREAD_2X", nome: "Sinal com spread 2x", texto: "estresse de custo" }
 ];
 
 const api = { HIPOTESES, VARIANTES, montarPlacar, formatarPlacar, faixaAmostra };

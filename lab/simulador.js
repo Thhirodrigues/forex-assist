@@ -58,7 +58,9 @@ function simularOperacao(p) {
     if (!(tpPips > 0) || !(slPips > 0)) return { resultado: "INVALIDA", motivo: "tp/sl" };
     if (!(slPips > s)) return { resultado: "INVALIDA", motivo: "spread>=sl" };
 
-    const dir = direcao === "BUY" ? 1 : -1;
+    // opcoes.inverter: mesma entrada, mesmos pips de TP/SL, direção OPOSTA (teste do "e se o app
+    // estivesse do lado contrário?"). Para TP = SL é só o espelho do resultado direto.
+    const dir = (direcao === "BUY" ? 1 : -1) * (o.inverter ? -1 : 1);
     const pip = 1 / fatorPip(par);
 
     let inicio = Number(tEntrada);
@@ -152,7 +154,12 @@ function variantesPadrao(analise, { atrMultiplo = 3 } = {}) {
         { id: "BE_METADE", tpPips: tp,       slPips: sl, opcoes: { breakEvenNaMetade: true } },
         { id: "ENTRADA_MAIS_5",  tpPips: tp, slPips: sl, opcoes: { atrasoMin: 5 } },
         { id: "ENTRADA_MAIS_10", tpPips: tp, slPips: sl, opcoes: { atrasoMin: 10 } },
-        { id: "REANALISE", tpPips: tp,       slPips: sl, opcoes: { usaReanalises: true } }
+        { id: "REANALISE", tpPips: tp,       slPips: sl, opcoes: { usaReanalises: true } },
+        // 04/10/2026: INVERSO = direção oposta (ver nota acima); ATUAL_SPREAD_* = o mesmo sinal com
+        // custo 1,5x e 2x (spread real abre em notícia e na virada de sessão; só estresse).
+        { id: "INVERSO",   tpPips: tp,       slPips: sl, opcoes: { inverter: true } },
+        { id: "ATUAL_SPREAD_1_5X", tpPips: tp, slPips: sl, opcoes: { spreadMult: 1.5 } },
+        { id: "ATUAL_SPREAD_2X",   tpPips: tp, slPips: sl, opcoes: { spreadMult: 2 } }
     ];
 
     // ATR_3X = barreira CURTA (2-15 pips; medido em 04/10: ATR de 5 min vai de ~2,5 pips no
