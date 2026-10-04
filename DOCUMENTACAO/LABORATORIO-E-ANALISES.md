@@ -381,9 +381,12 @@ sobreposição Londres+NY (n=35); direto fica positivo só em sessão Londres (n
 NENHUM passa o critério pré-registrado (>=300 casos, t>=3). Teto de exposição (1 por lado do dólar):
 n=66, direto 25,8% (-6,10 pips/op) - pior que sem teto, ou seja, os sinais "extras" do mesmo lado
 foram melhores que o primeiro (ruído de amostra; o teto reduz exposição, não melhora expectativa).
-Contas que ajudam: o WIN/LOSS do app NÃO desconta spread. 40% do app (226/564, mistura de épocas) x 35%
-da simulação com spread (últimos 8 dias) é compatível com ~4-5 pontos de custo (variante nova
-ATUAL_SEM_SPREAD mede isso direto). TP_CURTO: acerto 50% mas -3,23 pips/op (acerto alto não é lucro).
+Contas que ajudam: o WIN/LOSS do app NÃO desconta spread. A variante ATUAL_SEM_SPREAD ("como o app mede")
+deu 43,0% (OFICIAL, n=151; margem +-7,9) - coerente com os 44% reais do app em ~265 operações; com o spread
+da tabela Standard o MESMO sinal cai para 35,1%: o custo da corretora tira ~8 pontos de acerto e ~2 pips por
+operação (de -1,61 para -3,65 pips/op). Ou seja: o acerto que o app mostra superestima o que a XM entregaria.
+Mesmo sem spread o sinal fica em -1,61 pips/op (43% < 50% com alvo = stop), mas 43% +-7,9 inclui 50%.
+TP_CURTO: acerto 50% mas -3,23 pips/op (acerto alto não é lucro).
 
 ## 7. Pendente do usuário
 
