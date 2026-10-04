@@ -155,9 +155,15 @@ function variantesPadrao(analise, { atrMultiplo = 3 } = {}) {
         { id: "REANALISE", tpPips: tp,       slPips: sl, opcoes: { usaReanalises: true } }
     ];
 
+    // ATR_3X = barreira CURTA (2-15 pips; medido em 04/10: ATR de 5 min vai de ~2,5 pips no
+    // AUD/USD a ~15 no EUR/JPY). ATR_6X ~ o tamanho do alvo real do sistema (TP/ATR mediano ~5,5x,
+    // 20-40 pips): é o comparável de verdade. Variante nova a partir de 04/10 (entradas
+    // anteriores não a têm).
     if (Number.isFinite(atrPips) && atrPips > 0) {
-        const k = Number((atrPips * atrMultiplo).toFixed(1));
-        lista.push({ id: `ATR_${atrMultiplo}X`, tpPips: k, slPips: k, opcoes: {} });
+        for (const m of [atrMultiplo, atrMultiplo * 2]) {
+            const k = Number((atrPips * m).toFixed(1));
+            lista.push({ id: `ATR_${m}X`, tpPips: k, slPips: k, opcoes: {} });
+        }
     }
 
     return lista;

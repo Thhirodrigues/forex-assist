@@ -310,6 +310,26 @@ diário depois da análise, ou diferença de preço no casamento). Se for portã
 na análise mas não salva - conferir antes de comparar contagens oficial x lab.
 Cron do rotulador LIGADO (de hora em hora, minuto 17).
 
+### 6.11 Pontas abertas de 6.9 resolvidas (04/10/2026) - verificado nos logs reais do scanner
+ - As "4 aprovações sem operação real" NÃO eram operações perdidas: eram operações ainda ABERTAS
+   (o validador só olhava WIN/LOSS). Log do scanner de 02/10 12:45Z (GBP/USD) e 13:00Z
+   (NZD/USD): "Status SALVO" + "OPERAÇÃO". Validador corrigido: 19 de 19 casadas, 18 iguais.
+ - Pares ausentes em `analises`: o scanner roda só os pares de `configuracao.pares` (8 pares: EUR/USD,
+   GBP/USD, USD/JPY, AUD/USD, USD/CAD, USD/CHF, NZD/USD, EUR/JPY) - GBP/JPY e EUR/GBP não estão
+   configurados. Há ainda janelas por sessão (`parNaJanelaOperacional`: "fora da janela") e,
+   MAIS IMPORTANTE, o COOLDOWN: par com operação aberta ou aberta há <30 min NÃO é analisado
+   nem gravado em `analises`. Ou seja, `analises` só tem análises de pares LIVRES (sem posição);
+   por isso GBP/USD, NZD/USD e USD/CAD aparecem pouco (ficam dias com operação aberta).
+   Consequência: o universo LAB já é "análises quando o oficial estava livre", não "mercado
+   inteiro" - declarar isso em qualquer conclusão do Laboratório.
+ - Unidade do ATR: correta (pips = atr x 100 JPY / x 10000). ATR de 5 min: AUD/USD ~2,5,
+   EUR/USD ~4,6, USD/JPY ~7, USD/CHF ~6, EUR/JPY ~15 pips. O TP real do sistema NÃO é 25 fixo:
+   20-40 pips conforme o par (US$ 5-7,5 convertido). TP/ATR mediano ~5,5x. ATR_3X é barreira
+   curta (não comparável ao alvo real); acrescentada a variante ATR_6X (só entradas novas).
+ - Observação do mesmo log: perfil configurado Conservador; quase todo sinal sai por cascata
+   como Balanceado (Conservador reprova por score <55); histórico "RUIM" (-8) e expectativa
+   -5,00 constantes (já anotados em 4b).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
