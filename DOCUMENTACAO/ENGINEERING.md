@@ -13486,3 +13486,10 @@ AJUSTE-078 (04/10/2026) - Laboratório: variantes INVERSO, ATUAL_SPREAD_1_5X e A
 (só `lab/`; só entradas novas; nada do sinal oficial). Pré-registro de endpoints primários e limiar
 de evidência no caderno (6.12). A aba passa a mostrar 12 saídas. Testes: 19 + 11 + demais.
 --------
+
+AJUSTE-079 (04/10/2026) - Laboratório: baseline ALEATORIO, ATUAL_SEM_SPREAD, recortes exploratórios (RSI,
+sessão, lote), teto de exposição (OFICIAL_TETO1/2, só na recontagem diária 11:40 UTC), reprocessamento
+(`lab-reprocessar.yml`: apaga derivados do LAB, mantém registradoEm, refaz com backfill) e diagnóstico do
+espelho (`lab-diagnostico.yml`). Aba com tipos de teto e tabela por recorte (direto x invertido). Só `lab/`,
+`js/laboratorio.js` e workflows `lab-*`; nada do sinal oficial. Resultados do 1º olhar para trás: caderno 6.13.
+--------

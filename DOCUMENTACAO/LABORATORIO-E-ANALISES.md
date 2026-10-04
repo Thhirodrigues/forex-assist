@@ -362,6 +362,29 @@ acaso com custo) para TP = SL; H1-H5 = prontos, esperando amostra; score inverti
 H6 SMC = inviável por amostra; lote antes/depois de 01/10 = separar na leitura; RSI sem veto, teto de
 exposição por lado do dólar = precisam de fluxo próprio no Laboratório (próximo passo).
 
+### 6.13 Olhar para trás com simulação exata (04/10/2026, ~8 dias de `analises`; EM AMOSTRA = exploratório)
+Reprocessamento (`lab-reprocessar.yml`): 157 sinais aprovados (OFICIAL) e ~200 análises (LAB) de 26/09 a
+04/10, candles reais de 5 min, spread da tabela Standard, TP/SL em pips de cada análise. Tudo época `pre`.
+Pergunta do usuário: 226 WIN x 338 LOSS no histórico; "invertendo, os 338 viram win e dá lucro".
+Resultado medido (OFICIAL, n~151-157): direto 35,1% (-3,65 pips/op); INVERSO 42,4% (-1,15); SORTEADO
+(cara ou coroa) 39,7% (-1,69); spread 2x: 28,9% (-5,29). NENHUMA saída é lucrativa; o inverso NÃO dá
+64,9% (=1-35,1%) e continua negativo. Por quê: o espelho (perda de um = ganho do outro) só vale se o
+caminho do preço resolvesse sempre para um dos lados; na prática, em ~20% dos casos o preço bate o stop
+e VOLTA a bater o outro lado (ida e volta): perde nos dois sentidos. Diagnóstico `lab-diagnostico.yml`
+(135 sinais com TP = SL; 22 com TP = 1,5 x SL): nos simétricos, direto 36,2% + inverso 43,4% = 79,6%
+(deveria ser ~92% sem ida e volta e 100% sem custo). O baseline sorteado (39,7%) ficou perto do esperado
+para um passeio aleatório com custo (~46%), um pouco abaixo; direto (35,1%) ficou ~4,6 pontos abaixo do
+sorteado, DENTRO da margem (+-7,6 pontos): não se distingue do acaso.
+Recortes (exploratórios, n pequeno, ~20 recortes - parte sai boa/ruim só por acaso): inverso fica
+levemente positivo em score >=50 (n=18), com candlestick (n=36), vendido em dólar (n=42), Balanceado (n=47),
+sobreposição Londres+NY (n=35); direto fica positivo só em sessão Londres (n=37, +1,5) e NY (n=12).
+NENHUM passa o critério pré-registrado (>=300 casos, t>=3). Teto de exposição (1 por lado do dólar):
+n=66, direto 25,8% (-6,10 pips/op) - pior que sem teto, ou seja, os sinais "extras" do mesmo lado
+foram melhores que o primeiro (ruído de amostra; o teto reduz exposição, não melhora expectativa).
+Contas que ajudam: o WIN/LOSS do app NÃO desconta spread. 40% do app (226/564, mistura de épocas) x 35%
+da simulação com spread (últimos 8 dias) é compatível com ~4-5 pontos de custo (variante nova
+ATUAL_SEM_SPREAD mede isso direto). TP_CURTO: acerto 50% mas -3,23 pips/op (acerto alto não é lucro).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
