@@ -1,0 +1,29 @@
+name: Laboratório - teste de profundidade do histórico (TwelveData)
+
+# Descobre quantos dias de candles de 5 min o plano da chave entrega (1 par, poucas páginas = poucos
+# créditos da KEY_3). Só imprime; não grava nada.
+on:
+  workflow_dispatch:
+    inputs:
+      dias:
+        description: 'quantos dias pedir (cada ~17 dias = 1 página = 1 crédito)'
+        required: false
+        default: '90'
+
+jobs:
+  teste:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Testar
+        env:
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+          LAB_DIAS: ${{ github.event.inputs.dias }}
+        run: |
+          node lab/historico.test.js
+          node lab/historico.js

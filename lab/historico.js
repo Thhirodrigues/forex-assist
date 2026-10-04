@@ -42,7 +42,7 @@ async function baixarHistorico({ par, dias, chave, agora = Date.now(), http = ax
         const maisAntigo = Math.min(...pag.map(c => c.ts));
         log(`  ${par} pág ${paginas}: ${pag.length} candles, de ${fmt(maisAntigo)} a ${fmt(Math.max(...pag.map(c => c.ts)))}`);
         if (maisAntigo <= alvo) break;
-        if (maisAntigo >= fim) { parou = "paginação não avançou"; break; }
+        if (maisAntigo >= fim) { parou = "sem mais candles (a paginação não avançou: fim do histórico disponível)"; break; }
         fim = maisAntigo - 1000;
     }
     const candles = [...porTs.values()].filter(c => c.ts >= alvo).sort((a, b) => a.ts - b.ts);
