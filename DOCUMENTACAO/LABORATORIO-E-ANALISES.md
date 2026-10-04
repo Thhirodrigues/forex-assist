@@ -274,6 +274,27 @@ tempo, reanálise), `lab/spreads.js` (NZD/USD e EUR/JPY ESTIMADOS por mim - conf
 candles com KEY_3, grava no projeto lab), projeto Firebase lab + Secrets, tabela/aba.
 PENDENTE de confirmação: "10 operações" x as 100 do congelamento (ESTADO_ATUAL seção 0).
 
+### 6.9 Primeira execução real do rotulador (04/10/2026 00:45Z) - ponto de partida
+Projeto `forex-assist-lab` criado pelo usuário; Secret `FIREBASE_SERVICE_ACCOUNT_LAB` ok.
+`controle/rotulador.registradoEm` = 2026-10-04T00:42:32Z: tudo antes disso é época `pre`
+(48 h de `analises`, ~282 análises; NÃO é prova, só "dados que geraram a regra"); `pos` conta daqui.
+Bug achado e corrigido na 1ª gravação real: Firestore recusa array aninhado (o falso em memória
+não recusava; agora recusa). Workflow SÓ MANUAL por enquanto; cron hourly comentado.
+Resultado `pre` (n pequeno, UM dia ruim: 03/10 e sexta; acerto ATUAL 31-36%, expectativa
+negativa em TODAS as variantes; RR_1_2 e ATR_3X pior ainda): leitura honesta = quando a direção
+está errada, nenhuma saída salva; não dá para concluir nada com n=12-18.
+Pontas abertas descobertas:
+ 1. VALIDAÇÃO PENDENTE: a variante ATUAL das entradas OFICIAL precisa coincidir com o
+    resultado real em `historico` dos mesmos sinais. Sem esse cruzamento o rotulador não está
+    validado (usuário já viu o app errar fechamento antes - AJUSTE-066).
+ 2. `analises` NÃO é "toda análise": só 7 dos 10 pares apareceram em 48 h (USD/CAD, GBP/JPY e
+    EUR/GBP: nenhuma), GBP/USD 3 e NZD/USD 1. Há portões ANTES do registro (cooldown em
+    `pairAnalyzer.js`, sessões em `scanner.js`); causa dos pares ausentes NÃO verificada.
+    O Laboratório herda esse viés de seleção.
+ 3. ATR_3X com 11% de acerto parece baixo demais para barreira simétrica: conferir a unidade
+    de `indicadores.atr` por par (ferramenta `diagnostico-atr-pips.js`) antes de confiar.
+ 4. TP/SL em pips por análise não vêm fixos (variam por par/ATR): `ATUAL` usa o da análise.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
