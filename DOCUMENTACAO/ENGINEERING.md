@@ -13507,3 +13507,8 @@ nada do scanner/checker/decisão foi alterado. Protocolo pré-registrado em 6.15
 AJUSTE-082 (04/10/2026) - Laboratório: replay com soma dos quadrados (estatística t) e controle da deriva do dólar por
 época. Protocolo exploração/validação cumprido (caderno 6.16/6.17). Só `lab/`.
 --------
+
+AJUSTE-083 (04/10/2026) - Laboratório: famílias de sinal (lab/familias.js), modos `familias`, `estender`, `familias-rep` do replay,
+janela de candles por entrada (ganho ~10x), retry de gravação. Resultados e calibração pelo controle aleatório em 6.19/6.20 do caderno.
+Só `lab/`; nada do scanner/checker/decisão/sinal foi alterado. Consumo de TwelveData (KEY_3) no dia: ~320 créditos (domingo, mercado fechado).
+--------

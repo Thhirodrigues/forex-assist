@@ -517,6 +517,24 @@ com o período novo + o antigo, bruto t >= 2,4. Líquido idem (>0; t >= 2,4 comb
 Qualquer outra família que passe só no período novo NÃO vale (seria descoberta nova: exige novo registro e outra janela). Se F1 replicar, o próximo
 passo é um fluxo AO VIVO no Laboratório (sinais virtuais de F1 em tempo real, dados novos) antes de qualquer proposta ao oficial.
 
+### 6.20 Replicação das famílias em período independente (04/10/2026): F1 NÃO replicou; o controle aleatório calibra o t
+Histórico estendido para trás (KEY_3, ~110 créditos, domingo): 08/10/2025 a 02/10/2026. Mesmas 4 famílias + controle, parâmetros e barreiras
+IDÊNTICOS aos de 6.18 (inclusive janela fixa em UTC, que no inverno desalinha 1 h). Período NOVO = 08/10/2025 a 06/04/2026 (inverno; nunca visto).
+Resultados (pips/op, t da expectativa; "bruto" = sem spread):
+ F1 faixa asiática: NOVO bruto +0,62 (t=+0,53; n=848; acerto 50,5%) | já visto +3,13 (t=+2,62) | combinado +1,82 (t=+2,19). Líquido: NOVO -1,69,
+ já visto +0,53, combinado -0,63 (t=-0,75). CRITÉRIO de replicação (t >= 2,0 e n >= 500 no período novo; combinado t >= 2,4): REPROVADA. F1 é descartada.
+ F2 RSI: bruto combinado +0,49 (t=+0,91), líquido -1,43 (t=-2,68).  F3 tendência 1h: bruto -0,27 (t=-0,50), líquido -2,70 (t=-5,02).
+ F4 momentum 1h: bruto -1,13 (t=-2,33), líquido -2,95 (t=-6,09).
+CONTROLE C0 (direção sorteada, n=5404): bruto +1,10 (t=+2,37; NOVO +1,31 t=+2,14), líquido -1,21 (t=-2,61). Um sorteio SEM nenhuma informação chegou a t=+2,4
+no bruto: a estatística t ingênua (que trata cada operação como independente) SUBESTIMA o erro (operações próximas no tempo e entre pares compartilham o
+fator dólar). Consequência: o limiar t >= 2,4 usado em 6.18 era frouxo; o resultado de F1 no período visto (+3,01) é do mesmo tamanho do que o acaso
+produz no controle. Daqui em diante, qualquer afirmação de vantagem exige bater o CONTROLE na mesma amostra e t >= 3 com erro-padrão agrupado por dia.
+Conclusão consolidada (replay do pipeline do app + 4 famílias clássicas, 12 meses, 10 pares): nenhuma regra mostrou vantagem BRUTA reproduzível; o custo
+(~2,2 pips/op de spread médio) transforma um bruto ~0 em líquido negativo em TODAS (inclusive no controle: -1,2). Sem vantagem bruta, nenhuma conta,
+tamanho de alvo ou filtro de sessão fecha no positivo. O que ficou NÃO provado: que o app tenha vantagem; o que ficou provado: que o Laboratório e o replay
+não deixam "padrões" frágeis virarem decisão (C1 do pipeline, C2, F1: todos caíram na replicação ou no controle).
+Estado do Laboratório AO VIVO: rotulador de hora em hora e recontagem diária continuam; a época `pos` ao vivo começa na reabertura (dom 21:00 UTC).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
