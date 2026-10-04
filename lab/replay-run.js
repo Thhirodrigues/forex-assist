@@ -99,12 +99,24 @@ async function replayETudo({ lab, config, pares, split = 0.7, passo = 3, log = c
         entradasTodas.push(...out.entradas);
         log(`${par}: ${out.entradas.length} entradas rotuladas`);
     }
+    // controle da deriva do dólar: quanto "comprar dólar e segurar" ganhou em cada época (pips por par)
+    const BASE_USD = new Set(["USD/JPY", "USD/CAD", "USD/CHF"]), COTADO_USD = new Set(["EUR/USD", "GBP/USD", "AUD/USD", "NZD/USD"]);
+    const deriva = { pre: {}, pos: {} };
+    for (const par of Object.keys(porPar)) {
+        const lado = BASE_USD.has(par) ? 1 : COTADO_USD.has(par) ? -1 : 0;
+        if (!lado) continue;
+        const fator = par.includes("JPY") ? 100 : 10000;
+        for (const [ep, filtro] of [["pre", (c) => c.ts < splitTs], ["pos", (c) => c.ts >= splitTs]]) {
+            const cs = porPar[par].filter(filtro);
+            if (cs.length > 1) deriva[ep][par] = Number((lado * (cs[cs.length - 1].c - cs[0].o) * fator).toFixed(0));
+        }
+    }
     const deltas = contarEntradas(entradasTodas);
     const linhas = Object.values(deltas).map(d => ({
         tipo: d.tipo, variante: d.variante, epoca: d.epoca, grupo: d.grupo, n: d.n, pos: d.pos, neg: d.neg, zero: d.zero,
         pips: Number(d.pips.toFixed(2)), pips2: Number((d.pips2 || 0).toFixed(2)), dur: d.dur, amb: d.amb, ab: d.ab || 0
     }));
-    return { linhas, totais, ini, fim, splitTs, entradas: entradasTodas.length };
+    return { linhas, totais, ini, fim, splitTs, entradas: entradasTodas.length, deriva };
 }
 
 async function publicarReplay({ lab, resultado, params, agora = Date.now() }) {
@@ -116,7 +128,7 @@ async function publicarReplay({ lab, resultado, params, agora = Date.now() }) {
     }
     await lab.collection("replay").doc("atual").set({
         geradoEm: agora, ini: resultado.ini, fim: resultado.fim, splitTs: resultado.splitTs, totais: resultado.totais,
-        entradas: resultado.entradas, params, docsDeLinhas: nDocs
+        entradas: resultado.entradas, deriva: resultado.deriva || null, params, docsDeLinhas: nDocs
     });
     return nDocs;
 }

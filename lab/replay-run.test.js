@@ -27,6 +27,7 @@ const ler = async ({ par }) => sint(3000, par === "EUR/USD" ? 3 : 9);
   const res = await replayETudo({ lab, config, pares: ["EUR/USD", "GBP/USD"], split: 0.7, passo: 3, log: () => {}, ler });
   assert.ok(res.totais.analises > 50 && res.entradas > 0 && res.linhas.length > 100);
   assert.ok(res.linhas.some(l => l.epoca === "pre") && res.linhas.some(l => l.epoca === "pos"), "as duas épocas (exploração e validação)");
+  assert.ok(res.deriva && res.deriva.pre["EUR/USD"] !== undefined && res.deriva.pos["EUR/USD"] !== undefined && !("GBP/JPY" in res.deriva.pre), "deriva do dólar por época (controle)");
   assert.ok(res.linhas.some(l => l.tipo === "OFICIAL_TETO1") && res.linhas.every(l => "ab" in l));
   const n = await publicarReplay({ lab, resultado: res, params: { dias: 1 }, agora: 5 });
   assert.equal(docs.replay.atual.docsDeLinhas, n);
