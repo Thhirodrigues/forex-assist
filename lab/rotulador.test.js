@@ -59,9 +59,9 @@ const candles = (n, alvoNo) => Array.from({ length: n }, (_, i) => ({ datetime: 
     assert.deepEqual(ids, ["LAB_a1", "OFICIAL_a1"], "a2 cai no cooldown virtual de 30 min");
     assert.equal(lab.cols.entradas.LAB_a1.variantes.ATUAL.r, "WIN");
     // 1ª execução: registradoEm = agora (T0+3h) -> análises de T0 são PRÉ-registro
-    const res = lab.cols.resumo["OFICIAL__ATUAL__pre"];
+    const res = lab.cols.resumo["OFICIAL__ATUAL__pre__TODOS"];
     assert.equal(res.n, 1); assert.equal(res.pos, 1); assert.equal(res.pips, 25);
-    assert.equal(lab.cols.resumo["OFICIAL__RR_1_2__pre"], undefined, "1:2 pede 50 pips: ainda aberta");
+    assert.equal(lab.cols.resumo["OFICIAL__RR_1_2__pre__TODOS"], undefined, "1:2 pede 50 pips: ainda aberta");
     assert.equal(lab.cols.controle.rotulador.cursorGlobal, T0 + 10 * 60000);
     assert.ok(lab.cols.controle.rotulador.registradoEm);
     const antes = JSON.stringify(lab.cols.resumo);

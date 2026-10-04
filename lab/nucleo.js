@@ -25,8 +25,49 @@ function direcaoDaAnalise(a) {
     return null;
 }
 
-function chaveContador(tipo, variante, preRegistro) {
-    return `${tipo}__${variante}__${preRegistro ? "pre" : "pos"}`;
+function chaveContador(tipo, variante, preRegistro, grupo = "TODOS") {
+    return `${tipo}__${variante}__${preRegistro ? "pre" : "pos"}__${grupo}`;
+}
+
+// Grupos das hipóteses PRÉ-REGISTRADAS em 03/10/2026 (PENDENCIAS-ESTRATEGICAS-RMI.md, H1-H5) +
+// L1 (ideia do usuário: "só as condições que estão funcionando melhor"; limiares tirados dos
+// MESMOS dados que a geraram -> na época `pre` não vale como prova). Mudar uma definição aqui
+// exige registrar a data no caderno e rodar `lab/recontar.js`.
+const USD_BASE = new Set(["USD/JPY", "USD/CAD", "USD/CHF"]);
+const USD_COTADO = new Set(["EUR/USD", "GBP/USD", "AUD/USD", "NZD/USD"]);
+
+function ladoDolar(par, direcao) {
+    if (USD_BASE.has(par)) return direcao === "BUY" ? "comprado" : "vendido";
+    if (USD_COTADO.has(par)) return direcao === "BUY" ? "vendido" : "comprado";
+    return "cruzado";   // EUR/JPY, GBP/JPY, EUR/GBP: não há lado do dólar
+}
+
+function gruposDaEntrada(e) {
+    const g = ["TODOS"];
+    const score = Number(e.score), adx = Number(e.adx);
+    if (Number.isFinite(score)) {
+        if (score >= 50) g.push("H1_score50mais");
+        else if (score >= 35) g.push("H1_score35a49");
+    }
+    if (Number.isFinite(adx)) g.push(adx >= 30 ? "H2_adx30mais" : "H2_adx_ate29");
+    g.push(e.candlestick ? "H3_com_candle" : "H3_sem_candle");
+    g.push(`H4_dolar_${ladoDolar(e.par, e.direcao)}`);
+    if (e.perfil === "BALANCEADO" || e.perfil === "AGRESSIVO" || e.perfil === "CONSERVADOR") {
+        g.push(`H5_${e.perfil.toLowerCase()}`);
+    }
+    if (Number.isFinite(score) && Number.isFinite(adx) && score >= 40 && score < 45 && adx < 25) g.push("L1_score40a44_adx25menos");
+    return g;
+}
+
+function registrarMudancas(deltas, e, mudancas) {
+    const epoca = e.preRegistro ? "pre" : "pos";
+    const grupos = gruposDaEntrada(e);
+    for (const m of mudancas) {
+        for (const grupo of grupos) {
+            somarDelta(deltas, chaveContador(e.tipo, m.variante, e.preRegistro, grupo),
+                { tipo: e.tipo, variante: m.variante, epoca, grupo }, m.r);
+        }
+    }
 }
 
 function somarDelta(deltas, chave, meta, r) {
@@ -141,10 +182,7 @@ function processarPar({ par, analises, abertas, ultimoLab, candles, registradoEm
     for (const e of abertas) {
         adicionarReanalises(e);
         const antes = e.variantes.ATUAL.r;
-        for (const m of atualizarVariantes(e, candles, agora)) {
-            somarDelta(deltas, chaveContador(e.tipo, m.variante, e.preRegistro),
-                { tipo: e.tipo, variante: m.variante, epoca: e.preRegistro ? "pre" : "pos" }, m.r);
-        }
+        registrarMudancas(deltas, e, atualizarVariantes(e, candles, agora));
         if (antes === "ABERTA") atualizarLab(e);
     }
 
@@ -168,10 +206,7 @@ function processarPar({ par, analises, abertas, ultimoLab, candles, registradoEm
             const e = novaEntrada(tipo, `${tipo}_${a.id}`, par, a, dir, preRegistro);
             // reanálises: as análises deste par posteriores à entrada que já temos em mãos
             adicionarReanalises(e);
-            for (const m of atualizarVariantes(e, candles, agora)) {
-                somarDelta(deltas, chaveContador(tipo, m.variante, preRegistro),
-                    { tipo, variante: m.variante, epoca: preRegistro ? "pre" : "pos" }, m.r);
-            }
+            registrarMudancas(deltas, e, atualizarVariantes(e, candles, agora));
             entradas.set(e.id, e);
             atualizarLab(e);
         }
@@ -180,4 +215,19 @@ function processarPar({ par, analises, abertas, ultimoLab, candles, registradoEm
     return { entradas: [...entradas.values()], deltas, ultimoLab: lab, ignoradas };
 }
 
-module.exports = { processarPar, direcaoDaAnalise, chaveContador };
+// Reconstrói TODOS os contadores a partir das entradas gravadas (variantes já resolvidas).
+// Serve para trocar a definição de um grupo sem perder dado e para recuperar contadores.
+function contarEntradas(entradas) {
+    const deltas = {};
+    for (const e of entradas) {
+        const mudancas = [];
+        for (const [id, v] of Object.entries(e.variantes || {})) {
+            if (v.r === "ABERTA" || v.r === "EXPIRADA" || v.r === "INVALIDA" || !Number.isFinite(v.p)) continue;
+            mudancas.push({ variante: id, r: { pips: v.p, duracaoMin: v.d, ambiguo: v.amb === true } });
+        }
+        registrarMudancas(deltas, e, mudancas);
+    }
+    return deltas;
+}
+
+module.exports = { contarEntradas, processarPar, direcaoDaAnalise, chaveContador, gruposDaEntrada, registrarMudancas, somarDelta };

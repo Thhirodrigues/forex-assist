@@ -13451,3 +13451,16 @@ Novo diretório `lab/` (nada do scanner/checker/decisão foi alterado):
 - Pendente: aba Laboratório no app (leitura do projeto lab; regras do Firestore liberando só
   `resumo`), regras H1-H5 com fluxo próprio por regra, E1 (baseline aleatório).
 --------
+
+AJUSTE-076 (04/10/2026) - Laboratório: placar por hipótese (H1-H5 + L1), validação e recontagem.
+Só `lab/` e workflows `lab-*` (nada do scanner/checker/decisão). `lab/validar.js` (+`lab-validar.yml`):
+cruza entradas OFICIAL do lab com `historico` real (14/15 iguais; ver caderno 6.10). `nucleo.js`:
+`gruposDaEntrada` (H1 score, H2 ADX, H3 candlestick, H4 lado do dólar, H5 perfil; L1 = score
+40-44 e ADX<25, ideia do usuário, limiares tirados dos mesmos dados) e `contarEntradas`; contadores
+`resumo` agora por tipo/variante/época/grupo (chave `tipo__variante__epoca__grupo`).
+`lab/placar.js` monta a comparação de cada hipótese (diferença de acerto, n por grupo, faixa
+"só triagem <100 / indício >=100 / teste >=300", "no sentido da hipótese" só com >=10 pontos);
+`lab/recontar.js` (+`lab-recontar.yml`, mesmo grupo de concorrência do rotulador) refaz `resumo`
+a partir de `entradas` quando uma definição de grupo mudar. Cron do rotulador: de hora em hora
+(minuto 17), ligado após a validação.
+--------

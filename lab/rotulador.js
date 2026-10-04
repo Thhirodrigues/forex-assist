@@ -124,7 +124,7 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
                 if (i + 400 >= docs.length) {
                     for (const [chave, d] of Object.entries(r.deltas)) {
                         lote.set(lab.collection("resumo").doc(chave), {
-                            tipo: d.tipo, variante: d.variante, epoca: d.epoca,
+                            tipo: d.tipo, variante: d.variante, epoca: d.epoca, grupo: d.grupo,
                             n: increment(d.n), pos: increment(d.pos), neg: increment(d.neg), zero: increment(d.zero),
                             pips: increment(d.pips), dur: increment(d.dur), amb: increment(d.amb)
                         }, { merge: true });
@@ -159,16 +159,23 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
 }
 
 async function imprimirResumo(lab, log = console.log) {
+    const { montarPlacar, formatarPlacar } = require("./placar");
     const snap = await lab.collection("resumo").get();
     const linhas = [];
     snap.forEach(d => linhas.push(d.data()));
-    linhas.sort((a, b) => (a.tipo + a.epoca + a.variante).localeCompare(b.tipo + b.epoca + b.variante));
-    log("\n=== PLACAR DO LABORATÓRIO (pips líquidos de spread; 'pre' = dados anteriores ao registro, NÃO é prova) ===");
+    linhas.sort((a, b) => (a.tipo + a.epoca + a.variante + a.grupo).localeCompare(b.tipo + b.epoca + b.variante + b.grupo));
+    log("\n=== PLACAR DO LABORATÓRIO - todas as entradas (pips líquidos de spread; 'pre' = anterior ao registro, NÃO é prova) ===");
     log("tipo     época  variante         n   acerto  zero  exp(pips/op)  dur(min)  ambíguas");
-    for (const l of linhas) {
+    for (const l of linhas.filter(x => (x.grupo || "TODOS") === "TODOS")) {
         const acerto = l.n ? (100 * l.pos / l.n).toFixed(0) + "%" : "-";
         log(`${l.tipo.padEnd(8)} ${l.epoca.padEnd(5)} ${l.variante.padEnd(15)} ${String(l.n).padStart(3)}  ${acerto.padStart(6)}  ${String(l.zero).padStart(4)}  ` +
             `${(l.n ? (l.pips / l.n).toFixed(2) : "-").padStart(12)}  ${(l.n ? Math.round(l.dur / l.n) : "-").toString().padStart(8)}  ${String(l.amb).padStart(8)}`);
+    }
+    for (const tipo of ["OFICIAL", "LAB"]) {
+        for (const epoca of ["pos", "pre"]) {
+            log(`\n--- HIPÓTESES H1-H5 | ${tipo} | época ${epoca}${epoca === "pre" ? " (dados que geraram a regra - sem valor de prova)" : ""} | saída ATUAL ---`);
+            log(formatarPlacar(montarPlacar(linhas, { tipo, epoca })));
+        }
     }
 }
 

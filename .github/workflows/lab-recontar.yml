@@ -1,0 +1,24 @@
+name: Laboratório - recontar placar
+
+# Apaga e refaz `resumo` (só no projeto forex-assist-lab) a partir de `entradas`. Usar quando
+# a definição de um grupo mudar. Mesmo grupo de concorrência do rotulador.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: lab-rotulador
+  cancel-in-progress: false
+
+jobs:
+  recontar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Key (só o laboratório)
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - run: node lab/recontar.js

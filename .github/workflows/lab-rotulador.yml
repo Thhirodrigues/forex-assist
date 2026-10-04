@@ -53,6 +53,8 @@ jobs:
           node lab/simulador.test.js
           node lab/nucleo.test.js
           node lab/rotulador.test.js
+          node lab/placar.test.js
+          node lab/validar.test.js
 
       - name: Rotulador
         env:
