@@ -566,6 +566,20 @@ CRITÉRIOS (por família; todas reportadas, inclusive as reprovadas):
 Ressalvas declaradas: horário de corte do dia, swap ausente, sem stops (a regra de 1% de risco por operação é fase seguinte, só se houver vantagem), regimes
 (2008, 2015, 2020, 2022 estão na amostra: é de propósito).
 
+### 6.22 RESULTADO do horizonte diário (04/10/2026, run 37190227061; protocolo 6.21 aplicado SEM ajuste de parâmetros)
+Dados: 10 pares, TwelveData `1day`, ~4.850 barras limpas por par (2008-03 a 2026-10-02; EUR/USD 2007-11, GBP/USD 2007-12). Sábados descartados, domingos
+incorporados à segunda. Todas as 5 famílias reportadas:
+ D1 Momentum 12m (série temporal): Sharpe líq 0,08 (bruto 0,10), IC95 -0,40..0,56, nulo p99 0,50, meses+ 53%, DD 13%, metades 0,07/0,09, lag1 0,09, spread2x 0,06 => SEM EVIDÊNCIA (falha A1)
+ D2 Momentum 3m: Sharpe líq -0,11, IC95 -0,57..0,37, meses+ 45%, DD 35%, metades 0,31/-0,49 => SEM EVIDÊNCIA
+ D3 Momentum entre moedas (63d, 2x2): Sharpe líq -0,17, IC95 -0,68..0,25, nulo p99 0,56, meses+ 46% => SEM EVIDÊNCIA
+ D4 Dólar como fator (126d): Sharpe líq -0,41, DD 75%, metades 0,28/-0,99 => SEM EVIDÊNCIA
+ D5 Donchian 55/20: Sharpe líq -0,24, IC95 -0,71..0,23, metades 0,16/-0,61 => SEM EVIDÊNCIA
+Leitura: nenhuma família passa A1 (a única com Sharpe líquido positivo, D1, tem 0,08 contra um limiar de 0,50 do nulo e IC que atravessa o zero). A literatura de
+momentum em moedas (Menkhoff et al. 2012; Moskowitz-Ooi-Pedersen 2012) usa universos maiores (dezenas de moedas, incl. emergentes) e períodos mais antigos; neste
+universo de 10 pares líquidos, em 2008-2026, o efeito não aparece de forma distinguível do acaso. Ressalvas: swap ausente (carry é a parte relevante do retorno de
+moedas e este teste não a captura), universo pequeno e muito correlacionado (poucos graus de liberdade), 1 só definição de lookback por família (pré-registrada).
+Nada foi ajustado depois de ver o resultado. Veredito do protocolo: nenhuma família "vantagem demonstrada"; fase de stops/1% de risco e sinal diário NÃO inicia.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher

@@ -13512,3 +13512,7 @@ AJUSTE-083 (04/10/2026) - Laboratório: famílias de sinal (lab/familias.js), mo
 janela de candles por entrada (ganho ~10x), retry de gravação. Resultados e calibração pelo controle aleatório em 6.19/6.20 do caderno.
 Só `lab/`; nada do scanner/checker/decisão/sinal foi alterado. Consumo de TwelveData (KEY_3) no dia: ~320 créditos (domingo, mercado fechado).
 --------
+
+AJUSTE-084 (04/10/2026) - Laboratório: horizonte diário (lab/diario.js, lab/diario-run.js, workflow lab-diario.yml). Famílias D1-D5 (momentum 252d/63d,
+momentum entre moedas, dólar fator, Donchian 55/20), carteira com alvo de vol 10% a.a., custo por spread, controle nulo, bootstrap mensal, critérios A1-A4
+(protocolo 6.21). Só projeto LAB (`diario/{par}` dados, `replay/diario` agregados); nada no scanner/sinal oficial. Resultado em 6.22: nenhuma família com evidência.
