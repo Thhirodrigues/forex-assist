@@ -1,0 +1,38 @@
+name: Laboratório - horizonte diário (protocolo 6.21)
+
+# Baixa candles diários (KEY_3, 10 créditos) e/ou roda as famílias D1-D5 pré-registradas em 6.21, publicando
+# `replay/diario` (só agregados) no projeto forex-assist-lab. Não toca no projeto oficial nem no sinal.
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'baixar | rodar | ambos'
+        required: false
+        default: 'ambos'
+
+concurrency:
+  group: lab-diario
+  cancel-in-progress: false
+
+jobs:
+  diario:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Key (Lab)
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - name: Testes
+        run: |
+          node lab/historico.test.js
+          node lab/diario.test.js
+          node lab/diario-run.test.js
+      - name: Diário
+        env:
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+          LAB_MODO: ${{ github.event.inputs.modo }}
+        run: node lab/diario-run.js

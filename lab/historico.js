@@ -9,7 +9,8 @@ const axios = require("axios");
 
 const pad = (n) => String(n).padStart(2, "0");
 const fmt = (ms) => { const d = new Date(ms); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`; };
-const paraMs = (dt) => new Date(String(dt).replace(" ", "T") + "Z").getTime();
+// "YYYY-MM-DD HH:MM:SS" (intradiário) ou "YYYY-MM-DD" (diário, meia-noite UTC)
+const paraMs = (dt) => { const s = String(dt).replace(" ", "T"); return new Date((s.length === 10 ? s + "T00:00:00" : s) + "Z").getTime(); };
 const dorme = (ms) => new Promise(r => setTimeout(r, ms));
 
 async function paginaDeCandles({ par, endMs, chave, tamanho = 5000, http = axios, interval = "5min" }) {
