@@ -425,6 +425,33 @@ Divisão temporal: 70% iniciais = EXPLORAÇÃO (época `pre`), 30% finais = VALI
  5. Ressalva permanente: o replay não é o ao vivo (lista acima). Qualquer candidato precisa passar também na
     época `pos` do Laboratório AO VIVO (dados novos, mercado real) antes de virar mudança no oficial.
 
+### 6.16 Replay: resultado da EXPLORAÇÃO e candidatos REGISTRADOS antes de abrir a validação (04/10/2026, ~06:00 UTC)
+Replay: 10 pares, 07/04 a 02/10 de 2026 (~179 dias), 38.016 barras avaliadas, 1.231 sinais aprovados (OFICIAL), 3.013
+entradas rotuladas. Exploração = 07/04 a 10/08 (OFICIAL n=827); validação = 10/08 a 02/10 (NÃO foi olhada até este registro;
+o carregamento descarta a época `pos`).
+FIDELIDADE: o replay reproduz o ao vivo - acerto sem spread 43,4% (n=827, +-3,4) contra 43,0% das últimas 8 dias reais e 44%
+do histórico real. Isso valida o replay como ferramenta (não valida nenhuma estratégia).
+EXPLORAÇÃO, OFICIAL (pips/op, t da expectativa): sinal direto com spread -5,55 (t=-4,70); sem spread -3,19 (t=-2,68);
+sorteado -2,00 (t=-1,67); INVERSO +0,15 (t=+0,13). Ou seja: com a configuração e o código de hoje, o sinal direto PERDE de
+forma estatisticamente clara na exploração (inclusive antes do spread), e o inverso fica no zero a zero depois do spread:
+não é lucro. (Antes de qualquer recorte.)
+RECORTES (n >= 150, melhor expectativa líquida): INVERSO em "vendido em dólar" n=281, 56,6% de acerto, +4,63 pips/op, t=+2,71
+(direto neste recorte: 32,4%, -8,78, t=-5,38); INVERSO em 12-21 UTC (sobreposição + NY) n=384, 53,6%, +3,32, t=+1,88.
+Os demais recortes com n >= 150 ficam entre -4 e +0,5 no inverso. Atenção ao viés de seleção: estes foram escolhidos por
+serem os MELHORES de ~20; o t=+2,71 está inflado por isso (esperar encolher na validação).
+CANDIDATOS REGISTRADOS (valem para a validação, que será aberta UMA vez):
+ C1 "Inverso quando o sinal do app é VENDIDO em dólar" (isto é, comprar dólar onde o app vende). Mecanismo proposto: o sinal
+    de tendência de curto prazo fica atrasado e é revertido; ATENÇÃO, é também uma aposta direcional no dólar - pode ser só a
+    deriva do dólar no período. Controle: comparar com a deriva do dólar (comprado por buy-and-hold) em cada época.
+ C2 "Inverso entre 12h e 21h UTC (sobreposição Londres+NY e NY)". Mecanismo proposto: no fim do dia de NY a liquidez cai e a
+    entrada por alinhamento de EMAs é revertida.
+ PERGUNTAS CENTRAIS (sem escolher recorte), na validação: Q1 o direto tem vantagem bruta? (acerto sem spread vs 50% e vs
+ sorteado); Q2 a expectativa líquida do direto é > 0? Resposta esperada pela exploração: não.
+SUCESSO: C1/C2 "vale testar ao vivo" = na validação mesmo sinal (inverso > 0), t >= 2 e n >= 150; "propor mudança" = t >= 3,
+n >= 300 e mesmo resultado nas DUAS épocas, mais aprovação do usuário. Com 2 candidatos o limiar de significância ajustado é
+t >= 2,24 (Bonferroni, 5%); abaixo disso fica como exploratório. Mesmo que passe, o inverso do app NÃO seria posto em
+produção sem teste AO VIVO na época `pos` do Laboratório (dados novos, mercado real).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
