@@ -498,6 +498,25 @@ CRITÉRIOS (por família, sobre TODO o período e por metade):
 Ressalvas declaradas: horários fixos em UTC (o horário de verão de Londres desloca a abertura em 1 h parte do ano); o spread é constante (o real
 abre em notícia e na virada de sessão, então o líquido está otimista); sem limite diário e sem janela de sessão do scanner.
 
+### 6.19 Famílias de sinal: RESULTADO (04/10/2026, 07/04-02/10) e REPLICAÇÃO PRÉ-REGISTRADA em período independente
+Resultado, critérios de 6.18 aplicados sem escolher recorte (pips/op; t da expectativa; n = operações fechadas):
+ C0 controle aleatório (n=2307): bruto +0,55 (t=+0,78), líquido -1,63 -> líquido ~ -spread médio (~2,2): o arcabouço não tem viés.
+ F1 faixa asiática (n=772): BRUTO +3,01 (t=+2,52; 54,3% de acerto; metades +2,84 t=+1,98 e +3,37 t=+1,55), LÍQUIDO +0,49 (t=+0,41).
+ F2 RSI extremo (n=1795): bruto +0,36 (t=+0,45), líquido -1,59 (t=-1,98).   F3 tendência 1h+pullback (n=1684): bruto -0,74 (t=-0,89;
+ metades -1,61 e +1,20), líquido -3,18.   F4 momentum 1h (n=2141): bruto -1,12 (t=-1,53), líquido -3,09 (t=-4,23).
+Leitura honesta: só F1 cumpre os critérios de VANTAGEM BRUTA (t>=2,4 no período todo e positiva nas duas metades; t=2,52 passa por pouco o limiar
+ajustado para 4 famílias). O critério escrito dizia "líquida <= 0"; o líquido deu +0,49, positivo mas indistinguível de zero (t=0,41): trato como
+"vantagem bruta; líquida no zero a zero com o spread da tabela Standard". NÃO é lucro demonstrado. Ressalvas: amostra só de abril a outubro (horário
+de verão: abertura de Londres ~07:00 UTC; no inverno vira ~08:00 UTC e a janela fixa 07-12 UTC desalinha); stop mediano do app varia por par (20 a 53 pips)
+e o spread por par é o da tabela; o líquido está otimista porque o spread real abre em notícia; só 1 de 4 famílias passou perto do limiar (chance de
+falso positivo não desprezível).
+REPLICAÇÃO PRÉ-REGISTRADA (escrita antes de baixar/rodar): estender o histórico para trás (mais ~180 dias, ~out/2025 a abr/2026, 11 páginas por par,
+~110 créditos da KEY_3 em dia de mercado fechado) e rodar as MESMAS 4 famílias + controle, sem mudar parâmetro nenhum (inclusive a janela fixa
+UTC, que no inverno desalinha 1 h: é o teste da regra COMO REGISTRADA). Critério de replicação de F1: no período novo, bruto > 0, t >= 2,0 e n >= 500;
+com o período novo + o antigo, bruto t >= 2,4. Líquido idem (>0; t >= 2,4 combinado) para "vantagem líquida". Se F1 não replicar, é descartada.
+Qualquer outra família que passe só no período novo NÃO vale (seria descoberta nova: exige novo registro e outra janela). Se F1 replicar, o próximo
+passo é um fluxo AO VIVO no Laboratório (sinais virtuais de F1 em tempo real, dados novos) antes de qualquer proposta ao oficial.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
