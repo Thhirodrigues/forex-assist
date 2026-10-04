@@ -1,0 +1,20 @@
+name: Laboratório - diagnóstico do espelho (só leitura)
+
+# Lê só o projeto forex-assist-lab. Separa sinais com TP = SL dos assimétricos e compara direto,
+# inverso e sorteado. Não grava nada.
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Key (só o laboratório)
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - run: node lab/diagnostico-espelho.js
