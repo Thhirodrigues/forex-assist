@@ -35,5 +35,6 @@ jobs:
          API_KEY_1: ${{ secrets.TWELVEDATA_KEY_1 }}
          API_KEY_2: ${{ secrets.TWELVEDATA_KEY_2 }}
          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+         API_KEY_4: ${{ secrets.TWELVEDATA_KEY_4 }}
         run: |
           node js/checker.js

@@ -9,12 +9,12 @@
 // De onde vêm os dados, nesta ordem (sem gastar crédito do scanner):
 //  1) `cacheCandles15min/{PAR}`: candles de 15 min que o próprio scanner já guarda para cada par que analisou agora.
 //  2) pares parados (cooldown/fora da janela: justamente os que têm posição aberta) ficam com dado velho; até
-//     `max` deles por ciclo são atualizados com UMA chamada extra, usando a chave dedicada API_KEY_4 (NÃO as 3 do
-//     scanner: elas já passam de 2.000 créditos/dia de 2.400). Sem API_KEY_4, nada é buscado: o app mostra a idade do dado.
+//     `max` deles por ciclo são atualizados com UMA chamada extra pelo rodízio de chaves do scanner. Só acontece
+//     quando a 4ª chave (API_KEY_4) existe: com 3 chaves o scanner já usa ~1.900 de 2.400 créditos/dia e não há folga
+//     (medido em 06/10). Sem API_KEY_4, nada é buscado: o app mostra a idade do dado.
 // Qualquer falha aqui é engolida: o ciclo do scanner nunca depende deste resumo.
 // ===================================================
 
-const axios = require("axios");
 const { mercadoForexAberto } = require("./horarioMercado");
 
 const PARES_PADRAO = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "NZD/USD", "EUR/JPY", "GBP/JPY", "EUR/GBP"];
@@ -36,12 +36,10 @@ function resumirCandles15(candles) {
     return { preco: ult.c, v1h: varia(BARRAS_1H), v24h: varia(BARRAS_24H), ate: ult.t + QUINZE_MIN };
 }
 
-// uma chamada de 15 min com a chave dedicada (sem rodízio, sem retry: 429 ou erro = desiste e tenta no próximo ciclo)
-async function buscarCandles15(par, chave, http = axios, outputsize = 150) {   // 150: sobra para os candles de fim de semana (descartados) caberem as 96 barras de 24 h
-    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(par)}&interval=15min&outputsize=${outputsize}&timezone=UTC&apikey=${chave}`;
-    const res = await http.get(url, { timeout: 10000 });
-    if (!res.data || !res.data.values) throw new Error((res.data && res.data.message) || "sem candles");
-    return [...res.data.values].reverse();
+// uma chamada de 15 min pelo rodízio de chaves do scanner (marketData.getCandles: 429 tenta a próxima chave)
+async function buscarCandles15(par, _habilitado, outputsize = 150) {   // 150: sobra para os candles de fim de semana (descartados) caberem as 96 barras de 24 h
+    const { getCandles } = require("./marketData");
+    return getCandles(par, "15min", outputsize);
 }
 
 /**
@@ -51,7 +49,7 @@ async function buscarCandles15(par, chave, http = axios, outputsize = 150) {   /
  * @param {number} [p.agora]
  * @param {number} [p.refreshMin=30]          dado mais velho que isso (e mercado aberto) é candidato a atualização extra
  * @param {number} [p.max=2]                  máximo de chamadas extras por ciclo
- * @param {string} [p.chaveExtra]             API_KEY_4; ausente = nenhuma chamada extra
+ * @param {string} [p.chaveExtra]             só um interruptor: API_KEY_4 presente (rodízio de 4 chaves) liga as chamadas extras; ausente = nenhuma
  * @param {Function} [p.buscar]               injetável nos testes: (par, chave) => candles 15 min
  */
 async function atualizarResumoMercado({ db, pares = PARES_PADRAO, agora = Date.now(), refreshMin = 30, max = 2, chaveExtra = process.env.API_KEY_4, buscar = buscarCandles15, log = () => {} }) {

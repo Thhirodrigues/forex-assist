@@ -3,10 +3,13 @@ const {
   getApiKey,
 } = require("./utils");
 
+// 06/10/2026: a 4ª chave (secret TWELVEDATA_KEY_4) entra no rodízio quando existe (3.200 consultas/dia em vez de
+// 2.400). Ausente = 3 chaves, exatamente como antes. Quem usa este rodízio: scanner e verificador de resultados.
 const API_KEYS = [
     process.env.API_KEY_1,
     process.env.API_KEY_2,
-    process.env.API_KEY_3
+    process.env.API_KEY_3,
+    ...(process.env.API_KEY_4 ? [process.env.API_KEY_4] : [])
 ];
 
 const apiIndex = {

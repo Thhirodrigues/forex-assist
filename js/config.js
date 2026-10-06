@@ -896,9 +896,28 @@ function renderizarSessoesHorario(config) {
 // ======================================================
 // ORÇAMENTO DE CONSULTAS - TWELVEDATA
 // ---------------------------------------------------
-// Orçamento real medido pelo usuário com rotação de 3 chaves:
-// 2.400 consultas/dia. Cada par consultado custa 2 chamadas por
-// ciclo do Scanner (candle de 5min + candle de 15min).
+// Orçamento: cada chave do plano grátis dá 800 consultas/dia (conferido
+// em 06/10/2026 pelo endpoint /api_usage: plan_daily_limit = 800). O
+// rodízio tem 4 chaves (a 4ª entra em scripts/marketData.js quando o
+// secret TWELVEDATA_KEY_4 existe) = 3.200/dia. O dia da TwelveData vira
+// às 00:00 UTC (21:00 de Brasília), junto com a abertura da janela Ásia.
+//
+// MODELO (recalibrado em 06/10/2026 contra o consumo REAL medido):
+//  - por par e por ciclo do Scanner: 1 chamada de 5 min + 1 de 15 min a
+//    cada 3 ciclos (CACHE-002: o candle de 15 min fica em cache por 15
+//    min) = 4/3 de chamada. Antes eram 2 fixas, o que superestimava.
+//  - um par que está em MAIS DE UMA sessão (ex.: EUR/USD em Londres e em
+//    Nova York, que se sobrepõem 10:00-12:30) é consultado UMA vez por
+//    ciclo, não uma por sessão: conta-se a UNIÃO das janelas do par.
+//  - soma o resumo de mercado do detalhe do sinal (AJUSTE-087): até 2
+//    consultas por par/hora para os pares parados (48/dia por par, pior
+//    caso).
+//  - NÃO soma o verificador de resultados (js/checker.js): ele consulta
+//    1 chamada por posição aberta por ciclo, mas um par com posição
+//    aberta está em cooldown e o Scanner não o consulta - uma coisa
+//    troca a outra (4 posições abertas no dia da medida).
+// Conferência: 8 pares, 3 sessões => modelo 1.792 + 384 de resumo; real
+// medido às 21:03 UTC de 06/10 = 1.930 (3 chaves, 4 posições abertas).
 //
 // O ciclo do Scanner é definido pelo pinger externo (cron-job.org),
 // fora do alcance deste app - não configurável na tela, então é uma
@@ -927,9 +946,15 @@ function renderizarSessoesHorario(config) {
 
 const MINUTOS_POR_CICLO_SCANNER = 5;
 
-const CHAMADAS_POR_PAR_POR_CICLO = 2;
+const CHAMADAS_POR_PAR_POR_CICLO = 4 / 3;
 
-const ORCAMENTO_DIARIO_TWELVEDATA = 2400;
+const CHAVES_TWELVEDATA = 4;
+
+const LIMITE_DIARIO_POR_CHAVE_TWELVEDATA = 800;
+
+const ORCAMENTO_DIARIO_TWELVEDATA = CHAVES_TWELVEDATA * LIMITE_DIARIO_POR_CHAVE_TWELVEDATA;
+
+const CHAMADAS_RESUMO_MERCADO_POR_PAR_POR_DIA = 48;
 
 const MOEDAS_JANELA_ASIA_CFG = new Set(["JPY", "AUD", "NZD"]);
 
@@ -970,16 +995,31 @@ function duracaoJanelaPadraoMinutos(horarioInicio, horarioFim, janelaSeguranca) 
 
 }
 
-function calcularConsumoEstimadoTwelveData(config) {
+// Janela em minutos do dia (horário de Brasília) -> conjunto de ciclos de 5 min que ela cobre. Atravessa a meia-noite se fim < início.
+function ciclosDaJanela(inicioMin, duracaoMin) {
 
-    const pares = config.pares || [];
+    const ciclos = new Set();
+    const n = Math.floor(Math.max(0, duracaoMin) / MINUTOS_POR_CICLO_SCANNER);
+
+    for (let k = 0; k < n; k++) {
+        ciclos.add(Math.floor(((inicioMin + k * MINUTOS_POR_CICLO_SCANNER) % 1440) / MINUTOS_POR_CICLO_SCANNER));
+    }
+
+    return ciclos;
+
+}
+
+function inicioDaJanelaMinutos(horarioInicio) {
+    const [h, m] = horarioInicio.split(":").map(Number);
+    return h * 60 + m;
+}
+
+// Janelas (início + duração) em que o par é consultado, conforme o modo da configuração.
+function janelasDoPar(par, config) {
+
     const sessoesAtivas = config.sessoesAtivas || [];
+    const janelas = [];
 
-    // AJUSTE-019 (24/09/2026): modo por sessões - cada sessão marcada
-    // soma suas próprias chamadas (ciclos da SUA janela x pares
-    // elegíveis PRA ELA, por moeda), sem a janela padrão única nem o
-    // "bônus" incondicional da Ásia (que só existe no modo
-    // Personalizado - ver scripts/scanner.js parNaJanelaOperacional).
     if (sessoesAtivas.length > 0) {
 
         const defsSessao = {
@@ -988,99 +1028,97 @@ function calcularConsumoEstimadoTwelveData(config) {
             asia: { janela: PRESETS_HORARIO.asia, elegivel: parElegivelJanelaAsiaCfg }
         };
 
-        let totalEstimado = 0;
-        const detalhePorSessao = [];
-
         sessoesAtivas.forEach((sessaoId) => {
-
             const def = defsSessao[sessaoId];
-            if (!def) return;
-
-            const duracao = duracaoJanelaPadraoMinutos(
-                def.janela.horarioInicio,
-                def.janela.horarioFim,
-                config.janelaSeguranca
-            );
-
-            const ciclos = Math.floor(duracao / MINUTOS_POR_CICLO_SCANNER);
-            const paresElegiveis = pares.filter(def.elegivel);
-            const chamadas = ciclos * paresElegiveis.length * CHAMADAS_POR_PAR_POR_CICLO;
-
-            totalEstimado += chamadas;
-
-            detalhePorSessao.push({
+            if (!def || !def.elegivel(par)) return;
+            janelas.push({
                 sessaoId,
-                pares: paresElegiveis.length,
-                chamadas: Math.round(chamadas)
+                inicio: inicioDaJanelaMinutos(def.janela.horarioInicio),
+                duracao: duracaoJanelaPadraoMinutos(def.janela.horarioInicio, def.janela.horarioFim, config.janelaSeguranca)
             });
-
         });
 
-        totalEstimado = Math.round(totalEstimado);
-
-        return {
-            modoSessoes: true,
-            totalEstimado,
-            detalhePorSessao,
-            excedeOrcamento: totalEstimado > ORCAMENTO_DIARIO_TWELVEDATA,
-            margem: ORCAMENTO_DIARIO_TWELVEDATA - totalEstimado
-        };
+        return janelas;
 
     }
 
-    // Modo Personalizado (comportamento original, inalterado): janela
-    // única configurada pra todo par + janela asiática incondicional
-    // por cima (AJUSTE-005/006, sempre ativa nesse modo).
-    const duracaoPadrao = duracaoJanelaPadraoMinutos(
-        config.horarioInicio,
-        config.horarioFim,
-        config.janelaSeguranca
-    );
+    // Modo Personalizado: janela única de todo par + janela asiática incondicional (21:00-23:59) para JPY/AUD/NZD.
+    janelas.push({
+        sessaoId: "padrao",
+        inicio: inicioDaJanelaMinutos(config.horarioInicio),
+        duracao: duracaoJanelaPadraoMinutos(config.horarioInicio, config.horarioFim, config.janelaSeguranca)
+    });
 
-    const ciclosPadrao = Math.floor(duracaoPadrao / MINUTOS_POR_CICLO_SCANNER);
+    if (parElegivelJanelaAsiaCfg(par)) {
+        janelas.push({ sessaoId: "asiaFixa", inicio: JANELA_ASIA_INICIO_MIN, duracao: (JANELA_ASIA_FIM_MIN - JANELA_ASIA_INICIO_MIN) + 1 });
+    }
 
-    const chamadasPadrao = ciclosPadrao * pares.length * CHAMADAS_POR_PAR_POR_CICLO;
+    return janelas;
 
-    const duracaoAsia = (JANELA_ASIA_FIM_MIN - JANELA_ASIA_INICIO_MIN) + 1;
+}
 
-    const ciclosAsiaPorDia = Math.floor(duracaoAsia / MINUTOS_POR_CICLO_SCANNER);
+// Ciclos/dia em que o par é consultado (UNIÃO das janelas: sobreposição conta uma vez).
+function ciclosPorDiaDoPar(par, config) {
 
-    const paresElegiveisAsia = pares.filter(parElegivelJanelaAsiaCfg);
+    const uniao = new Set();
 
-    // Estimativa por um dia útil "típico" (segunda a quinta, quando a
-    // janela adicional automática por moeda do BUG-011 também está
-    // ativa - sexta não tem essa janela extra, ver BUG-011). É o
-    // cenário de maior consumo, por isso o mais relevante pra um
-    // aviso de segurança - não é uma média semanal.
-    //
-    // A janela adicional é sempre somada por cima, mesmo que o preset
-    // padrão já seja "Ásia" - isso superestima levemente nesse caso
-    // específico, de propósito (fica do lado seguro, nunca subestima
-    // o consumo real).
-    const chamadasAsiaPorDia =
-        ciclosAsiaPorDia * paresElegiveisAsia.length * CHAMADAS_POR_PAR_POR_CICLO;
+    janelasDoPar(par, config).forEach(j => ciclosDaJanela(j.inicio, j.duracao).forEach(c => uniao.add(c)));
 
-    const totalEstimado = Math.round(chamadasPadrao + chamadasAsiaPorDia);
+    return uniao.size;
 
-    // Custo marginal de UM par adicional de cada tipo - resposta
-    // direta a "quantos pares a mais dá pra analisar".
-    const custoParSemLastroAsia = ciclosPadrao * CHAMADAS_POR_PAR_POR_CICLO;
+}
 
-    const custoParComLastroAsia =
-        custoParSemLastroAsia +
-        (ciclosAsiaPorDia * CHAMADAS_POR_PAR_POR_CICLO);
+// Custo diário (consultas) de UM par nesta configuração: análise + resumo de mercado. Independe dos outros pares.
+function custoDiarioDoParCfg(par, config) {
 
-    return {
-        modoSessoes: false,
+    return Math.round(ciclosPorDiaDoPar(par, config) * CHAMADAS_POR_PAR_POR_CICLO + CHAMADAS_RESUMO_MERCADO_POR_PAR_POR_DIA);
+
+}
+
+function calcularConsumoEstimadoTwelveData(config) {
+
+    const pares = config.pares || [];
+    const sessoesAtivas = config.sessoesAtivas || [];
+
+    const analise = Math.round(pares.reduce((soma, par) => soma + ciclosPorDiaDoPar(par, config) * CHAMADAS_POR_PAR_POR_CICLO, 0));
+    const resumo = pares.length * CHAMADAS_RESUMO_MERCADO_POR_PAR_POR_DIA;
+    const totalEstimado = analise + resumo;
+
+    const comum = {
         totalEstimado,
-        chamadasPadrao: Math.round(chamadasPadrao),
-        chamadasAsiaPorDia: Math.round(chamadasAsiaPorDia),
-        paresElegiveisAsia: paresElegiveisAsia.length,
-        custoParSemLastroAsia,
-        custoParComLastroAsia,
+        analise,
+        resumo,
         excedeOrcamento: totalEstimado > ORCAMENTO_DIARIO_TWELVEDATA,
         margem: ORCAMENTO_DIARIO_TWELVEDATA - totalEstimado
     };
+
+    // Modo por sessões (AJUSTE-019): detalhe por sessão (antes de descontar a sobreposição entre sessões).
+    if (sessoesAtivas.length > 0) {
+
+        const detalhePorSessao = [];
+        let somaPorSessao = 0;
+
+        sessoesAtivas.forEach((sessaoId) => {
+
+            const paresDaSessao = pares.filter(par => janelasDoPar(par, config).some(j => j.sessaoId === sessaoId));
+            const j0 = paresDaSessao.length ? janelasDoPar(paresDaSessao[0], config).find(j => j.sessaoId === sessaoId) : null;
+            const ciclos = j0 ? ciclosDaJanela(j0.inicio, j0.duracao).size : 0;
+            const chamadas = Math.round(ciclos * paresDaSessao.length * CHAMADAS_POR_PAR_POR_CICLO);
+
+            somaPorSessao += chamadas;
+            detalhePorSessao.push({ sessaoId, pares: paresDaSessao.length, chamadas });
+
+        });
+
+        return { modoSessoes: true, ...comum, detalhePorSessao, sobreposicao: Math.max(0, somaPorSessao - analise) };
+
+    }
+
+    // Modo Personalizado: custo marginal de UM par adicional de cada tipo.
+    const custoParSemLastroAsia = Math.round(ciclosPorDiaDoPar("EUR/USD", config) * CHAMADAS_POR_PAR_POR_CICLO);
+    const custoParComLastroAsia = Math.round(ciclosPorDiaDoPar("AUD/USD", config) * CHAMADAS_POR_PAR_POR_CICLO);
+
+    return { modoSessoes: false, ...comum, custoParSemLastroAsia, custoParComLastroAsia };
 
 }
 
@@ -1110,13 +1148,13 @@ function renderizarConsumoApi(config) {
             font-size:12px;
         ">
             <div style="font-weight:bold; margin-bottom:4px;">
-                📡 Consumo estimado de API: ${consumo.totalEstimado} / ${ORCAMENTO_DIARIO_TWELVEDATA} consultas/dia
+                📡 Consumo estimado de API: ${consumo.totalEstimado} / ${ORCAMENTO_DIARIO_TWELVEDATA} consultas/dia (${CHAVES_TWELVEDATA} chaves × ${LIMITE_DIARIO_POR_CHAVE_TWELVEDATA})
             </div>
             <div>${linhaMargem}</div>
             <div style="margin-top:6px; opacity:.75;">
                 ${
                     consumo.modoSessoes
-                        ? renderizarDetalheSessoes(consumo.detalhePorSessao)
+                        ? renderizarDetalheSessoes(consumo.detalhePorSessao) + (consumo.sobreposicao > 0 ? ` · janelas que se sobrepõem contadas uma vez (−${consumo.sobreposicao})` : "") + ` · resumo de mercado ~${consumo.resumo}/dia`
                         : `Custo por par adicional: ~${consumo.custoParSemLastroAsia}/dia (sem lastro asiático) ou
                            ~${consumo.custoParComLastroAsia}/dia (JPY/AUD/NZD, entra também na janela adicional automática).`
                 }
@@ -1169,6 +1207,8 @@ function renderizarPares(config) {
                 ${index < 10 ? "⭐" : "➕"}
 
                 ${par}
+
+                <span style="margin-left:6px; font-size:11px; opacity:.6;">~${custoDiarioDoParCfg(par, config)}/dia</span>
 
             </label>
 

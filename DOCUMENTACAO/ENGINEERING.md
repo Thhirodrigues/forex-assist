@@ -13536,3 +13536,11 @@ cita o resultado do Laboratório (6.28: concordância de moeda e a favor/contra 
  - `scripts/scanner.js` (única mudança: um bloco após `imprimirResumoFinal`, com try/catch e prazo de 20 s; não toca em análise, score, aprovação, TP/SL, lote nem cooldown) e `.github/workflows/forex-scanner-real.yml` (env API_KEY_4).
  - `scripts/mercadoMoeda.js` (UMD: lógica e HTML do quadro; um listener em `scanner/mercado`), `js/historico.js` (`blocoMercadoMoeda`, só em sinal não ENCERRADO), `index.html`.
  - Testes: `scripts/mercadoResumo.test.js`, `scripts/mercadoMoeda.test.js`; verificação visual com Playwright em 390 px. Workflow só-leitura `uso-twelvedata.yml` (consumo de créditos por chave).
+
+AJUSTE-088 (06/10/2026) - 4ª chave da TwelveData no rodízio + estimador de consumo recalibrado (tela Config). O aviso "2868 / 2400" era falso alarme do MODELO, não do consumo real: o estimador somava as sessões
+(um par em Londres e Nova York contava duas vezes na sobreposição) e usava 2 chamadas por par/ciclo (ignora o cache de 15 min, CACHE-002). Medido em 06/10 às 21:03 UTC (/api_usage): 672+629+629 = 1.930 de 2.400
+(3 chaves; 4 posições abertas, ou seja, o verificador no lugar do scanner nesses pares). Mudanças:
+ - `scripts/marketData.js`: `API_KEY_4` entra no rodízio quando existe (sem ela, 3 chaves como antes); `result-checker.yml` e `forex-scanner-real.yml` passam o secret. Teste: `scripts/marketData.test.js`.
+ - `scripts/mercadoResumo.js` deixou de usar chave dedicada: as buscas extras do resumo de mercado passam pelo rodízio (a chave 4 recebendo scanner + resumo sozinha passaria de 800/dia).
+ - `js/config.js`: orçamento = 4 chaves x 800 = 3.200/dia (constantes `CHAVES_TWELVEDATA`, `LIMITE_DIARIO_POR_CHAVE_TWELVEDATA`); consumo por par = UNIÃO das janelas do par x 4/3 + 48 do resumo; o card mostra a sobreposição descontada e cada par
+   mostra seu custo (~N/dia). Calibração: 8 pares/3 sessões = 1.792 de análise + 384 de resumo = 2.176 (real 1.930, com cooldown reduzindo o consumo do scanner). O verificador de resultados NÃO é somado (troca com o scanner nos pares em cooldown).
