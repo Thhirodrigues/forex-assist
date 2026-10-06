@@ -29,6 +29,9 @@ function idadeMin(r, agora) { return r && Number.isFinite(r.ate) ? Math.max(0, M
  */
 function quadroDoSinal({ par, direcao, mercado, agora = Date.now() }) {
     const dados = (mercado && mercado.pares) || {};
+    // "os pares do app" = os que o scanner acompanha (chaves de scanner/mercado); sem resumo ainda, a lista padrão
+    const chaves = Object.keys(dados);
+    const universo = chaves.length ? chaves.map(k => k.replace("_", "/")) : UNIVERSO;
     const [base, cotada] = moedasDoPar(par);
     const comprar = direcao === "BUY";
     const linha = (p, moeda) => {
@@ -36,12 +39,12 @@ function quadroDoSinal({ par, direcao, mercado, agora = Date.now() }) {
         const mov24 = r ? movimentoNaMoeda(p, moeda, r.v24h) : null;
         const idade = idadeMin(r, agora);
         const obsoleto = idade !== null && idade > IDADE_OBSOLETO_MIN;
-        return { par: p, v1h: r ? (r.v1h ?? null) : null, v24h: r ? (r.v24h ?? null) : null, mov24, estado: obsoleto ? null : estadoDoMovimento(mov24), idadeMin: idade, semDado: !r, obsoleto };
+        return { par: p, v1h: r ? (r.v1h ?? null) : null, v24h: r ? (r.v24h ?? null) : null, mov24, estado: obsoleto ? null : estadoDoMovimento(mov24), idadeMin: idade, semDado: !r || r.v24h === null || r.v24h === undefined, obsoleto };
     };
     const proprio = linha(par, base);
     const moedas = [base, cotada].map(moeda => {
         const precisa = (moeda === base) === comprar ? "subir" : "cair";
-        const outros = UNIVERSO.filter(p => p !== par && moedasDoPar(p).includes(moeda)).map(p => linha(p, moeda));
+        const outros = universo.filter(p => p !== par && moedasDoPar(p).includes(moeda)).map(p => linha(p, moeda));
         const contar = (e) => outros.filter(l => l.estado === e).length;
         const aFavor = outros.filter(l => l.estado === (precisa === "subir" ? "subindo" : "caindo")).length;
         return { moeda, precisa, linhas: outros, resumo: { subindo: contar("subindo"), caindo: contar("caindo"), parado: contar("parado"), semDado: outros.filter(l => l.semDado).length, obsoleto: outros.filter(l => l.obsoleto).length, aFavor, n: outros.length } };

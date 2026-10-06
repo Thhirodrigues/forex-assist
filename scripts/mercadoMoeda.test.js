@@ -49,7 +49,7 @@ t("venda de USD/JPY (aposta em dólar caindo) mas o próprio par subiu: mercado 
 });
 t("par parado/sem dado/dado velho: contado à parte, idade informada, nada inventado", () => {
   const m = { pares: { ...mercado.pares, EUR_USD: r(0.01), GBP_USD: r(0.5, 0, 200) } };
-  delete m.pares.USD_CHF;
+  m.pares.USD_CHF = { preco: 1, v24h: null, v1h: 0.1, ate: AGORA - 300000 };   // sem histórico de 24 h ainda
   const q = M.quadroDoSinal({ par: "AUD/USD", direcao: "BUY", mercado: m, agora: AGORA });
   const usd = q.moedas.find(m2 => m2.moeda === "USD");
   assert.equal(usd.resumo.parado, 1); assert.equal(usd.resumo.semDado, 1);
@@ -66,6 +66,12 @@ t("dado com mais de 4 h é 'obsoleto': aparece, mas NÃO entra na contagem de su
   assert.equal(usd.resumo.obsoleto, 1);
   assert.equal(usd.resumo.caindo + usd.resumo.subindo + usd.resumo.parado, 5, "NZD/USD de 17 h atrás fica de fora");
   assert.ok(/1 sem dado atual/.test(M.htmlQuadro(q)));
+});
+t("universo = os pares que o scanner acompanha (chaves do resumo): par fora da configuração não aparece nem conta", () => {
+  const m = { pares: Object.fromEntries(Object.entries(mercado.pares).filter(([k]) => !["EUR_JPY", "GBP_JPY", "EUR_GBP"].includes(k))) };
+  const q = M.quadroDoSinal({ par: "USD/JPY", direcao: "SELL", mercado: m, agora: AGORA });
+  assert.equal(q.moedas.find(x => x.moeda === "JPY").linhas.length, 0, "sem EUR/JPY e GBP/JPY no app, o iene não tem com quem comparar");
+  assert.equal(q.moedas.find(x => x.moeda === "USD").linhas.length, 6, "os outros 6 pares com dólar continuam");
 });
 t("sem resumo nenhum: mensagem clara, sem quebrar", () => {
   assert.ok(/indisponível/.test(M.htmlQuadro(M.quadroDoSinal({ par: "AUD/USD", direcao: "BUY", mercado: null }))));
