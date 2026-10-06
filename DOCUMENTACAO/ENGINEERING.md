@@ -13516,3 +13516,7 @@ Só `lab/`; nada do scanner/checker/decisão/sinal foi alterado. Consumo de Twel
 AJUSTE-084 (04/10/2026) - Laboratório: horizonte diário (lab/diario.js, lab/diario-run.js, workflow lab-diario.yml). Famílias D1-D5 (momentum 252d/63d,
 momentum entre moedas, dólar fator, Donchian 55/20), carteira com alvo de vol 10% a.a., custo por spread, controle nulo, bootstrap mensal, critérios A1-A4
 (protocolo 6.21). Só projeto LAB (`diario/{par}` dados, `replay/diario` agregados); nada no scanner/sinal oficial. Resultado em 6.22: nenhuma família com evidência.
+
+AJUSTE-085 (06/10/2026) - Laboratório: carry/swap (lab/taxas.js, lab/taxas-run.js, workflow lab-taxas.yml; FAMILIAS_CARRY em lab/diario.js; modo `carry` em lab/diario-run.js
+e no workflow lab-diario.yml; lab/carry.test.js). Taxas de política diárias do BIS guardadas em `diario/_taxas` (degraus, sem olhar para frente); carry = w x diferencial x dias/365
+menos markup x |w| x dias/365; famílias C1-C3 (+ D1-D5 com swap, informativo); resultados em `replay/carry`. Só projeto LAB. Resultado em 6.24: nenhuma família com evidência.

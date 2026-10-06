@@ -600,6 +600,18 @@ concentrada; por isso o IC por bootstrap mensal também é exigido (A1 exige os 
 Ressalvas: taxa de política != swap real; carry tem risco de cauda (2008, 2015, 2020: estão na amostra de propósito); sem stops (1% de risco é fase seguinte, só se houver vantagem).
 Nada será ajustado (limiar, markup, lookbacks) depois de ver o resultado: variações viram família nova com novo registro.
 
+### 6.24 RESULTADO do carry/swap (06/10/2026, run 37394638692; protocolo 6.23 aplicado SEM ajuste)
+Taxas BIS diárias das 8 moedas desde 2007 (cobertura conferida); markup base 1,0 pp a.a.; estresse 2,5 pp.
+ C1 Carry por par: Sharpe líq 0,22 (bruto 0,47), IC95 -0,26..0,72, nulo p99 0,12, meses+ 55%, sem+ 52%, DD 16%, metades 0,09/0,36, lag1 0,24, spread2x 0,21, swap pior -0,14 => SEM EVIDÊNCIA (falha A1 pelo IC e A3 pelo swap pior)
+ C2 Carry com limiar 1 pp: Sharpe líq 0,17 (bruto 0,33), IC95 -0,30..0,67, meses+ 50%, DD 10%, metades -0,12/0,36, swap pior -0,04 => SEM EVIDÊNCIA
+ C3 Carry com filtro de tendência: Sharpe líq 0,23 (bruto 0,43), IC95 -0,26..0,75, meses+ 54%, DD 8%, metades 0,12/0,33, swap pior -0,05 => SEM EVIDÊNCIA
+ [informativo] D1-D5 com swap: todas pioram (Sharpe líq -0,10 a -0,59): o swap líquido de markup custa mais do que o carry devolve em posições de tendência.
+Leitura: o carry aparece com o SINAL certo (bruto 0,4-0,5, as três famílias positivas e acima do p99 do nulo), mas o IC atravessa o zero e o resultado não sobrevive ao swap pior.
+Erro-padrão do Sharpe em ~18,6 anos ~ 1/raiz(18,6) = 0,23: um Sharpe verdadeiro de 0,2-0,3 não é detectável nesta amostra; só se provaria com ~40-70 anos. O teste não consegue
+nem confirmar nem descartar um carry pequeno. Em 10% a.a. de vol, 0,22 de Sharpe ~ 2,2% a.a. de retorno líquido, com 45% dos meses negativos: sem utilidade como "constância".
+A premissa que decide tudo é o markup do swap da corretora (1 pp -> 0,22; 2,5 pp -> -0,14): precisa da tabela real de swap da XM para fechar essa questão.
+Veredito do protocolo: nenhuma família com vantagem demonstrada; fase de sinal diário NÃO inicia.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
