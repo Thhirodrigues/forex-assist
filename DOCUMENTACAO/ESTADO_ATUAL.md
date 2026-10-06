@@ -97,6 +97,12 @@ reduzido) e **não são comparáveis** (alvo em pips diferente).
   inflados em candle de notícia; não são comparáveis em magnitude). O
   acerto (WIN/LOSS) quase não muda; o que muda é o tamanho de cada
   resultado.
+- **Lista de pares mudou na amostra (decisão do usuário, noite de 06/10/2026)**: de 8 para os **10 pares do Laboratório**
+  (entraram GBP/JPY e EUR/GBP; 4ª chave da TwelveData no rodízio, orçamento 3.200/dia, modelo estima 2.544 = 80%). O primeiro ciclo
+  do scanner com "Pares: 10" foi o de 23:35 UTC (a mudança foi salva entre 22:50 e 23:35 UTC). Ao contar/medir as 100 operações,
+  GBP/JPY e EUR/GBP só existem a partir daí (os grupos `X4_par_*` do Laboratório separam por par; filtrar por data se precisar
+  comparar "antes x depois"). Configuração de pares é permitida no congelamento; a mudança só altera COMPOSIÇÃO da amostra, não a lógica do sinal.
+  Posições abertas hoje (06/10 22:50 UTC): 6, quase todas ligadas ao dólar - o teto de exposição continua na fila pós-100.
 - Ferramenta pra contar as operações do regime novo: **ainda não
   existe** (o replay `diagnostico-replay-score-ajuste037.js` imprime o
   total geral, sem filtrar por regime). Criar quando for preciso.
