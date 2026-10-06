@@ -24,7 +24,7 @@ t("caso do usuário: compra de AUD/USD precisa de dólar CAINDO; dos 6 outros pa
   const usd = q.moedas.find(m => m.moeda === "USD");
   assert.equal(usd.precisa, "cair");
   assert.deepEqual(usd.linhas.map(l => l.par).sort(), ["EUR/USD", "GBP/USD", "NZD/USD", "USD/CAD", "USD/CHF", "USD/JPY"], "todos os outros pares com dólar, não só os que deram sinal");
-  assert.deepEqual({ ...usd.resumo }, { subindo: 1, caindo: 5, parado: 0, semDado: 0, aFavor: 5, n: 6 });
+  assert.deepEqual({ ...usd.resumo }, { subindo: 1, caindo: 5, parado: 0, semDado: 0, obsoleto: 0, aFavor: 5, n: 6 });
   assert.equal(usd.linhas.find(l => l.par === "USD/JPY").estado, "subindo", "USD/JPY: dólar subindo (diverge)");
   assert.equal(usd.linhas.find(l => l.par === "EUR/USD").estado, "caindo", "EUR/USD subindo = dólar caindo");
   assert.equal(q.proprio.lado, "a favor", "AUD/USD subiu e o sinal é compra");
@@ -54,8 +54,18 @@ t("par parado/sem dado/dado velho: contado à parte, idade informada, nada inven
   const usd = q.moedas.find(m2 => m2.moeda === "USD");
   assert.equal(usd.resumo.parado, 1); assert.equal(usd.resumo.semDado, 1);
   assert.equal(usd.linhas.find(l => l.par === "GBP/USD").idadeMin, 200);
+  assert.equal(usd.linhas.find(l => l.par === "GBP/USD").obsoleto, false, "200 min ainda conta (limite de 4 h)");
   const html = M.htmlQuadro(q);
   assert.ok(/sem dado/.test(html) && /⏱ 3 h/.test(html), "mostra 'sem dado' e a idade do dado velho");
+});
+t("dado com mais de 4 h é 'obsoleto': aparece, mas NÃO entra na contagem de subindo/caindo", () => {
+  const m = { pares: { ...mercado.pares, NZD_USD: r(0.41, 0.08, 17 * 60), USD_JPY: r(0.19, 0.02, 5) } };
+  const q = M.quadroDoSinal({ par: "AUD/USD", direcao: "BUY", mercado: m, agora: AGORA });
+  const usd = q.moedas.find(x => x.moeda === "USD");
+  assert.equal(usd.linhas.find(l => l.par === "NZD/USD").estado, null);
+  assert.equal(usd.resumo.obsoleto, 1);
+  assert.equal(usd.resumo.caindo + usd.resumo.subindo + usd.resumo.parado, 5, "NZD/USD de 17 h atrás fica de fora");
+  assert.ok(/1 sem dado atual/.test(M.htmlQuadro(q)));
 });
 t("sem resumo nenhum: mensagem clara, sem quebrar", () => {
   assert.ok(/indisponível/.test(M.htmlQuadro(M.quadroDoSinal({ par: "AUD/USD", direcao: "BUY", mercado: null }))));

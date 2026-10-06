@@ -37,7 +37,7 @@ function resumirCandles15(candles) {
 }
 
 // uma chamada de 15 min com a chave dedicada (sem rodízio, sem retry: 429 ou erro = desiste e tenta no próximo ciclo)
-async function buscarCandles15(par, chave, http = axios, outputsize = 100) {
+async function buscarCandles15(par, chave, http = axios, outputsize = 150) {   // 150: sobra para os candles de fim de semana (descartados) caberem as 96 barras de 24 h
     const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(par)}&interval=15min&outputsize=${outputsize}&timezone=UTC&apikey=${chave}`;
     const res = await http.get(url, { timeout: 10000 });
     if (!res.data || !res.data.values) throw new Error((res.data && res.data.message) || "sem candles");

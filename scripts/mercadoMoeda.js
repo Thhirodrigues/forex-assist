@@ -14,6 +14,7 @@
 const UNIVERSO = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "NZD/USD", "EUR/JPY", "GBP/JPY", "EUR/GBP"];
 const LIMIAR_PARADO = 0.10;      // % em 24 h abaixo do qual o movimento é "parado" (só exibição)
 const IDADE_ALERTA_MIN = 45;     // dado mais velho que isso ganha aviso de idade
+const IDADE_OBSOLETO_MIN = 240;  // mais velho que isso (4 h) não conta no resumo: não diz o que o par faz AGORA
 const NOMES = { USD: "dólar", EUR: "euro", GBP: "libra", JPY: "iene", AUD: "AUD", CAD: "CAD", CHF: "franco", NZD: "NZD" };
 
 const moedasDoPar = (par) => String(par).split("/");
@@ -33,7 +34,9 @@ function quadroDoSinal({ par, direcao, mercado, agora = Date.now() }) {
     const linha = (p, moeda) => {
         const r = dados[chave(p)];
         const mov24 = r ? movimentoNaMoeda(p, moeda, r.v24h) : null;
-        return { par: p, v1h: r ? (r.v1h ?? null) : null, v24h: r ? (r.v24h ?? null) : null, mov24, estado: estadoDoMovimento(mov24), idadeMin: idadeMin(r, agora), semDado: !r };
+        const idade = idadeMin(r, agora);
+        const obsoleto = idade !== null && idade > IDADE_OBSOLETO_MIN;
+        return { par: p, v1h: r ? (r.v1h ?? null) : null, v24h: r ? (r.v24h ?? null) : null, mov24, estado: obsoleto ? null : estadoDoMovimento(mov24), idadeMin: idade, semDado: !r, obsoleto };
     };
     const proprio = linha(par, base);
     const moedas = [base, cotada].map(moeda => {
@@ -41,7 +44,7 @@ function quadroDoSinal({ par, direcao, mercado, agora = Date.now() }) {
         const outros = UNIVERSO.filter(p => p !== par && moedasDoPar(p).includes(moeda)).map(p => linha(p, moeda));
         const contar = (e) => outros.filter(l => l.estado === e).length;
         const aFavor = outros.filter(l => l.estado === (precisa === "subir" ? "subindo" : "caindo")).length;
-        return { moeda, precisa, linhas: outros, resumo: { subindo: contar("subindo"), caindo: contar("caindo"), parado: contar("parado"), semDado: outros.filter(l => l.semDado).length, aFavor, n: outros.length } };
+        return { moeda, precisa, linhas: outros, resumo: { subindo: contar("subindo"), caindo: contar("caindo"), parado: contar("parado"), semDado: outros.filter(l => l.semDado).length, obsoleto: outros.filter(l => l.obsoleto).length, aFavor, n: outros.length } };
     });
     const ladoProprio = proprio.v24h === null ? null : Math.abs(proprio.v24h) < LIMIAR_PARADO ? "parado" : ((proprio.v24h > 0) === comprar ? "a favor" : "contra");
     return { par, direcao, proprio: { ...proprio, lado: ladoProprio }, moedas, semNada: !mercado || !Object.keys(dados).length };
@@ -60,8 +63,8 @@ function htmlQuadro(q) {
     const linhaHtml = (l, rotuloMoeda, precisa) => {
         if (l.semDado) return `<div style="display:flex; justify-content:space-between; gap:6px;"><span>${l.par}</span>${cel("sem dado")}</div>`;
         const velho = l.idadeMin !== null && l.idadeMin > IDADE_ALERTA_MIN;
-        const texto = rotuloMoeda && l.estado ? `${NOMES[rotuloMoeda] || rotuloMoeda} ${l.estado}` : "";
-        return `<div style="display:flex; justify-content:space-between; gap:6px; ${velho ? "opacity:.65;" : ""}">
+        const texto = l.obsoleto ? "sem dado atual" : (rotuloMoeda && l.estado ? `${NOMES[rotuloMoeda] || rotuloMoeda} ${l.estado}` : "");
+        return `<div style="display:flex; justify-content:space-between; gap:6px; ${l.obsoleto ? "opacity:.5;" : velho ? "opacity:.65;" : ""}">
             <span style="white-space:nowrap;">${l.par}</span>
             <span style="white-space:nowrap;">${cel(`${seta(l.v24h)} ${pctTxt(l.v24h)}`, "#f9fafd")} <span style="color:#8b93a7;">24h</span> · ${cel(`${seta(l.v1h)} ${pctTxt(l.v1h)}`, "#f9fafd")} <span style="color:#8b93a7;">1h</span></span>
             <span style="min-width:96px; text-align:right; white-space:nowrap; color:${corDoEstado(l.estado, precisa)};">${texto}${velho ? ` <span style="color:#8b93a7;">⏱ ${idadeTxt(l.idadeMin)}</span>` : ""}</span>
@@ -73,8 +76,8 @@ function htmlQuadro(q) {
         const titulo = `${(NOMES[m.moeda] || m.moeda).toUpperCase()} — o sinal precisa dela ${m.precisa === "subir" ? "SUBINDO" : "CAINDO"}`;
         if (!m.linhas.length) return `<div style="margin-top:8px;"><div style="font-weight:bold; color:#f9fafd;">${titulo}</div><div style="color:#8b93a7;">nenhum outro par do app tem esta moeda: sem comparação</div></div>`;
         const r = m.resumo;
-        const partes = [r.subindo && `${r.subindo} subindo`, r.caindo && `${r.caindo} caindo`, r.parado && `${r.parado} parada`].filter(Boolean).join(", ");
-        const contra = r.n > 0 && r.aFavor === 0 && r.parado + r.semDado < r.n;
+        const partes = [r.subindo && `${r.subindo} subindo`, r.caindo && `${r.caindo} caindo`, r.parado && `${r.parado} parada`, r.obsoleto && `${r.obsoleto} sem dado atual`].filter(Boolean).join(", ");
+        const contra = r.n > 0 && r.aFavor === 0 && r.subindo + r.caindo > 0;
         return `<div style="margin-top:8px;">
             <div style="font-weight:bold; color:#f9fafd;">${titulo}</div>
             ${m.linhas.map(l => linhaHtml(l, m.moeda, m.precisa)).join("")}
