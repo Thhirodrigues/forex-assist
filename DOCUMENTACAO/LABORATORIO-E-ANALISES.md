@@ -633,6 +633,26 @@ Barreiras reais: TP = +US$5,00 e SL = -US$5,4 a -5,5 (R:R ~0,92; break-even de a
 Swaps = US$0,00 nas 4 (abertas depois da virada anterior). Após a primeira virada (servidor 00:00 = 21:00 UTC), o campo "Swaps" dá o swap REAL: pedir print para estimar o markup (swap = nocional x (+/-tom-next - markup)/365).
 Hipótese NOVA a pré-registrar se o usuário quiser (X5): sinais contra a tendência diária (63 dias) perdem mais? Nos 3 gráficos diários enviados, 3 de 3 sinais eram contra a tendência de semanas (anedota, n=3).
 
+### 6.27 PRÉ-REGISTRO: direção do MERCADO por par, concordância de moeda e saída parcial (pedido do usuário em 06/10/2026; escrito ANTES de implementar e rodar)
+Origem (usuário): (a) não basta ver o que o sinal mandou fazer; é preciso ver PARA ONDE O MERCADO ESTÁ INDO em cada par e se o sinal está a favor ou contra isso; o sinal "diferente" dos outros pode ser o que está certo;
+(b) comparar com os outros pares da mesma moeda (4 apostas em "dólar cai" e uma em "dólar sobe" = divergência); (c) se o lucro aberto estiver em 40-60% do alvo no fechamento de um candle, avisar e deixar o usuário embolsar em vez de esperar o alvo cheio.
+Só análise no Lab; nada muda no scanner oficial (congelado). Contexto calculado só com dados ATÉ o instante da entrada (sem olhar para frente), nos candles de 5 min:
+ X5 Tendência do PAR em ~10 dias de mercado (2.880 candles de 5 min): retorno do fechamento de 2.880 candles antes até a entrada. |ret| >= 0,8% = "forte"; BUY com ret>0 (ou SELL com ret<0) = a_favor,
+    o oposto = contra, |ret| < 0,8% = fraca. Grupos X5_10d_a_favor / X5_10d_contra / X5_10d_fraca.
+ X7 Tendência do PAR nas últimas 24h (288 candles): mesma lógica, limiar 0,25%. Grupos X7_24h_a_favor / _contra / _fraca.
+ X6 Cesta do dólar (MERCADO): média dos retornos de 24h dos 7 pares com USD, em termos de dólar (par com USD na cotação: retorno do par; com USD na base: retorno invertido). Só para entradas com lado do dólar (não cruzados).
+    |cesta| >= 0,15% = forte. Entrada "dólar comprado" com cesta>0 (ou "vendido" com cesta<0) = a_favor, oposto = contra, fraca = |cesta| < 0,15%. Grupos X6_cesta_a_favor / _contra / _fraca.
+ X8 Concordância de SINAIS (o que o app mandou nos outros pares): entre os OUTROS pares com USD, a última análise com direção (aprovada ou tendência ALTA/BAIXA, até 30 min antes da entrada) vota no lado do dólar.
+    "concorda" = >= 2 votantes e todos no mesmo lado da entrada; "diverge" = >= 2 votantes e todos no lado oposto; "misto" = >= 2 votantes divididos; "sem_dados" = < 2. Grupos X8_sinais_concorda / _diverge / _misto / _sem_dados.
+ S1/S2 Saída por fechamento de candle de 15 min: se, no FECHAMENTO de um candle de 15 min (xx:00/15/30/45), o lucro aberto líquido do spread >= 40% (S1: SAIDA_40_FECH) ou >= 60% (S2: SAIDA_60_FECH) do TP em pips, sai ali
+    (no fechamento, pagando o spread); senão segue o TP/SL normal (SL igual ao ATUAL; TP inalterado como teto). Reportadas: pips por operação, % de acerto (WIN = pips > 0) e tamanho médio de ganho e perda.
+Amostra: replay histórico de 360 dias (já guardado), exploração = primeiros 70%, validação = últimos 30% (aberta uma única vez, só para o que passar na exploração). Universos: LAB (fluxo virtual, base) e OFICIAL (aprovadas, confirmação).
+Critério para X5/X6/X7/X8 (contrastes a_favor x contra, concorda x diverge; 4 famílias x 1 contraste = 4 contrastes, Bonferroni, alvo p<0,0125 => |t| >= 2,5): diferença de pips por operação (variante ATUAL, líquido de spread) >= 1,0 pip a favor de "a_favor"/"concorda",
+ com t de Welch calibrado pelo controle ALEATORIO (mesmos grupos, direção sorteada), e MESMO SINAL na validação. Se a diferença for no sentido OPOSTO, também é achado (reportado), mas não vira regra sem validação.
+Critério para S1/S2 contra ATUAL: pips por operação maior em >= 0,5 pip, no mesmo sinal nas duas partes (exploração e validação). A taxa de acerto vai SEMPRE junto com os pips: acerto sobe quase por construção; o que decide é a esperança em pips
+ (efeito disposição: cortar ganho cedo e deixar a perda correr piora a esperança mesmo subindo o acerto; Shefrin-Statman 1985; Odean 1998, J. Finance). O aviso ao usuário (notificação) NÃO é implementado agora: muda o comportamento das operações medidas, só depois das 100 (caderno 6.25).
+Limites: grupos feitos com limiar escolhido a priori (0,8%/0,25%/0,15%), sem ajuste; 10 dias de mercado != "3 semanas" do gráfico diário visto pelo usuário; o histórico de 360 dias tem uma tendência de dólar própria (confundidor, como em 6.20).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
