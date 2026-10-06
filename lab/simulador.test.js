@@ -90,8 +90,9 @@ t("entradas inválidas são recusadas, não simuladas", () => {
 t("variantesPadrao: ids, 1:2, TP curto e ATR em pips (JPY x100)", () => {
   const v = variantesPadrao({ par: "USD/JPY", tpPips: 25, slPips: 25, indicadores: { atr: 0.08 } });
   const ids = v.map(x => x.id);
-  assert.deepEqual(ids, ["ATUAL", "RR_1_2", "TP_CURTO", "BE_METADE", "ENTRADA_MAIS_5", "ENTRADA_MAIS_10", "REANALISE", "INVERSO", "ALEATORIO", "ATUAL_SEM_SPREAD", "ESCALA_2X", "ESCALA_3X", "ATUAL_SPREAD_0_5X", "ATUAL_SPREAD_1_5X", "ATUAL_SPREAD_2X", "ATR_3X", "ATR_6X"]);
-  assert.equal(v[1].tpPips, 50); assert.equal(v[2].tpPips, 12.5); assert.equal(v[15].tpPips, 24); assert.equal(v[16].tpPips, 48);
+  assert.deepEqual(ids, ["ATUAL", "RR_1_2", "TP_CURTO", "BE_METADE", "ENTRADA_MAIS_5", "ENTRADA_MAIS_10", "REANALISE", "INVERSO", "ALEATORIO", "ATUAL_SEM_SPREAD", "ESCALA_2X", "ESCALA_3X", "ATUAL_SPREAD_0_5X", "ATUAL_SPREAD_1_5X", "ATUAL_SPREAD_2X", "SAIDA_40_FECH", "SAIDA_60_FECH", "ATR_3X", "ATR_6X"]);
+  assert.equal(v[1].tpPips, 50); assert.equal(v[2].tpPips, 12.5); assert.equal(v[17].tpPips, 24); assert.equal(v[18].tpPips, 48);
+  assert.deepEqual(v[15].opcoes, { saidaFechamento: { frac: 0.4, tfMin: 15 } }); assert.deepEqual(v[16].opcoes, { saidaFechamento: { frac: 0.6, tfMin: 15 } });
 });
 t("INVERSO: com TP = SL é o espelho do direto (sem spread: soma dos pips = 0)", () => {
   const sobe = [c(0, 1.1, 1.1030, 1.0999, 1.1020)];
@@ -106,5 +107,37 @@ t("INVERSO: com TP = SL é o espelho do direto (sem spread: soma dos pips = 0)",
 t("INVERSO + spread: o espelho também paga o custo (LOSS do direto vira WIN de +25, mas precisa andar 26,8)", () => {
   const cai = [c(0, 1.1, 1.1004, 1.0974, 1.0980)];   // cai 26 pips: com spread 1,8 o inverso precisa de 26,8
   assert.equal(simularOperacao({ ...base, spreadPips: 1.8, candles: cai, opcoes: { inverter: true } }).resultado, "ABERTA");
+});
+
+// ---- 6.27: saída parcial no fechamento do candle de 15 min (candle i termina em T0 + (i+1)*5 min; 12:15 = fim do candle 2) ----
+const S40 = { saidaFechamento: { frac: 0.4, tfMin: 15 } }, S60 = { saidaFechamento: { frac: 0.6, tfMin: 15 } };
+const lento = (fechaCandle2) => [c(0, 1.1, 1.1016, 1.0998, 1.1015), c(1, 1.1015, 1.1018, 1.1008, 1.1010), c(2, 1.1010, 1.1013, 1.1008, fechaCandle2)];
+t("saída 40%: no fechamento do candle de 15 min com +11 pips (>= 10) sai ali, PARCIAL +11", () => {
+  const r = simularOperacao({ ...base, candles: lento(1.1011), opcoes: S40 });
+  assert.equal(r.resultado, "PARCIAL"); assert.equal(r.pips, 11); assert.equal(r.duracaoMin, 15);
+});
+t("saída parcial só no fechamento de 15 min: +15 pips no meio (candle 0) não sai; só no fim do candle 2", () => {
+  const r = simularOperacao({ ...base, candles: lento(1.1012), opcoes: S40 });
+  assert.equal(r.resultado, "PARCIAL"); assert.equal(r.duracaoMin, 15); assert.equal(r.pips, 12);
+});
+t("saída 60%: +11 pips (< 15) não sai; continua até o próximo fechamento de 15 min", () => {
+  const cs = [...lento(1.1011), c(3, 1.1011, 1.1014, 1.1009, 1.1013), c(4, 1.1013, 1.1018, 1.1011, 1.1016), c(5, 1.1016, 1.1019, 1.1014, 1.1017)];
+  const r = simularOperacao({ ...base, candles: cs, opcoes: S60 });
+  assert.equal(r.resultado, "PARCIAL"); assert.equal(r.pips, 17); assert.equal(r.duracaoMin, 30);
+});
+t("saída parcial é líquida de spread: +11 bruto com spread 2 = +9 < 10, não sai; sem a saída o resultado é ABERTA", () => {
+  assert.equal(simularOperacao({ ...base, spreadPips: 2, candles: lento(1.1011), opcoes: S40 }).resultado, "ABERTA");
+  assert.equal(simularOperacao({ ...base, spreadPips: 2, candles: lento(1.1013), opcoes: S40 }).resultado, "PARCIAL");
+});
+t("candle do fechamento que também toca o TP/SL: vale TP/SL (WIN/LOSS), não PARCIAL", () => {
+  const w = [c(0, 1.1, 1.1005, 1.0998, 1.1002), c(1, 1.1002, 1.1006, 1.1000, 1.1004), c(2, 1.1004, 1.1026, 1.1003, 1.1012)];
+  assert.equal(simularOperacao({ ...base, candles: w, opcoes: S40 }).resultado, "WIN");
+  const l = [c(0, 1.1, 1.1005, 1.0998, 1.1002), c(1, 1.1002, 1.1006, 1.1000, 1.1004), c(2, 1.1004, 1.1020, 1.0974, 1.1015)];
+  assert.equal(simularOperacao({ ...base, candles: l, opcoes: S40 }).resultado, "LOSS");
+});
+t("saída parcial em venda é simétrica (preço cai 11 pips)", () => {
+  const cs = [c(0, 1.1, 1.1002, 1.0990, 1.0992), c(1, 1.0992, 1.0995, 1.0988, 1.0990), c(2, 1.0990, 1.0992, 1.0987, 1.0989)];
+  const r = simularOperacao({ ...base, direcao: "SELL", candles: cs, opcoes: S40 });
+  assert.equal(r.resultado, "PARCIAL"); assert.equal(r.pips, 11);
 });
 console.log(`TODOS OS ${n} TESTES PASSARAM`);

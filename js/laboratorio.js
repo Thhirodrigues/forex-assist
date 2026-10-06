@@ -31,6 +31,10 @@ const LB_ORDEM_RECORTES = [
     ["X1_rsi_esticado", "RSI esticado a favor (≥70 compra, ≤30 venda)"], ["X1_rsi_normal", "RSI normal"],
     ["X2_sessao_asia", "Sessão Ásia (00–07 UTC)"], ["X2_sessao_londres", "Sessão Londres (07–12)"],
     ["X2_sessao_sobreposicao", "Londres + NY (12–16)"], ["X2_sessao_ny", "Sessão NY (16–21)"], ["X2_sessao_fora", "Fim de dia (21–24)"],
+    ["X5_10d_a_favor", "Mercado do par (10 dias): sinal A FAVOR"], ["X5_10d_contra", "Mercado do par (10 dias): sinal CONTRA"], ["X5_10d_fraca", "Mercado do par (10 dias): sem tendência"],
+    ["X7_24h_a_favor", "Mercado do par (24 h): sinal A FAVOR"], ["X7_24h_contra", "Mercado do par (24 h): sinal CONTRA"], ["X7_24h_fraca", "Mercado do par (24 h): sem tendência"],
+    ["X6_cesta_a_favor", "Cesta do dólar (24 h): sinal A FAVOR"], ["X6_cesta_contra", "Cesta do dólar (24 h): sinal CONTRA"], ["X6_cesta_fraca", "Cesta do dólar (24 h): parada"],
+    ["X8_sinais_concorda", "Outros pares do dólar CONCORDAM"], ["X8_sinais_diverge", "Outros pares do dólar DIVERGEM"], ["X8_sinais_misto", "Outros pares do dólar divididos"], ["X8_sinais_sem_dados", "Outros pares: poucos sinais"],
     ["X4_par_EUR_USD", "Par EUR/USD"], ["X4_par_GBP_USD", "Par GBP/USD"], ["X4_par_USD_JPY", "Par USD/JPY"], ["X4_par_AUD_USD", "Par AUD/USD"],
     ["X4_par_USD_CAD", "Par USD/CAD"], ["X4_par_USD_CHF", "Par USD/CHF"], ["X4_par_NZD_USD", "Par NZD/USD"], ["X4_par_EUR_JPY", "Par EUR/JPY"]
 ];

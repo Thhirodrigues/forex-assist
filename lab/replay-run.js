@@ -14,6 +14,7 @@
 const { baixarHistorico } = require("./historico");
 const { replayPar } = require("./replay");
 const { processarPar, contarEntradas } = require("./nucleo");
+const { construirContexto, enxugarAnalise } = require("./contexto");
 const { mercadoForexAberto } = require("../scripts/horarioMercado");
 const { FAMILIAS, sinaisParaAnalises } = require("./familias");
 
@@ -112,12 +113,19 @@ async function replayETudo({ lab, config, pares, split = 0.7, passo = 3, log = c
         ini = Math.min(ini, c5[0].ts); fim = Math.max(fim, c5[c5.length - 1].ts);
     }
     const splitTs = ini + (fim - ini) * split;
+    // fase 1: o pipeline do app em cada par (guarda só o essencial de cada análise: 10 pares x ~25 mil análises inteiras não cabem na memória)
+    const analisesPorPar = {};
+    for (const par of Object.keys(porPar)) {
+        const r = await replayPar({ par, c5: porPar[par], configuracao: config, passo, log });
+        totais.barras += r.avaliadas; totais.analises += r.analises.length; totais.aprovadas += r.aprovacoes;
+        analisesPorPar[par] = r.analises.map(enxugarAnalise);
+    }
+    // fase 2: rotular com o contexto de mercado de TODOS os pares (6.27: tendência do par, cesta do dólar, votos dos outros pares)
+    const contexto = construirContexto({ candlesPorPar: porPar, analisesPorPar });
     for (const par of Object.keys(porPar)) {
         const c5 = porPar[par];
-        const r = await replayPar({ par, c5, configuracao: config, passo, log });
-        totais.barras += r.avaliadas; totais.analises += r.analises.length; totais.aprovadas += r.aprovacoes;
         const cm = c5.map(x => ({ timestamp: x.ts, open: x.o, high: x.h, low: x.l, close: x.c }));
-        const out = processarPar({ par, analises: r.analises, abertas: [], ultimoLab: null, candles: cm, registradoEm: splitTs, agora: c5[c5.length - 1].ts });
+        const out = processarPar({ par, analises: analisesPorPar[par], abertas: [], ultimoLab: null, candles: cm, registradoEm: splitTs, agora: c5[c5.length - 1].ts, contexto });
         entradasTodas.push(...out.entradas);
         log(`${par}: ${out.entradas.length} entradas rotuladas`);
     }

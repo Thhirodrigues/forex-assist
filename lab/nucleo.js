@@ -76,6 +76,27 @@ function gruposDaEntrada(e) {
     }
     if (Number.isFinite(Number(e.lote))) g.push(`X3_lote_${Number(e.lote)}`);
     if (e.par) g.push(`X4_par_${String(e.par).replace("/", "_")}`);
+
+    // ---- 6.27 (pré-registrado em 06/10/2026): direção do MERCADO e concordância de moeda; só existem em entradas com `ctx` ----
+    if (e.ctx) {
+        const querSubir = e.direcao === "BUY";
+        const aFavor = (r, lim) => (!Number.isFinite(r) ? null : Math.abs(r) < lim ? "fraca" : ((r > 0) === querSubir ? "a_favor" : "contra"));
+        const x5 = aFavor(e.ctx.m10, 0.008); if (x5) g.push(`X5_10d_${x5}`);
+        const x7 = aFavor(e.ctx.m24, 0.0025); if (x7) g.push(`X7_24h_${x7}`);
+        const lado = ladoDolar(e.par, e.direcao);
+        if (lado !== "cruzado") {
+            const querDolarSubir = lado === "comprado";
+            if (Number.isFinite(e.ctx.u24)) {
+                g.push(`X6_cesta_${Math.abs(e.ctx.u24) < 0.0015 ? "fraca" : ((e.ctx.u24 > 0) === querDolarSubir ? "a_favor" : "contra")}`);
+            }
+            const vUp = Number(e.ctx.vUp) || 0, vDn = Number(e.ctx.vDn) || 0;
+            if (vUp + vDn < 2) g.push("X8_sinais_sem_dados");
+            else {
+                const mesmo = querDolarSubir ? vUp : vDn, oposto = querDolarSubir ? vDn : vUp;
+                g.push(oposto === 0 ? "X8_sinais_concorda" : mesmo === 0 ? "X8_sinais_diverge" : "X8_sinais_misto");
+            }
+        }
+    }
     return g;
 }
 
@@ -100,7 +121,7 @@ function somarDelta(deltas, chave, meta, r) {
     if (r.ambiguo) d.amb += 1;
 }
 
-function novaEntrada(tipo, id, par, a, dir, preRegistro) {
+function novaEntrada(tipo, id, par, a, dir, preRegistro, ctx = null) {
     const tp = Math.abs(Number(a.tpPips));
     const sl = Math.abs(Number(a.slPips));
     const spread = spreadDoPar(par);
@@ -125,6 +146,7 @@ function novaEntrada(tipo, id, par, a, dir, preRegistro) {
         reanalisesAteT: Number(a.timestamp),
         resolvida: false
     };
+    if (ctx) base.ctx = ctx;
     const variantes = {};
     for (const v of variantesPadrao({ ...a, par, tpPips: tp, slPips: sl })) {
         variantes[v.id] = { r: "ABERTA", cfg: { tpPips: v.tpPips, slPips: v.slPips, opcoes: v.opcoes } };
@@ -180,9 +202,10 @@ function atualizarVariantes(e, candles, agora) {
  * @param {Array} p.candles             candles de 5 min (ordenados, já filtrados por horário de mercado)
  * @param {number} p.registradoEm
  * @param {number} p.agora
+ * @param {(par:string,t:number)=>object} [p.contexto]  contexto de mercado na entrada (lab/contexto.js, 6.27); ausente = sem grupos X5-X8
  * @returns {{entradas: object[], deltas: object, ultimoLab: object|null, ignoradas: object}}
  */
-function processarPar({ par, analises, abertas, ultimoLab, candles, registradoEm, agora }) {
+function processarPar({ par, analises, abertas, ultimoLab, candles, registradoEm, agora, contexto = null }) {
 
     const deltas = {};
     const ignoradas = { semDirecao: 0, semTpSl: 0, cooldown: 0 };
@@ -235,7 +258,7 @@ function processarPar({ par, analises, abertas, ultimoLab, candles, registradoEm
         if (livre) tipos.push("LAB"); else ignoradas.cooldown++;
 
         for (const tipo of tipos) {
-            const e = novaEntrada(tipo, `${tipo}_${a.id}`, par, a, dir, preRegistro);
+            const e = novaEntrada(tipo, `${tipo}_${a.id}`, par, a, dir, preRegistro, contexto ? contexto(par, Number(a.timestamp)) : null);
             // reanálises: as análises deste par posteriores à entrada que já temos em mãos
             adicionarReanalises(e);
             registrarMudancas(deltas, e, atualizarVariantes(e, candles, agora));
@@ -289,4 +312,4 @@ function aplicarTeto(entradas, K) {
     return resultado;
 }
 
-module.exports = { aplicarTeto, paridadeDoId, contarEntradas, processarPar, direcaoDaAnalise, chaveContador, gruposDaEntrada, registrarMudancas, somarDelta };
+module.exports = { ladoDolar, aplicarTeto, paridadeDoId, contarEntradas, processarPar, direcaoDaAnalise, chaveContador, gruposDaEntrada, registrarMudancas, somarDelta };

@@ -79,7 +79,9 @@ const VARIANTES = [
     { id: "ESCALA_3X", nome: "Alvo e stop 3x maiores", texto: "mesma proporção; o custo pesa um terço" },
     { id: "ATUAL_SPREAD_0_5X", nome: "Sinal com metade do spread", texto: "~ conta de spread baixo (valor não conferido)" },
     { id: "ATUAL_SPREAD_1_5X", nome: "Sinal com spread 1,5x", texto: "estresse de custo (notícia, virada de sessão)" },
-    { id: "ATUAL_SPREAD_2X", nome: "Sinal com spread 2x", texto: "estresse de custo" }
+    { id: "ATUAL_SPREAD_2X", nome: "Sinal com spread 2x", texto: "estresse de custo" },
+    { id: "SAIDA_40_FECH", nome: "Embolsar 40% do alvo (fecha de 15 min)", texto: "no fechamento do candle de 15 min, se o lucro líquido já é 40% do alvo, sai" },
+    { id: "SAIDA_60_FECH", nome: "Embolsar 60% do alvo (fecha de 15 min)", texto: "idem com 60% do alvo" }
 ];
 
 const api = { HIPOTESES, VARIANTES, montarPlacar, formatarPlacar, faixaAmostra, estatisticaT };

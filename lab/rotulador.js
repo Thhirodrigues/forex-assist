@@ -13,7 +13,10 @@
 
 const CFG = require("./config");
 const { processarPar, direcaoDaAnalise } = require("./nucleo");
+const { construirContexto } = require("./contexto");
 const { mercadoForexAberto } = require("../scripts/horarioMercado");
+
+const JANELA_VOTO_MS = 30 * 60000;
 
 const chavePar = (par) => par.replace("/", "_");
 const dorme = (ms) => new Promise(r => setTimeout(r, ms));
@@ -26,7 +29,7 @@ function comTimeout(promessa, rotulo, ms = 45000) {
     return Promise.race([promessa, limite]).finally(() => clearTimeout(t));
 }
 
-function candlesNumericos(brutos, desde) {
+function candlesNumericos(brutos, desde = -Infinity) {
     return brutos
         .map(c => ({
             timestamp: new Date(c.datetime.replace(" ", "T") + "Z").getTime(),
@@ -60,7 +63,7 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
     const cursorGlobal = ctrl.cursorGlobal ?? (agora - backfillMs);
     const cursorMin = Math.min(cursorGlobal, ...Object.values(cursorPar));
     const snap = await comTimeout(ofic.collection("analises")
-        .where("timestamp", ">", cursorMin)
+        .where("timestamp", ">", cursorMin - JANELA_VOTO_MS)   // 30 min a mais só para os votos dos outros pares (6.27); novas = > cursor, abaixo
         .orderBy("timestamp").limit(CFG.LIMITE_LEITURA).get(), "ler analises no projeto OFICIAL");
 
     const analises = [];
@@ -71,6 +74,7 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
 
     const porPar = {};
     for (const a of analises) (porPar[a.par] = porPar[a.par] || []).push(a);
+    const porParOrdenado = porPar;   // `analises` já vem ordenado por timestamp (orderBy): serve para os votos de 6.27
 
     // ---- 2) entradas do laboratório ainda abertas ----
     const abertasSnap = await comTimeout(lab.collection("entradas").where("resolvida", "==", false).get(), "ler entradas abertas no projeto LAB");
@@ -99,14 +103,18 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
         try {
 
             const inicio = Math.min(...novas.map(a => a.timestamp), ...abertas.map(e => e.t));
-            const outputsize = Math.min(5000, Math.ceil((agora - inicio) / 300000) + 10);
+            // 5000 candles (~17 dias de mercado) SEMPRE: custa o mesmo 1 crédito e dá o histórico anterior à entrada, que o
+            // contexto de mercado do 6.27 precisa (tendência de ~10 dias e 24 h). A simulação só enxerga de `e.t` em diante.
+            const outputsize = 5000;
             if (buscas++ > 0) await esperar(CFG.INTERVALO_ENTRE_PARES_MS);
-            const candles = candlesNumericos(await getCandles(par, "5min", outputsize), inicio);
+            const candles = candlesNumericos(await getCandles(par, "5min", outputsize));
+            // ao vivo só este par tem candles nesta execução: m10/m24 existem, a cesta do dólar (X6) fica só no replay; os votos (X8) usam as análises lidas
+            const contexto = construirContexto({ candlesPorPar: { [par]: candles }, analisesPorPar: porParOrdenado });
 
             const r = processarPar({
                 par, analises: novas, abertas,
                 ultimoLab: ultimoLabPar[chavePar(par)] || null,
-                candles, registradoEm, agora
+                candles, registradoEm, agora, contexto
             });
             for (const k of Object.keys(totalIgn)) totalIgn[k] += r.ignoradas[k];
 

@@ -58,6 +58,10 @@ const candles = (n, alvoNo) => Array.from({ length: n }, (_, i) => ({ datetime: 
     const ids = Object.keys(lab.cols.entradas).sort();
     assert.deepEqual(ids, ["LAB_a1", "OFICIAL_a1"], "a2 cai no cooldown virtual de 30 min");
     assert.equal(lab.cols.entradas.LAB_a1.variantes.ATUAL.r, "WIN");
+    assert.equal(chamadas[0][1], 5000, "sempre 5000 candles (mesmo crédito): o contexto de 6.27 precisa do histórico anterior à entrada");
+    const ctxA1 = lab.cols.entradas.LAB_a1.ctx;
+    assert.ok(ctxA1 && ctxA1.m10 === null && ctxA1.m24 === null && ctxA1.u24 === null, "sem histórico suficiente: contexto vazio (null), nunca inventado; cesta só no replay");
+    assert.equal(ctxA1.vUp + ctxA1.vDn, 0);
     // 1ª execução: registradoEm = agora (T0+3h) -> análises de T0 são PRÉ-registro
     const res = lab.cols.resumo["OFICIAL__ATUAL__pre__TODOS"];
     assert.equal(res.n, 1); assert.equal(res.pos, 1); assert.equal(res.pips, 25);

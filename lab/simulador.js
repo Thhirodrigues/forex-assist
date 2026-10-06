@@ -47,6 +47,8 @@ function contra(direcao, tendencia) {
  * @param {number} [p.opcoes.maxMinutos]           fecha a mercado (open do candle) após N min
  * @param {Array<{t:number,preco:number,tendencia:string}>} [p.opcoes.reanalises]  análises POSTERIORES do mesmo par
  * @param {number} [p.opcoes.reanaliseAposMin=0]   ignora reanálises nos primeiros N min
+ * @param {{frac:number,tfMin:number}} [p.opcoes.saidaFechamento]  (6.27) no FECHAMENTO de um candle de tfMin minutos, se o lucro
+ *        aberto líquido do spread for >= frac x TP, sai ali ("PARCIAL"); TP/SL do candle são checados antes (errar contra)
  */
 function simularOperacao(p) {
 
@@ -125,6 +127,15 @@ function simularOperacao(p) {
             beAtivo = true;   // vale a partir do próximo candle (regra 5)
         }
 
+        // 6.27 - saída parcial no fechamento do candle de tfMin (xx:00/15/30/45 para 15 min): o candle já passou por TP/SL acima
+        if (o.saidaFechamento) {
+            const fimDoCandle = c.timestamp + CINCO_MIN;
+            if (fimDoCandle % (o.saidaFechamento.tfMin * 60000) === 0) {
+                const lucro = liquido(c.close);
+                if (lucro >= o.saidaFechamento.frac * tpPips) return pronto("PARCIAL", lucro, fimDoCandle);
+            }
+        }
+
         // reanálise: o candle onde ela cai já foi checado por TP/SL (errar contra)
         while (iRe < reanalises.length && reanalises[iRe].t < c.timestamp + CINCO_MIN) {
             const r = reanalises[iRe++];
@@ -171,7 +182,11 @@ function variantesPadrao(analise, { atrMultiplo = 3 } = {}) {
         { id: "ESCALA_3X", tpPips: tp * 3, slPips: sl * 3, opcoes: {} },
         { id: "ATUAL_SPREAD_0_5X", tpPips: tp, slPips: sl, opcoes: { spreadMult: 0.5 } },
         { id: "ATUAL_SPREAD_1_5X", tpPips: tp, slPips: sl, opcoes: { spreadMult: 1.5 } },
-        { id: "ATUAL_SPREAD_2X",   tpPips: tp, slPips: sl, opcoes: { spreadMult: 2 } }
+        { id: "ATUAL_SPREAD_2X",   tpPips: tp, slPips: sl, opcoes: { spreadMult: 2 } },
+        // 06/10/2026 (caderno 6.27, ideia do usuário): embolsar parte do lucro no FECHAMENTO do candle de 15 min
+        // quando o lucro aberto líquido já é >= 40% / 60% do alvo.
+        { id: "SAIDA_40_FECH", tpPips: tp, slPips: sl, opcoes: { saidaFechamento: { frac: 0.4, tfMin: 15 } } },
+        { id: "SAIDA_60_FECH", tpPips: tp, slPips: sl, opcoes: { saidaFechamento: { frac: 0.6, tfMin: 15 } } }
     ];
 
     // ATR_3X = barreira CURTA (2-15 pips; medido em 04/10: ATR de 5 min vai de ~2,5 pips no
