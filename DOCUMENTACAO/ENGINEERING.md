@@ -13520,3 +13520,9 @@ momentum entre moedas, dólar fator, Donchian 55/20), carteira com alvo de vol 1
 AJUSTE-085 (06/10/2026) - Laboratório: carry/swap (lab/taxas.js, lab/taxas-run.js, workflow lab-taxas.yml; FAMILIAS_CARRY em lab/diario.js; modo `carry` em lab/diario-run.js
 e no workflow lab-diario.yml; lab/carry.test.js). Taxas de política diárias do BIS guardadas em `diario/_taxas` (degraus, sem olhar para frente); carry = w x diferencial x dias/365
 menos markup x |w| x dias/365; famílias C1-C3 (+ D1-D5 com swap, informativo); resultados em `replay/carry`. Só projeto LAB. Resultado em 6.24: nenhuma família com evidência.
+
+AJUSTE-086 (06/10/2026) - Laboratório: contexto de mercado na entrada e saídas parciais (caderno 6.27). `lab/contexto.js` (retorno do par em ~10 dias e 24 h, cesta do dólar de 24 h,
+votos dos outros pares com USD; só dados até o instante da entrada), grupos X5/X6/X7/X8 em `gruposDaEntrada` (só entradas com `ctx`), variantes `SAIDA_40_FECH`/`SAIDA_60_FECH`
+(opção `saidaFechamento` do simulador: sai no fechamento do candle de 15 min se o lucro líquido de spread >= 40%/60% do TP; TP/SL do candle têm precedência), replay em duas fases
+(análises enxutas por par, depois rotulagem com contexto de todos os pares), rotulador ao vivo pedindo sempre 5000 candles (mesmo crédito) e lendo 30 min de análises a mais só para os votos.
+Ao vivo a cesta do dólar (X6) fica vazia (só este par tem candles na execução); X5/X7/X8 existem. Testes: lab/contexto.test.js e ampliações. Nada muda no scanner oficial.
