@@ -612,6 +612,19 @@ nem confirmar nem descartar um carry pequeno. Em 10% a.a. de vol, 0,22 de Sharpe
 A premissa que decide tudo é o markup do swap da corretora (1 pp -> 0,22; 2,5 pp -> -0,14): precisa da tabela real de swap da XM para fechar essa questão.
 Veredito do protocolo: nenhuma família com vantagem demonstrada; fase de sinal diário NÃO inicia.
 
+### 6.25 REGRA DE DECISÃO PARA AS 100 OPERAÇÕES DO OFICIAL (proposta em 06/10/2026; escrita ANTES de existirem os 100; vetável pelo usuário antes de 50)
+Contexto medido: até 05/10 22:37 UTC, 9 fechadas na época pós-zerar (3W/6L). Na época anterior (157 ops, regimes misturados, só indicativo): acerto 41% e -2,5 pips/op com spread ZERO,
+-4,5 pips/op com o spread da tabela. Break-even de acerto com TP~SL e spread ~2 pips fica perto de 53-55% (50% + spread/(2 x TP)); o resultado líquido em pips já resume isso.
+Métrica primária ÚNICA: pips líquidos por operação (variante ATUAL do OFICIAL, época pós-zerar, só `regimeTPSL=CONFIG`), IC 95% por bootstrap em BLOCOS DE DIA (operações do mesmo dia/moeda
+não são independentes). Comparação obrigatória com o controle ALEATORIO do Lab (mesmas entradas, direção sorteada), pelo `estatisticaT` calibrado.
+Decisão (uma vez só, ao fechar a 100a; congelar a contagem com data/hora antes de abrir os números):
+ R1 PERDE: limite superior do IC < 0 (ou não supera o ALEATORIO). Conclusão: o sinal atual não tem vantagem demonstrada. Dinheiro real fora. A fila de 9 ajustes NÃO é "otimizada" em cima
+    desses mesmos 100 (seria dentro da amostra); o próximo passo é decisão de produto com o usuário e, se houver nova premissa, teste no Lab com período separado (exploração x validação).
+ R2 INDETERMINADO: IC contém 0 e não perde para o ALEATORIO. Estende-se a 200 operações sem mudar nada; reaplica a mesma regra.
+ R3 GANHA: limite inferior do IC > 0 E supera o ALEATORIO. Ainda sem dinheiro real: segunda amostra independente (forward) de 100, depois micro-lote com risco <= 1% por operação.
+Descritivos (acerto, por par, sessão, grupos H1-H5/X1-X4, lote): servem só para formular hipóteses da próxima amostra, nunca para ajustar o sinal (Bonferroni; mais de 20 cortes = 1 falso positivo esperado).
+Ritmo e prazo: ver ESTADO_ATUAL §0; estimativa de 06/10 = 91 faltando, 2 a 4,5 semanas, baseada em 1 dia de dados.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
