@@ -64,13 +64,13 @@ function htmlQuadro(q) {
     if (q.semNada) return `<div style="font-size:12px; color:#bcc4d5;">Resumo de mercado ainda indisponível (o scanner grava a cada ciclo; abra de novo em instantes).</div>`;
     const cel = (txt, cor) => `<span style="color:${cor || "#bcc4d5"};">${txt}</span>`;
     const linhaHtml = (l, rotuloMoeda, precisa) => {
-        if (l.semDado) return `<div style="display:flex; justify-content:space-between; gap:6px;"><span>${l.par}</span>${cel("sem dado")}</div>`;
+        if (l.semDado) return `<div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:0 8px; margin-top:2px;"><span>${l.par}</span>${cel("sem dado")}</div>`;
         const velho = l.idadeMin !== null && l.idadeMin > IDADE_ALERTA_MIN;
         const texto = l.obsoleto ? "sem dado atual" : (rotuloMoeda && l.estado ? `${NOMES[rotuloMoeda] || rotuloMoeda} ${l.estado}` : "");
-        return `<div style="display:flex; justify-content:space-between; gap:6px; ${l.obsoleto ? "opacity:.5;" : velho ? "opacity:.65;" : ""}">
+        return `<div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:0 8px; margin-top:2px; ${l.obsoleto ? "opacity:.5;" : velho ? "opacity:.65;" : ""}">
             <span style="white-space:nowrap;">${l.par}</span>
             <span style="white-space:nowrap;">${cel(`${seta(l.v24h)} ${pctTxt(l.v24h)}`, "#f9fafd")} <span style="color:#8b93a7;">24h</span> · ${cel(`${seta(l.v1h)} ${pctTxt(l.v1h)}`, "#f9fafd")} <span style="color:#8b93a7;">1h</span></span>
-            <span style="min-width:96px; text-align:right; white-space:nowrap; color:${corDoEstado(l.estado, precisa)};">${texto}${velho ? ` <span style="color:#8b93a7;">⏱ ${idadeTxt(l.idadeMin)}</span>` : ""}</span>
+            <span style="margin-left:auto; text-align:right; white-space:nowrap; color:${corDoEstado(l.estado, precisa)};">${texto}${velho ? ` <span style="color:#8b93a7;">⏱ ${idadeTxt(l.idadeMin)}</span>` : ""}</span>
         </div>`;
     };
     const p = q.proprio;
