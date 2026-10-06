@@ -580,6 +580,26 @@ universo de 10 pares líquidos, em 2008-2026, o efeito não aparece de forma dis
 moedas e este teste não a captura), universo pequeno e muito correlacionado (poucos graus de liberdade), 1 só definição de lookback por família (pré-registrada).
 Nada foi ajustado depois de ver o resultado. Veredito do protocolo: nenhuma família "vantagem demonstrada"; fase de stops/1% de risco e sinal diário NÃO inicia.
 
+### 6.23 CARRY / SWAP - PROTOCOLO PRÉ-REGISTRADO (autorizado pelo usuário em 06/10/2026; escrito ANTES de implementar e rodar)
+Motivo: em 6.22 o swap não foi modelado, e o carry (diferencial de juros) é a parte do retorno de moedas que a literatura mais associa a prêmio persistente
+(Lustig-Roussanov-Verdelhan 2011; Koijen et al. 2018 "Carry", JFE) e que não entrava nos testes. Pergunta: com o carry contabilizado, alguma família mostra vantagem?
+Dados: taxas de política diárias do BIS (WS_CBPOL; US, XM=euro, GB, JP, AU, CA, CH, NZ), degraus em `diario/_taxas`; cobertura conferida (todas desde 2007).
+A taxa vigente na data t é usada para o sinal em t e para o carry de t+1 em diante (sem olhar para frente). Proxy: taxa de política, NÃO o swap real da corretora.
+Mecânica (única, definida a priori): por par com posição de peso w (fração do patrimônio, mesma máquina de 6.21), carry do dia = w x (taxa_base - taxa_cotada) x dias/365,
+menos custo de swap da corretora = |w| x MARKUP x dias/365, com dias = dias corridos entre as barras (fim de semana e quarta tripla já contam). MARKUP base = 1,0 ponto
+percentual ao ano sobre o nocional (premissa não verificada: o usuário conferirá a tabela de swap da XM; se divergir, refaz-se como sensibilidade).
+Famílias novas (3, todas reportadas; mesmas regras de peso/vol 10%/custos/nulo/bootstrap/A1-A4 de 6.21):
+ C1 Carry por par: posição = sinal(taxa_base - taxa_cotada), 10 pares, refeita todo fim de mês (peso por vol alvo).
+ C2 Carry com limiar: igual a C1, mas só opera se |diferencial| >= 1,0 ponto percentual; senão fica fora.
+ C3 Carry com filtro de tendência: igual a C1, mas só opera se o sinal de momentum 12 meses (D1) concorda com o carry; senão fica fora.
+Também reexecutadas, a título INFORMATIVO (não entram no veredito nem na contagem de famílias): D1-D5 de 6.21 agora COM carry/swap.
+Critérios: os de 6.21 (A1-A4) sem alteração, com UMA adição só para C1-C3: A3 exige também Sharpe líquido > 0 com MARKUP de 2,5 pp (estresse de swap pior).
+Nulo: 500 sorteios com posição aleatória por par/mês pela mesma máquina, INCLUINDO carry e markup (assim o nulo paga o mesmo custo de swap).
+Limite declarado do nulo: posições de carry são concentradas (compra AUD/NZD, vende JPY/CHF) e o nulo sorteia por par, então o p99 subestima a variância de uma carteira
+concentrada; por isso o IC por bootstrap mensal também é exigido (A1 exige os dois). Bonferroni: p99 mantido (3 famílias novas).
+Ressalvas: taxa de política != swap real; carry tem risco de cauda (2008, 2015, 2020: estão na amostra de propósito); sem stops (1% de risco é fase seguinte, só se houver vantagem).
+Nada será ajustado (limiar, markup, lookbacks) depois de ver o resultado: variações viram família nova com novo registro.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
