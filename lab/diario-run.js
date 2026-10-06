@@ -2,12 +2,13 @@
 // FOREX ASSIST - LABORATÓRIO - HORIZONTE DIÁRIO (orquestração; protocolo 6.21)
 //
 // LAB_MODO=baixar : 1 chamada TwelveData `1day` (5000 barras, ~19 anos) por par (KEY_3) -> guarda em `diario/{par}` (binário) no projeto LAB.
+// LAB_MODO=carry  : lê diários + `diario/_taxas` (lab-taxas), avalia C1-C3 (+ D1-D5 com swap, informativo) e publica `replay/carry` (protocolo 6.23).
 // LAB_MODO=rodar  : lê os diários guardados, avalia D1-D5 (lab/diario.js) e publica `replay/diario` (só agregados).
 // Nada é escrito no projeto oficial; não há push; o scanner/sinal não são tocados.
 // ===================================================
 
 const { paginaDeCandles } = require("./historico");
-const { avaliarFamilia, FAMILIAS_DIARIAS } = require("./diario");
+const { avaliarFamilia, FAMILIAS_DIARIAS, FAMILIAS_CARRY } = require("./diario");
 const { empacotar, desempacotar } = require("./replay-run");
 
 const PARES = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "NZD/USD", "EUR/JPY", "GBP/JPY", "EUR/GBP"];
@@ -68,7 +69,34 @@ async function rodarDiario({ dados, log = console.log }) {
     return resultados;
 }
 
-module.exports = { limparDiarios, baixarDiarios, lerDiarios, rodarDiario, PARES };
+async function lerTaxas({ lab }) {
+    const s = await lab.collection("diario").doc("_taxas").get();
+    if (!s.exists) throw new Error("taxas não encontradas em diario/_taxas: rode o workflow lab-taxas antes");
+    return s.data().series;
+}
+
+const linhaResultado = (f, r) => `${f} ${r.nome}: Sharpe líq ${r.sharpe.toFixed(2)} (bruto ${r.sharpeBruto.toFixed(2)}), IC95 ${r.ic95[0].toFixed(2)}..${r.ic95[1].toFixed(2)}, nulo p99 ${r.nulo.p99.toFixed(2)}, ` +
+    `meses+ ${r.pctMesesPos.toFixed(0)}%, sem+ ${r.pctSemanasPos.toFixed(0)}%, DD ${r.drawdownMax.toFixed(0)}%, metades ${r.metades.map(x => x.toFixed(2)).join("/")}, ` +
+    `lag1 ${r.robustez.lag1.toFixed(2)}, spread2x ${r.robustez.spread2x.toFixed(2)}, swap pior ${(r.robustez.markup25 ?? NaN).toFixed(2)} => ${r.veredito}`;
+
+// protocolo 6.23: C1-C3 (valem) + D1-D5 com swap (informativos)
+async function rodarCarry({ dados, taxas, log = console.log }) {
+    const pares = Object.keys(dados);
+    const nuloCache = {};
+    const resultados = {};
+    for (const f of Object.keys(FAMILIAS_CARRY)) {
+        resultados[f] = avaliarFamilia({ familia: f, dados, paresTodos: pares, nuloCache, taxas });
+        log(linhaResultado(f, resultados[f]));
+    }
+    for (const f of Object.keys(FAMILIAS_DIARIAS)) {
+        const k = f + "_swap";
+        resultados[k] = avaliarFamilia({ familia: f, dados, paresTodos: pares, nuloCache, taxas, comSwap: true });
+        log("[informativo] " + linhaResultado(f, resultados[k]));
+    }
+    return resultados;
+}
+
+module.exports = { limparDiarios, baixarDiarios, lerDiarios, lerTaxas, rodarDiario, rodarCarry, PARES };
 
 if (require.main === module) {
     (async () => {
@@ -77,6 +105,17 @@ if (require.main === module) {
         lab.settings({ ignoreUndefinedProperties: true });
         const modo = process.env.LAB_MODO || "ambos";
         if (modo === "baixar" || modo === "ambos") await baixarDiarios({ lab, chave: process.env.API_KEY_3 || process.env.API_KEY_1 });
+        if (modo === "carry") {
+            const dados = await lerDiarios({ lab });
+            const taxas = await lerTaxas({ lab });
+            const resultados = await rodarCarry({ dados, taxas });
+            const doc = { geradoEm: Date.now(), pares: Object.keys(dados), resultados };
+            for (let t = 1; ; t++) {
+                try { await lab.collection("replay").doc("carry").set(doc); break; }
+                catch (e) { if (t >= 4) throw e; console.log(`gravação falhou (${e.message}); tentativa ${t + 1}/4`); await dorme(3000 * t); }
+            }
+            console.log("Resultado publicado em replay/carry.");
+        }
         if (modo === "rodar" || modo === "ambos") {
             const dados = await lerDiarios({ lab });
             const resultados = await rodarDiario({ dados });

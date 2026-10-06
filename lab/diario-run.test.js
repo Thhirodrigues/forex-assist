@@ -1,5 +1,5 @@
 const assert = require("assert");
-const { limparDiarios, baixarDiarios, lerDiarios } = require("./diario-run");
+const { limparDiarios, baixarDiarios, lerDiarios, lerTaxas, rodarCarry } = require("./diario-run");
 const D = (s) => Date.parse(s + "T00:00:00Z");
 const c = (dia, v = 1) => ({ ts: D(dia), o: v, h: v + 0.1, l: v - 0.1, c: v + 0.05 });
 // domingo incorporado à segunda; sábado descartado; quebrados saem
@@ -18,5 +18,15 @@ const http = { get: async () => ({ data: { values: Array.from({ length: 300 }, (
   assert.deepEqual(Object.keys(dados), ["EUR/USD", "USD/JPY"], "par não baixado é ignorado");
   assert.ok(dados["EUR/USD"].length > 200 && dados["EUR/USD"].every((x, i, a) => i === 0 || x.ts > a[i - 1].ts));
   assert.ok([0, 6].every(d => dados["EUR/USD"].every(x => new Date(x.ts).getUTCDay() !== d)), "sem fim de semana");
+  // taxas e carry (protocolo 6.23)
+  await assert.rejects(() => lerTaxas({ lab }), /lab-taxas/, "sem taxas guardadas: erro claro, não segue com carry zerado");
+  const taxasFix = Object.fromEntries(["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD"].map((m, i) => [m, { ts: [D("2000-01-01")], v: [i] }]));
+  await lab.collection("diario").doc("_taxas").set({ series: taxasFix });
+  assert.deepEqual(await lerTaxas({ lab }), taxasFix);
+  const sint = (k) => { let ts = D("2012-01-02"), p = 1.1; const o = []; for (let i = 0; i < 900; i++) { while ([0, 6].includes(new Date(ts).getUTCDay())) ts += 86400000; const c = p * (1 + 0.004 * Math.sin(i * (k + 1) * 0.37)); o.push({ ts, o: p, h: Math.max(p, c) * 1.001, l: Math.min(p, c) * 0.999, c }); p = c; ts += 86400000; } return o; };
+  const linhas = [];
+  const res = await rodarCarry({ dados: { "EUR/USD": sint(1), "GBP/USD": sint(2), "AUD/USD": sint(3) }, taxas: taxasFix, log: (l) => linhas.push(l) });
+  assert.deepEqual(Object.keys(res), ["C1", "C2", "C3", "D1_swap", "D2_swap", "D3_swap", "D4_swap", "D5_swap"]);
+  assert.ok(linhas.length === 8 && linhas.slice(3).every(l => l.startsWith("[informativo]")) && /swap pior/.test(linhas[0]), "informativas marcadas, swap pior reportado");
   console.log("TESTES DO DIÁRIO (orquestração) PASSARAM");
 })().catch(e => { console.error(e); process.exit(1); });

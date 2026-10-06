@@ -7,6 +7,7 @@
 // ===================================================
 
 const { SPREADS_PIPS, SPREAD_PADRAO_PIPS } = require("./spreads");
+const { taxaEm } = require("./taxas");
 
 const BASE_USD = new Set(["USD/JPY", "USD/CAD", "USD/CHF"]);
 const COTADO_USD = new Set(["EUR/USD", "GBP/USD", "AUD/USD", "NZD/USD"]);
@@ -118,6 +119,31 @@ function sinaisD5(series, pares, datas) {
     return s;
 }
 
+// ---------- carry (protocolo 6.23) ----------
+// diferencial de juros por par e por dia, em fração (taxa_base - taxa_cotada)/100, com a taxa vigente EM t (sem olhar para frente)
+const MARKUP_BASE = 0.01, MARKUP_ESTRESSE = 0.025, LIMIAR_C2 = 0.01;
+function diferenciais(pares, datas, taxas) {
+    const out = {};
+    for (const p of pares) {
+        const [b, q] = p.split("/");
+        out[p] = datas.map(ts => { const rb = taxaEm(taxas[b], ts), rq = taxaEm(taxas[q], ts); return rb === null || rq === null ? 0 : (rb - rq) / 100; });
+    }
+    return out;
+}
+
+function sinaisCarry(pares, datas, diff, limiar = 0) {
+    const s = {};
+    for (const p of pares) s[p] = datas.map((_, t) => (t < AQUECIMENTO || Math.abs(diff[p][t]) < Math.max(limiar, 1e-12) ? 0 : sgn(diff[p][t])));
+    return s;
+}
+const sinaisC1 = (series, pares, datas, ctx) => sinaisCarry(pares, datas, ctx.diff, 0);
+const sinaisC2 = (series, pares, datas, ctx) => sinaisCarry(pares, datas, ctx.diff, LIMIAR_C2);
+function sinaisC3(series, pares, datas, ctx) {
+    const c = sinaisCarry(pares, datas, ctx.diff, 0), m = sinaisD1(series, pares, datas), s = {};
+    for (const p of pares) s[p] = c[p].map((x, t) => (x !== 0 && x === m[p][t] ? x : 0));
+    return s;
+}
+
 const FAMILIAS_DIARIAS = {
     D1: { nome: "Momentum 12 meses (série temporal)", sinais: sinaisD1, universo: "todos" },
     D2: { nome: "Momentum 3 meses (série temporal)", sinais: sinaisD2, universo: "todos" },
@@ -125,13 +151,19 @@ const FAMILIAS_DIARIAS = {
     D4: { nome: "Dólar como fator único (126 d)", sinais: sinaisD4, universo: "usd" },
     D5: { nome: "Rompimento Donchian 55/20", sinais: sinaisD5, universo: "todos" }
 };
+// famílias de carry: só rodam com taxas (ctx.diff)
+const FAMILIAS_CARRY = {
+    C1: { nome: "Carry por par (sinal do diferencial)", sinais: sinaisC1, universo: "todos", carry: true },
+    C2: { nome: "Carry com limiar (|dif| >= 1 pp)", sinais: sinaisC2, universo: "todos", carry: true },
+    C3: { nome: "Carry com filtro de tendência 12m", sinais: sinaisC3, universo: "todos", carry: true }
+};
 
 // ---------- carteira ----------
 /**
  * Retornos diários da carteira. Pesos fixados no momento em que o SINAL muda (ou nos rebalanceamentos): sinal x (10% a.a. / vol do par) / N,
  * com teto de alavancagem bruta. O retorno do dia t+1+lag usa o peso decidido no fecho de t. Custo = |mudança de peso| x spread/preço no dia da mudança.
  */
-function carteira({ series, pares, datas, sinais, lag = 0, multSpread = 1, swapPipDia = 0 }) {
+function carteira({ series, pares, datas, sinais, lag = 0, multSpread = 1, swapPipDia = 0, carry = null }) {
     const n = datas.length;
     const rets = {}, vols = {};
     for (const p of pares) { rets[p] = retornosSimples(series[p]); vols[p] = volEWMA(rets[p]); }
@@ -155,6 +187,7 @@ function carteira({ series, pares, datas, sinais, lag = 0, multSpread = 1, swapP
         for (const p of pares) {
             const w = pesos[p][t]; const wAnt = t > 0 ? pesos[p][t - 1] : 0;
             r += w * rets[p][t + 1 + lag];
+            if (carry) { const dias = (datas[t + 1 + lag] - datas[t + lag]) / 86400000; r += w * carry.diff[p][t] * dias / 365; custo += Math.abs(w) * carry.markup * dias / 365; }
             custo += Math.abs(w - wAnt) * (spreadPips(p, multSpread) * pip(p)) / series[p][t].c + Math.abs(w) * swapPipDia * pip(p) / series[p][t].c;
         }
         bruto[t + 1 + lag] = r; diario[t + 1 + lag] = r - custo;
@@ -191,13 +224,13 @@ function bootstrapSharpeMensal(mensais, sorteios = 3000, semente = 12345) {
 function percentil(sorted, q) { return sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))]; }
 
 // controle nulo: posições aleatórias (sinal sorteado por par a cada mês), mesma máquina de pesos/custos
-function distribuicaoNula({ series, pares, datas, sorteios = 500, semente = 777 }) {
+function distribuicaoNula({ series, pares, datas, sorteios = 500, semente = 777, carry = null }) {
     const reb = new Set(fimDeMes(datas)); const out = [];
     for (let k = 0; k < sorteios; k++) {
         const r = prng(semente + k);
         const sinais = {};
         for (const p of pares) { const a = new Array(datas.length).fill(0); let atual = 1; for (let t = AQUECIMENTO; t < datas.length; t++) { if (reb.has(t)) atual = r() < 0.5 ? 1 : -1; a[t] = atual; } sinais[p] = a; }
-        const c = carteira({ series, pares, datas, sinais });
+        const c = carteira({ series, pares, datas, sinais, carry });
         out.push(sharpe(c.diario.slice(c.inicio)));
     }
     return out.sort((a, b) => a - b);
@@ -216,31 +249,37 @@ function metricasDe(c) {
     };
 }
 
-function avaliarFamilia({ familia, dados, paresTodos, nuloCache = {}, sorteiosNulo = 500, sorteiosBoot = 3000 }) {
-    const def = FAMILIAS_DIARIAS[familia];
+function avaliarFamilia({ familia, dados, paresTodos, nuloCache = {}, sorteiosNulo = 500, sorteiosBoot = 3000, taxas = null, comSwap = false }) {
+    const def = FAMILIAS_DIARIAS[familia] || FAMILIAS_CARRY[familia];
+    const usaCarry = !!def.carry || comSwap;
+    if (usaCarry && !taxas) throw new Error("família com carry exige taxas");
     const pares = def.universo === "usd" ? paresTodos.filter(p => PARES_USD.includes(p)) : paresTodos;
     const { datas, series } = alinhar(dados, pares);
-    const sinais = def.sinais(series, pares, datas);
-    const base = carteira({ series, pares, datas, sinais });
+    const diff = usaCarry ? diferenciais(pares, datas, taxas) : null;
+    const ctx = { diff };
+    const sinais = def.sinais(series, pares, datas, ctx);
+    const carryDe = (markup) => (usaCarry ? { diff, markup } : null);
+    const roda = (extra = {}, markup = MARKUP_BASE) => carteira({ series, pares, datas, sinais, carry: carryDe(markup), ...extra });
+    const base = roda();
     const m = metricasDe(base);
-    const lag1 = metricasDe(carteira({ series, pares, datas, sinais, lag: 1 })).sharpe;
-    const sp2 = metricasDe(carteira({ series, pares, datas, sinais, multSpread: 2 })).sharpe;
-    const swap = metricasDe(carteira({ series, pares, datas, sinais, swapPipDia: 0.5 })).sharpe;
-    const chaveNulo = pares.join("|");
-    if (!nuloCache[chaveNulo]) nuloCache[chaveNulo] = distribuicaoNula({ series, pares, datas, sorteios: sorteiosNulo });
+    const lag1 = metricasDe(roda({ lag: 1 })).sharpe;
+    const sp2 = metricasDe(roda({ multSpread: 2 })).sharpe;
+    const swap = usaCarry ? metricasDe(roda({}, MARKUP_ESTRESSE)).sharpe : metricasDe(carteira({ series, pares, datas, sinais, swapPipDia: 0.5 })).sharpe;
+    const chaveNulo = pares.join("|") + (usaCarry ? "|carry" : "");
+    if (!nuloCache[chaveNulo]) nuloCache[chaveNulo] = distribuicaoNula({ series, pares, datas, sorteios: sorteiosNulo, carry: carryDe(MARKUP_BASE) });
     const nulo = nuloCache[chaveNulo];
     const ic = bootstrapSharpeMensal(m.mensais, sorteiosBoot);
     const a1 = m.sharpe > 0 && ic.lo > 0 && m.sharpe >= percentil(nulo, 0.99);
     const a2 = m.metades.every(x => x > 0) && m.blocos.filter(x => x > 0).length >= 3;
-    const a3 = lag1 > 0 && sp2 > 0;
+    const a3 = lag1 > 0 && sp2 > 0 && (!def.carry || swap > 0);   // carry: também precisa sobreviver ao swap pior (markup 2,5 pp)
     const a4 = m.pctMesesPos >= 55 && m.drawdownMax <= 25;
     const { mensais, ...resto } = m;
     return {
-        familia, nome: def.nome, pares: pares.length, dias: datas.length, de: datas[AQUECIMENTO], ate: datas[datas.length - 1], ...resto,
+        familia, nome: def.nome + (comSwap ? " + swap (informativo)" : ""), pares: pares.length, dias: datas.length, de: datas[AQUECIMENTO], ate: datas[datas.length - 1], ...resto,
         ic95: [ic.lo, ic.hi], nulo: { p50: percentil(nulo, 0.5), p95: percentil(nulo, 0.95), p99: percentil(nulo, 0.99), n: nulo.length },
-        robustez: { lag1, spread2x: sp2, swap05: swap }, criterios: { A1: a1, A2: a2, A3: a3, A4: a4 },
+        robustez: { lag1, spread2x: sp2, [usaCarry ? "markup25" : "swap05"]: swap }, criterios: { A1: a1, A2: a2, A3: a3, A4: a4 },
         veredito: a1 && a2 && a3 ? (a4 ? "UTILIZÁVEL" : "VANTAGEM DEMONSTRADA (não atende A4)") : "SEM EVIDÊNCIA"
     };
 }
 
-module.exports = { FAMILIAS_DIARIAS, avaliarFamilia, carteira, sinaisD1, sinaisD2, sinaisD3, sinaisD4, sinaisD5, alinhar, fimDeMes, sharpe, bootstrapSharpeMensal, distribuicaoNula, metricasDe, prng, PARES_USD, AQUECIMENTO };
+module.exports = { FAMILIAS_DIARIAS, FAMILIAS_CARRY, diferenciais, sinaisC1, sinaisC2, sinaisC3, MARKUP_BASE, MARKUP_ESTRESSE, avaliarFamilia, carteira, sinaisD1, sinaisD2, sinaisD3, sinaisD4, sinaisD5, alinhar, fimDeMes, sharpe, bootstrapSharpeMensal, distribuicaoNula, metricasDe, prng, PARES_USD, AQUECIMENTO };

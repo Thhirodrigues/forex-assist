@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       modo:
-        description: 'baixar | rodar | ambos'
+        description: 'baixar | rodar | ambos | carry (6.23; exige taxas já baixadas pelo lab-taxas)'
         required: false
         default: 'ambos'
 
@@ -31,6 +31,8 @@ jobs:
           node lab/historico.test.js
           node lab/diario.test.js
           node lab/diario-run.test.js
+          node lab/taxas.test.js
+          node lab/carry.test.js
       - name: Diário
         env:
           API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
