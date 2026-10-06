@@ -625,6 +625,14 @@ Decisão (uma vez só, ao fechar a 100a; congelar a contagem com data/hora antes
 Descritivos (acerto, por par, sessão, grupos H1-H5/X1-X4, lote): servem só para formular hipóteses da próxima amostra, nunca para ajustar o sinal (Bonferroni; mais de 20 cortes = 1 falso positivo esperado).
 Ritmo e prazo: ver ESTADO_ATUAL §0; estimativa de 06/10 = 91 faltando, 2 a 4,5 semanas, baseada em 1 dia de dados.
 
+### 6.26 Observações reais da XM enviadas pelo usuário (prints de 06/10/2026 ~16:25 UTC; dado de 1 instante, conta com saldo ~US$100, lote 0,02 = 2.000 unidades)
+Spread ao vivo (diferença venda/compra no gráfico, horário líquido Londres/NY): AUD/USD 2,3 pips (tabela do Lab: 2,05), NZD/USD 2,5 (tabela: 2,3, estimado), USD/CAD 2,8-2,9 (tabela: 2,2).
+A tabela do Lab erra A FAVOR nesses 3 pares (o oposto da regra "errar contra"); o "1,6" da conta Standard é o piso de EUR/USD, não a média. Não alterada ainda: trocar uma vez só, com mais pares/horários, e rodar `lab-reprocessar`.
+Posições abertas (4), TODAS vendidas em dólar (USDJPY venda, NZDUSD compra, AUDUSD compra, USDCAD venda): uma aposta direcional só, risco somado ~US$22 (SL ~US$5,4-5,5 cada; TP +US$5,00).
+Barreiras reais: TP = +US$5,00 e SL = -US$5,4 a -5,5 (R:R ~0,92; break-even de acerto ~52-53% só por isso, antes do spread da entrada).
+Swaps = US$0,00 nas 4 (abertas depois da virada anterior). Após a primeira virada (servidor 00:00 = 21:00 UTC), o campo "Swaps" dá o swap REAL: pedir print para estimar o markup (swap = nocional x (+/-tom-next - markup)/365).
+Hipótese NOVA a pré-registrar se o usuário quiser (X5): sinais contra a tendência diária (63 dias) perdem mais? Nos 3 gráficos diários enviados, 3 de 3 sinais eram contra a tendência de semanas (anedota, n=3).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
