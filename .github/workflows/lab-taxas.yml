@@ -1,0 +1,20 @@
+name: Laboratório - taxas de juro BIS (protocolo 6.23)
+
+# Baixa as taxas de política monetária (BIS, diárias, sem chave) das 8 moedas e guarda os degraus em `diario/_taxas` (projeto LAB). 0 crédito TwelveData.
+on:
+  workflow_dispatch:
+
+jobs:
+  taxas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Key (Lab)
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - run: node lab/taxas.test.js
+      - run: node lab/taxas-run.js
