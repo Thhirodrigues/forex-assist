@@ -653,6 +653,22 @@ Critério para S1/S2 contra ATUAL: pips por operação maior em >= 0,5 pip, no m
  (efeito disposição: cortar ganho cedo e deixar a perda correr piora a esperança mesmo subindo o acerto; Shefrin-Statman 1985; Odean 1998, J. Finance). O aviso ao usuário (notificação) NÃO é implementado agora: muda o comportamento das operações medidas, só depois das 100 (caderno 6.25).
 Limites: grupos feitos com limiar escolhido a priori (0,8%/0,25%/0,15%), sem ajuste; 10 dias de mercado != "3 semanas" do gráfico diário visto pelo usuário; o histórico de 360 dias tem uma tendência de dólar própria (confundidor, como em 6.20).
 
+### 6.28 RESULTADO do pré-registro 6.27 (06/10/2026, run 37503516470, replay de 360 dias: 08/10/2025 a 02/10/2026, exploração até 17/06/2026, validação depois; 6.981 entradas)
+Critérios de 6.27 aplicados sem ajuste. Diferença de pips/op (a_favor menos contra; concorda menos diverge), variante ATUAL líquida de spread, t de Welch, controle ALEATORIO ao lado:
+ LAB  X5 (10 d): explor. -3,65 (t -2,2; n 799/544) | valid. -0,33 (t -0,1)  => não passa (|t| < 2,5; "contra" melhor na exploração, sem confirmação)
+ LAB  X7 (24 h): explor. +2,28 (t 1,2)                | valid. -0,55 (t -0,1)  => não passa (sinal inverte)
+ LAB  X6 (cesta): explor. +0,32 (t 0,2)               | valid. +3,47 (t 1,1)   => não passa
+ LAB  X8 (votos): explor. +1,22 (t 0,2; diverge n=40) | valid. -15,41 (t -1,9; diverge n=16, 63% de acerto) => não passa; amostra "diverge" minúscula
+ OFICIAL (aprovadas): todos os |t| <= 1,0; nenhum contraste passa. O ALEATORIO produziu t de 2,2 (LAB X8 exploração) e 1,3, ou seja, |t| de 2 aparece por acaso neste desenho.
+ Resultado: NENHUMA das hipóteses X5-X8 mostra efeito reprodutível. "Concordância/divergência de moeda" e "sinal a favor/contra a tendência" não separaram operações boas de ruins.
+ SAÍDAS PARCIAIS (grupo TODOS, pips/op e acerto; LAB explor./valid.): ATUAL -2,67 (43%) / -3,10 (43%); SAIDA_40_FECH -2,91 (56%) / -2,79 (56%); SAIDA_60_FECH -2,86 (50%) / -2,45 (51%); sem spread -0,61 / -0,33; ALEATORIO -1,44 / -2,86.
+  OFICIAL: ATUAL -1,96 / -2,61; SAIDA_40 -2,30 / -2,09; SAIDA_60 -2,36 / -2,31.
+  Critério (>= +0,5 pip a mais e mesmo sinal nas duas partes): reprovado (a diferença troca de sinal entre exploração e validação, +-0,3 a 0,5). O acerto sobe 13 pontos (43% -> 56-58%) e os pips por operação NÃO melhoram:
+  é a ilusão de "mais acertos" sem lucro (efeito disposição), com o sinal ainda perdendo ~2 a 3 pips por operação líquido de spread (e ~0 a -0,6 sem spread).
+ Observação: o ATUAL fica pior ou igual ao ALEATORIO no mesmo custo (LAB explor. -2,67 x -1,44; valid. -3,10 x -2,86): o score não separa melhor que o acaso neste período.
+Limites: 360 dias com uma tendência de dólar própria; entradas LAB correlacionadas (t ingênuo otimista, por isso o controle); X6 só existe no replay; "10 dias de mercado" != 3 semanas do gráfico diário.
+Veredito: nada para propor ao oficial. A ideia de aviso de embolsar NÃO será implementada (não melhora a esperança). Nenhum dos filtros candidatos entra na fila pós-100 como melhoria; ficam como "testado e reprovado".
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
