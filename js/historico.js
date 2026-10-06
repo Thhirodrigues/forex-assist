@@ -1433,6 +1433,24 @@ ${miniCard("🏠", "EMA 200", formatarPrecoPar(sinal.indicadores?.ema200 ?? sina
 
 }
 
+// 06/10/2026 (pedido do usuário): quadro "o que os outros pares da mesma moeda estão fazendo" no detalhe de sinal
+// ABERTO (scripts/mercadoMoeda.js; dados que o scanner grava em scanner/mercado). Contexto, não filtro. Só para
+// operações em andamento: o mercado de AGORA não explica um sinal já encerrado. Falha aqui nunca derruba o card.
+function blocoMercadoMoeda(sinal, docId) {
+  try {
+    if (sinal.status === "ENCERRADA" || sinal.status === "COOLDOWN" || !window.MercadoMoeda) return "";
+    const dir = (sinal.direcao === "BUY" || sinal.direcao === "CALL") ? "BUY" : (sinal.direcao === "SELL" || sinal.direcao === "PUT") ? "SELL" : null;
+    if (!dir || !sinal.par) return "";
+    return `
+    <section class="hs-risco" aria-label="Mercado nas moedas do par" onclick="event.stopPropagation();">
+      <h4 class="hs-risco-titulo">Mercado nas moedas do par</h4>
+      ${window.MercadoMoeda.container(sinal.par, dir)}
+    </section>`;
+  } catch (e) {
+    return "";
+  }
+}
+
 function construirDetalheSinal(sinal, docId, estaAberto, incluirResumo = true) {
   const detalheId = `detalhe-${docId}`;
 
@@ -1442,6 +1460,8 @@ function construirDetalheSinal(sinal, docId, estaAberto, incluirResumo = true) {
 ${incluirResumo ? etiquetasInfoSinal(sinal, docId) + resumoNumerosSinal(sinal, docId) : ""}
 
 ${blocoRiscoSinal(sinal, docId)}
+
+${blocoMercadoMoeda(sinal, docId)}
 
 ${bannerCandlestick(sinal)}
 

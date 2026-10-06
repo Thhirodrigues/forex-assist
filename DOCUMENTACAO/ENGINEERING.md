@@ -13526,3 +13526,13 @@ votos dos outros pares com USD; só dados até o instante da entrada), grupos X5
 (opção `saidaFechamento` do simulador: sai no fechamento do candle de 15 min se o lucro líquido de spread >= 40%/60% do TP; TP/SL do candle têm precedência), replay em duas fases
 (análises enxutas por par, depois rotulagem com contexto de todos os pares), rotulador ao vivo pedindo sempre 5000 candles (mesmo crédito) e lendo 30 min de análises a mais só para os votos.
 Ao vivo a cesta do dólar (X6) fica vazia (só este par tem candles na execução); X5/X7/X8 existem. Testes: lab/contexto.test.js e ampliações. Nada muda no scanner oficial.
+
+AJUSTE-087 (06/10/2026) - Quadro "Mercado nas moedas do par" no detalhe do sinal aberto (pedido do usuário). Para cada moeda do par, lista TODOS os outros pares do app que a têm, com a
+variação de ~24 h e ~1 h de mercado traduzida para a moeda ("dólar caindo/subindo"), quantos estão a favor do que o sinal precisa e a idade do dado. Contexto, NÃO filtro: o aviso fixo
+cita o resultado do Laboratório (6.28: concordância de moeda e a favor/contra a tendência não separaram operações boas de ruins em 360 dias).
+ - `scripts/mercadoResumo.js`: monta o resumo (preço, v1h, v24h, ate) a partir de `cacheCandles15min/{PAR}` (candles que o scanner já guarda; sem crédito) e, só para pares parados (cooldown/fora da janela),
+   até 2 buscas extras por ciclo de 15 min com a chave DEDICADA `API_KEY_4` (secret TWELVEDATA_KEY_4; sem ela nada é buscado). Grava `scanner/mercado`. Medido em 06/10 18:36 UTC: as 3 chaves do scanner
+   estavam em 610/567/568 de 800 créditos/dia (~2.250 projetados de 2.400), por isso NÃO usar as 3 chaves.
+ - `scripts/scanner.js` (única mudança: um bloco após `imprimirResumoFinal`, com try/catch e prazo de 20 s; não toca em análise, score, aprovação, TP/SL, lote nem cooldown) e `.github/workflows/forex-scanner-real.yml` (env API_KEY_4).
+ - `scripts/mercadoMoeda.js` (UMD: lógica e HTML do quadro; um listener em `scanner/mercado`), `js/historico.js` (`blocoMercadoMoeda`, só em sinal não ENCERRADO), `index.html`.
+ - Testes: `scripts/mercadoResumo.test.js`, `scripts/mercadoMoeda.test.js`; verificação visual com Playwright em 390 px. Workflow só-leitura `uso-twelvedata.yml` (consumo de créditos por chave).

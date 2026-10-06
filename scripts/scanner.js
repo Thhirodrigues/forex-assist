@@ -1453,6 +1453,19 @@ finalizarEstatisticas(context);
 
 imprimirResumoFinal(context);
 
+// Resumo de mercado por par (contexto do detalhe do sinal; scripts/mercadoResumo.js). Depois de TODAS as análises e
+// protegido por try/catch + prazo: nunca altera sinal, cooldown nem o resultado do ciclo.
+try {
+    const { atualizarResumoMercado } = require("./mercadoResumo");
+    const r = await Promise.race([
+        atualizarResumoMercado({ db, pares: context.pares, log: console.log }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("prazo de 20s")), 20000))
+    ]);
+    console.log(`Resumo de mercado..${Object.keys(r.pares).length} pares (cache ${r.origem.cache}, extra ${r.origem.extra}, falhas ${r.origem.falhas})`);
+} catch (erroResumo) {
+    console.log(`Resumo de mercado..indisponível (${erroResumo.message})`);
+}
+
 await registrarExecucao(context);
 process.exit(0);
 
