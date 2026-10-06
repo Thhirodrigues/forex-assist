@@ -14,8 +14,9 @@ jobs:
           K1: ${{ secrets.TWELVEDATA_KEY_1 }}
           K2: ${{ secrets.TWELVEDATA_KEY_2 }}
           K3: ${{ secrets.TWELVEDATA_KEY_3 }}
+          K4: ${{ secrets.TWELVEDATA_KEY_4 }}
         run: |
-          for n in 1 2 3; do
+          for n in 1 2 3 4; do
             eval "k=\$K$n"
             echo "--- chave $n ---"
             curl -s "https://api.twelvedata.com/api_usage?apikey=$k" | python3 -c "import sys,json; d=json.load(sys.stdin); print({x:d.get(x) for x in ('timestamp','current_usage','plan_limit','daily_usage','plan_daily_limit','plan_category','code','message')})"
