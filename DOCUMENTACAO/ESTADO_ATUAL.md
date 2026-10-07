@@ -115,6 +115,10 @@ reduzido) e **não são comparáveis** (alvo em pips diferente).
   operações) saiu do `moneyManager.js`. Todos os pares usam o TP/SL da Config. Operações antigas do GBP/USD têm `decisao: "RR_PAR"` e TP US$ 7,50
   (ex.: o sinal de 06/10 05:10) - ao medir as 100, separar as de antes e depois desta mudança (mesmo critério da troca de lote, 01/10). Validar no
   primeiro sinal de GBP/USD depois do deploy: o log do scanner deve mostrar `TP USD 5 / SL USD 5 / R/R 1` e o card `Risco/retorno 1 : 1`.
+- **Aviso de lucro parcial criado (07/10/2026, AJUSTE-091)**: push informativo quando o lucro aberto chega a 60% do TP (config 10-95%, ligado por padrão). NÃO fecha
+  nada e não altera sinal, TP/SL nem resultado; o usuário declarou que NÃO vai encerrar nenhuma operação à mão até as 100 fecharem, então a amostra segue pura (TP/SL).
+  O aviso fica gravado em `avisoParcial` no sinal (hora, %, pips, preço, US$): depois das 100, comparar "teria encerrado no aviso" x desfecho real é medida honesta da ideia
+  (o Laboratório, 6.28, mostrou que embolsar cedo sobe o acerto sem subir os pips por operação). Sinais já abertos e acima do limite no deploy recebem o aviso uma vez.
 - Ferramenta pra contar as operações do regime novo: **ainda não
   existe** (o replay `diagnostico-replay-score-ajuste037.js` imprime o
   total geral, sem filtrar por regime). Criar quando for preciso.

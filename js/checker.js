@@ -2,7 +2,8 @@ const admin = require("firebase-admin");
 const { getCandles } = require("../scripts/marketData");
 const { idCacheDoPar } = require("../scripts/statisticsEngine");
 const { calcularValorPip, parEhCruzado, simboloCotacaoCruzada } = require("../scripts/moneyManager");
-const { enviarPushEncerramento } = require("../scripts/pushNotifier");
+const { enviarPushEncerramento, enviarPushAvisoParcial } = require("../scripts/pushNotifier");
+const { avaliarAviso, registroDoAviso } = require("../scripts/avisoParcial");
 const { mercadoForexAberto, mercadoForexAbertoParaConsulta } = require("../scripts/horarioMercado");
 
 console.log("KEY 1:", !!process.env.API_KEY_1);
@@ -788,6 +789,35 @@ const {
 
         resultadoFinanceiro,
     });
+
+    // 07/10/2026: aviso de lucro parcial (scripts/avisoParcial.js). SÓ AVISA, depois de tudo acima já ter
+    // sido gravado; nunca altera o fechamento nem o resultado, e qualquer falha aqui é engolida.
+    try {
+
+        const avaliacao = avaliarAviso({
+            sinal,
+            movimentoPips,
+            configuracao: configuracaoSnap.data()
+        });
+
+        if (avaliacao.avisar) {
+
+            const registro = registroDoAviso({ avaliacao, precoAtual, lucroUSD: lucroAtual });
+
+            // grava ANTES de enviar: se o push falhar não repete a cada 5 min (um aviso por sinal)
+            await documento.ref.update({ avisoParcial: registro });
+
+            await enviarPushAvisoParcial(admin, db, sinal, registro);
+
+            console.log(`Aviso parcial enviado: ${sinal.par} ${registro.pctAtingido}% do TP (+${registro.pips} pips)`);
+
+        }
+
+    } catch (erroAviso) {
+
+        console.log(`Aviso: falha no aviso de lucro parcial de ${sinal.par}: ${erroAviso.message}`);
+
+    }
 
     }
 

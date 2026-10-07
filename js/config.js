@@ -118,6 +118,15 @@ function configuracaoPadrao() {
     // score, só quando o preço está na zona do order block).
     smcAtivo: true,
 
+    // 07/10/2026 (pedido do usuário): aviso de lucro parcial. Quando o lucro
+    // aberto de um sinal chega a avisoParcialPct % do TP, o verificador manda um
+    // push ("encerrar agora ou esperar o TP? você decide") e grava
+    // `avisoParcial` no sinal. SÓ AVISA: o fechamento continua sendo do TP/SL
+    // (js/checker.js); quem decide encerrar é o usuário, na corretora. Padrão ligado.
+    avisoParcialAtivo: true,
+
+    avisoParcialPct: 60,
+
     pares: [
 
         "EUR/USD",
@@ -521,6 +530,70 @@ style="width:100%;">
         recente, soma ou subtrai até 3 pontos no score (a favor se o
         OB está na mesma direção do sinal, contra se está na direção
         oposta). Sem order block relevante, não muda nada.
+
+    </div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="card-title">
+
+💰 Aviso de lucro parcial
+
+</div>
+
+<div class="list-item">
+
+    <label>
+
+        <input
+
+            type="checkbox"
+
+            id="cfgAvisoParcialAtivo"
+
+            ${config.avisoParcialAtivo !== false ? "checked" : ""}
+
+        >
+
+        Avisar quando o lucro chegar a uma parte do alvo
+
+    </label>
+
+    <div style="margin-top:8px;">
+
+        <label for="cfgAvisoParcialPct" style="display:block; margin-bottom:4px;">Percentual do TP (%)</label>
+
+        <input
+
+            type="number"
+
+            id="cfgAvisoParcialPct"
+
+            min="10"
+
+            max="95"
+
+            step="5"
+
+            value="${Number.isFinite(Number(config.avisoParcialPct)) ? config.avisoParcialPct : 60}"
+
+            style="width:100%;">
+
+    </div>
+
+    <div style="font-size:11px; color:#bcc4d5; margin-top:6px;">
+
+        O app só AVISA (uma vez por sinal): "já está em 60% do alvo, quer
+        encerrar agora ou esperar o TP?". Ele não fecha nada sozinho; o
+        fechamento continua sendo o TP/SL, e encerrar antes é decisão sua,
+        na corretora. Cuidado: embolsar cedo costuma aumentar a taxa de
+        acerto sem aumentar o lucro total (testado no Laboratório, 360
+        dias), e o prejuízo (SL) continua inteiro. O aviso fica gravado no
+        sinal para medirmos depois o que teria acontecido.
 
     </div>
 
@@ -1342,6 +1415,18 @@ janelaSeguranca: Number(
 
             )?.checked ?? true,
 
+        avisoParcialAtivo:
+
+            document.getElementById(
+
+                "cfgAvisoParcialAtivo"
+
+            )?.checked ?? true,
+
+        avisoParcialPct:
+
+            Math.min(95, Math.max(10, Math.round(Number(document.getElementById("cfgAvisoParcialPct")?.value) || 60))),
+
         saldoInicial:
 
             Number(
@@ -1531,7 +1616,9 @@ function bindConfigEvents() {
                         pares: config.pares,
                         tipoConta: config.conta === "real" ? "REAL" : "SIMULADA",
                         saldoInicial: config.saldoInicial,
-                        smcAtivo: config.smcAtivo
+                        smcAtivo: config.smcAtivo,
+                        avisoParcialAtivo: config.avisoParcialAtivo !== false,
+                        avisoParcialPct: Number.isFinite(Number(config.avisoParcialPct)) ? Number(config.avisoParcialPct) : 60
 
                     }, {
                         merge: true

@@ -641,6 +641,12 @@ function secaoComoLerSinal() {
           todos os pares usam o TP e o SL da Config. (Até 07/10/2026 o
           GBP/USD usava TP de 1,5x o SL, a regra RR_PAR; sinais antigos dele
           ainda mostram esse rótulo.)</li>
+        <li><b>Aviso de lucro parcial</b> - quando o lucro aberto chega a 60% do
+          TP (ajustável em Config, 10 a 95%), o app manda UM push perguntando se
+          você quer encerrar agora ou esperar o TP. O app só avisa: não fecha nada
+          sozinho, o fechamento continua sendo o TP/SL. Embolsar cedo costuma
+          subir a taxa de acerto sem subir o lucro total, e o prejuízo (SL)
+          continua inteiro. O aviso fica gravado no sinal com a hora.</li>
         <li><b>Saldo antes / Resultado / Saldo depois</b> - o saldo
           simulado antes e depois dessa operação fechar e o resultado em
           dólar dela (positivo = WIN, negativo = LOSS). "--" enquanto

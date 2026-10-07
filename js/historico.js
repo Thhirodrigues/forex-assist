@@ -1451,6 +1451,26 @@ function blocoMercadoMoeda(sinal, docId) {
   }
 }
 
+// 07/10/2026: linha do aviso de lucro parcial (gravado por js/checker.js em sinal.avisoParcial). Aparece em sinal aberto e
+// encerrado; no encerrado mostra o desfecho final ao lado, para o usuário ver o que o aviso teria significado.
+function blocoAvisoParcial(sinal) {
+  try {
+    const a = sinal && sinal.avisoParcial;
+    if (!a || !Number.isFinite(Number(a.em))) return "";
+    const hora = new Date(Number(a.em)).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false });
+    const usd = Number.isFinite(Number(a.usd)) ? ` (≈ ${Number(a.usd) >= 0 ? "+" : "-"}$${Math.abs(Number(a.usd)).toFixed(2)})` : "";
+    const final = sinal.status === "ENCERRADA" && sinal.resultado
+      ? ` · desfecho do sinal: <b style="color:${sinal.resultado === "WIN" ? "#4ade80" : "#f87171"};">${sinal.resultado}</b>`
+      : "";
+    return `
+    <div style="margin-top:8px; font-size:12px; color:#bcc4d5;" onclick="event.stopPropagation();">
+      💰 Aviso de lucro parcial às ${hora}: ${Math.round(a.pctAtingido)}% do alvo (+${a.pips} pips${usd})${final}
+    </div>`;
+  } catch (e) {
+    return "";
+  }
+}
+
 function construirDetalheSinal(sinal, docId, estaAberto, incluirResumo = true) {
   const detalheId = `detalhe-${docId}`;
 
@@ -1462,6 +1482,8 @@ ${incluirResumo ? etiquetasInfoSinal(sinal, docId) + resumoNumerosSinal(sinal, d
 ${blocoRiscoSinal(sinal, docId)}
 
 ${blocoMercadoMoeda(sinal, docId)}
+
+${blocoAvisoParcial(sinal)}
 
 ${bannerCandlestick(sinal)}
 

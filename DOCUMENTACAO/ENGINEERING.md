@@ -13549,3 +13549,10 @@ AJUSTE-090 (07/10/2026) - Removida a exceção do GBP/USD (TP = 1,5x o SL, `RR_P
 sistema ou escolha do usuário). Efeito: GBP/USD passa a sair com o TP/SL da Config (US$ 5/5 na configuração atual), `decisao: "MANTER"`. `decidirConfiguracaoMercado` passou a ser exportada (só para teste). Rótulo `RR_PAR` mantido em
 `js/historico.js` para sinais antigos; texto do Manual atualizado. Teste: `scripts/moneyManager.rrpar.test.js` (falha no código antigo: GBP/USD 7,5/5 RR_PAR; passa no novo: 5/5 MANTER, também com Config 8/6). Mudança de lógica de TP/SL durante o
 congelamento por DECISÃO EXPLÍCITA do usuário (como a troca de lote de 01/10); amostra separada por data. Validação no primeiro sinal real de GBP/USD pendente.
+
+AJUSTE-091 (07/10/2026) - Aviso de lucro parcial (pedido do usuário; botão já ATIVO por padrão, 60% do TP, configurável 10-95% em Config). `scripts/avisoParcial.js` (lógica pura), `js/checker.js` (depois de gravar o estado do sinal ainda aberto,
+avalia o lucro aberto em pips contra `financeiro.tpPips`; se >= percentual: grava `avisoParcial` {em, percentualConfigurado, pctAtingido, pips, tpPips, preco, usd} ANTES de enviar e manda UM push; try/catch, nunca altera fechamento,
+TP/SL nem resultado), `scripts/pushNotifier.js` (`enviarPushAvisoParcial`, tipo `aviso_parcial`), `js/config.js` (card "Aviso de lucro parcial": `avisoParcialAtivo`/`avisoParcialPct` em configuracoes/geral; ausente = ligado/60),
+`js/historico.js` (linha "Aviso de lucro parcial às HH:MM" no detalhe, com o desfecho final nos encerrados), `js/manual.js`. Lucro medido no preço atual SEM spread. SÓ AVISA: o app não fecha nada; encerrar antes é decisão do usuário na corretora.
+Teste: `scripts/avisoParcial.test.js` (11 casos; roda o js/checker.js REAL com firestore/API/push falsos: grava aviso, um push, não fecha, respeita desligado/percentual/já avisado/venda; falha no checker antigo, passa no novo).
+Por que existe apesar do Laboratório (6.28) não ter achado ganho em embolsar cedo: é opção do usuário, e o aviso gravado permite medir depois, com o desfecho real do sinal, o que teria acontecido.

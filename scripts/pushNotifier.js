@@ -294,6 +294,52 @@ async function enviarPushEncerramento(admin, db, sinal) {
 
 }
 
+// ===================================================
+// PUSH DE AVISO DE LUCRO PARCIAL (07/10/2026) - só informa; ver scripts/avisoParcial.js
+// ===================================================
+
+async function enviarPushAvisoParcial(admin, db, sinal, aviso) {
+
+    try {
+
+        const tokens = await obterTokensAtivos(db);
+
+        if (!tokens.length) return;
+
+        const direcaoLabel = sinal.direcao === "BUY" ? "COMPRA" : "VENDA";
+        const usd = Number.isFinite(Number(aviso.usd)) ? ` (≈ ${Number(aviso.usd) >= 0 ? "+" : "-"}$${Math.abs(Number(aviso.usd)).toFixed(2)}` +
+            (Number.isFinite(Number(sinal.tpUSD)) ? ` de $${Number(sinal.tpUSD).toFixed(2)})` : ")") : "";
+
+        await enviarParaTokens(admin, db, tokens, {
+
+            notification: {
+                title: `💰 ${sinal.par} ${direcaoLabel}: ${Math.round(aviso.pctAtingido)}% do alvo`,
+                body: `Lucro aberto +${aviso.pips} pips de ${aviso.tpPips}${usd}. ` +
+                    `Encerrar agora ou esperar o TP? A decisão é sua; o app não fecha nada sozinho.` +
+                    (horaBrasilia(sinal.inicioOperacao) ? `\n🕐 Sinal das ${horaBrasilia(sinal.inicioOperacao)}` : "")
+            },
+
+            data: {
+                url: urlXmParaPar(sinal.par),
+                tipo: "aviso_parcial",
+                par: String(sinal.par || ""),
+                direcao: String(sinal.direcao || "")
+            },
+
+            webpush: {
+                headers: { Urgency: "high" }
+            }
+
+        });
+
+    } catch (erro) {
+
+        console.log(`Aviso: falha ao enviar push de aviso parcial: ${erro.message}`);
+
+    }
+
+}
+
 module.exports = {
 
     URL_XM_MEMBER,
@@ -312,6 +358,8 @@ module.exports = {
 
     enviarPushAbertura,
 
-    enviarPushEncerramento
+    enviarPushEncerramento,
+
+    enviarPushAvisoParcial
 
 };
