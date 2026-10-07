@@ -103,6 +103,14 @@ reduzido) e **não são comparáveis** (alvo em pips diferente).
   GBP/JPY e EUR/GBP só existem a partir daí (os grupos `X4_par_*` do Laboratório separam por par; filtrar por data se precisar
   comparar "antes x depois"). Configuração de pares é permitida no congelamento; a mudança só altera COMPOSIÇÃO da amostra, não a lógica do sinal.
   Posições abertas hoje (06/10 22:50 UTC): 6, quase todas ligadas ao dólar - o teto de exposição continua na fila pós-100.
+- **Todos os pares estão no regime "sem histórico" desde o zerar de 04/10 (conferido nos logs de 06/10)**: com 0 operações o par cai em
+  "Histórico RUIM" (`historyAnalyzer.js`: taxa 0% < 50%), com `pesoHistorico` -8, `Assertividade 0%`, `Expectativa -5,00` (= -SL) e o
+  score final ainda sai x0,8 (confiabilidade < 50%). Exemplos de 06/10: GBP/USD 05:10 (score 47, aprovado em BALANCEADO com perfil
+  configurado CONSERVADOR) e EUR/USD 05:50 (score 40, aprovado em AGRESSIVO). Isto NÃO é bug novo: é a penalidade já medida e mantida no
+  AJUSTE-037 (replay: sem histórico acertou 35,4%, n=48, contra 48,4% com 40+ operações; "errada na intenção, certa na direção").
+  Consequência para a análise das 100: o score muda de significado à medida que cada par acumula histórico (a partir de ~25 operações por
+  par a confiabilidade passa de 50%); separar as operações por tamanho de histórico do par no momento do sinal. O replay do Laboratório usa
+  `ESTATISTICAS_VAZIAS`, ou seja, reproduz o regime "sem histórico" (o mesmo de hoje).
 - Ferramenta pra contar as operações do regime novo: **ainda não
   existe** (o replay `diagnostico-replay-score-ajuste037.js` imprime o
   total geral, sem filtrar por regime). Criar quando for preciso.
