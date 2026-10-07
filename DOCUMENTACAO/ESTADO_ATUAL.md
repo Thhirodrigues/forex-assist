@@ -111,6 +111,10 @@ reduzido) e **não são comparáveis** (alvo em pips diferente).
   Consequência para a análise das 100: o score muda de significado à medida que cada par acumula histórico (a partir de ~25 operações por
   par a confiabilidade passa de 50%); separar as operações por tamanho de histórico do par no momento do sinal. O replay do Laboratório usa
   `ESTATISTICAS_VAZIAS`, ou seja, reproduz o regime "sem histórico" (o mesmo de hoje).
+- **Exceção do GBP/USD extinta (decisão do usuário, 07/10/2026, AJUSTE-090)**: o TP 1,5x do SL (`RR_PAR`, AJUSTE-004; evidência de só 28
+  operações) saiu do `moneyManager.js`. Todos os pares usam o TP/SL da Config. Operações antigas do GBP/USD têm `decisao: "RR_PAR"` e TP US$ 7,50
+  (ex.: o sinal de 06/10 05:10) - ao medir as 100, separar as de antes e depois desta mudança (mesmo critério da troca de lote, 01/10). Validar no
+  primeiro sinal de GBP/USD depois do deploy: o log do scanner deve mostrar `TP USD 5 / SL USD 5 / R/R 1` e o card `Risco/retorno 1 : 1`.
 - Ferramenta pra contar as operações do regime novo: **ainda não
   existe** (o replay `diagnostico-replay-score-ajuste037.js` imprime o
   total geral, sem filtrar por regime). Criar quando for preciso.
@@ -179,7 +183,7 @@ no dado e foi revertido).
   antes o ATR era "BAIXA" em 100% dos não-JPY e "ALTA" em 100% dos JPY.
 - AJUSTE-039: lote/TP/SL **sempre os da Config** (antes 124 de 124
   operações não-JPY saíam com TP/SL $3 forçado, ignorando a Config);
-  exceção só GBP/USD com TP 1,5x. Operações novas marcadas
+  exceção só GBP/USD com TP 1,5x (EXTINTA em 07/10/2026, ver abaixo). Operações novas marcadas
   `regimeTPSL: "CONFIG"`.
 - AJUSTE-040: aviso de risco quando o saldo do cálculo é <= 0;
   mensagem de expectativa honesta no AGRESSIVO com histórico curto.

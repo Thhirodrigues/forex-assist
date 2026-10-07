@@ -13544,3 +13544,8 @@ AJUSTE-088 (06/10/2026) - 4ª chave da TwelveData no rodízio + estimador de con
  - `scripts/mercadoResumo.js` deixou de usar chave dedicada: as buscas extras do resumo de mercado passam pelo rodízio (a chave 4 recebendo scanner + resumo sozinha passaria de 800/dia).
  - `js/config.js`: orçamento = 4 chaves x 800 = 3.200/dia (constantes `CHAVES_TWELVEDATA`, `LIMITE_DIARIO_POR_CHAVE_TWELVEDATA`); consumo por par = UNIÃO das janelas do par x 4/3 + 48 do resumo; o card mostra a sobreposição descontada e cada par
    mostra seu custo (~N/dia). Calibração: 8 pares/3 sessões = 1.792 de análise + 384 de resumo = 2.176 (real 1.930, com cooldown reduzindo o consumo do scanner). O verificador de resultados NÃO é somado (troca com o scanner nos pares em cooldown).
+
+AJUSTE-090 (07/10/2026) - Removida a exceção do GBP/USD (TP = 1,5x o SL, `RR_PAR`, AJUSTE-004) de `decidirConfiguracaoMercado` em `scripts/moneyManager.js` (decisão do usuário: TP e SL iguais à Config; no futuro, sugestão do
+sistema ou escolha do usuário). Efeito: GBP/USD passa a sair com o TP/SL da Config (US$ 5/5 na configuração atual), `decisao: "MANTER"`. `decidirConfiguracaoMercado` passou a ser exportada (só para teste). Rótulo `RR_PAR` mantido em
+`js/historico.js` para sinais antigos; texto do Manual atualizado. Teste: `scripts/moneyManager.rrpar.test.js` (falha no código antigo: GBP/USD 7,5/5 RR_PAR; passa no novo: 5/5 MANTER, também com Config 8/6). Mudança de lógica de TP/SL durante o
+congelamento por DECISÃO EXPLÍCITA do usuário (como a troca de lote de 01/10); amostra separada por data. Validação no primeiro sinal real de GBP/USD pendente.

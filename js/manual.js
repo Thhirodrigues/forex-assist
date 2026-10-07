@@ -638,7 +638,9 @@ function secaoComoLerSinal() {
           sempre o preço real na XM.</li>
         <li><b>Distância até o TP / SL</b> - os mesmos alvos em pips.</li>
         <li><b>Risco/retorno</b> - 1 : 1 quando TP e SL são iguais;
-          GBP/USD usa TP de 1,5x o SL (RR_PAR, AJUSTE-004).</li>
+          todos os pares usam o TP e o SL da Config. (Até 07/10/2026 o
+          GBP/USD usava TP de 1,5x o SL, a regra RR_PAR; sinais antigos dele
+          ainda mostram esse rótulo.)</li>
         <li><b>Saldo antes / Resultado / Saldo depois</b> - o saldo
           simulado antes e depois dessa operação fechar e o resultado em
           dólar dela (positivo = WIN, negativo = LOSS). "--" enquanto

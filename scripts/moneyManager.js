@@ -653,6 +653,7 @@ function calcularExpectativa(
 // operações, 10 comparáveis pós-AJUSTE-003). Os outros pares pioram ou
 // ficam mistos com TP mais largo - o ajuste é intencionalmente restrito
 // a este par, não uma mudança de R/R geral.
+// AJUSTE-090 (07/10/2026): essa exceção foi REMOVIDA (ver o fim desta função).
 function decidirConfiguracaoMercado({
 
     score,
@@ -742,19 +743,17 @@ function decidirConfiguracaoMercado({
 
     }
 
-    // AJUSTE-004: alarga só o TP (SL fica no valor já decidido acima
-    // pelos ramos de ADX/ATR) - mantém o risco por operação igual,
-    // só aumenta o alvo de lucro. R/R 1,5:1, o ponto validado contra
-    // dado real sem se apoiar no extremo menos testado (2:1).
-    if (par === "GBP/USD") {
-
-        configuracao.tpUSD = Number((configuracao.slUSD * 1.5).toFixed(2));
-
-        // AJUSTE-039: rótulo próprio - antes ficava "MANTER" e o banner
-        // do Histórico dizia "conforme configurado" com TP 1,5x.
-        configuracao.decisao = "RR_PAR";
-
-    }
+    // AJUSTE-090 (07/10/2026), decisão do usuário: REMOVIDA a exceção do
+    // GBP/USD (AJUSTE-004: TP = 1,5x o SL, R/R 1,5:1). Todos os pares, GBP/USD
+    // inclusive, usam o TP/SL da tela de Config. Motivos do usuário: manter TP e
+    // SL iguais à Config e, no futuro, deixar a escolha para a sugestão do sistema
+    // ou para o próprio usuário, em vez de uma regra escondida por par. A evidência
+    // da exceção era pequena (28 operações, 10 comparáveis; ver comentário no
+    // topo desta função) e ela misturava a amostra do congelamento (GBP/USD
+    // precisa de 37,5 pips contra 25 dos outros, pagando o mesmo spread).
+    // Operações antigas do GBP/USD (decisao "RR_PAR", TP US$ 7,50) continuam
+    // no histórico e são separáveis por `decisao`/`tpUSD`.
+    // `par` continua no parâmetro (chamadores, e para ajuste por par no futuro).
 
     return configuracao;
 
@@ -1140,6 +1139,8 @@ const classificacaoFinanceira =
 module.exports = {
 
     DEFAULT_CONFIG,
+
+    decidirConfiguracaoMercado,
 
     obterPerfilFinanceiro,
 

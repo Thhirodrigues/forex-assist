@@ -259,7 +259,7 @@ const LEGENDA_AJUSTE_MERCADO = {
   REDUZIR_EXPOSICAO: "ADX fraco - tendência sem força suficiente",
   MERCADO_LENTO: "baixa volatilidade (ATR baixo)",
   EXPECTATIVA_NEGATIVA: "expectativa histórica negativa reduziu o lote",
-  RR_PAR: "TP 1,5x o SL, regra específica do GBP/USD"
+  RR_PAR: "TP 1,5x o SL, regra específica do GBP/USD (extinta em 07/10/2026; só sinais antigos)"
 };
 
 // Usuário pediu pra poder ver o movimento completo do preço, da
