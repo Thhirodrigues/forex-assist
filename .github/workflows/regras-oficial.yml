@@ -1,0 +1,36 @@
+name: Regras do Firestore (projeto OFICIAL)
+
+# Publica as regras do banco oficial.
+#  - proteger: só o dono (UID) lê e grava. Rode SÓ depois de entrar no app (Config > Segurança da conta) e copiar o UID.
+#  - reverter: emergência, volta a abrir o banco.
+# Os robôs (scanner, verificador, Laboratório) usam credencial de administrador e não são afetados.
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'proteger | reverter'
+        required: true
+        default: 'proteger'
+      uid:
+        description: 'UID do dono (obrigatório em proteger)'
+        required: false
+        default: ''
+
+jobs:
+  regras:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: node ferramentas/publicar-regras-oficial.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - name: Publicar regras
+        env:
+          MODO: ${{ github.event.inputs.modo }}
+          UID_DONO: ${{ github.event.inputs.uid }}
+        run: node ferramentas/publicar-regras-oficial.js

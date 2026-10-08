@@ -497,6 +497,8 @@ style="width:100%;">
 
 </div>
 
+${window.LoginApp && window.LoginApp.htmlSeguranca ? window.LoginApp.htmlSeguranca() : ""}
+
 <div class="card">
 
 <div class="card-title">

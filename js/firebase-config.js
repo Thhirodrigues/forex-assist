@@ -13,6 +13,13 @@ const db = firebase.firestore();
 
 window.db = db;
 
+// Login (e-mail e senha): ver js/login.js. Falhar aqui nunca derruba o app (window.auth fica null).
+try {
+    window.auth = firebase.auth();
+} catch (e) {
+    window.auth = null;
+}
+
 window.firebaseDebug = {
     sdkVersion: firebase.SDK_VERSION,
     keys: Object.keys(firebase),
