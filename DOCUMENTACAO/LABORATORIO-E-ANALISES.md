@@ -669,6 +669,15 @@ Critérios de 6.27 aplicados sem ajuste. Diferença de pips/op (a_favor menos co
 Limites: 360 dias com uma tendência de dólar própria; entradas LAB correlacionadas (t ingênuo otimista, por isso o controle); X6 só existe no replay; "10 dias de mercado" != 3 semanas do gráfico diário.
 Veredito: nada para propor ao oficial. A ideia de aviso de embolsar NÃO será implementada (não melhora a esperança). Nenhum dos filtros candidatos entra na fila pós-100 como melhoria; ficam como "testado e reprovado".
 
+### 6.29 CONTAGEM OFICIAL LIDA DIRETO DO FIRESTORE (08/10/2026 ~01:00 UTC; leitura pública `historico` com a chave web do app) e o que ela muda na regra 6.25
+`financeiro.regimeTPSL = CONFIG`: 151 documentos = 144 fechados (66 WIN / 78 LOSS, 45,8%) + 7 abertos. Por lote: 81 com 0,04 e 63 com 0,02. Desde o zerar (04/10 00:42Z): 37 fechados, 19 WIN / 18 LOSS (51%, medida do app, SEM spread),
+7 abertos; por perfil que aprovou: CONSERVADOR 0, BALANCEADO 17 (8 WIN), AGRESSIVO 20 (11 WIN). Por dia de abertura (BRT): 04/10 6 ops 4 WIN +US$10; 05/10 11 ops 3 WIN -US$25; 06/10 10 ops 4 WIN -US$7,50; 07/10 10 ops 8 WIN +US$30.
+Total do app no período: +US$ 7,50 sem spread; com ~2,2 pips de spread x US$ 0,20/pip x 37 ops ~ -US$ 16, o líquido estimado é ~ -US$ 9 (coerente com o placar do Lab, que mede COM spread: 34 fechados, 14 WIN, 41%).
+Primeiro (e único, em todo o histórico) sinal CONSERVADOR: USD/CHF BUY, 07/10 13:05 BRT (16:05 UTC), score 55 (o mínimo), aprovado direto no perfil configurado (`rebaixadoDaCascata=false`), TP/SL US$ 5/5, aberto.
+Lição para a regra 6.25: os resultados vêm em BLOCOS DE DIA muito correlacionados (3 de 11 num dia, 8 de 10 em outro; os pares abertos quase sempre apostam no mesmo lado do dólar). Com ~10 operações/dia, 100 operações = ~10 dias =
+~10 blocos: o IC por bootstrap em blocos de dia será largo e o desfecho mais provável é R2 (INDETERMINADO: estender para 200 ou ~20 dias de mercado), não R1 nem R3. Acrescentar à regra: reportar também o NÚMERO DE DIAS e não concluir R1/R3 com menos de ~15 dias.
+Segurança (achado): `historico` e `scanner` são legíveis publicamente pela chave web do app (sem login). Não vaza credencial; expõe histórico/saldo simulado. Correção (Firebase Auth + regras) fora do escopo agora.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
