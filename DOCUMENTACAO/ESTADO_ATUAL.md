@@ -121,6 +121,8 @@ reduzido) e **não são comparáveis** (alvo em pips diferente).
   (o Laboratório, 6.28, mostrou que embolsar cedo sobe o acerto sem subir os pips por operação). Sinais já abertos e acima do limite no deploy recebem o aviso uma vez.
 - **Contagem OFICIAL (lida do Firestore em 08/10/2026, ver caderno 6.29)**: desde o zerar de 04/10: 37 fechadas (19 WIN / 18 LOSS na medida do app, sem spread) + 7 abertas; o critério literal `regimeTPSL=CONFIG` já soma 144 fechadas (81 com lote 0,04 e 63 com 0,02,
   dois experimentos). Ritmo ~10 fechamentos/dia: as 100 desde o zerar chegam por volta de 15-16/10. Resultados em blocos de dia correlacionados: a regra 6.25 deve reportar também o nº de dias. Primeiro sinal CONSERVADOR: USD/CHF BUY 07/10 13:05 BRT (score 55, aberto).
+- **Segurança do banco (AJUSTE-092, 08/10/2026)**: etapa 1 pronta (login por e-mail/senha na Config, `EXIGIR_LOGIN=false`). PENDENTE DO USUÁRIO: etapa 2 (ativar e-mail/senha no Console do Firebase, criar o usuário, entrar uma vez e copiar o UID).
+  Depois: workflow `regras-oficial` modo `proteger` + `EXIGIR_LOGIN=true` no mesmo commit. Até lá o banco oficial segue legível publicamente.
 - Ferramenta pra contar as operações do regime novo: **ainda não
   existe** (o replay `diagnostico-replay-score-ajuste037.js` imprime o
   total geral, sem filtrar por regime). Criar quando for preciso.

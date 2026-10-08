@@ -13556,3 +13556,11 @@ TP/SL nem resultado), `scripts/pushNotifier.js` (`enviarPushAvisoParcial`, tipo 
 `js/historico.js` (linha "Aviso de lucro parcial às HH:MM" no detalhe, com o desfecho final nos encerrados), `js/manual.js`. Lucro medido no preço atual SEM spread. SÓ AVISA: o app não fecha nada; encerrar antes é decisão do usuário na corretora.
 Teste: `scripts/avisoParcial.test.js` (11 casos; roda o js/checker.js REAL com firestore/API/push falsos: grava aviso, um push, não fecha, respeita desligado/percentual/já avisado/venda; falha no checker antigo, passa no novo).
 Por que existe apesar do Laboratório (6.28) não ter achado ganho em embolsar cedo: é opção do usuário, e o aviso gravado permite medir depois, com o desfecho real do sinal, o que teria acontecido.
+
+AJUSTE-092 (08/10/2026) - Segurança do banco oficial (achado em 6.29: `historico`/`scanner` legíveis por qualquer pessoa com a config web pública). Plano em 3 etapas, nada trava antes da 3:
+ 1) (feito) `js/login.js` + `firebase-auth-compat.js` + `window.auth` (firebase-config.js): login por e-mail e senha; cartão "Segurança da conta" na Config (entrar/sair, mostra e-mail e UID, copiar UID); `EXIGIR_LOGIN = false` (o app abre como sempre).
+    Tela cheia de login pronta para a etapa 3 (testada em navegador, 390 px). Falha do Auth nunca derruba o app. Testes: `js/login.test.js`, harness Playwright em scratchpad.
+ 2) (usuário) Console do Firebase > Authentication > Sign-in method > E-mail/senha (ativar) > Users > Add user (e-mail e senha forte); desativar criação de contas se houver a opção. Entrar uma vez no app e copiar o UID (Config > Segurança da conta).
+ 3) workflow `regras-oficial.yml` (`ferramentas/publicar-regras-oficial.js`): modo `proteger` com o UID publica "só o dono lê e grava" e CONFERE por leitura anônima que deu HTTP 403; modo `reverter` reabre (emergência). Mostra no log as regras atuais antes de trocar. No MESMO commit,
+    `EXIGIR_LOGIN = true`. Robôs (scanner, verificador, Laboratório) usam credencial de administrador e não são afetados; o Lab (outro projeto) segue com `placar/*` e `replay/*` públicos de propósito.
+ Opcional depois: restringir a chave de API web por referenciador (Google Cloud > Credenciais) a https://thhirodrigues.github.io/*. Teste: `ferramentas/publicar-regras-oficial.test.js` (UID validado, regra única, nada aberto).
