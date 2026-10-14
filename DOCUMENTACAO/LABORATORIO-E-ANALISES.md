@@ -691,6 +691,13 @@ Notas de leitura: operações manuais do usuário, não é amostra do app; só m
 - O "+US$18 em 7 dias" citado pelo usuário não bate com o fechado (fechadas desde 07/10 UTC: 16 operações, -14,27); pode incluir lucro flutuante das abertas.
 Implicações (nada implementado): (a) R/R 1 com atrito ~7% exige acerto > ~53%; (b) copiar do app os PREÇOS de TP/SL, não recalcular a partir do preenchimento; (c) somar as abertas antes de qualquer conclusão sobre as sem SL; (d) a janela entre sinal e entrada importa e pode ser testada no Laboratório (entrada em recuo), com pré-registro.
 
+Atualização 6.30 (14/10/2026 ~03:30 UTC, posições ABERTAS enviadas pelo usuário, snapshot 00:29 de São Paulo): 11 posições abertas, TODAS sem SL, P/L flutuante líquido -US$43,66 (4 positivas, 7 negativas; piores: GBP/USD VENDA 09/10 -13,58; USD/CAD COMPRA 09/10 -10,90; AUD/USD VENDA 12/10 -9,55; EUR/JPY VENDA 12/10 -7,41). Saldo informado US$45,03 (ver pendência abaixo).
+- Das 11, 7 já tinham sido ENCERRADAS pelo app (6 por SL, -5 cada; 1 por TP) e 4 seguem abertas no app. Soma no app para essas 11: -22,12; na XM, flutuante -43,66. Ou seja, segurar sem SL piorou ~21,5 em relação ao plano do app, até agora (não realizado: ainda podem voltar ao TP).
+- Sem SL, as 17 operações com sinal do app (6 fechadas + 11 abertas): XM -13,46 x app -1,80. As 7 fechadas ganharam 7/7 (+33,75) e as 11 abertas estão -43,66: o "7 de 7" era viés de sobrevivência. Perfil típico: muitos ganhos pequenos limitados ao TP e perdas sem teto (até -13,58 contra risco planejado de -5).
+- Fechadas + abertas (40 operações): -43,21. Saldo informado (45,03) não fecha com 100 + 0,45 (fechadas) nem com 100 + 0,45 - 43,66 (= 56,79): diferença a esclarecer (saldo = balance ou equity? houve operações antes de 30/09, depósito/retirada?). Se 45,03 for o balance, o equity é ~US$1,37 e há risco de stop-out.
+- USD/CHF VENDA 12/10 (sem sinal): aberta sem querer, segundo o usuário; excluir das estatísticas.
+- Observação do usuário: "os melhores ganhos foram com GBP e EUR". Checagem fora da amostra no `historico` do app: ANTES de 30/09, GBP n53 acerto 32% -54,7 e EUR n76 38% -48,2 (os piores depois do JPY); DEPOIS, GBP n46 48% +10,4 e EUR n52 50% +6,7. O padrão inverte entre períodos; GBP e EUR contam pares com USD e cruzados, e USD aparece em 129 dos 164 sinais pós-30/09 (-76,2). Tratar como ruído até teste pré-registrado (muitos recortes: 10 pares, 8 moedas, n de 1 a 7 por recorte).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
