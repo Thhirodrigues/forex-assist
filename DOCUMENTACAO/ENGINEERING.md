@@ -13564,3 +13564,10 @@ AJUSTE-092 (08/10/2026) - Segurança do banco oficial (achado em 6.29: `historic
  3) workflow `regras-oficial.yml` (`ferramentas/publicar-regras-oficial.js`): modo `proteger` com o UID publica "só o dono lê e grava" e CONFERE por leitura anônima que deu HTTP 403; modo `reverter` reabre (emergência). Mostra no log as regras atuais antes de trocar. No MESMO commit,
     `EXIGIR_LOGIN = true`. Robôs (scanner, verificador, Laboratório) usam credencial de administrador e não são afetados; o Lab (outro projeto) segue com `placar/*` e `replay/*` públicos de propósito.
  Opcional depois: restringir a chave de API web por referenciador (Google Cloud > Credenciais) a https://thhirodrigues.github.io/*. Teste: `ferramentas/publicar-regras-oficial.test.js` (UID validado, regra única, nada aberto).
+
+AJUSTE-093 (14/10/2026) - Rotulador do Laboratório vermelho no GitHub ("rotulador #45", HTTP 429 em todos os pares). Causa: cota diária da TwelveData esgotada no fim do dia UTC (reinicia 00:00 UTC). O Lab usa só a KEY_3 (sem fallback);
+as falhas aparecem só entre ~22:30 e 23:59 UTC. O pool de 4 chaves também chega perto do limite: log do verificador às 23:15 UTC com 3 de 4 chaves em 429; /api_usage às 01:57 UTC = 95/94/88/69 (dia seguinte, já reiniciado).
+DEMANDA REAL ESTIMADA ~4.000/dia contra capacidade de 3.200 (verificador ~2.300 [posições abertas x 288 execuções/dia + cotação cruzada], scanner ~1.500, resumo ~300). O estimador da Config (AJUSTE-088) excluía o verificador
+("troca com o scanner"), o que é falso fora das janelas de sessão; seu "OK" estava subestimando. Correção do estimador FICA PENDENTE até calibrar com a série horária (agora `uso-twelvedata.yml` roda a cada hora, minuto 50).
+Mudança feita: `lab/rotulador.js` retorna `soLimite` (todas as falhas são 429); nesse caso loga "LIMITE DIÁRIO" e NÃO sai com código 1 (o cursor não avança, a próxima execução recupera). Qualquer outro erro continua vermelho.
+Teste: `lab/rotulador.test.js` (429 -> soLimite true; 500 -> false). NÃO resolve a capacidade: decisão do usuário pendente (chave dedicada ao Lab, mais chaves, agrupar posições por par no verificador, cadência, nº de pares).

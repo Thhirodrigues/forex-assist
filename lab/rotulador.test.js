@@ -88,11 +88,17 @@ const candles = (n, alvoNo) => Array.from({ length: n }, (_, i) => ({ datetime: 
     const falha = async (par) => { if (par === "GBP/USD") throw new Error("429 simulado"); return candles(30, 3); };
     const r2 = await executar({ ...args, ofic: ofic2, lab: lab2, getCandles: falha, increment: lab2.inc });
     assert.equal(r2.falhas, 1);
+    assert.equal(r2.soLimite, true, "só falhas 429: cota diária, não é defeito (a execução não fica vermelha)");
     assert.ok(lab2.cols.entradas.LAB_z1 && !lab2.cols.entradas.LAB_z2);
     assert.ok(lab2.cols.controle.rotulador.cursorPar.GBP_USD < T0, "GBP/USD segurado no cursor antigo");
     const ok = async () => candles(30, 3);
     await executar({ ...args, ofic: ofic2, lab: lab2, getCandles: ok, increment: lab2.inc });
     assert.ok(lab2.cols.entradas.LAB_z2, "na tentativa seguinte o par que falhou é recuperado");
     assert.equal(Object.keys(lab2.cols.entradas).filter(x => x === "LAB_z1").length, 1);
+    // erro que NÃO é 429 continua sendo erro de verdade
+    const ofic3 = criarFake({ analises: { y1: an("y1", "EUR/USD", 0) } });
+    const lab3 = criarFake();
+    const r3 = await executar({ ...args, ofic: ofic3, lab: lab3, getCandles: async () => { throw new Error("500 servidor caiu"); }, increment: lab3.inc });
+    assert.equal(r3.falhas, 1); assert.equal(r3.soLimite, false, "erro 500 não é 'só limite'");
     console.log("TODOS OS TESTES DO ROTULADOR PASSARAM");
 })().catch(e => { console.error(e); process.exit(1); });

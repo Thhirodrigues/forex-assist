@@ -83,6 +83,7 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
 
     const pares = [...new Set([...Object.keys(porPar), ...Object.keys(abertasPorPar)])];
     let falhas = 0, buscas = 0;
+    const mensagensDeErro = [];
     const totalIgn = { semDirecao: 0, semTpSl: 0, cooldown: 0 };
 
     for (const par of pares) {
@@ -156,6 +157,7 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
 
         } catch (e) {
             falhas++;
+            mensagensDeErro.push(String(e.message));
             log(`ERRO em ${par}: ${e.message} (cursor NÃO avança; tenta de novo na próxima execução)`);
             // segura o par no cursor antigo para o avanço global não pular as análises dele
             if (!dry) await controleRef.set({ cursorPar: { [chavePar(par)]: cursor } }, { merge: true }).catch(() => {});
@@ -164,7 +166,8 @@ async function executar({ ofic, lab, getCandles, increment, agora = Date.now(), 
 
     if (lidoAte && !dry) await controleRef.set({ cursorGlobal: lidoAte }, { merge: true });
     log(`Ignoradas no total: sem direção ${totalIgn.semDirecao}, sem TP/SL ${totalIgn.semTpSl}, cooldown ${totalIgn.cooldown}`);
-    return { falhas, buscas };
+    // soLimite: TODAS as falhas foram 429 (cota diária da TwelveData esgotada, típico no fim do dia UTC); o cursor não avançou e a próxima execução recupera
+    return { falhas, buscas, soLimite: falhas > 0 && mensagensDeErro.every(m => /429/.test(m)) };
 
 }
 
@@ -220,8 +223,11 @@ if (require.main === module) {
             return;
         }
         console.log(`Rotulador do Laboratório${dry ? " (DRY: não grava nada)" : ""}`);
-        const { falhas } = await executar({ ofic, lab, getCandles, increment: admin.firestore.FieldValue.increment, dry });
+        const { falhas, soLimite } = await executar({ ofic, lab, getCandles, increment: admin.firestore.FieldValue.increment, dry });
         if (!dry) { const linhas = await imprimirResumo(lab); await publicarPlacar(lab, linhas); console.log("Placar publicado em placar/atual."); }
-        if (falhas) { console.log(`\n${falhas} par(es) com ERRO - ver acima.`); process.exitCode = 1; }
+        if (falhas && soLimite) {
+            // cota diária da TwelveData esgotada (as 4 chaves do rodízio, medido em 14/10/2026): não é defeito do rotulador, não deixa a execução vermelha
+            console.log(`\n${falhas} par(es) sem consulta por LIMITE DIÁRIO (429) da TwelveData. O cursor não avançou: a próxima execução recupera tudo. Sem alerta.`);
+        } else if (falhas) { console.log(`\n${falhas} par(es) com ERRO - ver acima.`); process.exitCode = 1; }
     })().catch(e => { console.error("ERRO FATAL:", e); process.exit(1); });
 }

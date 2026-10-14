@@ -1,8 +1,10 @@
 name: Uso da TwelveData (só leitura)
 
-# Mostra o consumo de créditos das 3 chaves (endpoint /api_usage; NÃO gasta crédito). Não imprime as chaves.
+# Mostra o consumo de créditos das 4 chaves (também roda de hora em hora para registrar a curva do dia) (endpoint /api_usage; NÃO gasta crédito). Não imprime as chaves.
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '50 * * * *'   # a cada hora: série do consumo por chave no log (calibrar o orçamento; /api_usage não gasta crédito)
 
 jobs:
   uso:
