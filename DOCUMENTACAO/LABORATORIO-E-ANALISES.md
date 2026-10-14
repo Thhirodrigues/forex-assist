@@ -678,6 +678,19 @@ Lição para a regra 6.25: os resultados vêm em BLOCOS DE DIA muito correlacion
 ~10 blocos: o IC por bootstrap em blocos de dia será largo e o desfecho mais provável é R2 (INDETERMINADO: estender para 200 ou ~20 dias de mercado), não R1 nem R3. Acrescentar à regra: reportar também o NÚMERO DE DIAS e não concluir R1/R3 com menos de ~15 dias.
 Segurança (achado): `historico` e `scanner` são legíveis publicamente pela chave web do app (sem login). Não vaza credencial; expõe histórico/saldo simulado. Correção (Firebase Auth + regras) fora do escopo agora.
 
+### 6.30 Cruzamento do histórico da conta demo XM (29 operações fechadas, 30/09 a 13/10/2026) com o `historico` do app (14/10/2026)
+
+Fonte: planilha exportada pelo usuário (histórico da conta demo; horário do servidor da XM = UTC+3) e leitura pública do `historico` oficial. Pareamento por par + direção + horário (sinal do app até 48 h antes da entrada). 28 de 29 pareadas; 1 sem sinal (USD/CHF VENDA 12/10 16:25 UTC). Atraso de entrada: mediana 10 min; 21 de 28 em até 25 min.
+Notas de leitura: operações manuais do usuário, não é amostra do app; só mostra operações FECHADAS (as sem SL que foram contra ficam abertas e não aparecem aqui).
+
+- Líquido real (lucro + swap): +US$0,45 (swap total -1,69; sem swap, +2,14). Taxa de acerto 15/29 = 51,7%; ganho médio 5,00, perda média 5,32 -> ponto de equilíbrio ~51,6%. Nada distinguível de zero.
+- SEM SL no TP/SL da corretora: 7 operações, 7 ganhos, +33,75. COM SL: 22 operações, 8 ganhos (36%), -33,30. Todo o lucro vem das sem SL, que só entram no histórico quando fecham; perdedoras sem SL ficam abertas. Não é evidência de habilidade: é viés de sobrevivência (efeito disposição) até que as posições ABERTAS sejam somadas. Pendente: usuário enviar as abertas.
+- Concordância de desfecho app x XM: 23 de 28 (82%). Divergentes (5): 1 por falta de SL (EUR/USD COMPRA 08/10, o app deu SL em 40 min e a XM segurou 11 h e ganhou), 2 por entrada atrasada em preço melhor após recuo (EUR/USD e GBP/USD VENDA 01/10, TP da XM em minutos; no app, SL no dia seguinte), 1 por entrada 3 min depois com preço 16 pips diferente e TP recalculado a partir do preenchimento (USD/JPY VENDA 08/10), 1 hipótese de spread (USD/JPY COMPRA 01/10, mesmo preço de entrada; app TP no preço médio, XM SL depois; TP da XM exige o bid). Nenhum caso é erro claro de detecção do app.
+- Atrito: nas 23 concordantes, XM -7,71 x app +0,63 = -0,36 por operação (spread + swap + deslizamento), ~7% do valor arriscado de US$5.
+- App no período (sinais encerrados desde 30/09, 12 dias): 164 sinais, 43,9% de acerto, -US$73,90 (BALANCEADO 45: 37,8%, -57,61; AGRESSIVO 118: 46,6%, -11,29; CONSERVADOR 1). Escolhidos pelo usuário: 28, 46,4%, -5,96; não escolhidos: 136, 43,4%, -67,94. Diferença sem significância (n pequeno, dias correlacionados). Recorte de data diferente da contagem oficial desde 04/10; não substitui a regra 6.25.
+- O "+US$18 em 7 dias" citado pelo usuário não bate com o fechado (fechadas desde 07/10 UTC: 16 operações, -14,27); pode incluir lucro flutuante das abertas.
+Implicações (nada implementado): (a) R/R 1 com atrito ~7% exige acerto > ~53%; (b) copiar do app os PREÇOS de TP/SL, não recalcular a partir do preenchimento; (c) somar as abertas antes de qualquer conclusão sobre as sem SL; (d) a janela entre sinal e entrada importa e pode ser testada no Laboratório (entrada em recuo), com pré-registro.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
