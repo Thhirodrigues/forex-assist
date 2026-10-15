@@ -714,6 +714,23 @@ Atualização 3 de 6.30 (15/10/2026 ~22:30 UTC; histórico COMPLETO fechado + ab
 - Revisão: a leitura do dia 14/10 00:29 (grupo sem SL -9,91) e a de hoje (+34,42) mostram que o resultado depende da data da medição. A tese "sem SL ajuda" é testável: variante "TP sem SL" com limite de tempo no replay de 360 dias (pré-registrar antes de rodar; medir acerto, pior prejuízo aberto, tempo até fechar, uso de margem e swap).
 - Risco real da janela: equity chegou a ~12 em 14/10 de manhã (relato do usuário) com margem ~17-22: nível de margem estimado 55-70%, perto do stop-out de 50% da XM.
 
+### 6.31 PRÉ-REGISTRO: "TP SEM SL" e política de margem (pedido do usuário em 15/10/2026; escrito ANTES de implementar e rodar; vetável antes da execução)
+
+Origem: na conta demo da XM, 30 operações sem SL (+34,42 marcado a mercado) contra 23 com SL (-28,89), mas com confusão de período (6.30: todas as com SL abriram até 08/10; 29 das 30 sem SL depois). Pergunta do usuário: o resultado sem SL é real, e qual política de margem o torna seguro?
+Pergunta 1 (expectativa): com as MESMAS entradas do replay de 360 dias (08/10/2025 a 02/10/2026; exploração até 17/06/2026, validação depois; entradas OFICIAL e LAB), uma saída "só TP" (sem stop) tem expectativa líquida (spread + swap) melhor que o TP/SL atual e melhor que o controle ALEATORIO?
+Pergunta 2 (risco): qual a distribuição de prejuízo aberto (MAE) e de uso de margem, e que teto de exposição mantém a conta fora do stop-out?
+Expectativa registrada ANTES de rodar (prior do autor): em preço sem deriva, TP sem SL com prazo máximo tem acerto alto (~85-95%) e expectativa líquida ~ -(spread + swap), com cauda esquerda grossa; ou seja, espero NÃO rejeitar H0 (expectativa <= 0). Se vier positivo, a explicação a testar primeiro é a deriva do dólar (6.17: regimes opostos entre exploração e validação), não o SL.
+Variantes (mesmas entradas, mesmo TP em pips da Config; spread como em `lab/simulador.js`; regra fixa 1 do simulador mantida: candle ambíguo = pior caso):
+ V0 ATUAL (TP/SL, R/R 1) - base.
+ V1 TP_T3, V2 TP_T5, V3 TP_T10: sem SL; se o TP não for batido em N dias de mercado (3, 5, 10), fecha a mercado no open do candle seguinte (perda realizada). Swap por noite pelo módulo de taxas de 6.23 (markup base 1,0 pp; estresse 2,5 pp), tríplice na quarta.
+ V4 SL_3X, V5 SL_5X: stop largo de 3x e 5x o TP, sem limite de tempo (meio-termo comum; mede se a cauda é paga).
+ C  ALEATORIO: direção sorteada, mesmos V0-V5 (calibra o t, como em 6.20).
+Métricas por variante x época x grupo (TODOS, sem fatiar por par/sessão): n, acerto, pips/op líquido, perda média dos perdedores, pior perda, MAE (p50, p90, p99, máximo), tempo até o TP (mediana, p90), % que bateu o prazo, expectativa por bloco de dia (bootstrap em blocos de dia, IC95) e t agrupado por dia.
+Fase B - conta simulada (política de margem): processa as entradas OFICIAL em ordem cronológica numa conta de US$100 (também 1.000), lote 0,02 (2.000 unidades), alavancagem 1000:1, margem = nocional/alavancagem, stop-out em nível de margem 50% (valor da XM; conferir) liquidando a pior posição. Políticas (grade fechada, sem ajuste depois): P0 aceita tudo; P1 no máx. 1 posição por par (como o scanner); P2 no máx. 4 posições abertas; P3 não abre se nível de margem < 300%; P4 = P1 + P3. Por política x variante: equity final, equity mínimo, nível de margem mínimo, nº de stop-outs, % de janelas móveis de 30 dias sem stop-out, tempo abaixo de 200% e de 100%.
+Critério de "plausível" (todos juntos, nas DUAS épocas): (a) pips/op líquido >= +0,5; (b) melhor que o ALEATORIO na mesma variante com t agrupado por dia >= 3; (c) em P1 ou P4, >= 95% das janelas de 30 dias sem stop-out e equity mínimo >= 50% do inicial; (d) o sinal não inverte quando o replay é separado em regimes de dólar (alta x baixa). Qualquer falha = "testado e reprovado" para o pipeline oficial; permanece como escolha manual do usuário com o risco registrado.
+Limites já conhecidos: 1 ano com uma tendência de dólar; swap por modelo (não a tabela real da XM); operações correlacionadas (por isso blocos de dia); a amostra real do usuário (6.30) NÃO entra como evidência, só como caso.
+Nada será mudado no pipeline oficial nem no scanner. Implementação: variantes no `lab/simulador.js` (MAE e prazo), runner em `lab/` e workflow manual; testes antes do run.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
