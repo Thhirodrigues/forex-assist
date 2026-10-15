@@ -17,6 +17,7 @@ const { processarPar, contarEntradas } = require("./nucleo");
 const { construirContexto, enxugarAnalise } = require("./contexto");
 const { mercadoForexAberto } = require("../scripts/horarioMercado");
 const { FAMILIAS, sinaisParaAnalises } = require("./familias");
+const { faseA, faseB, linhasFaseA } = require("./semsl-analise");
 
 const TAM_CHUNK = 8000;
 const LINHAS_POR_DOC = 1500;
@@ -152,7 +153,7 @@ async function replayETudo({ lab, config, pares, split = 0.7, passo = 3, log = c
         tipo: d.tipo, variante: d.variante, epoca: d.epoca, grupo: d.grupo, n: d.n, pos: d.pos, neg: d.neg, zero: d.zero,
         pips: Number(d.pips.toFixed(2)), pips2: Number((d.pips2 || 0).toFixed(2)), dur: d.dur, amb: d.amb, ab: d.ab || 0
     }));
-    return { linhas, totais, ini, fim, splitTs, entradas: entradasTodas.length, deriva, barreiras, porPar };
+    return { linhas, totais, ini, fim, splitTs, entradas: entradasTodas.length, deriva, barreiras, porPar, entradasLista: entradasTodas };
 }
 
 async function publicarReplay({ lab, resultado, params, agora = Date.now() }) {
@@ -201,7 +202,44 @@ async function publicarFamilias({ lab, familias, meta, agora = Date.now() }) {
     await lab.collection("replay").doc("familias").set({ geradoEm: agora, ...meta, familias });
 }
 
-module.exports = { empacotar, desempacotar, baixarETudo, estenderHistorico, replayETudo, publicarReplay, lerCandles, sanos, familiasETudo, publicarFamilias };
+// ---- "TP sem SL" + política de margem (pré-registro 6.31): mesmas entradas do replay, variantes V0-V5, controle, conta simulada ----
+async function semslETudo({ lab, config, pares, split = 0.7, passo = 3, log = console.log, ler = lerCandles, taxas = undefined }) {
+    const base = await replayETudo({ lab, config, pares, split, passo, log, ler });
+    if (taxas === undefined) {
+        const snap = await lab.collection("diario").doc("_taxas").get();
+        taxas = snap.exists ? snap.data().series : null;
+    }
+    log(taxas ? "Taxas BIS lidas de diario/_taxas." : "SEM taxas BIS: o swap usa só o markup (errar contra).");
+    const A = faseA({ entradas: base.entradasLista, porPar: base.porPar, splitTs: base.splitTs, taxas, log });
+    const linhasA = linhasFaseA(A.regs);
+    const linhasB = faseB({ paraConta: A.paraConta, porPar: base.porPar, ini: base.ini, fim: base.fim, log });
+    return { linhasA, linhasB, regimes: A.regimes, ini: base.ini, fim: base.fim, splitTs: base.splitTs, entradas: base.entradas, deriva: base.deriva, comTaxas: !!taxas };
+}
+
+function imprimirSemsl(r, log = console.log) {
+    const f = (x, d = 2) => (x === null || x === undefined || Number.isNaN(x) ? "  -" : Number(x).toFixed(d));
+    for (const tipo of ["OFICIAL", "LAB"]) {
+        log(`\n=== FASE A - ${tipo} (pips/op líquido de spread e swap base; t agrupado por dia; vs controle = real - ALEATORIO) ===`);
+        for (const l of r.linhasA.filter(x => x.tipo === tipo && x.grupo === "TODOS" && !x.ctrl).sort((a, b) => (a.v + a.epoca).localeCompare(b.v + b.epoca))) {
+            const c = l.contraControle || {};
+            log(`${l.v.padEnd(10)} ${l.epoca} n=${String(l.n).padStart(5)} acerto ${f(l.acerto, 1)}% pips/op ${f(l.pipsOp)} (t ${f(l.t, 1)}) estresse ${f(l.pipsOpEstresse)} | pior perda ${f(l.piorPerda, 0)} MAE p90 ${f(l.mae?.p90, 0)} p99 ${f(l.mae?.p99, 0)} max ${f(l.mae?.max, 0)} | TP mediana ${f(l.durWinMin?.med, 0)}min p90 ${f(l.durWinMin?.p90, 0)} | prazo ${f(l.pctTempo, 1)}% stop ${f(l.pctStop, 1)}% abertas ${l.abertas} | vs controle ${f(c.media)} (t ${f(c.t, 1)})`);
+        }
+    }
+    log("\n=== FASE A - regimes do dólar (OFICIAL, pips/op; alta x baixa) ===");
+    for (const l of r.linhasA.filter(x => x.tipo === "OFICIAL" && /^dolar_/.test(x.grupo) && !x.ctrl).sort((a, b) => (a.v + a.epoca + a.grupo).localeCompare(b.v + b.epoca + b.grupo))) {
+        log(`${l.v.padEnd(10)} ${l.epoca} ${l.grupo.padEnd(11)} n=${String(l.n).padStart(5)} acerto ${f(l.acerto, 1)}% pips/op ${f(l.pipsOp)} (t ${f(l.t, 1)}) vs controle ${f(l.contraControle?.media)} (t ${f(l.contraControle?.t, 1)})`);
+    }
+    log("\n=== FASE B - conta simulada, janelas de 30 dias (passo 7), lote 0,02, 1000:1, stop-out 50% ===");
+    for (const l of r.linhasB.sort((a, b) => (a.conta0 - b.conta0) || a.v.localeCompare(b.v) || a.politica.localeCompare(b.politica))) {
+        log(`conta ${String(l.conta0).padStart(4)} ${l.v.padEnd(10)} ${l.politica} janelas ${l.janelas} sem stop-out ${f(l.pctSemStopOut, 0)}% equity min ok ${f(l.pctEquityMinOk, 0)}% | final med ${f(l.equityFinalMed, 0)} p10 ${f(l.equityFinalP10, 0)} | nível margem min med ${f(l.nivelMinMed, 0)} pior ${f(l.nivelMinPior, 0)} | aceitas ${f(l.aceitasMed, 0)} rej ${f(l.rejeitadasMed, 0)} | ano: final ${f(l.periodoTodo.equityFinal, 0)} min ${f(l.periodoTodo.equityMin, 0)} stop-outs ${l.periodoTodo.stopOuts}`);
+    }
+}
+
+async function publicarSemsl({ lab, r, params, agora = Date.now() }) {
+    await lab.collection("replay").doc("semsl").set({ geradoEm: agora, params, ini: r.ini, fim: r.fim, splitTs: r.splitTs, entradas: r.entradas, deriva: r.deriva, comTaxas: r.comTaxas, regimes: r.regimes, linhasA: r.linhasA, linhasB: r.linhasB });
+}
+
+module.exports = { empacotar, desempacotar, baixarETudo, estenderHistorico, replayETudo, publicarReplay, lerCandles, sanos, familiasETudo, publicarFamilias, semslETudo, imprimirSemsl, publicarSemsl };
 
 if (require.main === module) {
     (async () => {
@@ -242,6 +280,17 @@ if (require.main === module) {
                 catch (e) { if (tentativa >= 4) throw e; console.log(`gravação falhou (${e.message}); tentativa ${tentativa + 1}/4`); await new Promise(r => setTimeout(r, 3000 * tentativa)); }
             }
             console.log("Replicação publicada em replay/familias_rep (epoca `pre` = período novo, `pos` = período já visto).");
+        }
+        if (modo === "semsl") {
+            // protocolo 6.31 aplicado SEM ajuste: variantes, políticas e critérios já estão escritos no caderno
+            const configuracao = { perfil: "balanceado", cooldown: 30, candles: 500, lote: 0.04, tp: 5, sl: 5, tipoConta: "SIMULADA", saldoInicial: 1000, ...config };
+            const r = await semslETudo({ lab, config: configuracao, pares, split, passo });
+            imprimirSemsl(r);
+            for (let tentativa = 1; ; tentativa++) {
+                try { await publicarSemsl({ lab, r, params: { split, passo, pares, lote: configuracao.lote, tp: configuracao.tp, sl: configuracao.sl } }); break; }
+                catch (e) { if (tentativa >= 4) throw e; console.log(`gravação falhou (${e.message}); tentativa ${tentativa + 1}/4`); await new Promise(r2 => setTimeout(r2, 3000 * tentativa)); }
+            }
+            console.log("TP sem SL publicado em replay/semsl.");
         }
         if (modo === "familias") {
             const configuracao = { perfil: "balanceado", cooldown: 30, candles: 500, lote: 0.04, tp: 5, sl: 5, tipoConta: "SIMULADA", saldoInicial: 1000, ...config };

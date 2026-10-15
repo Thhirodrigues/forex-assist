@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       modo:
-        description: 'baixar | replay | ambos | familias (6.18) | estender (histórico para trás até DIAS) | familias-rep (replicação 6.19)'
+        description: 'baixar | replay | ambos | familias (6.18) | estender (histórico para trás até DIAS) | familias-rep (replicação 6.19) | semsl (TP sem SL e margem, 6.31)'
         required: false
         default: 'ambos'
       dias:
@@ -58,6 +58,8 @@ jobs:
           node lab/replay.test.js
           node lab/replay-run.test.js
           node lab/familias.test.js
+          node lab/semsl.test.js
+          node lab/conta.test.js
       - name: Replay
         env:
           API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
