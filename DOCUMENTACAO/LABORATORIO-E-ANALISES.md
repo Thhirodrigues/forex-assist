@@ -731,6 +731,18 @@ Critério de "plausível" (todos juntos, nas DUAS épocas): (a) pips/op líquido
 Limites já conhecidos: 1 ano com uma tendência de dólar; swap por modelo (não a tabela real da XM); operações correlacionadas (por isso blocos de dia); a amostra real do usuário (6.30) NÃO entra como evidência, só como caso.
 Nada será mudado no pipeline oficial nem no scanner. Implementação: variantes no `lab/simulador.js` (MAE e prazo), runner em `lab/` e workflow manual; testes antes do run.
 
+### 6.32 Hipótese H_GBP (pedido do usuário em 15/10/2026: "dar atenção maior aos grupos com GBP, 100% de win desde 30/09"); verificação descritiva e PRÉ-REGISTRO, escritos antes da execução
+Verificação (dados de 15/10, descritiva, NÃO é teste): XM, GBP fechadas 10 de 10 (+51,76), mas as 17 operações fechadas sem SL ganharam todas (GBP 6/6, outras 11/11): o "100%" aparece em qualquer par sem SL. Das 10 GBP fechadas, 4 tinham SL e ganharam (01/10 x2, 04/10, 07/10); 5 GBP seguem abertas (-14,86). GBP fechadas+abertas: +36,90 em 15; demais pares: -27,82 em 39.
+App, sinais encerrados desde 30/09: com GBP 61, 50,8% de acerto, +25,4 (GBP/USD 31, 45,2%; GBP/JPY 21, 52,4%); sem GBP 132, 41,7%, -104,3. Diferença de ~9 pontos, z ~1,2 sem agrupar por dia (não significativa). ANTES de 30/09 o app tinha GBP entre os piores (GBP/USD 53 sinais, 32%, -54,7).
+Replay de 360 dias (06/10, 8 pares; GBP/JPY e EUR/GBP NÃO estavam): GBP/USD OFICIAL acerto 35% na exploração (n=404, -3,03 pips/op líquido) e 35% na validação (n=115, -3,26), um dos piores pares nas duas épocas. Ressalva: esse replay é anterior ao AJUSTE-090 (07/10), então o GBP/USD tinha TP = 1,5x o SL (35% de acerto com R/R 1,5 não é o mesmo que com R/R 1).
+Leitura: GBP/USD parece o melhor em 15 dias e é um dos piores em 12 meses; sinal clássico de regime/janela curta. Não há base para tratar GBP como "onde está a vantagem" ainda; há base para TESTAR, agora com os dois pares GBP que faltavam.
+PRÉ-REGISTRO H_GBP (escrito antes de baixar os candles e rodar):
+ Dados: baixar 360 dias de candles de 5 min de GBP/JPY e EUR/GBP (modo `baixar`, só esses dois; ~44 créditos da KEY_3; rodar depois de 00:00 UTC, quando a cota do dia reinicia) e repetir o replay com os 10 pares e o código atual (GBP/USD já sem a exceção do TP 1,5x).
+ Hipótese: os pares com GBP (GBP/USD, GBP/JPY, EUR/GBP) têm expectativa líquida (spread, V0 TP/SL atual) maior que os demais, nas DUAS épocas (exploração até 17/06/2026, validação depois).
+ Critério (todos juntos): (a) pips/op de "com_GBP" menos "sem_GBP" >= +1,0 nas duas épocas; (b) "com_GBP" melhor que o controle ALEATORIO, t agrupado por dia >= 3, nas duas épocas; (c) o sinal da diferença não inverte entre regimes de dólar (alta x baixa); (d) vale também em pelo menos 2 dos 3 pares GBP isoladamente. Falhou qualquer um = "testado e reprovado"; GBP continua só como observação.
+ Também vale para as variantes sem SL do 6.31 (V3_TP_T10 como referência), porque é onde o 100% apareceu.
+ Execução: o replay `semsl` do 6.31 (8 pares, em curso) fica como o protocolo original; a repetição com 10 pares é a execução da H_GBP, com as linhas por par e "com_GBP"/"sem_GBP" que passaram a sair em `replay/semsl` (grupos por par e por moeda foram acrescentados à saída em 15/10/2026, depois de iniciada a primeira execução e antes de qualquer resultado).
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher

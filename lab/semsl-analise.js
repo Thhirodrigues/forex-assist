@@ -86,7 +86,7 @@ function faseA({ entradas, porPar, splitTs, taxas, variantes = VARIANTES_SEMSL, 
                 const s = simularEntrada(e, v, candles, taxas, ctrl);
                 if (!s) continue;
                 regs.push({
-                    tipo: e.tipo, v: v.id, ctrl, epoca: e.t < splitTs ? "pre" : "pos", id: e.id, dia: dia(e.t), reg: regimes[mes(e.t)] || "?",
+                    tipo: e.tipo, v: v.id, ctrl, par: e.par, epoca: e.t < splitTs ? "pre" : "pos", id: e.id, dia: dia(e.t), reg: regimes[mes(e.t)] || "?",
                     res: s.r.resultado, pips: s.pips, pipsE: s.pipsE, mae: s.r.mae, dur: s.r.duracaoMin
                 });
                 if (!ctrl && e.tipo === "OFICIAL") {
@@ -148,6 +148,13 @@ function linhasFaseA(regs) {
         for (const reg of ["alta", "baixa"]) {
             const r2 = reais.filter(r => r.reg === reg), c2 = ctrls.filter(r => r.reg === reg);
             if (r2.length) linhas.push({ tipo, v, epoca, grupo: `dolar_${reg}`, ctrl: false, ...resumir(r2), contraControle: diferencaContraControle(r2, c2) });
+        }
+        // recortes por par e por moeda GBP (pedido do usuário em 15/10/2026, hipótese H_GBP pré-registrada em 6.32 antes da execução)
+        const grupos = { com_GBP: (r) => /GBP/.test(r.par), sem_GBP: (r) => !/GBP/.test(r.par) };
+        for (const par of new Set(reais.map(r => r.par))) grupos[`par_${par.replace("/", "_")}`] = (r) => r.par === par;
+        for (const [g, f] of Object.entries(grupos)) {
+            const r2 = reais.filter(f), c2 = ctrls.filter(f);
+            if (r2.length) linhas.push({ tipo, v, epoca, grupo: g, ctrl: false, ...resumir(r2), contraControle: diferencaContraControle(r2, c2) });
         }
     }
     return linhas;

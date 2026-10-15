@@ -229,6 +229,10 @@ function imprimirSemsl(r, log = console.log) {
     for (const l of r.linhasA.filter(x => x.tipo === "OFICIAL" && /^dolar_/.test(x.grupo) && !x.ctrl).sort((a, b) => (a.v + a.epoca + a.grupo).localeCompare(b.v + b.epoca + b.grupo))) {
         log(`${l.v.padEnd(10)} ${l.epoca} ${l.grupo.padEnd(11)} n=${String(l.n).padStart(5)} acerto ${f(l.acerto, 1)}% pips/op ${f(l.pipsOp)} (t ${f(l.t, 1)}) vs controle ${f(l.contraControle?.media)} (t ${f(l.contraControle?.t, 1)})`);
     }
+    log("\n=== FASE A - recorte GBP x resto e por par (OFICIAL, V0 e V3; pips/op líquido; vs controle) ===");
+    for (const l of r.linhasA.filter(x => x.tipo === "OFICIAL" && !x.ctrl && ["V0_ATUAL", "V3_TP_T10"].includes(x.v) && /^(com_GBP|sem_GBP|par_)/.test(x.grupo)).sort((a, b) => (a.v + a.grupo + a.epoca).localeCompare(b.v + b.grupo + b.epoca))) {
+        log(`${l.v.padEnd(10)} ${l.grupo.padEnd(12)} ${l.epoca} n=${String(l.n).padStart(5)} acerto ${f(l.acerto, 1)}% pips/op ${f(l.pipsOp)} (t ${f(l.t, 1)}) vs controle ${f(l.contraControle?.media)} (t ${f(l.contraControle?.t, 1)})`);
+    }
     log("\n=== FASE B - conta simulada, janelas de 30 dias (passo 7), lote 0,02, 1000:1, stop-out 50% ===");
     for (const l of r.linhasB.sort((a, b) => (a.conta0 - b.conta0) || a.v.localeCompare(b.v) || a.politica.localeCompare(b.politica))) {
         log(`conta ${String(l.conta0).padStart(4)} ${l.v.padEnd(10)} ${l.politica} janelas ${l.janelas} sem stop-out ${f(l.pctSemStopOut, 0)}% equity min ok ${f(l.pctEquityMinOk, 0)}% | final med ${f(l.equityFinalMed, 0)} p10 ${f(l.equityFinalP10, 0)} | nível margem min med ${f(l.nivelMinMed, 0)} pior ${f(l.nivelMinPior, 0)} | aceitas ${f(l.aceitasMed, 0)} rej ${f(l.rejeitadasMed, 0)} | ano: final ${f(l.periodoTodo.equityFinal, 0)} min ${f(l.periodoTodo.equityMin, 0)} stop-outs ${l.periodoTodo.stopOuts}`);

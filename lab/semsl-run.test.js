@@ -23,6 +23,7 @@ const ler = async ({ par }) => sint(3000, par === "EUR/USD" ? 3 : 9);
   assert.ok(v0 && v0.n > 20 && v0.acerto >= 0 && v0.acerto <= 100);
   // sem stop: pior perda existe só quando há prazo; MAE nunca negativa
   for (const l of r.linhasA) if (l.mae) assert.ok(l.mae.p50 >= 0);
+  assert.ok(r.linhasA.some(l => l.grupo === "com_GBP" && l.n > 0) && r.linhasA.some(l => l.grupo === "sem_GBP" && l.n > 0) && r.linhasA.some(l => l.grupo === "par_EUR_USD"), "recortes GBP e por par");
   assert.strictEqual(r.linhasB.length, 6 * 5 * 2, "6 variantes x 5 políticas x 2 contas");
   assert.ok(r.linhasB.every(l => l.janelas >= 0 && l.periodoTodo));
   const linhas = [];
@@ -30,6 +31,6 @@ const ler = async ({ par }) => sint(3000, par === "EUR/USD" ? 3 : 9);
   assert.ok(linhas.some(s => s.includes("FASE A")) && linhas.some(s => s.includes("FASE B")));
   await publicarSemsl({ lab, r, params: { split: 0.7 }, agora: 7 });
   assert.ok(docs.replay.semsl.linhasA.length === r.linhasA.length && docs.replay.semsl.geradoEm === 7);
-  assert.ok(JSON.stringify(docs.replay.semsl).length < 900 * 1024, "cabe em 1 documento do Firestore");
+  assert.ok(JSON.stringify(docs.replay.semsl).length < 950 * 1024, "cabe em 1 documento do Firestore");
   console.log("TESTE DE INTEGRAÇÃO DO TP SEM SL PASSOU —", r.linhasA.length, "linhas A,", r.linhasB.length, "linhas B,", JSON.stringify(docs.replay.semsl).length, "bytes");
 })().catch(e => { console.error(e); process.exit(1); });
