@@ -698,6 +698,12 @@ Atualização 6.30 (14/10/2026 ~03:30 UTC, posições ABERTAS enviadas pelo usu�
 - USD/CHF VENDA 12/10 (sem sinal): aberta sem querer, segundo o usuário; excluir das estatísticas.
 - Observação do usuário: "os melhores ganhos foram com GBP e EUR". Checagem fora da amostra no `historico` do app: ANTES de 30/09, GBP n53 acerto 32% -54,7 e EUR n76 38% -48,2 (os piores depois do JPY); DEPOIS, GBP n46 48% +10,4 e EUR n52 50% +6,7. O padrão inverte entre períodos; GBP e EUR contam pares com USD e cruzados, e USD aparece em 129 dos 164 sinais pós-30/09 (-76,2). Tratar como ruído até teste pré-registrado (muitos recortes: 10 pares, 8 moedas, n de 1 a 7 por recorte).
 
+Atualização 2 de 6.30 (15/10/2026 18:37 de São Paulo, nova leva de abertas): 14 posições abertas, todas sem SL, flutuante -52,74 (soma das linhas -49,99), "Saldo" 77,56 (em 14/10 00:29 era 45,03). Se "Saldo" = balance, o equity é ~US$24,8 (-75% sobre os US$100 iniciais, sem depósito/retirada); o "saldo bateu 90" é pico de balance, não de patrimônio. Nocional aberto ~US$28,3 mil (14 posições) contra equity ~US$25: ~1.100x. 9 das 14 no vermelho; piores: USD/CAD COMPRA 14/10 -15,07, USD/CAD COMPRA 09/10 -12,69, GBP/JPY COMPRA 14/10 -8,65, EUR/GBP VENDA 14/10 -8,35, GBP/JPY VENDA 14/10 -6,09.
+- 9 das 14 são sinais que o app já ENCERROU (8 por SL, 1 por TP) e a XM segue aberta; 5 são sinais ainda abertos no app. Mesmos 14 no app (fechado ou flutuante): -27,75; XM: -49,99.
+- Posições repetidas no mesmo par NÃO vêm do scanner: `existeCooldown` (riskManager.js) bloqueia novo sinal enquanto o último do par está ABERTA ("evita empilhar posições simultâneas no mesmo par"); no app só há 1 aberta por par (7 abertas em 7 pares). A duplicação na XM é o usuário segurar o sinal antigo depois que o app fechou e pegar o novo. Não é martingale (lote constante), é acúmulo de perdedoras sem stop + correlação (EUR em 6 posições, USD em 3 de USD/CAD).
+- O app NÃO tem teto de exposição entre pares (já listado em PENDENCIAS-ESTRATEGICAS-RMI.md).
+- App desde 04/10 (118 encerrados, critério simples de data): 44,1% de acerto, -US$67,50. Por dia de fechamento: 14/10 n22 9W -20,0; 15/10 (parcial) n8 6W +20,0. Dia bom isolado não muda a leitura.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
