@@ -704,6 +704,16 @@ Atualização 2 de 6.30 (15/10/2026, nova leva de abertas; CORRIGIDA após print
 - O app NÃO tem teto de exposição entre pares (já listado em PENDENCIAS-ESTRATEGICAS-RMI.md).
 - App desde 04/10 (118 encerrados, critério simples de data): 44,1% de acerto, -US$67,50. Por dia de fechamento: 14/10 n22 9W -20,0; 15/10 (parcial) n8 6W +20,0. Dia bom isolado não muda a leitura.
 
+Atualização 3 de 6.30 (15/10/2026 ~22:30 UTC; histórico COMPLETO fechado + abertas às 19:23 de São Paulo, arquivos enviados pelo usuário; conta demo, lote 0,02 = 2.000 unidades, alavancagem 1000:1):
+- Histórico completo: 40 operações fechadas (30/09 a 15/10), líquido +51,39 (bruto +58,50, swap -7,11 = 12% do bruto), 26 ganhos (65%), ganho médio 4,84, perda média -5,32. Sem SL: 17 operações, 17 ganhos, +80,28. Com SL: 23 operações, 9 ganhos (39%), -28,89.
+- Conta às 19:23: balance 130,30; "Capital" (equity) 87,82; P/L não realizado -42,48; margem 21,68; nível de margem 405%; 14 abertas, todas sem SL.
+- Conciliação: balance 130,30 = 100 + 51,39 - 21,09. A diferença de -21,09 é CONSTANTE em 14/10 00:29, 15/10 18:37 e 19:23, ou seja, aconteceu antes da primeira operação listada (30/09 21:29) ou não está na lista (operações anteriores? ajuste? saldo inicial de 78,91?). PENDENTE: usuário confirmar.
+- Cruzamento com o `historico` do app (53 de 54 pareadas; USD/CHF VENDA 12/10, aberta sem querer, excluída): XM marcado a mercado +5,53 contra +app -38,65 nos mesmos sinais. Sem SL (30): XM +34,42 x app -17,37. Com SL (23): XM -28,89 x app -21,28.
+- CONFUSÃO DE PERÍODO: as 23 operações com SL abriram todas entre 01/10 e 08/10; 29 das 30 sem SL abriram depois de 08/10 12:00 UTC. SL x sem SL está confundido com o regime de mercado: não dá para atribuir o resultado ao SL.
+- Dos sinais que o app fechou em SL e que a XM manteve sem SL (15): 7 já fecharam em TP (+31,60) e 8 seguem abertas (-41,97 flutuante); no app essas 15 somam -75, na XM -10,37 marcado a mercado. Evidência a favor de "TP sem SL" na janela, com 8 posições ainda não resolvidas (algumas abertas há 6 dias; swap acumulando).
+- Revisão: a leitura do dia 14/10 00:29 (grupo sem SL -9,91) e a de hoje (+34,42) mostram que o resultado depende da data da medição. A tese "sem SL ajuda" é testável: variante "TP sem SL" com limite de tempo no replay de 360 dias (pré-registrar antes de rodar; medir acerto, pior prejuízo aberto, tempo até fechar, uso de margem e swap).
+- Risco real da janela: equity chegou a ~12 em 14/10 de manhã (relato do usuário) com margem ~17-22: nível de margem estimado 55-70%, perto do stop-out de 50% da XM.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
