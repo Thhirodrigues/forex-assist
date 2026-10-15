@@ -55,6 +55,15 @@ function regimesDolar(porPar) {
     return out;
 }
 
+// Candle com dado quebrado (preço <= 0, máxima < mínima ou amplitude > 3% do preço em 5 min) é descartado: no replay de 15/10/2026
+// um desses produziu MAE de 11.324 pips. Não existe amplitude de 3% em 5 min em FX líquido no período testado.
+function candleSanoSemSL(c) {
+    const v = [c.o, c.h, c.l, c.c];
+    if (!v.every(x => Number.isFinite(x) && x > 0)) return false;
+    return c.h >= c.l && (c.h - c.l) / c.c <= 0.03;
+}
+function limparCandles(c5) { return c5.filter(candleSanoSemSL); }
+
 function simularEntrada(e, v, cm, taxas, ctrl) {
     const inverter = ctrl ? paridadeDoId(e.id) : false;
     const r = simularSemSL({
@@ -69,7 +78,10 @@ function simularEntrada(e, v, cm, taxas, ctrl) {
     return { r, swB, swE, pips: Number((r.pips + swB).toFixed(2)), pipsE: Number((r.pips + swE).toFixed(2)) };
 }
 
-function faseA({ entradas, porPar, splitTs, taxas, variantes = VARIANTES_SEMSL, log = () => {} }) {
+function faseA({ entradas, porPar: porParBruto, splitTs, taxas, variantes = VARIANTES_SEMSL, log = () => {} }) {
+    const porPar = Object.fromEntries(Object.entries(porParBruto).map(([par, c5]) => [par, limparCandles(c5)]));
+    const descartados = Object.entries(porParBruto).reduce((a, [par, c5]) => a + c5.length - porPar[par].length, 0);
+    if (descartados) log(`candles quebrados descartados: ${descartados}`);
     const cm = {};
     for (const [par, c5] of Object.entries(porPar)) cm[par] = c5.map(x => ({ timestamp: x.ts, open: x.o, high: x.h, low: x.l, close: x.c }));
     const regimes = regimesDolar(porPar);
@@ -100,7 +112,7 @@ function faseA({ entradas, porPar, splitTs, taxas, variantes = VARIANTES_SEMSL, 
         if (++k % 1000 === 0) log(`fase A: ${k} entradas`);
     }
     for (const v of Object.keys(paraConta)) paraConta[v].sort((a, b) => a.t - b.t);
-    return { regs, paraConta, regimes };
+    return { regs, paraConta, regimes, candlesDescartados: descartados };
 }
 
 function resumir(regs) {
@@ -161,7 +173,7 @@ function linhasFaseA(regs) {
 }
 
 function faseB({ paraConta, porPar, ini, fim, politicas = POLITICAS, contas = [100, 1000], log = () => {} }) {
-    const precos = construirPrecos(Object.fromEntries(Object.entries(porPar)));
+    const precos = construirPrecos(Object.fromEntries(Object.entries(porPar).map(([par, c5]) => [par, limparCandles(c5)])));
     const linhas = [];
     for (const [v, trades] of Object.entries(paraConta)) {
         for (const [pid, pol] of Object.entries(politicas)) {
@@ -170,15 +182,16 @@ function faseB({ paraConta, porPar, ini, fim, politicas = POLITICAS, contas = [1
                 const todo = simularConta({ trades, precos, ini, fim, politica: pol, conta0 });
                 const ord = (f) => jan.map(f).sort((a, b) => a - b);
                 const semSO = jan.filter(j => j.stopOuts === 0).length;
+                const quebradas = jan.filter(j => j.quebrouEm).length;
                 const okMin = jan.filter(j => j.equityMin >= 0.5 * conta0 && j.stopOuts === 0).length;
                 linhas.push({
                     v, politica: pid, conta0, janelas: jan.length,
-                    pctSemStopOut: Number((100 * semSO / jan.length).toFixed(1)),
+                    pctSemStopOut: Number((100 * semSO / jan.length).toFixed(1)), pctQuebrou: Number((100 * quebradas / jan.length).toFixed(1)),
                     pctEquityMinOk: Number((100 * okMin / jan.length).toFixed(1)),
                     equityFinalMed: percentil(ord(j => j.equityFinal), 0.5), equityFinalP10: percentil(ord(j => j.equityFinal), 0.1),
                     nivelMinMed: percentil(ord(j => j.nivelMin ?? 99999), 0.5), nivelMinPior: Math.min(...jan.map(j => j.nivelMin ?? 99999)),
                     aceitasMed: percentil(ord(j => j.aceitas), 0.5), rejeitadasMed: percentil(ord(j => j.rejeitadas), 0.5),
-                    periodoTodo: { equityFinal: todo.equityFinal, equityMin: todo.equityMin, nivelMin: todo.nivelMin, stopOuts: todo.stopOuts, aceitas: todo.aceitas, abertasNoFim: todo.abertasNoFim, minAbaixo200: todo.minAbaixo200, minAbaixo100: todo.minAbaixo100 }
+                    periodoTodo: { equityFinal: todo.equityFinal, equityMin: todo.equityMin, nivelMin: todo.nivelMin, stopOuts: todo.stopOuts, quebrouEm: todo.quebrouEm, aceitas: todo.aceitas, abertasNoFim: todo.abertasNoFim, minAbaixo200: todo.minAbaixo200, minAbaixo100: todo.minAbaixo100 }
                 });
             }
         }
@@ -187,4 +200,4 @@ function faseB({ paraConta, porPar, ini, fim, politicas = POLITICAS, contas = [1
     return linhas;
 }
 
-module.exports = { faseA, faseB, resumir, linhasFaseA, clusterMedia, diferencaContraControle, regimesDolar, percentil, MARKUP_BASE, MARKUP_ESTRESSE };
+module.exports = { limparCandles, faseA, faseB, resumir, linhasFaseA, clusterMedia, diferencaContraControle, regimesDolar, percentil, MARKUP_BASE, MARKUP_ESTRESSE };

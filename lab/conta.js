@@ -92,6 +92,7 @@ function simularConta(p) {
     };
 
     const i0 = indiceDe(precos.timeline, ini);
+    let quebrouEm = null;
     for (let k = i0; k < precos.timeline.length && precos.timeline[k] < fim; k++) {
         const ts = precos.timeline[k];
         for (const par of Object.keys(precos.series)) {
@@ -146,9 +147,10 @@ function simularConta(p) {
             }
             break;
         }
+        if (!abertas.length && saldo <= 0) { quebrouEm = ts; break; }   // conta zerada: não segue operando com saldo negativo
     }
     const equityFinal = patrimonio();
-    return { ...m, nivelMin: Number.isFinite(m.nivelMin) ? Number(m.nivelMin.toFixed(1)) : null, equityMin: Number(m.equityMin.toFixed(2)), equityFinal: Number(equityFinal.toFixed(2)), saldoFinal: Number(saldo.toFixed(2)), abertasNoFim: abertas.length };
+    return { ...m, nivelMin: Number.isFinite(m.nivelMin) ? Number(m.nivelMin.toFixed(1)) : null, equityMin: Number(m.equityMin.toFixed(2)), equityFinal: Number(equityFinal.toFixed(2)), saldoFinal: Number(saldo.toFixed(2)), abertasNoFim: abertas.length, quebrouEm };
 }
 
 // Janelas móveis (padrão 30 dias, passo 7): cada uma começa com conta nova e só vê as entradas daquela janela.

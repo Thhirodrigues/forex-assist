@@ -74,4 +74,12 @@ const FIM = T0 + 200 * passo;
     const jan = janelasMoveis({ trades: [], precos: longa, ini: T0, fim: T0 + 12 * dia, diasJanela: 5, passoDias: 2, conta0: 100 });
     assert.strictEqual(jan.length, 4);   // inícios 0, 2, 4, 6 (6+5 = 11 <= 12)
 }
+// 7) conta zerada: depois do stop-out que leva o saldo a <= 0 a simulação PARA (não continua com saldo negativo)
+{
+    const tr = [trade("a", "EUR/USD", T0), trade("b", "EUR/USD", T0 + 100 * passo)];
+    const p = precos((i) => (i < 20 ? 1.1 : 1.0));   // -1000 pips: zera qualquer conta pequena
+    const r = simularConta({ trades: tr, precos: p, ini: T0, fim: FIM, conta0: 10 });
+    assert.ok(r.quebrouEm !== null && r.quebrouEm > T0, "marca quando quebrou");
+    assert.strictEqual(r.aceitas, 1, "a segunda entrada nem foi processada");
+}
 console.log("TODOS OS TESTES DA CONTA SIMULADA PASSARAM");

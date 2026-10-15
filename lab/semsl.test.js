@@ -1,7 +1,7 @@
 // Testes do "TP sem SL" (6.31): simulador, swap, estatística agrupada por dia, regimes do dólar.
 const assert = require("assert");
 const { simularSemSL, noitesCobradas, swapPips } = require("./semsl");
-const { clusterMedia, regimesDolar, resumir, diferencaContraControle } = require("./semsl-analise");
+const { clusterMedia, regimesDolar, resumir, diferencaContraControle, limparCandles } = require("./semsl-analise");
 
 const T0 = Date.UTC(2026, 9, 13, 10, 0);          // terça 13/10/2026 10:00 UTC
 const c = (i, o, h, l, cl) => ({ timestamp: T0 + i * 300000, open: o, high: h, low: l, close: cl });
@@ -108,5 +108,11 @@ assert.strictEqual(noitesCobradas(Date.UTC(2026, 9, 15, 20), Date.UTC(2026, 9, 1
     const d = diferencaContraControle(reais, ctrls);
     assert.strictEqual(d.n, 4);
     assert.strictEqual(d.media, Number(((20 + 0 + (-30) + 20) / 4).toFixed(3)));
+}
+// 13) candle quebrado (mínima 0) é descartado: sem isso MAE de 11 mil pips e falso TP numa venda
+{
+    const bom = { ts: 1, o: 1.1, h: 1.1002, l: 1.0998, c: 1.1 };
+    const limpos = limparCandles([bom, { ts: 2, o: 1.1, h: 1.1, l: 0, c: 1.1 }, { ts: 3, o: 1.1, h: 1.1, l: 1.1, c: NaN }, { ts: 4, o: 1.1, h: 1.2, l: 1.0, c: 1.1 }, { ts: 5, o: 1.1, h: 1.0998, l: 1.1002, c: 1.1 }]);
+    assert.deepStrictEqual(limpos, [bom]);
 }
 console.log("TODOS OS TESTES DO TP SEM SL PASSARAM");

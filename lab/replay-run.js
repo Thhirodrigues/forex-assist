@@ -213,7 +213,7 @@ async function semslETudo({ lab, config, pares, split = 0.7, passo = 3, log = co
     const A = faseA({ entradas: base.entradasLista, porPar: base.porPar, splitTs: base.splitTs, taxas, log });
     const linhasA = linhasFaseA(A.regs);
     const linhasB = faseB({ paraConta: A.paraConta, porPar: base.porPar, ini: base.ini, fim: base.fim, log });
-    return { linhasA, linhasB, regimes: A.regimes, ini: base.ini, fim: base.fim, splitTs: base.splitTs, entradas: base.entradas, deriva: base.deriva, comTaxas: !!taxas };
+    return { linhasA, linhasB, candlesDescartados: A.candlesDescartados, regimes: A.regimes, ini: base.ini, fim: base.fim, splitTs: base.splitTs, entradas: base.entradas, deriva: base.deriva, comTaxas: !!taxas };
 }
 
 function imprimirSemsl(r, log = console.log) {
@@ -235,12 +235,12 @@ function imprimirSemsl(r, log = console.log) {
     }
     log("\n=== FASE B - conta simulada, janelas de 30 dias (passo 7), lote 0,02, 1000:1, stop-out 50% ===");
     for (const l of r.linhasB.sort((a, b) => (a.conta0 - b.conta0) || a.v.localeCompare(b.v) || a.politica.localeCompare(b.politica))) {
-        log(`conta ${String(l.conta0).padStart(4)} ${l.v.padEnd(10)} ${l.politica} janelas ${l.janelas} sem stop-out ${f(l.pctSemStopOut, 0)}% equity min ok ${f(l.pctEquityMinOk, 0)}% | final med ${f(l.equityFinalMed, 0)} p10 ${f(l.equityFinalP10, 0)} | nível margem min med ${f(l.nivelMinMed, 0)} pior ${f(l.nivelMinPior, 0)} | aceitas ${f(l.aceitasMed, 0)} rej ${f(l.rejeitadasMed, 0)} | ano: final ${f(l.periodoTodo.equityFinal, 0)} min ${f(l.periodoTodo.equityMin, 0)} stop-outs ${l.periodoTodo.stopOuts}`);
+        log(`conta ${String(l.conta0).padStart(4)} ${l.v.padEnd(10)} ${l.politica} janelas ${l.janelas} sem stop-out ${f(l.pctSemStopOut, 0)}% conta zerada ${f(l.pctQuebrou, 0)}% equity min ok ${f(l.pctEquityMinOk, 0)}% | final med ${f(l.equityFinalMed, 0)} p10 ${f(l.equityFinalP10, 0)} | nível margem min med ${f(l.nivelMinMed, 0)} pior ${f(l.nivelMinPior, 0)} | aceitas ${f(l.aceitasMed, 0)} rej ${f(l.rejeitadasMed, 0)} | ano: final ${f(l.periodoTodo.equityFinal, 0)} min ${f(l.periodoTodo.equityMin, 0)} stop-outs ${l.periodoTodo.stopOuts}`);
     }
 }
 
 async function publicarSemsl({ lab, r, params, agora = Date.now() }) {
-    await lab.collection("replay").doc("semsl").set({ geradoEm: agora, params, ini: r.ini, fim: r.fim, splitTs: r.splitTs, entradas: r.entradas, deriva: r.deriva, comTaxas: r.comTaxas, regimes: r.regimes, linhasA: r.linhasA, linhasB: r.linhasB });
+    await lab.collection("replay").doc("semsl").set({ geradoEm: agora, params, ini: r.ini, fim: r.fim, splitTs: r.splitTs, entradas: r.entradas, deriva: r.deriva, comTaxas: r.comTaxas, regimes: r.regimes, candlesDescartados: r.candlesDescartados, linhasA: r.linhasA, linhasB: r.linhasB });
 }
 
 module.exports = { empacotar, desempacotar, baixarETudo, estenderHistorico, replayETudo, publicarReplay, lerCandles, sanos, familiasETudo, publicarFamilias, semslETudo, imprimirSemsl, publicarSemsl };
