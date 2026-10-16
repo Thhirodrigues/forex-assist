@@ -394,6 +394,8 @@ final em produção ainda pendente (ver seção 5).
 
 ## 5. Próximo passo, em ordem
 
+> **Marco dos 100 (16/10/2026, 6.35):** a 100a operação oficial fechou em 14/10 12:40Z. Métrica da 6.25 nas 100 primeiras: -8,27 pips/op líquido, IC95 -13,96 a -2,80, 10 dias (mecânico = R1; pela ressalva dos 15 dias a classificação vigente é R2: estender a 200 operações e >= 15 dias, ~21/10, sem mudar nada). As 43 seguintes: +7,03 pips/op (65% de acerto), vindas de dias de dólar fraco e cruzados (descritivo). Nada do pipeline foi alterado.
+
 > **Atualização 16/10/2026 (Laboratório, só offline; nada mudou no pipeline oficial):** (1) "TP sem SL" e stop largo foram TESTADOS E REPROVADOS no replay de 360 dias (6.31/6.33): o acerto sobe de 45% para 66-83% sem melhorar a expectativa (-1 a -9 pips/op líquido), com cauda de -500 a -910 pips por operação; conta de US$100 com todas as entradas esgota em semanas (-US$6/dia, igual ao app ao vivo). (2) H_GBP ("pares com GBP são melhores") REPROVADA (6.32/6.34): nos 12 meses GBP foi o pior grupo. (3) Conta demo XM (6.30): equity 87,82 / balance 130,30 em 15/10 com 14 posições abertas sem SL; o "100% de win" vem de operar sem SL (17/17 fechadas), não do par. (4) 4 chaves TwelveData: demanda real ~4.000/dia contra 3.200; rotulador do Lab não fica mais vermelho por 429 (AJUSTE-093); estimador da Config ainda subestima (não inclui o verificador). Regra dos 100 sinais (6.25) segue valendo.
 
 **Pendente da sessão de 11/09/2026, pedido explícito do usuário pra
