@@ -4,7 +4,7 @@ const { ultimasPorPar, montarEntrada, hashDe } = require("./entrada");
 const { validarSaida } = require("./prompt");
 const { custoUSD, podeChamar, registrarUso } = require("./orcamento");
 const { gerarSinal } = require("./gerar");
-const { fecharAbertos, resolver } = require("./fechar");
+const { fecharAbertos, resolver, numericos, ultimoFechado } = require("./fechar");
 
 // ---- Firestore falso mínimo ----
 function fakeDb(inicial = {}) {
@@ -158,6 +158,17 @@ const getPreco = async () => ({ preco: 1.1002, t: AGORA + 60000 });
         const db2 = fakeDb({ historico_ia: { tp: mk("tp", "EUR/USD", "BUY", 1.1) } });
         await fecharAbertos({ ofic: db2, getCandles, agora: T0 + 3600000, dry: true, esperar: async () => {}, log: () => {} });
         assert.strictEqual(db2.dados.historico_ia.tp.status, "ABERTA");
+    }
+    // 5b) preço de entrada: só candle JÁ FECHADO (o em formação é ignorado)
+    {
+        const T = Date.UTC(2026, 10, 2, 14, 0);
+        const dt = (ms) => new Date(ms).toISOString().replace("T", " ").slice(0, 19);
+        const cs = numericos([0, 1, 2].map(i => ({ datetime: dt(T + i * 300000), open: "1", high: "1", low: "1", close: String(1 + i / 100) })));
+        let u = ultimoFechado(cs, T + 2 * 300000 + 60000);   // o candle das 14:10 ainda está em formação (14:11)
+        assert.strictEqual(u.preco, 1.01); assert.strictEqual(u.t, T + 2 * 300000);
+        u = ultimoFechado(cs, T + 3 * 300000);                // às 14:15 o das 14:10 fechou
+        assert.strictEqual(u.preco, 1.02); assert.strictEqual(u.t, T + 3 * 300000);
+        assert.strictEqual(ultimoFechado(cs, T + 100000), null);
     }
     // 6) guardas do CLI: sem modelo ou sem chave, para ANTES de qualquer chamada
     {

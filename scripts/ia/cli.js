@@ -8,7 +8,7 @@
 // ===================================================
 
 const { gerarSinal } = require("./gerar");
-const { fecharAbertos } = require("./fechar");
+const { fecharAbertos, numericos, ultimoFechado } = require("./fechar");
 
 async function principal() {
     const modo = process.env.IA_MODO || "ambos";
@@ -41,9 +41,9 @@ async function principal() {
         const Anthropic = Sdk.default || Sdk;
         const client = new Anthropic();   // lê ANTHROPIC_API_KEY do ambiente
         const getPreco = async (par) => {
-            const cs = await getCandles(par, "5min", 2);
-            const u = cs[cs.length - 1];
-            return { preco: Number(u.close), t: new Date(String(u.datetime).replace(" ", "T") + "Z").getTime() + 5 * 60000 };
+            const u = ultimoFechado(numericos(await getCandles(par, "5min", 4)), Date.now());   // 4 candles: o último pode estar em formação
+            if (!u) throw new Error("nenhum candle fechado");
+            return u;
         };
         const r = await gerarSinal({ ofic, client, modelo, dry, origem, getPreco, maxDia, tetoMes });
         console.log(`Resultado: ${r.status}${r.motivo ? " - " + r.motivo : ""}`);

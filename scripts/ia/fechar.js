@@ -22,6 +22,16 @@ const numericos = (cs) => cs.map(c => ({
 
 const dorme = (ms) => new Promise(r => setTimeout(r, ms));
 
+// Preço de entrada = fechamento do ÚLTIMO candle de 5 min JÁ FECHADO em `agora` (nunca o candle em formação: sem olhar o futuro).
+// `t` = instante em que esse candle fechou; a simulação do sinal começa no candle seguinte.
+function ultimoFechado(candlesNumericos, agora) {
+    for (let i = candlesNumericos.length - 1; i >= 0; i--) {
+        const c = candlesNumericos[i];
+        if (c.timestamp + MIN5 <= agora) return { preco: c.close, t: c.timestamp + MIN5 };
+    }
+    return null;
+}
+
 function resolver(sinal, candles) {
     const base = { par: sinal.par, direcao: sinal.direcao, tEntrada: sinal.tEntrada, precoEntrada: sinal.precoEntrada, tpPips: sinal.tpPips, slPips: sinal.slPips, candles };
     const app = simularOperacao({ ...base, spreadPips: 0 });
@@ -71,4 +81,4 @@ async function fecharAbertos({ ofic, getCandles, agora = Date.now(), dry = true,
     return { abertos: abertos.length, fechados, expirados, falhas, buscas };
 }
 
-module.exports = { fecharAbertos, resolver, numericos };
+module.exports = { fecharAbertos, resolver, numericos, ultimoFechado };
