@@ -12,7 +12,7 @@ module.exports = {
     MIN_PARES_FRESCOS: 5,
 
     // teto de uso (valores-padrão; podem ser sobrescritos por variável de ambiente, nunca pelo modelo)
-    MAX_CHAMADAS_DIA: 8,
+    MAX_CHAMADAS_DIA: 24,
     TETO_USD_MES: 4,                 // o saldo carregado no Console é US$5: sobra margem
 
     // saída do modelo: curta (o custo é quase todo de saída + raciocínio)
