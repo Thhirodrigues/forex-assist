@@ -1,0 +1,62 @@
+name: Sinal por IA (manual; pré-registro 6.38)
+
+# Gera/fecha sinais de IA em `historico_ia` (coleção SEPARADA: nunca em `historico`). SÓ MANUAL por enquanto: o disparo programado
+# (cron) só entra depois dos primeiros ciclos validados à mão (regra do projeto). Padrão = DRY RUN: chama o modelo e mostra, não grava sinal.
+# Só origem PROGRAMADO entra na avaliação; MANUAL_TESTE e BOTAO são registrados, mas fora da métrica.
+# O modelo NÃO tem padrão: a escolha é do usuário (custo). Teto: IA_MAX_CHAMADAS_DIA e IA_TETO_USD_MES (padrões em scripts/ia/config.js).
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'gerar | fechar | ambos'
+        required: true
+        default: 'gerar'
+      modelo:
+        description: 'id do modelo (ex.: claude-haiku-5-5, claude-sonnet-5-5, claude-opus-5-5). SEM padrão.'
+        required: true
+      dry_run:
+        description: '1 = chama o modelo e mostra, NÃO grava sinal; 0 = grava em historico_ia'
+        required: true
+        default: '1'
+      origem:
+        description: 'MANUAL_TESTE | PROGRAMADO | BOTAO'
+        required: true
+        default: 'MANUAL_TESTE'
+
+concurrency:
+  group: ia-sinal
+  cancel-in-progress: false
+
+jobs:
+  ia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - name: Testes
+        run: |
+          node scripts/ia/ia.test.js
+          node lab/simulador.test.js
+      - name: Conferir secret (sem imprimir o valor)
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then echo "ANTHROPIC_API_KEY AUSENTE (secret não criado ou sem acesso)"; else echo "ANTHROPIC_API_KEY presente (${#ANTHROPIC_API_KEY} caracteres)"; fi
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - name: Sinal por IA
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          API_KEY_1: ${{ secrets.TWELVEDATA_KEY_1 }}
+          API_KEY_2: ${{ secrets.TWELVEDATA_KEY_2 }}
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+          API_KEY_4: ${{ secrets.TWELVEDATA_KEY_4 }}
+          IA_MODO: ${{ github.event.inputs.modo }}
+          IA_MODELO: ${{ github.event.inputs.modelo }}
+          IA_DRY: ${{ github.event.inputs.dry_run }}
+          IA_ORIGEM: ${{ github.event.inputs.origem }}
+        run: node scripts/ia/cli.js
