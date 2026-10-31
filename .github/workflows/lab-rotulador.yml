@@ -19,8 +19,8 @@ on:
         description: 'só na 1ª execução: quantas horas de `analises` passadas entram (pré-registro)'
         required: false
         default: '48'
-  schedule:
-    - cron: '17 * * * *'
+  # schedule DESLIGADO em 31/10/2026 (Lab ao vivo arquivado; ver DOCUMENTACAO/LABORATORIO-E-ANALISES.md 6.37). Para religar: restaurar
+  # `schedule: - cron: '17 * * * *'`.
 
 concurrency:
   group: lab-rotulador

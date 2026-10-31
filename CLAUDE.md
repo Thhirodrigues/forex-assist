@@ -80,6 +80,8 @@ histórico alimenta o aprendizado futuro do sistema. Por isso:
   (não é cópia cega da fonte externa). Igual ao backlog acima: registrado,
   nenhum item implementado sem decisão explícita antes.
 
+- Arquivo do Laboratório ao vivo (31/10/2026; `placar/*` e `replay/*` em JSON): `DOCUMENTACAO/arquivo-lab/2026-10-31/`; decisões e pré-registros de 31/10 (conta XM nova, sinal por IA): `LABORATORIO-E-ANALISES.md` seções 6.37 e 6.38.
+
 - Caderno de trabalho sobre dias bons x ruins, a ideia da aba "Laboratório"
   (placar de filtros pré-registrados), hipóteses H1-H6 e pontas soltas:
   `DOCUMENTACAO/LABORATORIO-E-ANALISES.md`. É caderno de discussão, não decisão;

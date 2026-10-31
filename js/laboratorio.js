@@ -177,7 +177,12 @@ function lbRender(doc, erro) {
     if (!raiz) return;
     const api = lbPlacarApi();
 
-    const aviso = `
+    const arquivado = `
+        <section class="pa-vidro lb-cartao">
+            <p class="lb-alerta"><b>Laboratório ao vivo ARQUIVADO em 31/10/2026.</b> O rotulador foi desligado: os números abaixo estão congelados e ficam só para consulta. Os resultados foram guardados para análises futuras.</p>
+        </section>`;
+
+    const aviso = arquivado + `
         <section class="pa-vidro lb-cartao">
             <p class="pa-eyebrow" style="letter-spacing:.12em;">O que é isto</p>
             <p class="pn-texto">Um mercado simulado em paralelo. <b>Não gera sinal, não manda aviso e não altera o RMI.</b> Serve para testar ideias (outras saídas, filtros) sem mexer no sinal oficial durante o congelamento. Tudo já desconta o spread da conta Standard.</p>

@@ -1,0 +1,30 @@
+name: Laboratório - arquivar (exportar JSON)
+
+# SOMENTE LEITURA: exporta `entradas`, `resumo`, `controle` e `diario` do projeto forex-assist-lab para JSON e guarda como
+# artefato do GitHub (90 dias). Não apaga nada, não escreve em banco, não gasta crédito da TwelveData.
+# Rodar 1 vez depois do desligamento do rotulador ao vivo (31/10/2026). Os públicos (`placar`, `replay`) já estão no repositório
+# em DOCUMENTACAO/arquivo-lab/2026-10-31/.
+on:
+  workflow_dispatch:
+
+jobs:
+  arquivar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Key (LAB)
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - name: Testes
+        run: node lab/arquivar.test.js
+      - name: Exportar
+        run: node lab/arquivar.js arquivo-lab-export
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lab-arquivo-2026-10-31
+          path: arquivo-lab-export
+          retention-days: 90

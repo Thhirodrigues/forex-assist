@@ -4,8 +4,7 @@ name: Laboratório - recontar placar
 # a definição de um grupo mudar. Mesmo grupo de concorrência do rotulador.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '40 11 * * *'   # 1x por dia: atualiza os cenários com teto de exposição (derivados, só na recontagem)
+  # schedule DESLIGADO em 31/10/2026 (Lab ao vivo arquivado; 6.37). Antes: cron '40 11 * * *' (1x por dia).
 
 concurrency:
   group: lab-rotulador
