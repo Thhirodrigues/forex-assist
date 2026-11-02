@@ -5,7 +5,8 @@
 
 const crypto = require("crypto");
 
-const arred = (x, d) => (Number.isFinite(Number(x)) ? Number(Number(x).toFixed(d)) : null);
+// null/undefined/"" NÃO viram 0 (Number(null) === 0): dado ausente tem que chegar ao modelo como ausente
+const arred = (x, d) => (x === null || x === undefined || x === "" || !Number.isFinite(Number(x)) ? null : Number(Number(x).toFixed(d)));
 
 // última análise de cada par dentro da janela de frescor
 function ultimasPorPar(analises, agora, frescorMin) {
@@ -18,9 +19,14 @@ function ultimasPorPar(analises, agora, frescorMin) {
     return porPar;
 }
 
-// resumo compacto por par (o que o modelo enxerga)
-function resumoDoPar(a, agora) {
+// resumo compacto por par (o que o modelo enxerga). `mercado` = entrada de `scanner/mercado` do par (preço e variação), opcional.
+function resumoDoPar(a, agora, mercado) {
+    const m = mercado && Number.isFinite(Number(mercado.preco)) ? {
+        precoAgora: arred(mercado.preco, 5), v1hPct: arred(mercado.v1h, 3), v24hPct: arred(mercado.v24h, 3),
+        mercadoMinutosAtras: Number.isFinite(Number(mercado.ate)) ? Math.max(0, Math.round((agora - Number(mercado.ate)) / 60000)) : null
+    } : {};
     return {
+        ...m,
         par: a.par,
         minutosAtras: Math.round((agora - a.timestamp) / 60000),
         preco: arred(a.precoEntrada, 5),
@@ -35,8 +41,8 @@ function resumoDoPar(a, agora) {
     };
 }
 
-function montarEntrada(porPar, agora) {
-    return Object.values(porPar).sort((x, y) => x.par.localeCompare(y.par)).map(a => resumoDoPar(a, agora));
+function montarEntrada(porPar, agora, mercadoPorPar = {}) {
+    return Object.values(porPar).sort((x, y) => x.par.localeCompare(y.par)).map(a => resumoDoPar(a, agora, mercadoPorPar[a.par.replace("/", "_")]));
 }
 
 const hashDe = (obj) => crypto.createHash("sha256").update(JSON.stringify(obj)).digest("hex").slice(0, 16);

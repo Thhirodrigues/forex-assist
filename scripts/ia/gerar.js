@@ -22,6 +22,17 @@ async function lerAnalises(ofic, agora) {
     return lista;
 }
 
+// resumo de mercado por par (documento único `scanner/mercado`); falha ou dado velho = sem resumo (a análise segue valendo)
+async function lerMercado(ofic, agora) {
+    try {
+        const snap = await ofic.collection("scanner").doc("mercado").get();
+        if (!snap.exists) return {};
+        const d = snap.data();
+        if (!(agora - Number(d.atualizadoEm) <= CFG.FRESCOR_MERCADO_MIN * 60000)) return {};
+        return d.pares || {};
+    } catch (e) { return {}; }
+}
+
 function lerTextoJSON(resposta) {
     const bloco = (resposta.content || []).find(b => b.type === "text");
     if (!bloco) return { erro: "resposta sem bloco de texto" };
@@ -38,9 +49,10 @@ async function gerarSinal({ ofic, client, modelo, agora = Date.now(), origem = "
     const analises = await lerAnalises(ofic, agora);
     const porPar = ultimasPorPar(analises, agora, CFG.FRESCOR_ANALISE_MIN);
     const pares = Object.keys(porPar);
-    if (pares.length < CFG.MIN_PARES_FRESCOS) return { status: "DADOS_VELHOS", motivo: `só ${pares.length} par(es) com análise nos últimos ${CFG.FRESCOR_ANALISE_MIN} min (mínimo ${CFG.MIN_PARES_FRESCOS})` };
+    if (pares.length < CFG.MIN_PARES_FRESCOS) return { status: "DADOS_VELHOS", motivo: `só ${pares.length} par(es) com análise nas últimas ${CFG.FRESCOR_ANALISE_MIN / 60} h (mínimo ${CFG.MIN_PARES_FRESCOS})` };
 
-    const entrada = montarEntrada(porPar, agora);
+    const mercado = await lerMercado(ofic, agora);
+    const entrada = montarEntrada(porPar, agora, mercado);
     const entradaHash = hashDe(entrada);
     const usuario = mensagemUsuario(entrada, new Date(agora).toISOString());
 

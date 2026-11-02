@@ -7,9 +7,14 @@ module.exports = {
     // versão do prompt: entra no registro de cada sinal; mudar o texto do prompt = nova versão (e nova amostra)
     PROMPT_VERSAO: "v1-2026-10-31",
 
-    // análises do scanner usadas na entrada do modelo: só as dos últimos N minutos (dado velho = sinal velho)
-    FRESCOR_ANALISE_MIN: 45,
-    MIN_PARES_FRESCOS: 5,
+    // análises do scanner usadas na entrada do modelo. O scanner NÃO analisa par com posição aberta/cooldown (a regra "um aberto por par"),
+    // então a qualquer hora vários pares ficam sem análise nova (medido em 02/11/2026 08:30 BRT: só 1 de 10 pares com análise < 45 min).
+    // Por isso a janela é de 4 h e cada par leva a IDADE da análise (minutosAtras); o modelo é instruído a descontar dado velho.
+    // Ajuste feito em 02/11/2026, ANTES de qualquer sinal (era 45 min e 5 pares).
+    FRESCOR_ANALISE_MIN: 240,
+    MIN_PARES_FRESCOS: 3,
+    // resumo de mercado `scanner/mercado` (preço atual e variação de ~1 h por par): só entra se atualizado há no máximo N min
+    FRESCOR_MERCADO_MIN: 30,
 
     // teto de uso (valores-padrão; podem ser sobrescritos por variável de ambiente, nunca pelo modelo)
     MAX_CHAMADAS_DIA: 24,

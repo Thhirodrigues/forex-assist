@@ -810,6 +810,8 @@ Desenho:
  - Custos: teto de chamadas por dia e de gasto por mês definidos antes de ligar; log de tokens; modelo escolhido pelo menor custo que cumpra o formato; preço a conferir na tabela oficial (não citado aqui).
  - Nada altera o pipeline oficial, o scanner, o checker nem a contagem 6.25. Requisitos do usuário para ligar: chave da API do modelo como secret do GitHub e teto de gasto.
 
+Ajuste de implementação do 6.38 (02/11/2026, ANTES do primeiro sinal, depois de o teste de mercado aberto devolver DADOS_VELHOS): o scanner não grava `analises` de par com posição aberta/cooldown (regra "um aberto por par"), então a qualquer hora vários pares ficam sem análise nova (medido 02/11 11:30 UTC: 1 de 10 pares com análise < 45 min; GBP/USD a cada 5 min, os demais parados há 111-595 min). A janela de análise passou de 45 min para 240 min (mínimo 3 pares, era 5), cada par leva a IDADE da análise e o resumo de mercado `scanner/mercado` (preço atual e variação de ~1 h; só se atualizado há <= 30 min) entra como complemento; o prompt manda descontar indicadores com mais de ~60 min. Bug achado e corrigido no mesmo dia: `null` virava 0 na entrada do modelo. O que não muda: só pares com análise na janela podem ser escolhidos (TP/SL vêm da análise), mesma métrica, mesmos tetos.
+
 ## 7. Pendente do usuário
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher

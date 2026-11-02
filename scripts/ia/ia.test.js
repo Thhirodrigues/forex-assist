@@ -50,10 +50,13 @@ const getPreco = async () => ({ preco: 1.1002, t: AGORA + 60000 });
     // 1) entrada: janela de frescor, última por par, ordem, hash estável
     {
         const lista = [analise("EUR/USD", 50), analise("EUR/USD", 20), analise("EUR/USD", 5), analise("GBP/USD", 10), analise("USD/JPY", 100), analise("AUD/USD", -5)];
-        const por = ultimasPorPar(lista, AGORA, 45);
+        const por = ultimasPorPar(lista, AGORA, 45);   // (a janela real de produção é de 240 min; aqui testa-se o corte)
         assert.deepStrictEqual(Object.keys(por).sort(), ["EUR/USD", "GBP/USD"], "velhas (>45 min) e do futuro ficam de fora");
         assert.strictEqual(por["EUR/USD"].timestamp, AGORA - 5 * 60000, "a mais recente do par");
-        const e = montarEntrada(por, AGORA);
+        const e = montarEntrada(por, AGORA, { EUR_USD: { preco: 1.1234, v1h: 0.0456, v24h: null, ate: AGORA - 600000 } });
+        assert.strictEqual(e[0].precoAgora, 1.1234); assert.strictEqual(e[0].v1hPct, 0.046); assert.strictEqual(e[0].v24hPct, null); assert.strictEqual(e[0].mercadoMinutosAtras, 10);
+        assert.strictEqual(e[1].precoAgora, undefined, "par sem resumo de mercado segue só com a análise");
+        assert.strictEqual(montarEntrada({ "EUR/USD": analise("EUR/USD", 5, { indicadores: { rsi: null } }) }, AGORA)[0].rsi, null, "dado ausente NÃO vira 0");
         assert.strictEqual(e[0].par, "EUR/USD"); assert.strictEqual(e[0].minutosAtras, 5); assert.strictEqual(e[0].rsi, 55.1); assert.strictEqual(e[0].direcaoDoApp, "BUY");
         assert.strictEqual(hashDe(e), hashDe(JSON.parse(JSON.stringify(e))));
     }
@@ -83,6 +86,7 @@ const getPreco = async () => ({ preco: 1.1002, t: AGORA + 60000 });
     // 4) geração
     {
         const todas = PARES.map((p, i) => analise(p, 5 + i));
+        const mercadoOk = { atualizadoEm: AGORA - 60000, pares: { EUR_USD: { preco: 1.1003, v1h: 0.02, v24h: null, ate: AGORA - 300000 } } };
         // dados velhos
         let db = dbCom([analise("EUR/USD", 5), analise("GBP/USD", 5)]);
         let r = await gerarSinal({ ofic: db, client: cliente({}), modelo: "claude-haiku-5-5", agora: AGORA, getPreco, log: () => {} });
@@ -99,6 +103,13 @@ const getPreco = async () => ({ preco: 1.1002, t: AGORA + 60000 });
         assert.ok(salvo.promptVersao && salvo.modelo === "claude-haiku-5-5" && salvo.entradaHash && salvo.uso.entrada === 3000);
         assert.ok(!db.dados.historico, "NUNCA grava em `historico`");
         assert.ok(db.dados.ia_controle.uso.dias["2026-11-02"].chamadas === 1, "uso registrado");
+        // resumo de mercado entra na entrada gravada quando está fresco; velho (> 30 min) é ignorado
+        db = dbCom(todas); db.dados.scanner = { mercado: { atualizadoEm: AGORA - 60000, pares: { EUR_USD: { preco: 1.1003, v1h: 0.02, v24h: null, ate: AGORA - 300000 } } } };
+        r = await gerarSinal({ ofic: db, client: cliente({ decisao: "SEM_SINAL", par: "", confianca: 20, motivo: "x" }), modelo: "claude-haiku-5-5", agora: AGORA, dry: false, getPreco, log: () => {} });
+        assert.strictEqual(db.dados.historico_ia[r.doc.id].entrada.find(e => e.par === "EUR/USD").precoAgora, 1.1003);
+        db = dbCom(todas); db.dados.scanner = { mercado: { atualizadoEm: AGORA - 40 * 60000, pares: { EUR_USD: { preco: 1.1003, v1h: 0.02, v24h: null, ate: AGORA } } } };
+        r = await gerarSinal({ ofic: db, client: cliente({ decisao: "SEM_SINAL", par: "", confianca: 20, motivo: "x" }), modelo: "claude-haiku-5-5", agora: AGORA, dry: false, getPreco, log: () => {} });
+        assert.strictEqual(db.dados.historico_ia[r.doc.id].entrada.find(e => e.par === "EUR/USD").precoAgora, undefined, "resumo velho ignorado");
         // dry run: não grava o sinal, mas conta o gasto
         db = dbCom(todas); cl = cliente({ decisao: "VENDER", par: "GBP/USD", confianca: 55, motivo: "x" });
         r = await gerarSinal({ ofic: db, client: cl, modelo: "claude-haiku-5-5", agora: AGORA, dry: true, getPreco, log: () => {} });
