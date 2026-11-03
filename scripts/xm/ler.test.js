@@ -42,6 +42,10 @@ const r = resumir(org, (T + 1000 - OFF + 120) * 1000);
 assert.strictEqual(r.balanceCalculado, 100); assert.strictEqual(r.diferencaBalance, 0);
 assert.strictEqual(r.idadeEstadoMin, 2); assert.strictEqual(r.posicoesAbertas, 1);
 assert.deepStrictEqual(r.porMotivo, { TP: 1, SL: 1 });
+assert.strictEqual(r.movimentos.length, 1); assert.strictEqual(r.movimentos[0].tipo, "BALANCE"); assert.strictEqual(r.movimentos[0].valor, 100);
+assert.strictEqual(r.movimentos[0].emUtc, new Date((T - OFF) * 1000).toISOString());
+assert.strictEqual(Object.keys(r.porDia).length, 1); assert.strictEqual(Object.values(r.porDia)[0].n, 2); assert.strictEqual(Object.values(r.porDia)[0].liquido, 0);
+assert.ok(r.primeiroFechamentoUtc <= r.ultimoFechamentoUtc);
 
 // posição fechada cuja abertura ficou fora da janela exportada: marcada, direção vem do deal de saída invertido
 const so = parear([{ id: 9, t: T, tipo: 1, ent: 1, pos: 99, sym: "AUDUSD", vol: 0.02, px: 0.7, sl: 0, tp: 0, lucro: 2, swap: 0, com: 0, fee: 0, razao: 0, cmt: "" }]);

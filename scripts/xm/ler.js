@@ -97,6 +97,11 @@ function resumir({ estado, deals, dias }, agoraMs = Date.now()) {
         balanceCalculado: calc, balanceReal: bal,
         // se a janela exportada cobre a vida inteira da conta, a diferença deve ser ~0; senão há histórico fora da janela
         diferencaBalance: bal === null ? null : Number((bal - calc).toFixed(2)),
+        // detalhe para auditar a origem do saldo e achar o marco de partida do teste (último ajuste de saldo)
+        movimentos: saldos.map(x => ({ emUtc: new Date(x.tUtc * 1000).toISOString(), tipo: x.tipo, valor: Number(x.valor.toFixed(2)), cmt: x.cmt })),
+        primeiroFechamentoUtc: fechadas.length ? new Date(fechadas[0].fechadoUtc * 1000).toISOString() : null,
+        ultimoFechamentoUtc: fechadas.length ? new Date(fechadas[fechadas.length - 1].fechadoUtc * 1000).toISOString() : null,
+        porDia: fechadas.reduce((m, x) => { const d = new Date(x.fechadoUtc * 1000).toISOString().slice(0, 10); const o = (m[d] = m[d] || { n: 0, liquido: 0 }); o.n++; o.liquido = Number((o.liquido + x.liquido).toFixed(2)); return m; }, {}),
         porMotivo: fechadas.reduce((m, x) => ((m[x.motivo] = (m[x.motivo] || 0) + 1), m), {}),
         porPar: fechadas.reduce((m, x) => ((m[x.par || "?"] = Number(((m[x.par || "?"] || 0) + x.liquido).toFixed(2))), m), {})
     };
