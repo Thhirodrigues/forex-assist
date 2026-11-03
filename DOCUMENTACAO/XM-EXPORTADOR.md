@@ -3,6 +3,9 @@
 Decidido em 03/11/2026 (usuário: "A"). O Expert Advisor `mt5/XM_Exporter.mq5` **só lê** a conta e envia, a cada 60 s, saldo/equity/margem e posições abertas, e a cada 5 min os deals dos últimos dias, para a coleção `xm_conta` do projeto **forex-assist-lab** (nunca o banco oficial). Substitui o ciclo "pedir planilha ao Claudinho e colar aqui". **Não abre, fecha nem altera ordens** (o teste `mt5/exportador.test.js` barra `OrderSend`, `CTrade`, etc.) e **não envia número da conta, nome nem servidor**.
 
 ## Estado desta entrega
+- **VALIDADO EM DADOS REAIS (03/11/2026):** EA compilado no MetaEditor (0 erros), ligado na conta demo XM, PATCH aceito, estado a cada 60 s e histórico de 120 dias gravados; o leitor reproduz o saldo real com diferença 0,00. Achados em `LABORATORIO-E-ANALISES.md` 6.38b (a conta "nova" é a antiga com saldo redefinido; marco de partida 2026-10-31T00:29:49Z).
+- Armadilhas encontradas na instalação: o nome do EA deve ser criado em `Experts\XM_Exporter` (sem o prefixo ele cai na raiz `MQL5` e o MT5 não lista); o WebRequest deve ser liberado em cada terminal MT5; a conta MT5 usa login numérico + senha MetaTrader + servidor, não o e-mail do site.
+- (Texto abaixo é o da entrega inicial, antes da validação.)
 - Código MQL5 escrito, mas **NÃO compilado nem executado** (não há MetaEditor/MT5 neste ambiente). O primeiro compile no MetaEditor é o primeiro teste real; mandar o texto dos erros (se houver) e o log da aba "Especialistas".
 - Lado Node (regras do Firestore, leitor, testes) testado com dados sintéticos no formato do EA. **Formato real ainda não validado** — a primeira leitura com dados reais é o teste de verdade.
 - Incerteza conhecida: não consegui consultar a documentação do MQL5 daqui; o EA tenta `PATCH` e, se o terminal recusar, cai para `POST` com `X-HTTP-Method-Override: PATCH` (o log diz qual funcionou).

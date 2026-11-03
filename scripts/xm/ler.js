@@ -50,7 +50,7 @@ function parear(deals, off = 0) {
             if (!porPos.has(k)) porPos.set(k, { pos: k, entradas: [], saidas: [] });
             (ENT_ABRE.has(d.ent) ? porPos.get(k).entradas : ENT_FECHA.has(d.ent) ? porPos.get(k).saidas : []).push(d);
         } else {
-            saldos.push({ id: String(d.id), tUtc: d.t - off, tipo: TIPO_DEAL[d.tipo] || `TIPO_${d.tipo}`, valor: Number(d.lucro) + Number(d.com || 0) + Number(d.fee || 0) + Number(d.swap || 0), cmt: d.cmt || "" });
+            saldos.push({ id: String(d.id), tUtc: d.t - off, tipo: TIPO_DEAL[d.tipo] || `TIPO_${d.tipo}`, valor: Number(d.lucro) + Number(d.com || 0) + Number(d.fee || 0) + Number(d.swap || 0), cmt: String(d.cmt || "").replace(/\d{5,}/g, "###") });   // o comentário do depósito traz o número da conta: nunca sai nos logs (repositório público)
         }
     }
     const fechadas = [], abertasNaJanela = [];

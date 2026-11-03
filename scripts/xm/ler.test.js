@@ -10,7 +10,7 @@ assert.strictEqual(normalizarPar(""), null);
 const OFF = 10800;   // servidor = UTC+3
 const T = 1_790_000_000;
 const deals = [
-    { id: 1, t: T, tipo: 2, ent: 0, pos: 0, sym: "", vol: 0, px: 0, sl: 0, tp: 0, lucro: 100, swap: 0, com: 0, fee: 0, razao: 0, cmt: "Deposit" },
+    { id: 1, t: T, tipo: 2, ent: 0, pos: 0, sym: "", vol: 0, px: 0, sl: 0, tp: 0, lucro: 100, swap: 0, com: 0, fee: 0, razao: 0, cmt: "Deposit for: 123456789" },
     { id: 2, t: T + 60, tipo: 0, ent: 0, pos: 11, sym: "EURUSD", vol: 0.02, px: 1.1, sl: 1.0995, tp: 1.1005, lucro: 0, swap: 0, com: 0, fee: 0, razao: 3, cmt: "" },
     { id: 3, t: T + 600, tipo: 1, ent: 1, pos: 11, sym: "EURUSD", vol: 0.02, px: 1.1005, sl: 1.0995, tp: 1.1005, lucro: 5.1, swap: -0.2, com: 0, fee: 0, razao: 5, cmt: "" },
     { id: 4, t: T + 700, tipo: 1, ent: 0, pos: 12, sym: "USDJPY#", vol: 0.02, px: 150, sl: 150.05, tp: 149.95, lucro: 0, swap: 0, com: 0, fee: 0, razao: 3, cmt: "" },
@@ -42,6 +42,7 @@ const r = resumir(org, (T + 1000 - OFF + 120) * 1000);
 assert.strictEqual(r.balanceCalculado, 100); assert.strictEqual(r.diferencaBalance, 0);
 assert.strictEqual(r.idadeEstadoMin, 2); assert.strictEqual(r.posicoesAbertas, 1);
 assert.deepStrictEqual(r.porMotivo, { TP: 1, SL: 1 });
+assert.strictEqual(r.movimentos[0].cmt, "Deposit for: ###", "número da conta mascarado");
 assert.strictEqual(r.movimentos.length, 1); assert.strictEqual(r.movimentos[0].tipo, "BALANCE"); assert.strictEqual(r.movimentos[0].valor, 100);
 assert.strictEqual(r.movimentos[0].emUtc, new Date((T - OFF) * 1000).toISOString());
 assert.strictEqual(Object.keys(r.porDia).length, 1); assert.strictEqual(Object.values(r.porDia)[0].n, 2); assert.strictEqual(Object.values(r.porDia)[0].liquido, 0);

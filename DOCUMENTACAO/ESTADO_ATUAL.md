@@ -394,7 +394,7 @@ final em produção ainda pendente (ver seção 5).
 
 ## 5. Próximo passo, em ordem
 
-> **Exportador XM (03/11/2026, AJUSTE-098, `XM-EXPORTADOR.md`):** opção A escolhida (só leitura, demo). Código MQL5 e receptor escritos e testados só do lado Node; **EA não compilado, formato real não validado**. Depende do usuário: secret `XM_INGEST_TOKEN`, publicar regras do Lab, compilar/ligar o EA no MT5 e liberar `https://firestore.googleapis.com` no WebRequest.
+> **Exportador XM (03/11/2026, AJUSTE-098, `XM-EXPORTADOR.md`):** opção A escolhida (só leitura, demo). **VALIDADO em dados reais (03/11/2026 23:37Z):** EA ligado na demo XM, dados chegando a cada minuto, saldo calculado = real. A conta de US$ 1.000 é a MESMA conta antiga com saldo redefinido (10.000 em 01/10 -> 100 em 02/10 -> 1.000 em 31/10 00:29:49Z): marco de partida do teste = 2026-10-31T00:29:49Z, sem nenhuma operação depois dele até 03/11; as 85 fechadas anteriores não contam. Explica o −21,09 (6.38b). O MT5 precisa ficar ligado.
 
 > **Decisões de 31/10/2026 (6.37/6.38):** conta XM nova de US$1.000, lote 0,02, TP/SL 5/5; checagens mecânicas (400 fechadas e >= 30 dias, ~700, teto 1.000); Laboratório ao vivo ARQUIVADO (rotulador desligado, dados preservados em `DOCUMENTACAO/arquivo-lab/` e no Firestore LAB; replay e candles mantidos); SINAL POR IA pré-registrado (forward, coleção `historico_ia` separada, avaliação só por disparo programado, mesma métrica e barreiras do app). Pendente do usuário para ligar a IA: secret da API e teto de gasto.
 

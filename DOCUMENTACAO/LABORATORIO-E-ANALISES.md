@@ -816,3 +816,13 @@ Ajuste de implementação do 6.38 (02/11/2026, ANTES do primeiro sinal, depois d
 
 - Material do amigo e ebooks: RECEBIDOS e lidos em 03/10 (seção 6). Falta o usuário escolher
   quais experimentos (E1-E5) quer e em que ordem.
+
+### 6.38b FATO VERIFICADO: história real dos saldos da conta XM (exportador MT5, 03/11/2026)
+
+Fonte: primeiro resumo real do exportador (`scripts/xm/ler.js`, workflow `xm-ler`, runs 41738990041 e 41740533374), 85 posições fechadas e 3 movimentos de saldo na janela de 120 dias. O saldo calculado (movimentos + líquido das fechadas) bate com o real: 1000,00, diferença 0,00. Isso valida o pareamento nos dados reais.
+
+- **A conta "nova" de US$ 1.000 é a MESMA conta demo antiga, com saldo redefinido ("Definir saldo", `SetCustomBalance`).** Linha do tempo (UTC): 01/10 00:51 depósito de **US$ 10.000** (não de 1.000 como se lembrava); 02/10 19:12 saldo redefinido para **US$ 100,00**; **31/10 00:29:49 saldo redefinido para US$ 1.000,00**.
+- **Diferença de −21,09 do cruzamento antigo: EXPLICADA.** As 8 operações de 01/10 (antes da redefinição para 100) somam exatamente +21,09 e ficaram embutidas no saldo apagado: 100 = 78,91 + 21,09.
+- As 85 fechadas vão de 01/10 03:16 a 29/10 12:24 UTC (líquido −67,03; 49 TP, 31 SL, 5 fechadas à mão; SL esticado e entradas manuais misturadas). **Todas anteriores à redefinição de 31/10: NÃO entram na contagem do teste novo.**
+- **Marco de partida do teste novo: 2026-10-31T00:29:49Z.** Até a leitura de 03/11 23:37Z: 0 posições fechadas e 0 abertas depois desse marco (o usuário ainda não operou os sinais na conta). Ao medir, filtrar `fechadoUtc >= 2026-10-31T00:29:49Z`.
+- Higiene: o comentário do depósito traz o número da conta e foi impresso no log público do run 41740533374 (repositório público). O leitor passou a mascarar sequências de 5+ dígitos nos comentários.
