@@ -394,6 +394,8 @@ final em produção ainda pendente (ver seção 5).
 
 ## 5. Próximo passo, em ordem
 
+> **Exportador XM (03/11/2026, AJUSTE-098, `XM-EXPORTADOR.md`):** opção A escolhida (só leitura, demo). Código MQL5 e receptor escritos e testados só do lado Node; **EA não compilado, formato real não validado**. Depende do usuário: secret `XM_INGEST_TOKEN`, publicar regras do Lab, compilar/ligar o EA no MT5 e liberar `https://firestore.googleapis.com` no WebRequest.
+
 > **Decisões de 31/10/2026 (6.37/6.38):** conta XM nova de US$1.000, lote 0,02, TP/SL 5/5; checagens mecânicas (400 fechadas e >= 30 dias, ~700, teto 1.000); Laboratório ao vivo ARQUIVADO (rotulador desligado, dados preservados em `DOCUMENTACAO/arquivo-lab/` e no Firestore LAB; replay e candles mantidos); SINAL POR IA pré-registrado (forward, coleção `historico_ia` separada, avaliação só por disparo programado, mesma métrica e barreiras do app). Pendente do usuário para ligar a IA: secret da API e teto de gasto.
 
 > **Marco dos 200 (30/10/2026, 6.36):** a 200a oficial fechou em 22/10 11:00Z (17 dias): -3,15 pips/op líquido, IC95 [-8,89; +2,27]; ALEATORIO -5,37 contra ATUAL -3,71: R2 de novo. Todas as 299 fechadas (24 dias): -3,42 [-7,39; +0,17]. A melhora de 15-16/10 se desfez (201a-299a: 49,5%, -3,96). Proposta pendente de decisão: desfecho final em 400 fechadas e >= 30 dias. Conta demo XM: balance 11,88 (de 176,88 em 16/10), 0 posições, depois de esticar o stop para ~US$10 e abrir lotes correlacionados; 6.36.

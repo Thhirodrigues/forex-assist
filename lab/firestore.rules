@@ -14,6 +14,18 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+    // Exportador da conta demo XM (mt5/XM_Exporter.mq5): so ESCREVE, com token. Leitura/exclusao: so credencial de administrador.
+    // O token NAO fica no repositorio: lab/publicar-regras.js troca o marcador pelo secret XM_INGEST_TOKEN ao publicar.
+    //XM_INICIO
+    match /xm_conta/{doc} {
+      allow create, update: if request.resource.data.t == '__XM_TOKEN__'
+        && request.resource.data.keys().hasOnly(['t', 'json', 'em'])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 900000
+        && request.resource.data.em is string;
+      allow read, delete: if false;
+    }
+    //XM_FIM
     match /{document=**} {
       allow read, write: if false;
     }

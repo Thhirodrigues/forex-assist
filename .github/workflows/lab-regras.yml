@@ -17,4 +17,8 @@ jobs:
       - run: npm install
       - name: Create Firebase Key (só o laboratório)
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
-      - run: node lab/publicar-regras.js
+      - run: node lab/publicar-regras.test.js
+      - name: Publicar regras (bloco xm_conta só se o secret XM_INGEST_TOKEN existir)
+        env:
+          XM_INGEST_TOKEN: ${{ secrets.XM_INGEST_TOKEN }}
+        run: node lab/publicar-regras.js

@@ -80,6 +80,8 @@ histórico alimenta o aprendizado futuro do sistema. Por isso:
   (não é cópia cega da fonte externa). Igual ao backlog acima: registrado,
   nenhum item implementado sem decisão explícita antes.
 
+- Exportador da conta demo XM (MT5, somente leitura, opção A de 03/11/2026): `DOCUMENTACAO/XM-EXPORTADOR.md` (código em `mt5/`, leitor em `scripts/xm/`). EA não compilado até o usuário rodar no MT5.
+
 - Arquivo do Laboratório ao vivo (31/10/2026; `placar/*` e `replay/*` em JSON): `DOCUMENTACAO/arquivo-lab/2026-10-31/`; decisões e pré-registros de 31/10 (conta XM nova, sinal por IA): `LABORATORIO-E-ANALISES.md` seções 6.37 e 6.38.
 
 - Caderno de trabalho sobre dias bons x ruins, a ideia da aba "Laboratório"

@@ -1,0 +1,30 @@
+name: XM - ler o que o exportador MT5 gravou
+
+# Somente leitura do projeto LAB (coleção xm_conta). Imprime um resumo (sem token, sem número de conta)
+# e guarda o detalhe como artefato por 30 dias. Não toca no banco oficial nem no sinal.
+on:
+  workflow_dispatch:
+
+jobs:
+  ler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: node scripts/xm/ler.test.js && node mt5/exportador.test.js
+      - name: Create Firebase Key (só o laboratório)
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - run: node scripts/xm/ler.js
+        env:
+          XM_SAIDA: xm-saida
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xm-conta
+          path: xm-saida
+          retention-days: 30
+          if-no-files-found: ignore
