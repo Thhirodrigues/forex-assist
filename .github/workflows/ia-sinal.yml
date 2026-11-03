@@ -22,6 +22,14 @@ on:
         description: 'MANUAL_TESTE | PROGRAMADO | BOTAO'
         required: true
         default: 'MANUAL_TESTE'
+      forcar_decisao:
+        description: 'SÓ TESTE (exige dry_run 1 e MANUAL_TESTE; NÃO chama o modelo): COMPRAR:EUR/USD | VENDER:AUD/USD | SEM_SINAL. Vazio = normal.'
+        required: false
+        default: ''
+      min_pares:
+        description: 'SÓ TESTE (exige dry_run 1 e MANUAL_TESTE): mínimo de pares na janela. Vazio = padrão.'
+        required: false
+        default: ''
 
 concurrency:
   group: ia-sinal
@@ -59,4 +67,6 @@ jobs:
           IA_MODELO: ${{ github.event.inputs.modelo }}
           IA_DRY: ${{ github.event.inputs.dry_run }}
           IA_ORIGEM: ${{ github.event.inputs.origem }}
+          IA_FORCAR_DECISAO: ${{ github.event.inputs.forcar_decisao }}
+          IA_MIN_PARES: ${{ github.event.inputs.min_pares }}
         run: node scripts/ia/cli.js

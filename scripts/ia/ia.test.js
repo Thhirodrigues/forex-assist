@@ -181,6 +181,15 @@ const getPreco = async () => ({ preco: 1.1002, t: AGORA + 60000 });
         assert.strictEqual(u.preco, 1.02); assert.strictEqual(u.t, T + 3 * 300000);
         assert.strictEqual(ultimoFechado(cs, T + 100000), null);
     }
+    // 5c) minPares injetável (teste) e cliente forçado do CLI
+    {
+        const dois = [analise("AUD/USD", 5), analise("EUR/JPY", 5)];
+        let r = await gerarSinal({ ofic: dbCom(dois), client: cliente({}), modelo: "claude-haiku-5-5", agora: AGORA, getPreco, log: () => {} });
+        assert.strictEqual(r.status, "DADOS_VELHOS");
+        const { clienteForcado } = require("./cli");
+        r = await gerarSinal({ ofic: dbCom(dois), client: clienteForcado("VENDER:AUD/USD"), modelo: "claude-haiku-5-5", agora: AGORA, dry: true, getPreco, minPares: 2, log: () => {} });
+        assert.strictEqual(r.status, "SINAL"); assert.strictEqual(r.doc.direcao, "SELL"); assert.strictEqual(r.doc.par, "AUD/USD"); assert.strictEqual(r.doc.custoEstimadoUSD, 0);
+    }
     // 6) guardas do CLI: sem modelo ou sem chave, para ANTES de qualquer chamada
     {
         const { principal } = require("./cli");
@@ -190,6 +199,8 @@ const getPreco = async () => ({ preco: 1.1002, t: AGORA + 60000 });
             await assert.rejects(principal(), /IA_MODELO não definido/);
             process.env.IA_MODELO = "claude-haiku-5-5"; delete process.env.ANTHROPIC_API_KEY;
             await assert.rejects(principal(), /ANTHROPIC_API_KEY ausente/);
+            process.env.ANTHROPIC_API_KEY = "x"; process.env.IA_DRY = "0"; process.env.IA_ORIGEM = "PROGRAMADO"; process.env.IA_FORCAR_DECISAO = "COMPRAR:EUR/USD";
+            await assert.rejects(principal(), /só valem com IA_DRY=1/);   // decisão forçada NUNCA em avaliação nem gravando
         } finally { process.env = salva; }
     }
     console.log("TODOS OS TESTES DO SINAL POR IA PASSARAM");

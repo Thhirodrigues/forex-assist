@@ -43,13 +43,13 @@ function lerTextoJSON(resposta) {
  * @returns {Promise<{status:string, motivo?:string, doc?:object}>}
  *   status: "SINAL" | "SEM_SINAL" | "BLOQUEADO" | "DADOS_VELHOS" | "ERRO" | "INCOMPLETO" | "RECUSA"
  */
-async function gerarSinal({ ofic, client, modelo, agora = Date.now(), origem = "PROGRAMADO", dry = true, getPreco, log = console.log, maxDia, tetoMes }) {
+async function gerarSinal({ ofic, client, modelo, agora = Date.now(), origem = "PROGRAMADO", dry = true, getPreco, log = console.log, maxDia, tetoMes, minPares = CFG.MIN_PARES_FRESCOS }) {
     if (!modelo) return { status: "ERRO", motivo: "modelo não definido (IA_MODELO)" };
 
     const analises = await lerAnalises(ofic, agora);
     const porPar = ultimasPorPar(analises, agora, CFG.FRESCOR_ANALISE_MIN);
     const pares = Object.keys(porPar);
-    if (pares.length < CFG.MIN_PARES_FRESCOS) return { status: "DADOS_VELHOS", motivo: `só ${pares.length} par(es) com análise nas últimas ${CFG.FRESCOR_ANALISE_MIN / 60} h (mínimo ${CFG.MIN_PARES_FRESCOS})` };
+    if (pares.length < minPares) return { status: "DADOS_VELHOS", motivo: `só ${pares.length} par(es) com análise nas últimas ${CFG.FRESCOR_ANALISE_MIN / 60} h (mínimo ${minPares})` };
 
     const mercado = await lerMercado(ofic, agora);
     const entrada = montarEntrada(porPar, agora, mercado);
