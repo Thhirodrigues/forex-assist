@@ -1,0 +1,22 @@
+name: Marcos 6.25 - ler o historico oficial (credencial de administrador)
+
+# Somente leitura. Calcula a contagem de fechadas e a métrica (pips líquidos por operação, IC95 em blocos de dia) da regra 6.25.
+# Existe para continuar funcionando DEPOIS que o banco oficial for trancado (a leitura pública com a chave web deixa de existir).
+# Não aplica R1/R2/R3 sozinho e não altera nada.
+on:
+  workflow_dispatch:
+
+jobs:
+  marco:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: node scripts/marco/regra625.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/marco/regra625.js
