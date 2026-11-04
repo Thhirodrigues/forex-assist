@@ -22,7 +22,14 @@ function casar(opsXM, sinais, { janelaMin = JANELA_MIN_PADRAO } = {}) {
             .filter(s => s.par === op.par && s.direcao === op.direcao && !usados.has(s.id) &&
                 Number(s.inicioOperacao) <= tEntradaMs + 60000 && tEntradaMs - Number(s.inicioOperacao) <= janelaMin * 60000)
             .sort((a, b) => Number(b.inicioOperacao) - Number(a.inicioOperacao));
-        if (!candidatos.length) { saida.push({ op, casou: false, motivo: `nenhum sinal ${op.par} ${op.direcao} nos ${janelaMin} min antes da entrada` }); continue; }
+        if (!candidatos.length) {
+            // diagnóstico: sinais do MESMO par (qualquer direção) até 12 h em volta da entrada, para entender por que não casou
+            const proximos = sinais.filter(s => s.par === op.par && Math.abs(tEntradaMs - Number(s.inicioOperacao)) <= 12 * 3600e3)
+                .sort((a, b) => Number(a.inicioOperacao) - Number(b.inicioOperacao))
+                .map(s => ({ sinalEmUtc: new Date(Number(s.inicioOperacao)).toISOString(), dir: s.direcao, minAntesDaEntrada: Number(((tEntradaMs - Number(s.inicioOperacao)) / 60000).toFixed(1)), score: s.score ?? null, status: s.status || null, resultado: s.resultado || null }));
+            saida.push({ op: { par: op.par, direcao: op.direcao, abertoUtc: new Date(tEntradaMs).toISOString(), liquido: op.liquido, motivo: op.motivo }, casou: false, motivo: `nenhum sinal ${op.par} ${op.direcao} nos ${janelaMin} min antes da entrada`, sinaisProximos12h: proximos });
+            continue;
+        }
         const s = candidatos[0];
         usados.add(s.id);
         const f = s.financeiro || {};

@@ -17,6 +17,9 @@ r = casar([op("AUD/USD", "SELL", 0)], [sig("x", "AUD/USD", "SELL", 200)]);
 assert.strictEqual(r[0].casou, false); assert.match(r[0].motivo, /nenhum sinal/);
 r = casar([op("AUD/USD", "SELL", 0)], [sig("y", "AUD/USD", "BUY", 3)]);
 assert.strictEqual(r[0].casou, false);
+assert.strictEqual(r[0].sinaisProximos12h.length, 1, "diagnóstico: mostra o sinal da direção oposta");
+assert.strictEqual(r[0].sinaisProximos12h[0].dir, "BUY"); assert.strictEqual(r[0].sinaisProximos12h[0].minAntesDaEntrada, 3);
+assert.ok(!("pos" in r[0].op), "sem identificadores da conta/posição");
 // sinal emitido DEPOIS da entrada não casa (a entrada não pode vir antes do sinal; tolerância de 1 min por relógio)
 r = casar([op("AUD/USD", "SELL", 0)], [sig("z", "AUD/USD", "SELL", -10)]);
 assert.strictEqual(r[0].casou, false);
