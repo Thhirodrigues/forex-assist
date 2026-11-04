@@ -26,6 +26,12 @@ service cloud.firestore {
       allow read, delete: if false;
     }
     //XM_FIM
+    // Fila de sinais para o executor da demo XM (mt5/XM_Executor.mq5): o EA LÊ um único documento cujo id contém o token secreto
+    // (`get` sim, `list` nunca: sem saber o id não há como enumerar). Escrita só por administrador (workflow xm-fila).
+    match /xm_exec/{doc} {
+      allow get: if true;
+      allow list, write: if false;
+    }
     match /{document=**} {
       allow read, write: if false;
     }

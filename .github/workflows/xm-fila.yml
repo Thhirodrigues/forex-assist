@@ -1,0 +1,33 @@
+name: XM - fila de sinais para o executor (demo)
+
+# Dispara quando o scanner oficial TERMINA (evento workflow_run: sem mexer no scanner) e copia os sinais ABERTOS e recentes do
+# `historico` para UM documento do projeto LAB lido pelo EA mt5/XM_Executor.mq5. Só lê o oficial; escreve só no LAB.
+# Também pode ser rodado à mão. O token só vem do secret e nunca é impresso.
+on:
+  workflow_run:
+    workflows: ["Forex Scanner Real"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: xm-fila
+  cancel-in-progress: true
+
+jobs:
+  fila:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/xm/fila.test.js
+      - name: Create Firebase Keys
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - run: node scripts/xm/fila.js
+        env:
+          XM_INGEST_TOKEN: ${{ secrets.XM_INGEST_TOKEN }}

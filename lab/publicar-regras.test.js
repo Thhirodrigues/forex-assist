@@ -21,4 +21,9 @@ assert.ok(com.indexOf("match /{document=**}") > com.indexOf("match /xm_conta"));
 // token fraco ou com aspas é recusado (evita quebrar/injetar nas regras)
 assert.throws(() => montarRegras(fonte, "curto"));
 assert.throws(() => montarRegras(fonte, "aaaaaaaaaaaaaaaa' || true || '"));
+// fila do executor: só `get`; list/escrita negados; presente com e sem token; antes da regra genérica de bloqueio
+for (const r of [sem, com]) {
+    assert.ok(/match \/xm_exec\/\{doc\}[\s\S]*?allow get: if true;[\s\S]*?allow list, write: if false;/.test(r), "xm_exec: só get");
+    assert.ok(r.indexOf("match /xm_exec") < r.indexOf("match /{document=**}"));
+}
 console.log("TODOS OS TESTES DAS REGRAS DO LAB PASSARAM");
