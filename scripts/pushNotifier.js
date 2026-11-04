@@ -155,6 +155,10 @@ async function enviarParaTokens(admin, db, tokens, payload) {
 
             if (codigosTokenInvalido.includes(erro.code)) {
 
+                // AJUSTE-102: antes isto era SILENCIOSO (o aparelho parava de receber e ninguém via). Agora o log mostra
+                // quando um aparelho foi desativado (hash curto, nunca o token) e por quê.
+                console.log(`Aviso: dispositivo ${require("crypto").createHash("sha256").update(String(token)).digest("hex").slice(0, 8)} DESATIVADO (${erro.code}); só volta quando o app for aberto de novo`);
+
                 await db.collection("tokens").doc(token)
                     .set({ ativo: false }, { merge: true })
                     .catch(() => {});

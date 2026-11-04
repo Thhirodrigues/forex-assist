@@ -91,6 +91,10 @@ async function iniciarPush() {
         "./sw.js"
       );
 
+    // AJUSTE-102: esperar o service worker ficar ATIVO antes de pedir o token. Sem isso, o getToken falhava com
+    // "Subscription failed - no active Service Worker" (erro guardado em scanner/status) e o aparelho ficava sem token.
+    await navigator.serviceWorker.ready;
+
     await db
       .collection("scanner")
       .doc("status")
@@ -185,6 +189,9 @@ async function iniciarPush() {
         pushAtivo: true,
 
         tokenRegistrado: true,
+
+        // limpa o erro antigo: ele ficava guardado para sempre mesmo depois de o registro dar certo
+        erroPush: null,
 
         ultimoToken:
           token.substring(0, 20)
