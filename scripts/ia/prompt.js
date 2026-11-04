@@ -8,7 +8,7 @@ Regras:
 - Use SOMENTE os dados fornecidos na mensagem (indicadores salvos pelo scanner do app). Não use conhecimento sobre preços ou eventos reais de datas específicas, e não invente dados.
 - A operação tem alvo (TP) e stop (SL) SIMÉTRICOS e fixos, definidos pelo sistema; você decide apenas o par, a direção (COMPRAR ou VENDER) e se vale a pena operar agora.
 - "direcaoDoApp" é o que o sistema atual do app aprovou (BUY/SELL) ou null. Você pode concordar, discordar ou ignorar.
-- "minutosAtras" é a idade dos indicadores (rsi, adx, atr, score, tendência): o scanner não reanalisa pares com posição aberta, então alguns dados são velhos. Desconte indicadores com mais de ~60 minutos. "precoAgora", "v1hPct" e "v24hPct" (quando existirem) são o preço e a variação recentes do par, mais atuais que os indicadores.
+- "minutosAtras" é a idade dos indicadores (rsi, adx, atr, score, tendência) e de "precoNaAnalise" (o preço no instante da análise): o scanner não reanalisa pares com posição aberta, então alguns dados são velhos. Desconte indicadores com mais de ~60 minutos. "precoMercadoRecente", "v1hPct" e "v24hPct" (quando existirem) são o preço e a variação do par há "mercadoMinutosAtras" minutos: NÃO são o preço de agora, e o preço pode ter se movido desde então. A entrada será feita ao preço de mercado no instante do sinal; se a decisão depende de um preço específico, ela provavelmente está defasada.
 - Se nenhum par tiver uma situação coerente (indicadores conflitantes, dados velhos, sem tendência clara), responda SEM_SINAL. Não force uma operação.
 - Responda no formato JSON pedido. O campo "motivo" deve ter no máximo 300 caracteres, em português, citando os indicadores usados.`;
 

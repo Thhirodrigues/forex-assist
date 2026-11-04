@@ -22,14 +22,14 @@ function ultimasPorPar(analises, agora, frescorMin) {
 // resumo compacto por par (o que o modelo enxerga). `mercado` = entrada de `scanner/mercado` do par (preço e variação), opcional.
 function resumoDoPar(a, agora, mercado) {
     const m = mercado && Number.isFinite(Number(mercado.preco)) ? {
-        precoAgora: arred(mercado.preco, 5), v1hPct: arred(mercado.v1h, 3), v24hPct: arred(mercado.v24h, 3),
+        precoMercadoRecente: arred(mercado.preco, 5), v1hPct: arred(mercado.v1h, 3), v24hPct: arred(mercado.v24h, 3),
         mercadoMinutosAtras: Number.isFinite(Number(mercado.ate)) ? Math.max(0, Math.round((agora - Number(mercado.ate)) / 60000)) : null
     } : {};
     return {
         ...m,
         par: a.par,
         minutosAtras: Math.round((agora - a.timestamp) / 60000),
-        preco: arred(a.precoEntrada, 5),
+        precoNaAnalise: arred(a.precoEntrada, 5),
         tendencia: a.tendencia || null,
         score: arred(a.score, 0),
         rsi: arred(a.indicadores?.rsi, 1),

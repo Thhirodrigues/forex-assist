@@ -54,8 +54,8 @@ const getPreco = async () => ({ preco: 1.1002, t: AGORA + 60000 });
         assert.deepStrictEqual(Object.keys(por).sort(), ["EUR/USD", "GBP/USD"], "velhas (>45 min) e do futuro ficam de fora");
         assert.strictEqual(por["EUR/USD"].timestamp, AGORA - 5 * 60000, "a mais recente do par");
         const e = montarEntrada(por, AGORA, { EUR_USD: { preco: 1.1234, v1h: 0.0456, v24h: null, ate: AGORA - 600000 } });
-        assert.strictEqual(e[0].precoAgora, 1.1234); assert.strictEqual(e[0].v1hPct, 0.046); assert.strictEqual(e[0].v24hPct, null); assert.strictEqual(e[0].mercadoMinutosAtras, 10);
-        assert.strictEqual(e[1].precoAgora, undefined, "par sem resumo de mercado segue só com a análise");
+        assert.strictEqual(e[0].precoMercadoRecente, 1.1234); assert.strictEqual(e[0].v1hPct, 0.046); assert.strictEqual(e[0].v24hPct, null); assert.strictEqual(e[0].mercadoMinutosAtras, 10);
+        assert.strictEqual(e[1].precoMercadoRecente, undefined, "par sem resumo de mercado segue só com a análise");
         assert.strictEqual(montarEntrada({ "EUR/USD": analise("EUR/USD", 5, { indicadores: { rsi: null } }) }, AGORA)[0].rsi, null, "dado ausente NÃO vira 0");
         assert.strictEqual(e[0].par, "EUR/USD"); assert.strictEqual(e[0].minutosAtras, 5); assert.strictEqual(e[0].rsi, 55.1); assert.strictEqual(e[0].direcaoDoApp, "BUY");
         assert.strictEqual(hashDe(e), hashDe(JSON.parse(JSON.stringify(e))));
@@ -106,10 +106,10 @@ const getPreco = async () => ({ preco: 1.1002, t: AGORA + 60000 });
         // resumo de mercado entra na entrada gravada quando está fresco; velho (> 30 min) é ignorado
         db = dbCom(todas); db.dados.scanner = { mercado: { atualizadoEm: AGORA - 60000, pares: { EUR_USD: { preco: 1.1003, v1h: 0.02, v24h: null, ate: AGORA - 300000 } } } };
         r = await gerarSinal({ ofic: db, client: cliente({ decisao: "SEM_SINAL", par: "", confianca: 20, motivo: "x" }), modelo: "claude-haiku-5-5", agora: AGORA, dry: false, getPreco, log: () => {} });
-        assert.strictEqual(db.dados.historico_ia[r.doc.id].entrada.find(e => e.par === "EUR/USD").precoAgora, 1.1003);
+        assert.strictEqual(db.dados.historico_ia[r.doc.id].entrada.find(e => e.par === "EUR/USD").precoMercadoRecente, 1.1003);
         db = dbCom(todas); db.dados.scanner = { mercado: { atualizadoEm: AGORA - 40 * 60000, pares: { EUR_USD: { preco: 1.1003, v1h: 0.02, v24h: null, ate: AGORA } } } };
         r = await gerarSinal({ ofic: db, client: cliente({ decisao: "SEM_SINAL", par: "", confianca: 20, motivo: "x" }), modelo: "claude-haiku-5-5", agora: AGORA, dry: false, getPreco, log: () => {} });
-        assert.strictEqual(db.dados.historico_ia[r.doc.id].entrada.find(e => e.par === "EUR/USD").precoAgora, undefined, "resumo velho ignorado");
+        assert.strictEqual(db.dados.historico_ia[r.doc.id].entrada.find(e => e.par === "EUR/USD").precoMercadoRecente, undefined, "resumo velho ignorado");
         // dry run: não grava o sinal, mas conta o gasto
         db = dbCom(todas); cl = cliente({ decisao: "VENDER", par: "GBP/USD", confianca: 55, motivo: "x" });
         r = await gerarSinal({ ofic: db, client: cl, modelo: "claude-haiku-5-5", agora: AGORA, dry: true, getPreco, log: () => {} });
@@ -202,6 +202,45 @@ const getPreco = async () => ({ preco: 1.1002, t: AGORA + 60000 });
             process.env.ANTHROPIC_API_KEY = "x"; process.env.IA_DRY = "0"; process.env.IA_ORIGEM = "PROGRAMADO"; process.env.IA_FORCAR_DECISAO = "COMPRAR:EUR/USD";
             await assert.rejects(principal(), /só valem com IA_DRY=1/);   // decisão forçada NUNCA em avaliação nem gravando
         } finally { process.env = salva; }
+    }
+    // 7) AJUSTE-103: auditoria do preço e bloqueio quando a entrada está longe do que o modelo viu (limite = 0,4 x SL = 10 pips com SL 25)
+    {
+        const todas7 = PARES.map(p => analise(p, 5));
+        const compra = () => cliente({ decisao: "COMPRAR", par: "EUR/USD", confianca: 60, motivo: "x" });
+        // dentro do limite: abre e guarda a auditoria (mercado visto 1,1003 há 5 min; entrada 1,1002; análise 1,1)
+        let db = dbCom(todas7); db.dados.scanner = { mercado: { atualizadoEm: AGORA - 60000, pares: { EUR_USD: { preco: 1.1003, v1h: 0.02, v24h: null, ate: AGORA - 300000 } } } };
+        let r = await gerarSinal({ ofic: db, client: compra(), modelo: "claude-haiku-5-5", agora: AGORA, dry: false, getPreco, log: () => {} });
+        assert.strictEqual(r.status, "SINAL");
+        const aud = db.dados.historico_ia[r.doc.id].auditoriaPreco;
+        assert.strictEqual(aud.precoMercadoVisto, 1.1003); assert.strictEqual(aud.mercadoMinutosAtras, 5);
+        assert.strictEqual(aud.divergenciaMercadoPips, 1); assert.strictEqual(aud.divergenciaAnalisePips, 2); assert.strictEqual(aud.limitePips, 10);
+        // o caso real de 04/11: o modelo viu 1,12185 (resumo antigo) e a entrada saiu em 1,12308 (12,3 pips > 10): NÃO abre
+        const getPrecoLonge = async () => ({ preco: 1.12308, t: AGORA + 60000 });
+        const todasReal = PARES.map(p => analise(p, 5, p === "EUR/USD" ? { precoEntrada: 1.12185 } : {}));
+        db = dbCom(todasReal); db.dados.scanner = { mercado: { atualizadoEm: AGORA - 60000, pares: { EUR_USD: { preco: 1.12185, v1h: -0.144, v24h: null, ate: AGORA - 1500000 } } } };
+        r = await gerarSinal({ ofic: db, client: compra(), modelo: "claude-haiku-5-5", agora: AGORA, dry: false, getPreco: getPrecoLonge, log: () => {} });
+        assert.strictEqual(r.status, "PRECO_DIVERGENTE"); assert.match(r.motivo, /12\.3 pips/);
+        const reg = db.dados.historico_ia[r.doc.id];
+        assert.strictEqual(reg.status, "PRECO_DIVERGENTE", "registrado, mas nunca ABERTA (fechamento e métrica ignoram)");
+        assert.strictEqual(reg.auditoriaPreco.divergenciaMercadoPips, 12.3);
+        // dry run: não grava nada
+        db = dbCom(todasReal); db.dados.scanner = { mercado: { atualizadoEm: AGORA - 60000, pares: { EUR_USD: { preco: 1.12185, ate: AGORA - 1500000 } } } };
+        r = await gerarSinal({ ofic: db, client: compra(), modelo: "claude-haiku-5-5", agora: AGORA, dry: true, getPreco: getPrecoLonge, log: () => {} });
+        assert.strictEqual(r.status, "PRECO_DIVERGENTE"); assert.ok(!db.dados.historico_ia, "dry run não grava");
+        // sem resumo de mercado: vale a divergência contra a análise (entrada 1,1002 x análise 1,1 = 2 pips: abre; análise defasada de 30 pips: bloqueia)
+        db = dbCom(todas7);
+        r = await gerarSinal({ ofic: db, client: compra(), modelo: "claude-haiku-5-5", agora: AGORA, dry: true, getPreco, log: () => {} });
+        assert.strictEqual(r.status, "SINAL"); assert.strictEqual(r.doc.auditoriaPreco.precoMercadoVisto, null); assert.strictEqual(r.doc.auditoriaPreco.divergenciaMercadoPips, null);
+        const velha = PARES.map(p => analise(p, 5, p === "EUR/USD" ? { precoEntrada: 1.0972 } : {}));
+        r = await gerarSinal({ ofic: dbCom(velha), client: compra(), modelo: "claude-haiku-5-5", agora: AGORA, dry: true, getPreco, log: () => {} });
+        assert.strictEqual(r.status, "PRECO_DIVERGENTE");
+        // JPY usa o fator de pip certo (100): 0,05 de diferença = 5 pips, dentro do limite
+        const getPrecoJpy = async () => ({ preco: 150.55, t: AGORA + 60000 });
+        r = await gerarSinal({ ofic: dbCom(PARES.map(p => analise(p, 5))), client: cliente({ decisao: "VENDER", par: "USD/JPY", confianca: 55, motivo: "x" }), modelo: "claude-haiku-5-5", agora: AGORA, dry: true, getPreco: getPrecoJpy, log: () => {} });
+        assert.strictEqual(r.status, "SINAL"); assert.strictEqual(r.doc.auditoriaPreco.divergenciaAnalisePips, 5);
+        // o prompt novo não chama o preço do resumo de "agora"
+        const { SISTEMA } = require("./prompt");
+        assert.ok(SISTEMA.includes("precoMercadoRecente") && SISTEMA.includes("NÃO são o preço de agora") && !SISTEMA.includes('"precoAgora"'));
     }
     console.log("TODOS OS TESTES DO SINAL POR IA PASSARAM");
 })().catch(e => { console.error(e); process.exit(1); });

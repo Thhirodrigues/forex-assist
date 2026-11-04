@@ -12,6 +12,7 @@ const { ultimasPorPar, montarEntrada, hashDe } = require("./entrada");
 const { SISTEMA, mensagemUsuario, SCHEMA_SAIDA, validarSaida } = require("./prompt");
 const { custoUSD, podeChamar, registrarUso } = require("./orcamento");
 const { spreadDoPar } = require("../../lab/spreads");
+const { fatorPip } = require("../../lab/simulador");
 
 const estimarTokens = (texto) => Math.ceil(texto.length / 3);   // estimativa grosseira (português/JSON), só para o teto
 
@@ -41,7 +42,7 @@ function lerTextoJSON(resposta) {
 
 /**
  * @returns {Promise<{status:string, motivo?:string, doc?:object}>}
- *   status: "SINAL" | "SEM_SINAL" | "BLOQUEADO" | "DADOS_VELHOS" | "ERRO" | "INCOMPLETO" | "RECUSA"
+ *   status: "SINAL" | "SEM_SINAL" | "BLOQUEADO" | "DADOS_VELHOS" | "ERRO" | "INCOMPLETO" | "RECUSA" | "PRECO_DIVERGENTE"
  */
 async function gerarSinal({ ofic, client, modelo, agora = Date.now(), origem = "PROGRAMADO", dry = true, getPreco, log = console.log, maxDia, tetoMes, minPares = CFG.MIN_PARES_FRESCOS }) {
     if (!modelo) return { status: "ERRO", motivo: "modelo não definido (IA_MODELO)" };
@@ -106,9 +107,30 @@ async function gerarSinal({ ofic, client, modelo, agora = Date.now(), origem = "
     try { preco = await getPreco(par); } catch (e) { return { status: "ERRO", motivo: `sem preço atual de ${par}: ${String(e.message).slice(0, 120)}` }; }
     if (!(Number(preco?.preco) > 0) || !(Number(preco?.t) > 0)) return { status: "INCOMPLETO", motivo: `preço atual de ${par} inválido: sinal NÃO gravado` };
 
+    // AJUSTE-103: auditoria do preço. O modelo decide com o preço do resumo de mercado (até 30 min) e o da análise (até 4 h);
+    // a entrada é o último candle fechado AGORA. Se o preço andou demais desde o que o modelo viu, a decisão está defasada.
+    const entradaPreco = Number(preco.preco), fp = fatorPip(par);
+    const pm = mercado[par.replace("/", "_")];
+    const precoMercadoVisto = pm && Number.isFinite(Number(pm.preco)) ? Number(pm.preco) : null;
+    const precoAnalise = Number.isFinite(Number(a.precoEntrada)) ? Number(a.precoEntrada) : null;
+    const divMercado = precoMercadoVisto !== null ? Number((Math.abs(entradaPreco - precoMercadoVisto) * fp).toFixed(1)) : null;
+    const divAnalise = precoAnalise !== null ? Number((Math.abs(entradaPreco - precoAnalise) * fp).toFixed(1)) : null;
+    const auditoriaPreco = {
+        precoMercadoVisto, mercadoMinutosAtras: precoMercadoVisto !== null && Number.isFinite(Number(pm.ate)) ? Math.max(0, Math.round((agora - Number(pm.ate)) / 60000)) : null,
+        divergenciaMercadoPips: divMercado, divergenciaAnalisePips: divAnalise, limitePips: Number((CFG.DIVERGENCIA_MAX_FRACAO_SL * sl).toFixed(1))
+    };
+    const idSinal = `${agora}_IA_${par.replace("/", "_")}`;
+    const maior = Math.max(divMercado ?? 0, divAnalise ?? 0);
+    if (maior > auditoriaPreco.limitePips) {
+        // não abre: fica só o registro (status PRECO_DIVERGENTE nunca é "ABERTA", então o fechamento e a métrica o ignoram)
+        const docDescartado = { ...base, id: idSinal, status: "PRECO_DIVERGENTE", decisao, par, direcao, confianca, motivo, precoEntrada: entradaPreco, auditoriaPreco };
+        if (!dry) await ofic.collection("historico_ia").doc(docDescartado.id).set(docDescartado);
+        return { status: "PRECO_DIVERGENTE", motivo: `${par}: o preço de entrada (${entradaPreco}) está a ${maior} pips do que o modelo viu (limite ${auditoriaPreco.limitePips}); sinal NÃO aberto`, doc: docDescartado };
+    }
+
     const doc = {
-        ...base, id: `${agora}_IA_${par.replace("/", "_")}`, status: "ABERTA", decisao, par, direcao, confianca, motivo,
-        precoEntrada: Number(preco.preco), tEntrada: Number(preco.t), tpPips: tp, slPips: sl, lote, spreadPips: spreadDoPar(par),
+        ...base, id: idSinal, status: "ABERTA", decisao, par, direcao, confianca, motivo,
+        precoEntrada: entradaPreco, tEntrada: Number(preco.t), tpPips: tp, slPips: sl, lote, spreadPips: spreadDoPar(par), auditoriaPreco,
         origemAnalise: { id: a.id, timestamp: a.timestamp, precoAnalise: a.precoEntrada, direcaoDoApp: a.aprovado === true ? a.direcao : null }
     };
     if (!dry) await ofic.collection("historico_ia").doc(doc.id).set(doc);

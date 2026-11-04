@@ -5,7 +5,10 @@
 
 module.exports = {
     // versão do prompt: entra no registro de cada sinal; mudar o texto do prompt = nova versão (e nova amostra)
-    PROMPT_VERSAO: "v1-2026-10-31",
+    PROMPT_VERSAO: "v2-2026-11-04",
+    // AJUSTE-103: se o preço de entrada (último candle fechado) estiver a mais de FRACAO x SL pips do preço que o modelo VIU (resumo de mercado ou análise),
+    // a decisão foi tomada com dado defasado: o sinal NÃO é aberto (fica registrado como PRECO_DIVERGENTE, fora da métrica). Limiar meu, fixado ANTES da avaliação.
+    DIVERGENCIA_MAX_FRACAO_SL: 0.4,
 
     // análises do scanner usadas na entrada do modelo. O scanner NÃO analisa par com posição aberta/cooldown (a regra "um aberto por par"),
     // então a qualquer hora vários pares ficam sem análise nova (medido em 02/11/2026 08:30 BRT: só 1 de 10 pares com análise < 45 min).
