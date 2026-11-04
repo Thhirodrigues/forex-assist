@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  "forex-assist-v22";
+  "forex-assist-v23";
 
 const ASSETS = [
   "./",
@@ -161,6 +161,8 @@ self.addEventListener(
 const ICONE_NOTIFICACAO = "./icon-192.png";
 const BADGE_NOTIFICACAO = "./badge-96.png";
 
+const VIBRACAO_NOVO_SINAL = [1200, 300, 1200, 300, 1200];
+
 function destinoNotificacao(url) {
   return typeof url === "string" && url.startsWith("https://my.xm.com/")
     ? url
@@ -182,6 +184,12 @@ self.addEventListener(
 
     let emitidoEm =
       null;
+
+    // Vibração LONGA só para novo sinal (pedido do usuário em 04/11/2026: entrar o mais rápido possível).
+    // Aviso de encerramento/parcial não vibra longo. Padrão: vibra 1,2 s, pausa 0,3 s, três vezes (~4 s).
+    // Limites: iPhone/iOS ignora `vibrate`; no Android, o canal de notificação do app/Chrome precisa ter vibração ligada.
+    let tipoAviso =
+      "";
 
     if (event.data) {
 
@@ -207,6 +215,11 @@ self.addEventListener(
 
         // AJUSTE-064: hora de emissão do sinal como timestamp nativo (o
         // Android a mostra pequena, no cabeçalho da notificação).
+        tipoAviso =
+          String(
+            payload.data?.tipo || ""
+          );
+
         const ts =
           Number(
             payload.data?.emitidoEm
@@ -248,6 +261,10 @@ self.addEventListener(
 
             ...(emitidoEm
               ? { timestamp: emitidoEm }
+              : {}),
+
+            ...(tipoAviso === "abertura"
+              ? { vibrate: VIBRACAO_NOVO_SINAL }
               : {})
           }
 

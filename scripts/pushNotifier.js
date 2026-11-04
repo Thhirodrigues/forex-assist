@@ -171,6 +171,21 @@ async function enviarParaTokens(admin, db, tokens, payload) {
 
 }
 
+// Texto do aviso de novo sinal. A DIREÇÃO vem PRIMEIRO no título (o Android corta o fim do título; antes era
+// "🔔 Novo sinal: EUR/USD COMPRA" e a palavra COMPRA/VENDA sumia). Push do navegador não aceita negrito:
+// o destaque é feito com MAIÚSCULAS e bolinha colorida (verde = compra, vermelho = venda). Só texto: não toca em sinal, TP, SL nem lote.
+function montarAvisoAbertura(operacao, min, max) {
+    const compra = operacao.direcao === "BUY";
+    const direcaoLabel = compra ? "COMPRA" : "VENDA";
+    const hora = horaBrasilia(operacao.inicioOperacao);
+    return {
+        title: `${compra ? "🟢" : "🔴"} ${direcaoLabel} ${operacao.par}`,
+        body: `Novo sinal | Entrada ~${operacao.precoEntrada} | Score ${operacao.score}% | ` +
+            `Janela pra agir: ${min}-${max} min` +
+            (hora ? `\n🕐 Sinal emitido às ${hora}` : "")
+    };
+}
+
 // ===================================================
 // PUSH DE ABERTURA
 // ===================================================
@@ -183,23 +198,19 @@ async function enviarPushAbertura(admin, db, operacao) {
 
         if (!tokens.length) return;
 
-        const direcaoLabel = operacao.direcao === "BUY" ? "COMPRA" : "VENDA";
-
         const { min, max } = estimarTempoHabilMinutos(
             operacao.indicadores?.atr,
             operacao.financeiro?.slPips,
             operacao.par
         );
 
+        const aviso = montarAvisoAbertura(operacao, min, max);
+
         await enviarParaTokens(admin, db, tokens, {
 
             notification: {
-                title: `🔔 Novo sinal: ${operacao.par} ${direcaoLabel}`,
-                body: `Entrada ~${operacao.precoEntrada} | Score ${operacao.score}% | ` +
-                    `Janela pra agir: ${min}-${max} min` +
-                    (horaBrasilia(operacao.inicioOperacao)
-                        ? `\n🕐 Sinal emitido às ${horaBrasilia(operacao.inicioOperacao)}`
-                        : "")
+                title: aviso.title,
+                body: aviso.body
             },
 
             data: {
@@ -355,6 +366,8 @@ module.exports = {
     obterTokensAtivos,
 
     enviarParaTokens,
+
+    montarAvisoAbertura,
 
     enviarPushAbertura,
 
