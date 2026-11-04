@@ -8,11 +8,11 @@
 // ETAPAS (nada trava antes da etapa 3):
 //   1) este arquivo + cartão "Segurança da conta" na Config: dá para entrar e ver o UID. EXIGIR_LOGIN = false (o app abre sem login).
 //   2) o usuário cria o usuário no Console do Firebase e entra uma vez aqui.
-//   3) publica as regras (workflow regras-oficial, modo "proteger", com o UID) e vira EXIGIR_LOGIN = true no mesmo commit.
+//   3) EXIGIR_LOGIN = true (feito em 04/11/2026), usuário confirma que entra e vê os dados, depois publica as regras (workflow regras-oficial, modo "proteger", com o UID).
 // ===================================================
 (function (raiz) {
 
-const EXIGIR_LOGIN = false;
+const EXIGIR_LOGIN = true;   // etapa 3 (04/11/2026): o app exige login. Banco ainda aberto até o usuário confirmar que entra e vê os dados; depois regras-oficial modo proteger.
 
 const MENSAGENS = {
     "auth/invalid-credential": "E-mail ou senha incorretos.",

@@ -1,7 +1,7 @@
 // lógica pura do login (mensagens e validação)
 const assert = require("assert");
 const L = require("./login");
-assert.strictEqual(L.EXIGIR_LOGIN, false, "etapa 1: o app ainda abre sem login (vira true junto com as regras)");
+assert.strictEqual(L.EXIGIR_LOGIN, true, "etapa 3: o app exige login (reverter = voltar para false junto com o modo reverter das regras)");
 assert.strictEqual(L.validarEntrada("a@b.com", "123456").ok, true);
 assert.strictEqual(L.validarEntrada(" a@b.com ", "123456").email, "a@b.com", "tira espaços");
 assert.strictEqual(L.validarEntrada("sem-arroba", "123456").ok, false);
