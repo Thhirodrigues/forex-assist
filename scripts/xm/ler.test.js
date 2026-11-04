@@ -1,5 +1,5 @@
 const assert = require("assert");
-const { normalizarPar, organizar, parear, resumir } = require("./ler");
+const { normalizarPar, organizar, parear, resumir, testeAtual } = require("./ler");
 
 assert.strictEqual(normalizarPar("EURUSD"), "EUR/USD");
 assert.strictEqual(normalizarPar("GBPJPY#"), "GBP/JPY");
@@ -51,4 +51,15 @@ assert.ok(r.primeiroFechamentoUtc <= r.ultimoFechamentoUtc);
 // posição fechada cuja abertura ficou fora da janela exportada: marcada, direção vem do deal de saída invertido
 const so = parear([{ id: 9, t: T, tipo: 1, ent: 1, pos: 99, sym: "AUDUSD", vol: 0.02, px: 0.7, sl: 0, tp: 0, lucro: 2, swap: 0, com: 0, fee: 0, razao: 0, cmt: "" }]);
 assert.strictEqual(so.fechadas[0].semAbertura, true); assert.strictEqual(so.fechadas[0].direcao, "BUY");
+// marco do teste: só conta o que fechou a partir dele
+{
+    const f = (liq, t, par = "EUR/USD") => ({ par, liquido: liq, fechadoUtc: t, motivo: liq > 0 ? "TP" : "SL" });
+    const marco = "2026-10-31T00:29:49Z", t0 = Date.parse(marco) / 1000;
+    const r = testeAtual([f(5, t0 - 1), f(-9, t0 - 100), f(4.9, t0), f(-5.1, t0 + 60, "USD/JPY"), f(4.9, t0 + 120)], marco);
+    assert.strictEqual(r.fechadas, 3); assert.strictEqual(r.acertoPct, 66.7); assert.strictEqual(r.liquido, 4.7);
+    assert.strictEqual(r.mediaPorOperacao, 1.57); assert.deepStrictEqual(r.porMotivo, { TP: 2, SL: 1 });
+    assert.deepStrictEqual(r.porPar, { "EUR/USD": 9.8, "USD/JPY": -5.1 });
+    const vazio = testeAtual([f(5, t0 - 1)], marco);
+    assert.strictEqual(vazio.fechadas, 0); assert.strictEqual(vazio.acertoPct, null); assert.strictEqual(vazio.liquido, 0);
+}
 console.log("TODOS OS TESTES DA LEITURA XM PASSARAM");

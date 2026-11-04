@@ -107,7 +107,25 @@ function resumir({ estado, deals, dias }, agoraMs = Date.now()) {
     };
 }
 
-module.exports = { normalizarPar, organizar, parear, resumir, TIPO_DEAL, RAZAO };
+// Marco de partida do teste atual (decisão do usuário em 04/11/2026): saldo redefinido para US$ 1.000 em 31/10/2026 00:29:49Z.
+// Tudo que fechou antes é histórico antigo e NÃO entra nas contas do teste.
+const MARCO_TESTE_UTC = "2026-10-31T00:29:49Z";
+
+function testeAtual(fechadas, marco = MARCO_TESTE_UTC) {
+    const t0 = Date.parse(marco) / 1000;
+    const ops = fechadas.filter(x => x.fechadoUtc >= t0);
+    const ganhos = ops.filter(x => x.liquido > 0).length;
+    const porPar = {};
+    for (const x of ops) porPar[x.par || "?"] = Number(((porPar[x.par || "?"] || 0) + x.liquido).toFixed(2));
+    return {
+        marco, fechadas: ops.length, acertoPct: ops.length ? Number((100 * ganhos / ops.length).toFixed(1)) : null,
+        liquido: Number(ops.reduce((a, x) => a + x.liquido, 0).toFixed(2)),
+        mediaPorOperacao: ops.length ? Number((ops.reduce((a, x) => a + x.liquido, 0) / ops.length).toFixed(2)) : null,
+        porMotivo: ops.reduce((m, x) => ((m[x.motivo] = (m[x.motivo] || 0) + 1), m), {}), porPar
+    };
+}
+
+module.exports = { normalizarPar, organizar, parear, resumir, testeAtual, MARCO_TESTE_UTC, TIPO_DEAL, RAZAO };
 
 if (require.main === module) {
     (async () => {
@@ -119,12 +137,15 @@ if (require.main === module) {
         if (!docs.length) { console.log("xm_conta está vazia: o exportador ainda não gravou nada (EA fora do ar, WebRequest não liberado ou token diferente do secret)."); return; }
         const org = organizar(docs);
         const r = resumir(org);
-        console.log(JSON.stringify(r, null, 2));
+        const off0 = org.estado ? Number(org.estado.off) || 0 : 0;
+        r.testeAtual = testeAtual(parear(org.deals, off0).fechadas);
+        // a tela mostra o TESTE ATUAL em primeiro lugar; o histórico antigo (antes do marco) fica só como referência no arquivo
+        console.log(JSON.stringify({ estadoEm: r.estadoEm, idadeEstadoMin: r.idadeEstadoMin, conta: r.conta, posicoesAbertas: r.posicoesAbertas, diferencaBalance: r.diferencaBalance, testeAtual: r.testeAtual }, null, 2));
         const pasta = process.env.XM_SAIDA;
         if (pasta) {
             fs.mkdirSync(pasta, { recursive: true });
             const off = org.estado ? Number(org.estado.off) || 0 : 0;
-            fs.writeFileSync(`${pasta}/xm_resumo.json`, JSON.stringify(r, null, 2));
+            fs.writeFileSync(`${pasta}/xm_resumo.json`, JSON.stringify(r, null, 2));   // não vai para o log; o artefato só traz o necessário
             fs.writeFileSync(`${pasta}/xm_operacoes.json`, JSON.stringify({ estado: org.estado, ...parear(org.deals, off) }));
         }
     })().catch(e => { console.error("ERRO:", e.message); process.exit(1); });
