@@ -111,6 +111,16 @@ function resumir({ estado, deals, dias }, agoraMs = Date.now()) {
 // Tudo que fechou antes é histórico antigo e NÃO entra nas contas do teste.
 const MARCO_TESTE_UTC = "2026-10-31T00:29:49Z";
 
+// Detalhe de cada operação do teste (sem número de conta): é o que permite conferir lote, SL/TP, preço e horário de entrada.
+function detalheDoTeste(fechadas, marco = MARCO_TESTE_UTC, max = 40) {
+    const t0 = Date.parse(marco) / 1000;
+    const iso = (t) => (t == null ? null : new Date(t * 1000).toISOString());
+    return fechadas.filter(x => x.fechadoUtc >= t0).slice(-max).map(x => ({
+        par: x.par, dir: x.direcao, lote: x.lote, abertoUtc: iso(x.abertoUtc), fechadoUtc: iso(x.fechadoUtc),
+        entrada: x.precoEntrada, saida: x.precoSaida, sl: x.sl, tp: x.tp, motivo: x.motivo, liquido: x.liquido, swap: x.swap, comissao: x.comissao
+    }));
+}
+
 function testeAtual(fechadas, marco = MARCO_TESTE_UTC) {
     const t0 = Date.parse(marco) / 1000;
     const ops = fechadas.filter(x => x.fechadoUtc >= t0);
@@ -125,7 +135,7 @@ function testeAtual(fechadas, marco = MARCO_TESTE_UTC) {
     };
 }
 
-module.exports = { normalizarPar, organizar, parear, resumir, testeAtual, MARCO_TESTE_UTC, TIPO_DEAL, RAZAO };
+module.exports = { normalizarPar, organizar, parear, resumir, testeAtual, detalheDoTeste, MARCO_TESTE_UTC, TIPO_DEAL, RAZAO };
 
 if (require.main === module) {
     (async () => {
@@ -138,9 +148,11 @@ if (require.main === module) {
         const org = organizar(docs);
         const r = resumir(org);
         const off0 = org.estado ? Number(org.estado.off) || 0 : 0;
-        r.testeAtual = testeAtual(parear(org.deals, off0).fechadas);
+        const fech0 = parear(org.deals, off0).fechadas;
+        r.testeAtual = testeAtual(fech0);
+        r.operacoesDoTeste = detalheDoTeste(fech0);
         // a tela mostra o TESTE ATUAL em primeiro lugar; o histórico antigo (antes do marco) fica só como referência no arquivo
-        console.log(JSON.stringify({ estadoEm: r.estadoEm, idadeEstadoMin: r.idadeEstadoMin, conta: r.conta, posicoesAbertas: r.posicoesAbertas, diferencaBalance: r.diferencaBalance, testeAtual: r.testeAtual }, null, 2));
+        console.log(JSON.stringify({ estadoEm: r.estadoEm, idadeEstadoMin: r.idadeEstadoMin, conta: r.conta, posicoesAbertas: r.posicoesAbertas, diferencaBalance: r.diferencaBalance, testeAtual: r.testeAtual, operacoesDoTeste: r.operacoesDoTeste }, null, 2));
         const pasta = process.env.XM_SAIDA;
         if (pasta) {
             fs.mkdirSync(pasta, { recursive: true });

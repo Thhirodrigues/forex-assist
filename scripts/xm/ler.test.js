@@ -1,5 +1,5 @@
 const assert = require("assert");
-const { normalizarPar, organizar, parear, resumir, testeAtual } = require("./ler");
+const { normalizarPar, organizar, parear, resumir, testeAtual, detalheDoTeste } = require("./ler");
 
 assert.strictEqual(normalizarPar("EURUSD"), "EUR/USD");
 assert.strictEqual(normalizarPar("GBPJPY#"), "GBP/JPY");
@@ -61,5 +61,14 @@ assert.strictEqual(so.fechadas[0].semAbertura, true); assert.strictEqual(so.fech
     assert.deepStrictEqual(r.porPar, { "EUR/USD": 9.8, "USD/JPY": -5.1 });
     const vazio = testeAtual([f(5, t0 - 1)], marco);
     assert.strictEqual(vazio.fechadas, 0); assert.strictEqual(vazio.acertoPct, null); assert.strictEqual(vazio.liquido, 0);
+}
+{
+    const marco = "2026-10-31T00:29:49Z", t0 = Date.parse(marco) / 1000;
+    const op = (t, extra = {}) => ({ par: "EUR/JPY", direcao: "BUY", lote: 0.02, abertoUtc: t - 600, fechadoUtc: t, precoEntrada: 180.1, precoSaida: 179.9, sl: 179.9, tp: 180.3, motivo: "SL", liquido: -5.01, swap: 0, comissao: 0, ...extra });
+    const d = detalheDoTeste([op(t0 - 5), op(t0 + 100), op(t0 + 200, { direcao: "SELL" })], marco);
+    assert.strictEqual(d.length, 2, "só depois do marco");
+    assert.strictEqual(d[0].lote, 0.02); assert.strictEqual(d[1].dir, "SELL");
+    assert.strictEqual(d[0].abertoUtc, new Date((t0 + 100 - 600) * 1000).toISOString());
+    assert.ok(!("pos" in d[0]) && !("simbolo" in d[0]), "sem identificadores da conta");
 }
 console.log("TODOS OS TESTES DA LEITURA XM PASSARAM");
