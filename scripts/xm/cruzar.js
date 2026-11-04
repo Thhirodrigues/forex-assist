@@ -7,7 +7,8 @@
 // ===================================================
 const { fatorPip } = require("../../lab/simulador");
 
-const JANELA_MIN_PADRAO = 90;   // o usuário entra logo; sinal mais velho que isso é suspeito, não casa automaticamente
+const JANELA_MIN_PADRAO = 360;   // 6 h: o usuário às vezes entra horas depois; o atraso e o encerramento do sinal ficam MARCADOS (não decidem sozinhos)
+const ATRASO_ALERTA_MIN = 15;    // descritivo: acima disso a entrada é marcada como atrasada (limiar meu, não pré-registrado)
 
 const pips = (par, a, b) => Number((Math.abs(a - b) * fatorPip(par)).toFixed(1));
 
@@ -42,6 +43,10 @@ function casar(opsXM, sinais, { janelaMin = JANELA_MIN_PADRAO } = {}) {
             tpPipsApp: f.tpPips ?? null, slPipsApp: f.slPips ?? null,
             tpPipsXm: op.tp != null ? pips(op.par, op.precoEntrada, op.tp) : null, slPipsXm: op.sl != null ? pips(op.par, op.precoEntrada, op.sl) : null,
             loteApp: s.lote ?? null,
+            entradaAtrasada: (tEntradaMs - Number(s.inicioOperacao)) / 60000 > ATRASO_ALERTA_MIN,
+            // se o app JÁ tinha fechado o sinal quando a entrada foi feita, a operação não testa o sinal (o desfecho já era conhecido)
+            appFechouEmUtc: s.fimOperacao ? new Date(Number(s.fimOperacao)).toISOString() : null,
+            appJaEncerradoNaEntrada: Boolean(s.fimOperacao) && Number(s.fimOperacao) <= tEntradaMs,
             statusApp: s.status || null, resultadoApp: s.resultado || null, usdApp: s.resultadoFinanceiro ?? null, scoreApp: s.score ?? null,
             motivoXm: op.motivo, liquidoXm: op.liquido
         });
@@ -49,7 +54,7 @@ function casar(opsXM, sinais, { janelaMin = JANELA_MIN_PADRAO } = {}) {
     return saida;
 }
 
-module.exports = { casar, JANELA_MIN_PADRAO };
+module.exports = { casar, JANELA_MIN_PADRAO, ATRASO_ALERTA_MIN };
 
 if (require.main === module) {
     (async () => {

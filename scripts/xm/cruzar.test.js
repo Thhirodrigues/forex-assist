@@ -12,8 +12,16 @@ assert.strictEqual(r[0].derrapagemPips, 0.9);                       // |0.6973 -
 assert.strictEqual(r[0].slPipsXm, 24.8); assert.strictEqual(r[0].tpPipsXm, 25.2);
 assert.strictEqual(r[0].slPipsApp, 25); assert.strictEqual(r[0].resultadoApp, "LOSS"); assert.strictEqual(r[0].liquidoXm, -4.98);
 
+// atraso e encerramento do sinal ficam marcados (sinal de 154 min atrás, já fechado há 100 min)
+r = casar([op("AUD/USD", "SELL", 0)], [sig("t", "AUD/USD", "SELL", 154, { fimOperacao: (T - 100 * 60) * 1000 })]);
+assert.strictEqual(r[0].casou, true); assert.strictEqual(r[0].atrasoMin, 154); assert.strictEqual(r[0].entradaAtrasada, true);
+assert.strictEqual(r[0].appJaEncerradoNaEntrada, true); assert.strictEqual(r[0].appFechouEmUtc, new Date((T - 100 * 60) * 1000).toISOString());
+r = casar([op("AUD/USD", "SELL", 0)], [sig("u", "AUD/USD", "SELL", 5, { fimOperacao: (T + 50 * 60) * 1000 })]);
+assert.strictEqual(r[0].entradaAtrasada, false); assert.strictEqual(r[0].appJaEncerradoNaEntrada, false, "sinal ainda aberto quando entrou");
+r = casar([op("AUD/USD", "SELL", 0)], [sig("v", "AUD/USD", "SELL", 5)]);
+assert.strictEqual(r[0].appJaEncerradoNaEntrada, false, "sem fimOperacao = ainda aberto");
 // fora da janela, direção errada ou par errado: não casa (e diz por quê)
-r = casar([op("AUD/USD", "SELL", 0)], [sig("x", "AUD/USD", "SELL", 200)]);
+r = casar([op("AUD/USD", "SELL", 0)], [sig("x", "AUD/USD", "SELL", 500)]);
 assert.strictEqual(r[0].casou, false); assert.match(r[0].motivo, /nenhum sinal/);
 r = casar([op("AUD/USD", "SELL", 0)], [sig("y", "AUD/USD", "BUY", 3)]);
 assert.strictEqual(r[0].casou, false);
