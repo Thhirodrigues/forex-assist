@@ -1,0 +1,23 @@
+name: XM - cruzar operações da XM com os sinais do app
+
+# Somente leitura (banco oficial e laboratório). Para cada operação fechada da conta XM desde o marco do teste, acha o sinal do app
+# que a originou e mede atraso, derrapagem, TP/SL e resultado. Não grava nada e não toca no sinal.
+on:
+  workflow_dispatch:
+
+jobs:
+  cruzar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: node scripts/xm/cruzar.test.js && node scripts/xm/ler.test.js
+      - name: Create Firebase Keys
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - run: node scripts/xm/cruzar.js
