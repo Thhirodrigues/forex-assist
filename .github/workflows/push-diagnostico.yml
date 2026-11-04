@@ -1,0 +1,28 @@
+name: Push - diagnóstico das notificações (e teste opcional)
+
+# Só leitura por padrão: quantos dispositivos estão registrados/ativos e o que o app guardou em scanner/status. Nunca imprime o token.
+# teste = 1 envia UM aviso de teste (tipo abertura: título com bolinha e vibração longa) para os dispositivos ativos.
+on:
+  workflow_dispatch:
+    inputs:
+      teste:
+        description: '0 = só diagnóstico; 1 = também envia UM aviso de teste ao celular'
+        required: true
+        default: '0'
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/push/diagnostico.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/push/diagnostico.js
+        env:
+          PUSH_TESTE: ${{ github.event.inputs.teste }}
