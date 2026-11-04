@@ -11,7 +11,7 @@ Pedido do usuário em 04/11/2026 ("pode construir"), depois que o primeiro cruza
 
 ## Segurança
 - Recusa conta que não seja demo; `LoteFixo` ≤ 0,05 e `MaxPosicoes` ≤ 12 (limites no código); no máximo 3 tentativas por sinal.
-- **Nasce em ENSAIO** (`SoLog = true`): só escreve no log "FARIARIA COMPRA EURUSD lote 0,02 preço ... TP ... SL ...", **sem enviar ordem**. Só depois de conferir o ensaio contra os sinais reais o usuário troca para `SoLog = false`.
+- **Nasce em ENSAIO** (`SoLog = true`): só escreve no log "FARIA COMPRA EURUSD lote 0,02 preço ... TP ... SL ...", **sem enviar ordem**. Só depois de conferir o ensaio contra os sinais reais o usuário troca para `SoLog = false`.
 - O token fica só nas entradas do EA (nunca em log) e no secret `XM_INGEST_TOKEN`. Risco residual: quem tiver o token lê a fila de sinais (par, direção, horário) e escreve lixo em `xm_conta`; não alcança o banco oficial.
 - **Eu não compilei nem executei o EA** (sem MetaEditor aqui). O primeiro compile e o ensaio são os testes reais.
 
