@@ -35,3 +35,19 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
           node scripts/scanner.js
+
+      # SINAL POR IA (AJUSTE-108): pega carona neste ciclo (o scanner roda a cada 5 min via pinger externo; o cron nativo do GitHub não é
+      # confiável). Só age DENTRO dos horários fixos (08:07,10:07,12:07,14:07,16:07,18:07 UTC para gerar; :00 e :30 para fechar; seg-sex)
+      # e uma vez por horário; fora deles sai em milissegundos. Isolado: continue-on-error, nunca derruba o scanner.
+      - name: Sinal por IA (agendado)
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 4
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          API_KEY_1: ${{ secrets.TWELVEDATA_KEY_1 }}
+          API_KEY_2: ${{ secrets.TWELVEDATA_KEY_2 }}
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+          API_KEY_4: ${{ secrets.TWELVEDATA_KEY_4 }}
+          IA_MODELO: claude-haiku-5-5
+        run: node scripts/ia/agendado.js

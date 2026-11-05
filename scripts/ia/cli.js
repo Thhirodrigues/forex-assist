@@ -31,6 +31,10 @@ async function principal() {
         throw new Error("IA_FORCAR_DECISAO e IA_MIN_PARES só valem com IA_DRY=1 e IA_ORIGEM=MANUAL_TESTE (são ferramentas de teste, nunca de avaliação).");
     }
 
+    if (origem === "PROGRAMADO" && process.env.IA_SLOT_OK !== "1") {
+        throw new Error("origem PROGRAMADO só é permitida dentro de um horário fixo (scripts/ia/agendado.js). Execução manual é MANUAL_TESTE ou BOTAO.");
+    }
+
     if (quer("gerar")) {
         if (!modelo) throw new Error("IA_MODELO não definido: escolha o modelo no workflow (sem padrão de propósito: é decisão de custo do usuário).");
         if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY ausente: crie o secret no GitHub (Settings > Secrets and variables > Actions).");
@@ -46,9 +50,11 @@ async function principal() {
     const tetoMes = process.env.IA_TETO_USD_MES ? Number(process.env.IA_TETO_USD_MES) : undefined;
     console.log(`Sinal por IA | modo ${modo} | modelo ${modelo || "-"} | origem ${origem} | ${dry ? "DRY RUN (não grava sinal)" : "GRAVANDO em historico_ia"}`);
 
+    const saida = {};
     if (quer("fechar")) {
         const r = await fecharAbertos({ ofic, getCandles, dry });
         console.log("Fechamento:", JSON.stringify(r));
+        saida.fechar = r;
     }
     if (quer("gerar")) {
         const Sdk = require("@anthropic-ai/sdk");
@@ -62,8 +68,10 @@ async function principal() {
         const r = await gerarSinal({ ofic, client, modelo, dry, origem, getPreco, maxDia, tetoMes, minPares: minParesEnv });
         console.log(`Resultado: ${r.status}${r.motivo ? " - " + r.motivo : ""}`);
         if (r.doc) console.log(JSON.stringify({ decisao: r.doc.decisao, par: r.doc.par, direcao: r.doc.direcao, confianca: r.doc.confianca, motivo: r.doc.motivo, precoEntrada: r.doc.precoEntrada, tpPips: r.doc.tpPips, slPips: r.doc.slPips, lote: r.doc.lote, custoEstimadoUSD: r.doc.custoEstimadoUSD }));
+        saida.gerar = { status: r.status, motivo: r.motivo || null };
         if (r.status === "ERRO" || r.status === "INCOMPLETO") process.exitCode = 1;
     }
+    return saida;
 }
 
 if (require.main === module) principal().catch(e => { console.error("ERRO FATAL:", e.message); process.exit(1); });
