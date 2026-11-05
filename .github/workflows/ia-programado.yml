@@ -1,0 +1,56 @@
+name: Sinal por IA - programado (avaliação; pré-registro 6.38)
+
+# LIGADO em 05/11/2026 por decisão do usuário ("pode rodar o cron"). Horários e regras FIXADOS ANTES (adendo no caderno 6.38):
+#  - GERAR: segunda a sexta, 08:07, 10:07, 12:07, 14:07, 16:07 e 18:07 UTC (logo depois do ciclo do scanner), origem PROGRAMADO,
+#    modelo claude-haiku-5-5, grava em `historico_ia` (coleção SEPARADA, nunca em `historico`), os 10 pares do app sem filtro.
+#  - FECHAR: segunda a sexta, a cada 30 min, acompanha os sinais abertos da IA (prazo máximo de 10 dias).
+# Só o disparo por HORÁRIO usa a origem PROGRAMADO (a que entra na avaliação). Execução manual deste workflow é SEMPRE MANUAL_TESTE.
+# Tetos: 24 chamadas por dia e US$ 4 por mês (scripts/ia/config.js). Para desligar: apagar este arquivo ou comentar os `cron`.
+on:
+  schedule:
+    - cron: '7 8,10,12,14,16,18 * * 1-5'
+    - cron: '*/30 * * * 1-5'
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'gerar | fechar (execução manual: SEMPRE origem MANUAL_TESTE, fora da avaliação)'
+        required: true
+        default: 'gerar'
+      dry_run:
+        description: '1 = não grava; 0 = grava como MANUAL_TESTE'
+        required: true
+        default: '1'
+
+# grupos separados: um fechamento pendente não pode substituir uma geração pendente
+concurrency:
+  group: ia-programado-${{ github.event.schedule || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  ia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - name: Testes
+        run: |
+          node scripts/ia/ia.test.js
+          node lab/simulador.test.js
+      - name: Sinal por IA
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          API_KEY_1: ${{ secrets.TWELVEDATA_KEY_1 }}
+          API_KEY_2: ${{ secrets.TWELVEDATA_KEY_2 }}
+          API_KEY_3: ${{ secrets.TWELVEDATA_KEY_3 }}
+          API_KEY_4: ${{ secrets.TWELVEDATA_KEY_4 }}
+          IA_MODO: ${{ github.event_name == 'schedule' && (github.event.schedule == '7 8,10,12,14,16,18 * * 1-5' && 'gerar' || 'fechar') || github.event.inputs.modo }}
+          IA_MODELO: claude-haiku-5-5
+          IA_DRY: ${{ github.event_name == 'schedule' && '0' || github.event.inputs.dry_run }}
+          IA_ORIGEM: ${{ github.event_name == 'schedule' && 'PROGRAMADO' || 'MANUAL_TESTE' }}
+        run: node scripts/ia/cli.js
