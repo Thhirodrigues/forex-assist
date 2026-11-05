@@ -34,6 +34,8 @@ const abertura = rodarPush({ notification: { title: c.title, body: c.body }, dat
 assert.strictEqual(abertura.titulo, "🟢 COMPRA EUR/USD");
 assert.deepStrictEqual(Array.from(abertura.opcoes.vibrate), [1200, 300, 1200, 300, 1200]);
 assert.ok(abertura.opcoes.vibrate.reduce((a, b) => a + b, 0) >= 3000, "vibração longa (>= 3 s)");
+const alerta = rodarPush({ notification: { title: "⚠️ MT5 parou de enviar", body: "x" }, data: { tipo: "alerta" } });
+assert.deepStrictEqual(Array.from(alerta.opcoes.vibrate), [1200, 300, 1200, 300, 1200], "alerta do vigia também vibra longo");
 const encerra = rodarPush({ notification: { title: "✅ Encerrado", body: "x" }, data: { tipo: "encerramento" } });
 assert.strictEqual(encerra.opcoes.vibrate, undefined, "encerramento não vibra longo");
 const semTipo = rodarPush({ notification: { title: "t", body: "b" } });

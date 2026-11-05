@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  "forex-assist-v24";
+  "forex-assist-v25";
 
 const ASSETS = [
   "./",
@@ -185,7 +185,7 @@ self.addEventListener(
     let emitidoEm =
       null;
 
-    // Vibração LONGA só para novo sinal (pedido do usuário em 04/11/2026: entrar o mais rápido possível).
+    // Vibração LONGA para novo sinal e para o alerta do vigia do MT5 (tipo "alerta") (pedido do usuário em 04/11/2026: entrar o mais rápido possível).
     // Aviso de encerramento/parcial não vibra longo. Padrão: vibra 1,2 s, pausa 0,3 s, três vezes (~4 s).
     // Limites: iPhone/iOS ignora `vibrate`; no Android, o canal de notificação do app/Chrome precisa ter vibração ligada.
     let tipoAviso =
@@ -263,7 +263,7 @@ self.addEventListener(
               ? { timestamp: emitidoEm }
               : {}),
 
-            ...(tipoAviso === "abertura"
+            ...((tipoAviso === "abertura" || tipoAviso === "alerta")
               ? { vibrate: VIBRACAO_NOVO_SINAL }
               : {})
           }

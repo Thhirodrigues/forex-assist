@@ -1,0 +1,37 @@
+name: XM - vigia do MT5 (avisa se o computador parar de enviar)
+
+# A cada 15 min confere o último estado gravado pelo exportador (mt5/XM_Exporter.mq5). Em horário de mercado, se estiver velho (> 10 min),
+# manda UM aviso ao celular (repete a cada 60 min, no máximo 6 vezes) e avisa quando voltar. Fim de semana não alerta.
+# simular = 1 manda um aviso de TESTE e não altera o estado do vigia. Só lê o LAB e envia push; não toca em sinal nem na conta.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      simular:
+        description: '0 = normal; 1 = manda um aviso de TESTE (não altera o estado)'
+        required: true
+        default: '0'
+
+concurrency:
+  group: xm-vigia
+  cancel-in-progress: false
+
+jobs:
+  vigia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/xm/vigia.test.js
+      - name: Create Firebase Keys
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - run: node scripts/xm/vigia.js
+        env:
+          VIGIA_SIMULAR: ${{ github.event.inputs.simular }}
