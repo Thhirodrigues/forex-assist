@@ -3,6 +3,19 @@ const VAPID_KEY =
 
 async function iniciarPush() {
 
+  // AJUSTE-105: com login obrigatório e banco trancado, as gravações abaixo (token, status) só funcionam DEPOIS que a sessão é
+  // restaurada. Este código roda no evento "load", cedo demais: esperar o estado de login (no máx. 8 s). Sem login não há como
+  // registrar o aparelho; depois de entrar, a página recarrega e roda de novo.
+  try {
+    if (window.auth && typeof window.auth.onAuthStateChanged === "function") {
+      const usuario = await new Promise((resolve) => {
+        const limite = setTimeout(() => resolve(null), 8000);
+        const parar = window.auth.onAuthStateChanged((u) => { clearTimeout(limite); parar(); resolve(u); });
+      });
+      if (!usuario && window.LoginApp && window.LoginApp.EXIGIR_LOGIN) return;
+    }
+  } catch (e) { /* falha do Auth nunca derruba o app */ }
+
   try {
 
     const pushDebug = {

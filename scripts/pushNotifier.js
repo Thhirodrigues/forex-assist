@@ -99,6 +99,8 @@ function estimarTempoHabilMinutos(atrAtual, slPips, par) {
 // TOKENS ATIVOS
 // ===================================================
 
+const { notificarTelegram } = require("./telegram");
+
 async function obterTokensAtivos(db) {
 
     const snapshot = await db
@@ -133,7 +135,15 @@ function horaBrasilia(ms) {
     });
 }
 
-async function enviarParaTokens(admin, db, tokens, payload) {
+async function enviarParaTokens(admin, db, tokens, payload, opcoes = {}) {
+
+    // AJUSTE-105: segundo canal. Todo aviso de push vai também ao Telegram (no-op sem token/destino; nunca lança erro) e isso
+    // acontece ANTES do retorno por falta de tokens de push (o Telegram não depende do Chrome do celular).
+    try {
+        await (opcoes.telegram || notificarTelegram)(db, payload && payload.notification);
+    } catch (e) {
+        console.log(`Aviso: falha no canal Telegram: ${e && e.message}`);
+    }
 
     if (!tokens.length) return;
 
@@ -200,8 +210,6 @@ async function enviarPushAbertura(admin, db, operacao) {
 
         const tokens = await obterTokensAtivos(db);
 
-        if (!tokens.length) return;
-
         const { min, max } = estimarTempoHabilMinutos(
             operacao.indicadores?.atr,
             operacao.financeiro?.slPips,
@@ -262,8 +270,6 @@ async function enviarPushEncerramento(admin, db, sinal) {
 
         const tokens = await obterTokensAtivos(db);
 
-        if (!tokens.length) return;
-
         const emoji = sinal.resultado === "WIN" ? "✅" : "❌";
 
         const valor = Number(sinal.resultadoFinanceiro || 0);
@@ -318,8 +324,6 @@ async function enviarPushAvisoParcial(admin, db, sinal, aviso) {
     try {
 
         const tokens = await obterTokensAtivos(db);
-
-        if (!tokens.length) return;
 
         const direcaoLabel = sinal.direcao === "BUY" ? "COMPRA" : "VENDA";
         const usd = Number.isFinite(Number(aviso.usd)) ? ` (≈ ${Number(aviso.usd) >= 0 ? "+" : "-"}$${Math.abs(Number(aviso.usd)).toFixed(2)}` +

@@ -26,3 +26,4 @@ jobs:
       - run: node scripts/push/diagnostico.js
         env:
           PUSH_TESTE: ${{ github.event.inputs.teste }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

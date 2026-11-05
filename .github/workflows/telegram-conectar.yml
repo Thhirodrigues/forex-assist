@@ -1,0 +1,35 @@
+name: Telegram - conectar o bot ao seu chat (uma vez)
+
+# Antes: crie o bot no @BotFather, guarde o token no secret TELEGRAM_BOT_TOKEN, abra o bot no Telegram, toque em Iniciar e
+# envie exatamente a PALAVRA-CÓDIGO que você escolheu (mínimo 4 caracteres; não use nada secreto: ela aparece neste formulário).
+# Este workflow acha a sua conversa PRIVADA, grava o destino no banco oficial (só administrador) e manda uma mensagem de confirmação.
+# Não imprime token, chat_id nem nome. Recusa trocar um destino já gravado, a menos que trocar = 1.
+on:
+  workflow_dispatch:
+    inputs:
+      codigo:
+        description: 'A mesma palavra-código que você enviou ao bot'
+        required: true
+      trocar:
+        description: '0 = normal; 1 = permitir trocar um destino já gravado'
+        required: true
+        default: '0'
+
+jobs:
+  conectar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/telegram.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/telegram/conectar.js
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CODIGO: ${{ github.event.inputs.codigo }}
+          TROCAR: ${{ github.event.inputs.trocar }}

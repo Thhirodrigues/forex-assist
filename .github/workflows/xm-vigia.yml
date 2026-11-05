@@ -35,3 +35,4 @@ jobs:
       - run: node scripts/xm/vigia.js
         env:
           VIGIA_SIMULAR: ${{ github.event.inputs.simular }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
