@@ -8,7 +8,7 @@
 //| Ver DOCUMENTACAO/XM-EXECUTOR.md                                  |
 //+------------------------------------------------------------------+
 #property copyright "Forex Assist"
-#property version   "1.00"
+#property version   "1.10"
 #property description "Executor de sinais do app na conta DEMO (comeca em modo ensaio)"
 
 #include <Trade\Trade.mqh>
@@ -18,7 +18,8 @@ input string FirebaseApiKey    = "AIzaSyCShYzOaXiQTLfmArT5h8t7IeUTGEacUFc";     
 input string TokenIngest       = "";                   // o MESMO token do exportador (secret XM_INGEST_TOKEN)
 input bool   SoLog             = true;                 // true = ENSAIO: so registra no log, NAO envia ordens
 input double LoteFixo          = 0.02;                 // lote de cada operacao
-input int    MaxPosicoes       = 6;                    // maximo de posicoes abertas ao mesmo tempo (todas)
+input int    MaxPosicoes       = 3;                    // maximo de posicoes abertas ao mesmo tempo (todas)
+input double MaxDerrapagemFracSL = 0.25;               // pula a entrada se o preco ja andou CONTRA mais que esta fracao do SL (0,10 a 1,00)
 input int    MaxIdadeSinalSeg  = 600;                  // ignora sinal mais velho que isto (10 min)
 input int    DesvioPontos      = 30;                   // desvio maximo de preco aceito
 input long   NumeroMagico      = 20261104;             // identifica as ordens deste EA
@@ -63,7 +64,7 @@ string BuscarFila()
      }
    if(code != 200)
      {
-      Aviso("HTTP " + IntegerToString(code) + " ao ler a fila (token errado ou fila ainda nao criada?)");
+      Aviso("HTTP " + IntegerToString(code) + " ao ler a fila (se isolado: falha de rede transitoria; se repetido: token errado ou fila nao criada)");
       g_falhas++;
       return "";
      }
@@ -163,10 +164,19 @@ void Processar(const string item)
      }
 
    double derrapagem = (compra ? preco - precoApp : precoApp - preco) / pip;   // positivo = pior que o preco do sinal
+   double spread = (tick.ask - tick.bid) / pip;
+   // guarda de derrapagem: preco ja andou contra o sinal mais que a fracao permitida do SL -> nao entra (vale no ensaio tambem)
+   if(derrapagem > MaxDerrapagemFracSL * slPips)
+     {
+      Print("XM_Executor: PULADO (derrapagem ", DoubleToString(derrapagem, 1), " pips > ", DoubleToString(MaxDerrapagemFracSL * 100.0, 0),
+            "% do SL de ", DoubleToString(slPips, 1), " pips): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
+      GlobalVariableSet(chave, 1);
+      return;
+     }
    string resumo = (compra ? "COMPRA " : "VENDA ") + sym + " lote " + DoubleToString(LoteFixo, 2) +
                    " preco " + DoubleToString(preco, digitos) + " TP " + DoubleToString(tp, digitos) +
                    " SL " + DoubleToString(sl, digitos) + " | atraso " + IntegerToString((int)idade) + " s" +
-                   " | derrapagem " + DoubleToString(derrapagem, 1) + " pips | sinal " + id;
+                   " | derrapagem " + DoubleToString(derrapagem, 1) + " pips | spread " + DoubleToString(spread, 1) + " pips | sinal " + id;
 
    if(SoLog)
      {
@@ -217,9 +227,15 @@ int OnInit()
       Print("XM_Executor: MaxPosicoes fora do limite de seguranca (1 a 12); encerrando.");
       return INIT_PARAMETERS_INCORRECT;
      }
+   if(MaxDerrapagemFracSL < 0.10 || MaxDerrapagemFracSL > 1.0)
+     {
+      Print("XM_Executor: MaxDerrapagemFracSL fora do limite (0,10 a 1,00); encerrando.");
+      return INIT_PARAMETERS_INCORRECT;
+     }
    EventSetTimer(MathMax(5, IntervaloSeg));
    Print("XM_Executor iniciado em modo ", (SoLog ? "ENSAIO (nao envia ordens)" : "REAL NA DEMO (envia ordens)"),
-         ". Lote ", DoubleToString(LoteFixo, 2), ", maximo ", MaxPosicoes, " posicoes, sinal valido por ", MaxIdadeSinalSeg, " s.");
+         ". Lote ", DoubleToString(LoteFixo, 2), ", maximo ", MaxPosicoes, " posicoes, sinal valido por ", MaxIdadeSinalSeg, " s, derrapagem maxima ",
+         DoubleToString(MaxDerrapagemFracSL * 100.0, 0), "% do SL.");
    return INIT_SUCCEEDED;
   }
 

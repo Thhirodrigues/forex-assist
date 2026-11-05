@@ -23,6 +23,13 @@ const usos = semTextos.match(/trade\.\w+\(/g) || [];
 for (const u of usos) assert.ok(["trade.SetExpertMagicNumber(", "trade.SetDeviationInPoints(", "trade.SetTypeFillingBySymbol(", "trade.PositionOpen(", "trade.ResultRetcode(", "trade.ResultRetcodeDescription("].includes(u), `uso de CTrade não permitido: ${u}`);
 for (const proibido of ["PositionClose", "PositionModify", "OrderDelete", "OrderSend", "trade.Buy", "trade.Sell", "OrderModify"]) assert.ok(!semTextos.includes(proibido), `não pode usar ${proibido}`);
 assert.strictEqual((semTextos.match(/trade\.PositionOpen\(/g) || []).length, 1, "um único ponto de envio de ordem");
+// guarda de derrapagem: existe, vem ANTES do ensaio e do envio, e é validada no OnInit
+const iGuarda = codigo.indexOf("derrapagem > MaxDerrapagemFracSL * slPips");
+assert.ok(iGuarda > 0 && iGuarda < iEnsaio && iGuarda < iOrdem, "guarda de derrapagem antes do ensaio e da ordem");
+assert.ok(/input double MaxDerrapagemFracSL\s*=\s*0\.25;/.test(codigo), "guarda de derrapagem padrão 25% do SL");
+assert.ok(/MaxDerrapagemFracSL\s*<\s*0\.10\s*\|\|\s*MaxDerrapagemFracSL\s*>\s*1\.0/.test(codigo), "limites do guarda validados");
+assert.ok(/input int\s+MaxPosicoes\s*=\s*3;/.test(codigo), "MaxPosicoes padrão 3");
+assert.ok(codigo.includes('" pips | spread "'), "spread registrado no log");
 // uma por par, limite de posições, idade máxima, tentativas limitadas
 assert.ok(semTextos.includes("TemPosicaoNoSimbolo(") && semTextos.includes("PositionsTotal() >= MaxPosicoes") && semTextos.includes("idade > MaxIdadeSinalSeg") && /n >= 3/.test(semTextos));
 // nada que identifique a conta; só o host do Firestore; token fora de Print/Aviso
