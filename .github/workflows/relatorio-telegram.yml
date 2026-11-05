@@ -1,0 +1,54 @@
+name: Relatorio no Telegram (diario 18:30 e semanal sexta, horario de Brasilia)
+
+# Dispara quando o scanner oficial TERMINA (workflow_run; o scanner NAO e alterado, o cron nativo do GitHub nao e confiavel) e, SO dentro dos
+# horarios fixos, envia o relatorio ao Telegram: DIARIO seg-sex 21:30 UTC (18:30 de Brasilia), SEMANAL sexta 21:40 UTC. Cada horario sai no
+# maximo uma vez (reserva atomica em relatorio_agenda/<chave>). Fora dos horarios o primeiro passo encerra em milissegundos.
+# SOMENTE LEITURA do historico/estado; sem IA nos numeros. Manual: tipo = diario|semanal; enviar = 0 so imprime o texto no log, 1 envia marcado TESTE.
+on:
+  workflow_run:
+    workflows: ["Forex Scanner Real"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tipo:
+        description: 'diario ou semanal'
+        required: true
+        default: 'diario'
+      enviar:
+        description: '0 = so imprime no log; 1 = envia ao Telegram marcado TESTE'
+        required: true
+        default: '0'
+
+concurrency:
+  group: relatorio-telegram
+  cancel-in-progress: false
+
+jobs:
+  relatorio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Estamos num horario de relatorio?
+        id: slot
+        run: node scripts/relatorio/slot.js
+      - name: Instalar dependencias
+        if: github.event_name == 'workflow_dispatch' || steps.slot.outputs.quando == 'sim'
+        run: npm install --omit=dev --no-audit --no-fund
+      - name: Testes do relatorio
+        if: github.event_name == 'workflow_dispatch' || steps.slot.outputs.quando == 'sim'
+        run: node scripts/relatorio/relatorio.test.js
+      - name: Enviar relatorio
+        if: github.event_name == 'workflow_dispatch' || steps.slot.outputs.quando == 'sim'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SCANNER_CONCLUSAO: ${{ github.event.workflow_run.conclusion }}
+          RELATORIO_TIPO: ${{ github.event.inputs.tipo }}
+          RELATORIO_ENVIAR: ${{ github.event.inputs.enviar }}
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+          node scripts/relatorio/agendado.js
