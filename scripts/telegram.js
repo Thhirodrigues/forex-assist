@@ -13,10 +13,15 @@ const API = "https://api.telegram.org";
 const escaparHtml = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 // Telegram aceita negrito (HTML <b>): o título (com COMPRA/VENDA no começo) sai em negrito
+// Linha em branco no fim de cada aviso (pedido do usuário: os avisos ficavam colados uns nos outros). O Telegram APAGA espaços e
+// quebras de linha no fim da mensagem, então a linha precisa de um caractere invisível que não é espaço: U+2800 (Braille em branco).
+const LINHA_EM_BRANCO = "\n\u2800";
+
 function textoDoAviso(aviso) {
     const titulo = escaparHtml(aviso && aviso.title);
     const corpo = escaparHtml(aviso && aviso.body);
-    return titulo && corpo ? `<b>${titulo}</b>\n${corpo}` : titulo ? `<b>${titulo}</b>` : corpo;
+    const texto = titulo && corpo ? `<b>${titulo}</b>\n${corpo}` : titulo ? `<b>${titulo}</b>` : corpo;
+    return texto ? texto + LINHA_EM_BRANCO : texto;
 }
 
 const sanitizar = (msg, token) => String(msg == null ? "" : msg).split(String(token || "\u0000")).join("***").slice(0, 200);
@@ -69,4 +74,4 @@ async function notificarTelegram(db, aviso, opcoes = {}) {
     }
 }
 
-module.exports = { escaparHtml, textoDoAviso, enviarTelegram, lerDestino, notificarTelegram, sanitizar };
+module.exports = { LINHA_EM_BRANCO, escaparHtml, textoDoAviso, enviarTelegram, lerDestino, notificarTelegram, sanitizar };
