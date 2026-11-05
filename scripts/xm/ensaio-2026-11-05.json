@@ -1,0 +1,23 @@
+{
+  "fonte": "log do MT5 (aba Experts) copiado pelo usuário em 05/11/2026; horários do log em Brasília; executor XM_Executor em ENSAIO (SoLog=true) iniciado 04/11 21:51 BRT",
+  "janelaUtc": ["2026-11-05T00:51:00Z", "2026-11-05T17:25:00Z"],
+  "faria": [
+    { "id": "1793840741416_NZD_USD", "dir": "BUY",  "preco": 0.56325, "tp": 0.56575, "sl": 0.56075, "atrasoS": -7, "derrapagemPips": 0.7 },
+    { "id": "1793841041874_EUR_JPY", "dir": "SELL", "preco": 177.804, "tp": 177.409, "sl": 178.199, "atrasoS": -7, "derrapagemPips": -3.8 },
+    { "id": "1793841932064_AUD_USD", "dir": "BUY",  "preco": 0.70110, "tp": 0.70360, "sl": 0.69860, "atrasoS": 2, "derrapagemPips": -0.8 },
+    { "id": "1793842529184_USD_JPY", "dir": "SELL", "preco": 158.076, "tp": 157.681, "sl": 158.471, "atrasoS": 5, "derrapagemPips": 5.8 },
+    { "id": "1793849735995_NZD_USD", "dir": "BUY",  "preco": 0.56534, "tp": 0.56784, "sl": 0.56284, "atrasoS": -1, "derrapagemPips": 1.8 },
+    { "id": "1793862035714_EUR_USD", "dir": "BUY",  "preco": 1.12670, "tp": 1.12920, "sl": 1.12420, "atrasoS": 29, "derrapagemPips": 1.2 },
+    { "id": "1793862041628_GBP_USD", "dir": "BUY",  "preco": 1.35007, "tp": 1.35257, "sl": 1.34757, "atrasoS": 23, "derrapagemPips": 2.5 },
+    { "id": "1793862055157_USD_CHF", "dir": "SELL", "preco": 0.81339, "tp": 0.81136, "sl": 0.81542, "atrasoS": 9, "derrapagemPips": 5.1 },
+    { "id": "1793862642403_GBP_JPY", "dir": "BUY",  "preco": 213.170, "tp": 213.565, "sl": 212.775, "atrasoS": -8, "derrapagemPips": -6.2 },
+    { "id": "1793871329528_GBP_USD", "dir": "SELL", "preco": 1.34682, "tp": 1.34432, "sl": 1.34932, "atrasoS": 15, "derrapagemPips": 4.2 },
+    { "id": "1793878840392_USD_CHF", "dir": "BUY",  "preco": 0.81814, "tp": 0.82018, "sl": 0.81610, "atrasoS": 4, "derrapagemPips": 1.4 },
+    { "id": "1793880946250_EUR_GBP", "dir": "SELL", "preco": 0.83298, "tp": 0.83112, "sl": 0.83484, "atrasoS": -2, "derrapagemPips": 0.8 },
+    { "id": "1793881844480_EUR_USD", "dir": "SELL", "preco": 1.12194, "tp": 1.11944, "sl": 1.12444, "atrasoS": 10, "derrapagemPips": 0.9 },
+    { "id": "1793890866745_GBP_JPY", "dir": "SELL", "preco": 212.696, "tp": 212.301, "sl": 213.091, "atrasoS": 8, "derrapagemPips": 20.0 },
+    { "id": "1793899239375_USD_CHF", "dir": "SELL", "preco": 0.81478, "tp": 0.81274, "sl": 0.81682, "atrasoS": 5, "derrapagemPips": 2.1 }
+  ],
+  "erros": { "HTTP 1003 ao ler a fila": ["04/11 22:24:04", "04/11 22:29:44", "04/11 22:48:04", "05/11 04:51:04", "05/11 10:10:24"] },
+  "descartes": { "DESCARTADO por idade": 0, "PULADO": 0, "simbolo nao encontrado": 0, "TP/SL mais perto que o minimo": 0 }
+}
