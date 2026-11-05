@@ -29,19 +29,18 @@ const fetchOk = (calls) => async (url, opts) => { calls.push({ url, body: JSON.p
     assert.strictEqual(r.erro, "tempo esgotado", "não trava o scanner: tempo limite");
     assert.ok(!(await T.enviarTelegram({ token: "", chatId: 1, texto: "x" })).ok);
 
-    // botão "Abrir na XM": só com URL https; aviso sem URL (ex.: alerta do MT5) não leva botão
+    // link "Abrir na XM" DENTRO da mensagem, antes do separador (o espaço vem DEPOIS do link); só https; nunca botão
+    const URL1 = "https://my.xm.com/pt/symbol-info/EURUSD";
+    const com = T.textoDoAviso({ title: "🔴 VENDA EUR/USD", body: "Entrada ~1.12" }, { url: URL1 });
+    assert.strictEqual(com, `<b>🔴 VENDA EUR/USD</b>\nEntrada ~1.12\n<a href="${URL1}">🔗 Abrir na XM</a>` + BR, "título, corpo, link, e só depois o espaço");
+    assert.ok(com.indexOf("</a>") < com.indexOf("\u2800"), "o espaço vem depois do link");
+    assert.ok(com.startsWith("<b>🔴 VENDA"), "VENDA continua no começo");
+    assert.ok(!T.textoDoAviso({ title: "a", body: "b" }, { url: "./" }).includes("<a "), "URL que não é https: sem link (alerta do MT5)");
+    assert.ok(!T.textoDoAviso({ title: "a", body: "b" }).includes("<a "), "sem url: sem link");
+    assert.ok(T.textoDoAviso({ title: "a" }, { url: "https://x.com/?a=1&b=\"2\"" }).includes('href="https://x.com/?a=1&amp;b=&quot;2&quot;"'), "endereço escapado no atributo");
     calls = [];
-    await T.enviarTelegram({ token: "123:SEGREDO", chatId: 42, texto: "oi", botao: { texto: "Abrir na XM", url: "https://my.xm.com/pt/symbol-info/EURUSD" }, fetchImpl: fetchOk(calls) });
-    assert.deepStrictEqual(calls[0].body.reply_markup, { inline_keyboard: [[{ text: "Abrir na XM", url: "https://my.xm.com/pt/symbol-info/EURUSD" }]] });
-    calls = [];
-    await T.enviarTelegram({ token: "123:SEGREDO", chatId: 42, texto: "oi", botao: { url: "./" }, fetchImpl: fetchOk(calls) });
-    assert.ok(!("reply_markup" in calls[0].body), "URL não https: sem botão");
-    calls = [];
-    await T.notificarTelegram(fakeDb(42), { title: "a", body: "b" }, { token: "999:TOKENLONGO", url: "https://my.xm.com/pt/symbol-info/GBPUSD", fetchImpl: fetchOk(calls) });
-    assert.strictEqual(calls[0].body.reply_markup.inline_keyboard[0][0].url, "https://my.xm.com/pt/symbol-info/GBPUSD");
-    calls = [];
-    await T.notificarTelegram(fakeDb(42), { title: "a", body: "b" }, { token: "999:TOKENLONGO", fetchImpl: fetchOk(calls) });
-    assert.ok(!("reply_markup" in calls[0].body), "sem url, sem botão");
+    await T.notificarTelegram(fakeDb(42), { title: "a", body: "b" }, { token: "999:TOKENLONGO", url: URL1, fetchImpl: fetchOk(calls) });
+    assert.ok(calls[0].body.text.includes(`<a href="${URL1}">🔗 Abrir na XM</a>`)); assert.ok(!("reply_markup" in calls[0].body), "não usa mais botão");
 
     // notificar: sem token ou sem destino = no-op; com os dois envia; falha não lança
     calls = [];

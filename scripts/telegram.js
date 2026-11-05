@@ -19,27 +19,28 @@ const escaparHtml = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").rep
 const SEPARADOR = "\n\u2800\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈";
 const LINHA_EM_BRANCO = SEPARADOR;   // nome antigo, mantido para quem importava
 
-function textoDoAviso(aviso) {
+// Link da XM DENTRO da mensagem (pedido do usuário: o espaço entre avisos tem que vir DEPOIS do link; um botão fica fora do balão,
+// onde o texto não alcança). Só https; o endereço é escapado para o atributo HTML.
+const linkXm = (url) => (/^https:\/\//.test(String(url || "")) && String(url).length <= 400
+    ? `\n<a href="${escaparHtml(url).replace(/"/g, "&quot;")}">🔗 Abrir na XM</a>` : "");
+
+function textoDoAviso(aviso, { url } = {}) {
     const titulo = escaparHtml(aviso && aviso.title);
     const corpo = escaparHtml(aviso && aviso.body);
     const texto = titulo && corpo ? `<b>${titulo}</b>\n${corpo}` : titulo ? `<b>${titulo}</b>` : corpo;
-    return texto ? texto + SEPARADOR : texto;
+    return texto ? texto + linkXm(url) + SEPARADOR : texto;
 }
 
 const sanitizar = (msg, token) => String(msg == null ? "" : msg).split(String(token || "\u0000")).join("***").slice(0, 200);
 
-async function enviarTelegram({ token, chatId, texto, botao = null, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) {
+async function enviarTelegram({ token, chatId, texto, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) {
     if (!token || !chatId || !texto) return { ok: false, erro: "token, chat ou texto ausente" };
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), timeoutMs);
     try {
         const r = await fetchImpl(`${API}/bot${token}/sendMessage`, {
             method: "POST", headers: { "Content-Type": "application/json" }, signal: ctl.signal,
-            body: JSON.stringify({
-                chat_id: chatId, text: texto, parse_mode: "HTML", disable_web_page_preview: true,
-                // botão que abre a página da XM (um toque no aviso de sinal leva à corretora)
-                ...(botao && /^https:\/\//.test(String(botao.url || "")) ? { reply_markup: { inline_keyboard: [[{ text: botao.texto || "Abrir na XM", url: botao.url }]] } } : {})
-            })
+            body: JSON.stringify({ chat_id: chatId, text: texto, parse_mode: "HTML", disable_web_page_preview: true })
         });
         let j = null; try { j = await r.json(); } catch { j = null; }
         if (r.ok && j && j.ok) return { ok: true };
@@ -65,8 +66,7 @@ async function notificarTelegram(db, aviso, opcoes = {}) {
     try {
         const chatId = await lerDestino(db);
         if (chatId === null) return { ok: false, ignorado: true };
-        const botao = opcoes.url ? { texto: "Abrir na XM", url: opcoes.url } : null;
-        const r = await enviarTelegram({ token, chatId, texto: textoDoAviso(aviso), botao, fetchImpl: opcoes.fetchImpl, timeoutMs: opcoes.timeoutMs });
+        const r = await enviarTelegram({ token, chatId, texto: textoDoAviso(aviso, { url: opcoes.url }), fetchImpl: opcoes.fetchImpl, timeoutMs: opcoes.timeoutMs });
         if (!r.ok) console.log(`Aviso: falha ao enviar Telegram: ${r.erro}`);
         return r;
     } catch (e) {
