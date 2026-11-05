@@ -101,6 +101,8 @@ function estimarTempoHabilMinutos(atrAtual, slPips, par) {
 
 const { notificarTelegram } = require("./telegram");
 
+const TTL_SINAL_SEG = 600;   // validade do push de sinal/lucro parcial (segundos)
+
 async function obterTokensAtivos(db) {
 
     const snapshot = await db
@@ -246,8 +248,10 @@ async function enviarPushAbertura(admin, db, operacao) {
             // dispositivo se precisar - não é garantia (o Android ainda
             // pode restringir por app, ver aviso separado sobre
             // otimização de bateria), mas é o que o código controla.
+            // AJUSTE-106: TTL de 10 min. Se o aparelho estiver adormecido (Android/Doze), o push NÃO é entregue horas depois:
+            // aviso de COMPRA/VENDA velho é pior que nenhum aviso (o usuário entraria atrasado num sinal que já passou).
             webpush: {
-                headers: { Urgency: "high" }
+                headers: { Urgency: "high", TTL: String(TTL_SINAL_SEG) }
             }
 
         });
@@ -346,7 +350,7 @@ async function enviarPushAvisoParcial(admin, db, sinal, aviso) {
             },
 
             webpush: {
-                headers: { Urgency: "high" }
+                headers: { Urgency: "high", TTL: String(TTL_SINAL_SEG) }
             }
 
         });
@@ -376,6 +380,8 @@ module.exports = {
     enviarParaTokens,
 
     montarAvisoAbertura,
+
+    TTL_SINAL_SEG,
 
     enviarPushAbertura,
 

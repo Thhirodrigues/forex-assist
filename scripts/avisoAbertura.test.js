@@ -40,4 +40,18 @@ const encerra = rodarPush({ notification: { title: "✅ Encerrado", body: "x" },
 assert.strictEqual(encerra.opcoes.vibrate, undefined, "encerramento não vibra longo");
 const semTipo = rodarPush({ notification: { title: "t", body: "b" } });
 assert.strictEqual(semTipo.opcoes.vibrate, undefined);
-console.log("TODOS OS TESTES DO AVISO DE NOVO SINAL PASSARAM");
+// AJUSTE-106: o push de abertura tem TTL de 10 min (não entrega sinal velho depois que o aparelho acordar)
+(async () => {
+    const { enviarPushAbertura, TTL_SINAL_SEG } = require("./pushNotifier");
+    assert.strictEqual(TTL_SINAL_SEG, 600);
+    const enviados = [];
+    const admin = { messaging: () => ({ send: async (m) => { enviados.push(m); } }) };
+    const db = { collection: () => ({ where: () => ({ get: async () => ({ docs: [{ id: "tokA" }] }) }), doc: () => ({ get: async () => ({ exists: false }), set: async () => {} }) }) };
+    const prev = process.env.TELEGRAM_BOT_TOKEN; delete process.env.TELEGRAM_BOT_TOKEN;
+    await enviarPushAbertura(admin, db, { par: "EUR/USD", direcao: "BUY", precoEntrada: 1.12, score: 70, inicioOperacao: Date.now(), indicadores: { atr: 0.0008 }, financeiro: { slPips: 25 } });
+    if (prev !== undefined) process.env.TELEGRAM_BOT_TOKEN = prev;
+    assert.strictEqual(enviados.length, 1);
+    assert.strictEqual(enviados[0].webpush.headers.TTL, "600"); assert.strictEqual(enviados[0].webpush.headers.Urgency, "high");
+    assert.strictEqual(enviados[0].notification.title, "🟢 COMPRA EUR/USD");
+    console.log("TODOS OS TESTES DO AVISO DE NOVO SINAL PASSARAM");
+})().catch(e => { console.error(e); process.exit(1); });

@@ -26,7 +26,7 @@ module.exports = { resumirTokens, navegador, curto };
 if (require.main === module) {
     (async () => {
         const admin = require("firebase-admin");
-        const { enviarParaTokens, obterTokensAtivos, horaBrasilia } = require("../pushNotifier");
+        const { enviarParaTokens, obterTokensAtivos, horaBrasilia, TTL_SINAL_SEG } = require("../pushNotifier");
         admin.initializeApp({ credential: admin.credential.cert(require("../../serviceAccount.json")) });
         const db = admin.firestore();
         const agora = Date.now();
@@ -42,7 +42,7 @@ if (require.main === module) {
             await enviarParaTokens(admin, db, tokens, {
                 notification: { title: "🟢 COMPRA TESTE EUR/USD", body: `Teste de entrega e vibração (${hora}). Pode ignorar, não é sinal.` },
                 data: { tipo: "abertura", emitidoEm: String(agora), par: "EUR/USD", direcao: "BUY", url: "https://my.xm.com/pt/member" },
-                webpush: { headers: { Urgency: "high" } }
+                webpush: { headers: { Urgency: "high", TTL: String(TTL_SINAL_SEG) } }
             });
             console.log(`aviso de TESTE enviado às ${hora} (Brasília) para ${tokens.length} dispositivo(s) ativo(s)`);
         }
