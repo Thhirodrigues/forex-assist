@@ -25,6 +25,20 @@ const fetchOk = (calls) => async (url, opts) => { calls.push({ url, body: JSON.p
     assert.strictEqual(r.erro, "tempo esgotado", "não trava o scanner: tempo limite");
     assert.ok(!(await T.enviarTelegram({ token: "", chatId: 1, texto: "x" })).ok);
 
+    // botão "Abrir na XM": só com URL https; aviso sem URL (ex.: alerta do MT5) não leva botão
+    calls = [];
+    await T.enviarTelegram({ token: "123:SEGREDO", chatId: 42, texto: "oi", botao: { texto: "Abrir na XM", url: "https://my.xm.com/pt/symbol-info/EURUSD" }, fetchImpl: fetchOk(calls) });
+    assert.deepStrictEqual(calls[0].body.reply_markup, { inline_keyboard: [[{ text: "Abrir na XM", url: "https://my.xm.com/pt/symbol-info/EURUSD" }]] });
+    calls = [];
+    await T.enviarTelegram({ token: "123:SEGREDO", chatId: 42, texto: "oi", botao: { url: "./" }, fetchImpl: fetchOk(calls) });
+    assert.ok(!("reply_markup" in calls[0].body), "URL não https: sem botão");
+    calls = [];
+    await T.notificarTelegram(fakeDb(42), { title: "a", body: "b" }, { token: "999:TOKENLONGO", url: "https://my.xm.com/pt/symbol-info/GBPUSD", fetchImpl: fetchOk(calls) });
+    assert.strictEqual(calls[0].body.reply_markup.inline_keyboard[0][0].url, "https://my.xm.com/pt/symbol-info/GBPUSD");
+    calls = [];
+    await T.notificarTelegram(fakeDb(42), { title: "a", body: "b" }, { token: "999:TOKENLONGO", fetchImpl: fetchOk(calls) });
+    assert.ok(!("reply_markup" in calls[0].body), "sem url, sem botão");
+
     // notificar: sem token ou sem destino = no-op; com os dois envia; falha não lança
     calls = [];
     assert.ok((await T.notificarTelegram(fakeDb(42), { title: "a", body: "b" }, { token: "", fetchImpl: fetchOk(calls) })).ignorado);
@@ -39,6 +53,9 @@ const fetchOk = (calls) => async (url, opts) => { calls.push({ url, body: JSON.p
     // integração: o Telegram sai MESMO sem tokens de push; erro no Telegram não impede o push; erro no push não impede o Telegram
     const enviados = []; const admin = { messaging: () => ({ send: async (m) => { enviados.push(m.token); } }) };
     const tg = []; const fakeTg = async (db, aviso) => { tg.push(aviso); };
+    const urls = []; const tgUrl = async (db, aviso, o) => { urls.push(o && o.url); };
+    await enviarParaTokens(admin, fakeDb(1), [], { notification: { title: "T", body: "B" }, data: { url: "https://my.xm.com/pt/symbol-info/EURUSD" } }, { telegram: tgUrl });
+    assert.deepStrictEqual(urls, ["https://my.xm.com/pt/symbol-info/EURUSD"], "a URL da XM do sinal vai para o Telegram");
     await enviarParaTokens(admin, fakeDb(1), [], { notification: { title: "T", body: "B" } }, { telegram: fakeTg });
     assert.strictEqual(tg.length, 1); assert.strictEqual(enviados.length, 0);
     await enviarParaTokens(admin, fakeDb(1), ["tok1", "tok2"], { notification: { title: "T2", body: "B2" } }, { telegram: fakeTg });

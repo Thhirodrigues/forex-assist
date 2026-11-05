@@ -142,7 +142,7 @@ async function enviarParaTokens(admin, db, tokens, payload, opcoes = {}) {
     // AJUSTE-105: segundo canal. Todo aviso de push vai também ao Telegram (no-op sem token/destino; nunca lança erro) e isso
     // acontece ANTES do retorno por falta de tokens de push (o Telegram não depende do Chrome do celular).
     try {
-        await (opcoes.telegram || notificarTelegram)(db, payload && payload.notification);
+        await (opcoes.telegram || notificarTelegram)(db, payload && payload.notification, { url: payload && payload.data && payload.data.url });
     } catch (e) {
         console.log(`Aviso: falha no canal Telegram: ${e && e.message}`);
     }

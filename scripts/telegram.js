@@ -21,14 +21,18 @@ function textoDoAviso(aviso) {
 
 const sanitizar = (msg, token) => String(msg == null ? "" : msg).split(String(token || "\u0000")).join("***").slice(0, 200);
 
-async function enviarTelegram({ token, chatId, texto, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) {
+async function enviarTelegram({ token, chatId, texto, botao = null, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) {
     if (!token || !chatId || !texto) return { ok: false, erro: "token, chat ou texto ausente" };
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), timeoutMs);
     try {
         const r = await fetchImpl(`${API}/bot${token}/sendMessage`, {
             method: "POST", headers: { "Content-Type": "application/json" }, signal: ctl.signal,
-            body: JSON.stringify({ chat_id: chatId, text: texto, parse_mode: "HTML", disable_web_page_preview: true })
+            body: JSON.stringify({
+                chat_id: chatId, text: texto, parse_mode: "HTML", disable_web_page_preview: true,
+                // botão que abre a página da XM (um toque no aviso de sinal leva à corretora)
+                ...(botao && /^https:\/\//.test(String(botao.url || "")) ? { reply_markup: { inline_keyboard: [[{ text: botao.texto || "Abrir na XM", url: botao.url }]] } } : {})
+            })
         });
         let j = null; try { j = await r.json(); } catch { j = null; }
         if (r.ok && j && j.ok) return { ok: true };
@@ -54,7 +58,8 @@ async function notificarTelegram(db, aviso, opcoes = {}) {
     try {
         const chatId = await lerDestino(db);
         if (chatId === null) return { ok: false, ignorado: true };
-        const r = await enviarTelegram({ token, chatId, texto: textoDoAviso(aviso), fetchImpl: opcoes.fetchImpl, timeoutMs: opcoes.timeoutMs });
+        const botao = opcoes.url ? { texto: "Abrir na XM", url: opcoes.url } : null;
+        const r = await enviarTelegram({ token, chatId, texto: textoDoAviso(aviso), botao, fetchImpl: opcoes.fetchImpl, timeoutMs: opcoes.timeoutMs });
         if (!r.ok) console.log(`Aviso: falha ao enviar Telegram: ${r.erro}`);
         return r;
     } catch (e) {
