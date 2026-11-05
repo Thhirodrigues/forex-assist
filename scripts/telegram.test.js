@@ -8,12 +8,13 @@ const fetchOk = (calls) => async (url, opts) => { calls.push({ url, body: JSON.p
 
 (async () => {
     // texto: título em negrito, caracteres HTML escapados
-    const BR = "\n\u2800";   // linha em branco no fim (U+2800: o Telegram apaga espaços e quebras de linha finais)
+    const BR = "\n\u2800\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈";   // linha em branco (U+2800) + traço no fim: o Telegram apaga espaços e quebras de linha finais
     assert.strictEqual(T.textoDoAviso({ title: "🟢 COMPRA EUR/USD", body: "Entrada ~1.12 | Score 70%\n🕐 12:30" }), "<b>🟢 COMPRA EUR/USD</b>\nEntrada ~1.12 | Score 70%\n🕐 12:30" + BR);
     assert.strictEqual(T.textoDoAviso({ title: "a<b>&c", body: "x" }), "<b>a&lt;b&gt;&amp;c</b>\nx" + BR);
     assert.strictEqual(T.textoDoAviso({ title: "só título" }), "<b>só título</b>" + BR);
     assert.strictEqual(T.textoDoAviso({}), "", "aviso vazio continua vazio (não envia só a linha em branco)");
-    assert.ok(T.textoDoAviso({ title: "x" }).endsWith("\u2800"), "termina com caractere visível-invisível, não com espaço");
+    assert.ok(T.textoDoAviso({ title: "x" }).endsWith("┈"), "termina com caractere visível, não com espaço");
+    assert.ok(T.textoDoAviso({ title: "🟢 COMPRA EUR/USD", body: "b" }).startsWith("<b>🟢 COMPRA"), "COMPRA/VENDA continua no começo (o separador fica no fim)");
 
     // envio: monta o pedido certo e nunca expõe o token em erro
     let calls = [];
