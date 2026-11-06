@@ -69,6 +69,6 @@ async function principalRelatorio({ agora = Date.now(), env = process.env, log =
     return { acao: "EXECUTADO", resultados };
 }
 
-module.exports = { principalRelatorio };
+module.exports = { principalRelatorio, carregar, lerMt5 };
 
 if (require.main === module) principalRelatorio().catch(e => { console.error("ERRO:", e.message); process.exit(1); });

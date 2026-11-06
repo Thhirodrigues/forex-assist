@@ -6,7 +6,7 @@
 // Princípios (combinados com o usuário): o número do dia é quase ruído e vem SEMPRE junto do acumulado; cortes descritivos levam o `n`;
 // o relatório INFORMA, não decide (a decisão do marco das 400 é mecânica, pela regra 6.25 e pela comparação com o ALEATORIO).
 // ===================================================
-const { ZERAR, selecionarFechadas, metricas } = require("../marco/regra625");
+const { ZERAR, selecionarFechadas, metricas, relatorio } = require("../marco/regra625");
 const { spreadDoPar } = require("../../lab/spreads");
 
 const BRT = 3 * 3600e3;
@@ -126,4 +126,26 @@ function semanal({ historico, agoraMs, extras = {}, teste = false }) {
     return { title: `${teste ? "TESTE: " : ""}📈 Semana ${ddmm(diaIni)}–${ddmm(diaHoje)}`, body };
 }
 
-module.exports = { diaBrt, inicioDiaBrt, hhmmBrt, fmt, sinal, resumoSimples, linhaIA, linhaSistema, diario, semanal };
+/**
+ * /marco: onde estamos em relação às 400 fechadas E 30 dias, com as janelas da regra 6.25 que já existem (100, 200, todas).
+ * Só informa: a decisão (R1/R2/R3 + comparação com o ALEATORIO) é mecânica e fica para o marco.
+ */
+function marco({ historico, agoraMs }) {
+    const r = relatorio(historico, agoraMs);
+    const linhaJanela = (j) => j.n ? `${j.rot}: n=${j.n} · líquido ${fmt(j.liquidoPips, 2)} pips/op (IC95 ${fmt(j.icLiquido[0], 2)} a ${fmt(j.icLiquido[1], 2)}) · acerto ${fmt(j.acertoPct, 1)}%` : null;
+    // "N primeiras" só aparece quando já existem N fechadas (senão repetiria a linha TODAS com outro rótulo); a de 400 fica de fora até o marco
+    const janelas = r.janelas.filter(j => { const k = /^(\d+) primeiras/.exec(String(j.rot)); return j.n && !String(j.rot).startsWith("400") && (!k || j.n === Number(k[1])); }).map(linhaJanela).filter(Boolean);
+    const falta = Math.max(0, 400 - r.fechadasConfig);
+    const body = [
+        `Fechadas: ${r.fechadasConfig}/400${falta ? ` (faltam ${falta})` : ""} · dias desde 04/10: ${r.diasCorridosDesdeZerar}/30`,
+        r.marco400Atingido ? "MARCO ATINGIDO (400 fechadas e 30 dias): congelar a contagem antes de olhar o resultado." : "Marco ainda não atingido: precisa das duas condições (400 fechadas E 30 dias).",
+        `Abertas no app: ${r.abertasNoApp}`,
+        "",
+        ...janelas,
+        "",
+        "Só informa. A decisão é mecânica (regra 6.25 + comparação com o ALEATORIO) e não sai daqui."
+    ].join("\n");
+    return { title: "🎯 Marco das 400", body };
+}
+
+module.exports = { diaBrt, inicioDiaBrt, hhmmBrt, fmt, sinal, resumoSimples, linhaIA, linhaSistema, diario, semanal, marco };

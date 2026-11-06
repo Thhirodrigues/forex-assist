@@ -34,3 +34,11 @@ Pedido do usuário ("pode gerar as análises no telegram conforme você estrutur
 - **Manual**: Actions → "Relatorio no Telegram" → `tipo` diario|semanal; `enviar=0` só imprime o texto no log, `enviar=1` envia marcado **TESTE** (não reserva o horário).
 - **Limites conhecidos**: "Scanner: último ciclo = success" é o status do GitHub (workflow verde ≠ funcionando); só o acumulado e o `historico` provam que o scanner produz. O corpo do aviso passa por `escaparHtml` (só o título sai em negrito).
 
+## Comandos no Telegram (AJUSTE-111, 05-06/11/2026)
+Você manda ao bot: **`/hoje`** (resumo do dia de Brasília + acumulado), **`/semana`** (semana até agora, com corte por par), **`/marco`** (fechadas/400, dias/30 e janelas 100/200/todas da regra 6.25), **`/ajuda`**. Qualquer outro `/comando` responde a ajuda.
+- **Como**: `.github/workflows/telegram-comandos.yml` roda a cada ciclo do scanner (`workflow_run`), pergunta ao Telegram (`getUpdates`) e responde. **Resposta em até ~5 min**; se o pinger do scanner parar, o bot também não responde.
+- **Segurança**: só atende mensagem PRIVADA do chat de `config_telegram/destino` (o seu). Grupos, outros usuários e destino não gravado são ignorados, e as mensagens são descartadas. Somente leitura de dados; o token nunca é impresso.
+- **Sem comando novo** o primeiro passo (`--verificar`, sem dependências) encerra sem instalar nada. Um comando só é descartado no Telegram DEPOIS de respondido; se a resposta falhar, tenta no ciclo seguinte (pode repetir uma resposta já enviada).
+- Código: `scripts/relatorio/comandos.js`, textos em `montar.js` (`marco`), testes em `comandos.test.js`.
+- **Aviso de uso**: o `/hoje` traz sempre o acumulado junto, de propósito (o número do dia é quase ruído). Consultar toda hora tende a empurrar para reagir a oscilação.
+

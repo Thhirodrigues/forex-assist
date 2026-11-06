@@ -1,0 +1,43 @@
+name: Telegram - comandos (/hoje /semana /marco /ajuda)
+
+# A cada ciclo do scanner (workflow_run; o scanner NAO e alterado) pergunta ao Telegram se o dono mandou um comando e responde.
+# So atende mensagem PRIVADA do chat gravado em config_telegram/destino; as demais sao ignoradas e descartadas. Somente leitura de dados.
+# Sem comando novo, o primeiro passo encerra sem instalar nada. Resposta em ate ~5 min (cadencia do scanner / pinger externo).
+on:
+  workflow_run:
+    workflows: ["Forex Scanner Real"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: telegram-comandos
+  cancel-in-progress: false
+
+jobs:
+  comandos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Ha comando para atender?
+        id: cmd
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: node scripts/relatorio/comandos.js --verificar
+      - name: Instalar dependencias
+        if: steps.cmd.outputs.quando == 'sim'
+        run: npm install --omit=dev --no-audit --no-fund
+      - name: Testes dos comandos
+        if: steps.cmd.outputs.quando == 'sim'
+        run: node scripts/relatorio/comandos.test.js
+      - name: Responder
+        if: steps.cmd.outputs.quando == 'sim'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+          node scripts/relatorio/comandos.js

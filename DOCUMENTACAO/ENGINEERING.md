@@ -13648,3 +13648,5 @@ AJUSTE-109 (05/11/2026) - EXECUTOR XM v1.10 (`mt5/XM_Executor.mq5`, só execuç�
 
 AJUSTE-110 (05/11/2026) - RELATÓRIO DIÁRIO E SEMANAL NO TELEGRAM (`scripts/relatorio/{agenda,slot,montar,agendado}.js`, `relatorio.test.js`, `.github/workflows/relatorio-telegram.yml`). Somente leitura do `historico`, do estado do MT5 (LAB) e de `ia_agenda`; escreve só `relatorio_agenda/<chave>` (reserva atômica). Dispara por `workflow_run` do scanner (scanner intocado). Números do leitor da 6.25 (`regra625.js`), sem IA. Primeira execução real (manual, `enviar=0`, 05/11 19:08Z): 364 fechadas, líquido -4,04 pips/op, IC95 -7,64 a -0,70, acerto 47,0%. Detalhe em `TELEGRAM.md`.
 
+AJUSTE-111 (06/11/2026) - COMANDOS NO TELEGRAM (`scripts/relatorio/comandos.js`, `comandos.test.js`, `montar.js#marco`, `.github/workflows/telegram-comandos.yml`). `/hoje`, `/semana`, `/marco`, `/ajuda` por polling (`getUpdates`) a cada ciclo do scanner; só o chat de `config_telegram/destino`; somente leitura; descarta a mensagem só depois de responder. Scanner intocado. Detalhe em `TELEGRAM.md`.
+
