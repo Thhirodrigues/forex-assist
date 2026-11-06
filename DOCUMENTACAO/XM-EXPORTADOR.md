@@ -30,3 +30,7 @@ Decidido em 03/11/2026 (usuário: "A"). O Expert Advisor `mt5/XM_Exporter.mq5` *
 - Resolve: histórico e posições sem planilha manual; os movimentos de saldo (depósitos/ajustes), que eram a pergunta aberta da diferença de −21,09 na conta antiga; motivo de fechamento (TP/SL/stop-out) e horários exatos.
 - Não resolve: não decide nada sobre o sinal; não substitui o cruzamento com `historico` do app (próximo passo natural: casar cada operação da XM com o sinal do app, como no `cruza.js` antigo, agora automático).
 - Não é o "sinal por IA" nem entra no pipeline oficial.
+
+## Vigia do MT5: gatilho pelo ciclo do scanner (06/11/2026)
+Ocorrência real: o MT5 parou de enviar às ~05:06 de Brasília (08:06Z) de 06/11. O `xm-vigia` (cron nativo `*/15`) só rodou 4 vezes em ~12 h e o primeiro alerta saiu às 09:41Z, **94 min depois** (limite desenhado: 10 min), e o reenvio horário não ocorreu (próxima execução só muito depois). Causa: o cron nativo do GitHub não é confiável neste repositório (mesmo achado do `ia-programado`). Correção: o `xm-vigia.yml` agora também dispara por `workflow_run` do "Forex Scanner Real" (a cada ciclo do pinger); o cron fica como reforço. A lógica de estado (reenvio a cada 60 min, máx. 6, aviso de volta) não mudou. Efeito colateral esperado: com o PC do trabalho desligado durante o dia, chegam até 6 alertas (um por hora).
+

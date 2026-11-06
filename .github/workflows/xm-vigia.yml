@@ -6,6 +6,11 @@ name: XM - vigia do MT5 (avisa se o computador parar de enviar)
 on:
   schedule:
     - cron: '*/15 * * * *'
+  # O cron nativo do GitHub NAO e confiavel (06/11/2026: so 4 execucoes em ~12 h; o 1o alerta saiu 94 min depois do MT5 parar). Por isso o vigia
+  # tambem roda quando o scanner TERMINA (ciclo de 5 min do pinger), como xm-fila e relatorio. O estado (reenvio a cada 60 min, max 6) torna isso seguro.
+  workflow_run:
+    workflows: ["Forex Scanner Real"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       simular:
