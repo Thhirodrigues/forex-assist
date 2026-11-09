@@ -1,0 +1,21 @@
+name: Relatorio descritivo das 400 primeiras (somente leitura)
+
+# Pedido do usuario (09/11/2026): Win/Loss por par, horario, dia da semana, valores, resultado se o sinal fosse invertido, perfil dos
+# melhores e piores dias. Mesma selecao da regra 6.25 (400 primeiras fechadas CONFIG). Descritivo: nao altera nada e nao decide nada.
+on:
+  workflow_dispatch:
+
+jobs:
+  analise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/relatorio/analise400.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/relatorio/analise400.js
