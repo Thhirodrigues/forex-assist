@@ -34,4 +34,30 @@ assert.strictEqual(a.perfilWin.n, 4); assert.strictEqual(a.perfilLoss.n, 6);
 assert.strictEqual(a.porLadoDolar[0].chave, "vendido");
 // limite: só as N primeiras por ordem de fechamento
 assert.strictEqual(analisar(h, { limite: 3 }).total.n, 3);
+
+// ---- sequências
+const { sequencias } = require("./analise400");
+const q = sequencias(h);                       // WWWW LLLLLL na ordem de fechamento: 2 rachas
+assert.strictEqual(q.n, 10); assert.strictEqual(q.rachas.observadas, 2);
+assert.strictEqual(q.rachas.maiorSequenciaWin, 4); assert.strictEqual(q.rachas.maiorSequenciaLoss, 6);
+assert.ok(q.rachas.z < 0, "resultados agrupados dão z negativo");
+assert.deepStrictEqual(q.rachas.tamanhos, { W: { 4: 1 }, L: { 6: 1 } });
+const pd = Object.fromEntries(q.padroes.map(x => [x.padrao, x]));
+assert.strictEqual(pd.W.n, 4); assert.strictEqual(pd.W.winPct, 75);       // depois de W: W,W,W,L
+assert.strictEqual(pd.L.n, 5); assert.strictEqual(pd.L.winPct, 0);
+assert.strictEqual(pd.WWW.n, 2); assert.strictEqual(pd.WWW.winPct, 50);
+// utilizável: cada operação fecha 30 min depois de abrir e a seguinte abre 1 h depois => a anterior já estava fechada
+assert.strictEqual(q.utilizavel.aposW.n, 4); assert.strictEqual(q.utilizavel.aposW.winPct, 75);
+assert.strictEqual(q.utilizavel.aposL.n, 5); assert.strictEqual(q.utilizavel.aposL.winPct, 0);
+assert.strictEqual(q.utilizavel.mesmoParAposW.n, 4);
+// se as operações se sobrepõem (todas abrem antes de qualquer uma fechar), nada é "utilizável"
+const sobre = h.slice(0, 10).map((s, i) => ({ ...s, timestamp: seg + i * 60e3, inicioOperacao: seg + i * 60e3, fimOperacao: seg + 86400e3 + i * 60e3 }));
+assert.strictEqual(sequencias(sobre).utilizavel.aposW.n, 0);
+// alternância perfeita: z positivo
+const alt = h.slice(0, 10).map((s, i) => ({ ...s, resultado: i % 2 ? "WIN" : "LOSS" }));
+assert.ok(sequencias(alt).rachas.z > 0); assert.strictEqual(sequencias(alt).rachas.observadas, 10);
+assert.strictEqual(q.assimetricas.length, 0);
+assert.strictEqual(sequencias([mk(1, "WIN", "EUR/USD", "BUY", { financeiro: { regimeTPSL: "CONFIG", tpPips: 20, slPips: 30 } }), mk(2, "LOSS")]).assimetricas.length, 1);
+assert.strictEqual(q.custoPorPar[0].spreadPctDoSl, 7.2);   // 1,8 / 25
+assert.strictEqual(q.blocos50[0].winPct, 40);
 console.log("TODOS OS TESTES DO RELATÓRIO DAS 400 PASSARAM");
