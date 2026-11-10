@@ -36,3 +36,7 @@ Pedido do usuário em 04/11/2026 ("pode construir"), depois que o primeiro cruza
 - Mensagem do HTTP 1003 corrigida (falha de rede transitória quando isolada).
 
 **Para ligar o modo real (ação do usuário no MT5, na demo):** recompilar (F7) a v1.10, `SoLog = false`, parar de operar à mão nessa conta, de preferência à noite e perto de um horário de sinal para ler o `retcode` da primeira ordem (`ENTROU` ou `FALHOU`). Pendências estratégicas (teto de exposição por moeda, filtro de notícias, fechamento de fim de semana) seguem congeladas até o marco das 400.
+
+## MT5 x TwelveData: exportar as barras da XM (10/11/2026)
+Script `mt5/XM_ExportarBarras.mq5` (SCRIPT, roda uma vez; somente leitura; sem internet; testes estáticos em `mt5/exportarBarras.test.js`). Grava `MQL5\Files\xm_barras_m5.csv` com as barras de 5 min (bid) dos 10 pares desde 04/10/2026, o spread de cada barra e o fuso do servidor. Uso: MetaEditor > Arquivo > Novo > Script, nome `Scripts\XM_ExportarBarras`, colar o código, F7; no MT5, arrastar o script para qualquer gráfico > OK; Arquivo > Abrir pasta de dados > MQL5 > Files > enviar o `xm_barras_m5.csv`. Com ele: rejulgar os 400 sinais com o preço da XM e medir o spread real por par e horário.
+
