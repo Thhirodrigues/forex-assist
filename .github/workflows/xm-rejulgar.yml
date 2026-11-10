@@ -1,0 +1,27 @@
+name: XM - rejulgar os 400 sinais com o preco da XM (velas de 5 min; somente leitura)
+
+# Pergunta do usuario (10/11/2026): o WIN/LOSS muda se o preco for o do MT5 e nao o do TwelveData? Le o `historico` oficial (admin), pega as 400
+# primeiras fechadas (regra 6.25) e rejulga cada uma com as velas de 5 min exportadas por mt5/XM_ExportarBarras.mq5 (arquivo no repositorio).
+# Imprime so AGREGADOS (matriz app x XM, spread real por par e hora, diferenca de preco, metrica liquida). Nao grava nada.
+on:
+  workflow_dispatch:
+    inputs:
+      arquivo:
+        description: 'CSV das barras no repositorio'
+        required: true
+        default: 'DOCUMENTACAO/arquivo-xm/xm_barras_m5.csv'
+
+jobs:
+  rejulgar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/xm/rejulgar.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/xm/rejulgar.js "${{ github.event.inputs.arquivo }}"

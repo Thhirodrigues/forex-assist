@@ -5,6 +5,10 @@
 //| julgamento WIN/LOSS dos sinais do app com o preço da XM e comparar|
 //| com o julgamento feito com o preço do TwelveData.                 |
 //| SOMENTE LEITURA: não envia ordens, não acessa a internet.         |
+//| A hora das barras é a do SERVIDOR da XM (GMT+3 no horário de verão|
+//| dos EUA, GMT+2 fora; virou em 01/11/2026). A análise converte por |
+//| data e confere com o preço do app; o offset do arquivo é só do    |
+//| instante da exportação.                                           |
 //| Ver DOCUMENTACAO/XM-EXECUTOR.md (seção MT5 x TwelveData).         |
 //+------------------------------------------------------------------+
 #property copyright "Forex Assist"
