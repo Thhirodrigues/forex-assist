@@ -182,7 +182,120 @@ function sequencias(historico, { limite = 400 } = {}) {
         padroes, autocorr, utilizavel, posicaoNoDia, porSemana, blocos50, assimetricas, custoPorPar };
 }
 
-module.exports = { analisar, sequencias, ladoDolar, registro, agrupar };
+// ---------------------------------------------------
+// BUSCA AMPLA DE PADRÕES (pedido do usuário em 10/11/2026: "ache se existem outras sequências de Win e Loss padronizadas").
+// Testa TODOS os padrões de 1 a 5 resultados (62) como "o que vem depois", em 3 ordens:
+//   FECH  = ordem de fechamento global (o que aparece no histórico; tem a ilusão das posições simultâneas)
+//   ENTR  = na hora de ABRIR cada sinal, os últimos resultados JÁ FECHADOS (única leitura utilizável na prática)
+//   PAR   = sequência de cada par (o app só tem 1 posição por par, então o anterior do par sempre já fechou)
+// + periodicidade ("a cada N": posição i mod N, N = 2..8) e efeito de TEMPO (minutos desde o último LOSS/WIN fechado; LOSS nas últimas 2 h).
+// Significância por PERMUTAÇÃO com correção da busca inteira (estatística máxima): embaralha os resultados (a) livremente e (b) só DENTRO
+// de cada dia (mantém o "dia bom/dia ruim" e testa se a ORDEM traz algo além disso). p_familia < 0,05 = sobrevive à busca.
+// ---------------------------------------------------
+function rngSemente(seed) { let x = seed >>> 0; return () => (x = (Math.imul(x, 1664525) + 1013904223) >>> 0) / 4294967296; }
+const TODOS_PADROES = (() => { const out = []; for (let k = 1; k <= 5; k++) for (let m = 0; m < (1 << k); m++) { let p = ""; for (let j = k - 1; j >= 0; j--) p += (m >> j) & 1 ? "W" : "L"; out.push(p); } return out; })();
+
+function historicos(regs, wins) {
+    // regs: lista base (com t abertura, fim, par, dia); wins: array paralelo de resultados (permite permutar)
+    const idx = regs.map((_, i) => i);
+    const porFim = [...idx].sort((a, b) => regs[a].fim - regs[b].fim);
+    const porAbr = [...idx].sort((a, b) => regs[a].t - regs[b].t);
+    const ch = (i) => (wins[i] ? "W" : "L");
+    // FECH: histórico = os 5 anteriores na ordem de fechamento
+    const fech = porFim.map((i, k) => ({ hist: porFim.slice(Math.max(0, k - 5), k).map(ch).join(""), win: wins[i] }));
+    // ENTR: ao abrir, os últimos 5 já fechados (fim < abertura)
+    const entr = []; let ptr = 0; const fechados = [];
+    for (const i of porAbr) {
+        while (ptr < porFim.length && regs[porFim[ptr]].fim < regs[i].t) { fechados.push(porFim[ptr]); ptr++; }
+        entr.push({ hist: fechados.slice(-5).map(ch).join(""), win: wins[i] });
+    }
+    // PAR: sequência por par (ordem de abertura dentro do par)
+    const par = []; const ultimos = {};
+    for (const i of porAbr) { const h = ultimos[regs[i].par] || []; par.push({ hist: h.slice(-5).map(ch).join(""), win: wins[i] }); ultimos[regs[i].par] = [...h, i]; }
+    return { FECH: fech, ENTR: entr, PAR: par, porFim, porAbr };
+}
+
+function estatPadroes(lista, base, nMin) {
+    const out = [];
+    for (const p of TODOS_PADROES) {
+        let n = 0, w = 0;
+        for (const x of lista) if (x.hist.length >= p.length && x.hist.endsWith(p)) { n++; if (x.win) w++; }
+        if (n < nMin) continue;
+        const z = (w - n * base) / Math.sqrt(n * base * (1 - base));
+        out.push({ padrao: p, n, winPct: r1(100 * w / n), z: r2(z) });
+    }
+    return out;
+}
+
+function estatPeriodo(seqWins) {   // "a cada N": acerto por posição i mod N; devolve o maior desvio padronizado entre as posições
+    const n = seqWins.length, base = seqWins.filter(Boolean).length / n, out = [];
+    for (let N = 2; N <= 8; N++) {
+        let maxZ = 0, pior = null;
+        for (let r = 0; r < N; r++) {
+            let c = 0, w = 0; for (let i = r; i < n; i += N) { c++; if (seqWins[i]) w++; }
+            const z = (w - c * base) / Math.sqrt(c * base * (1 - base));
+            if (Math.abs(z) > Math.abs(maxZ)) { maxZ = z; pior = { posicao: r + 1, n: c, winPct: r1(100 * w / c) }; }
+        }
+        out.push({ aCada: N, ...pior, z: r2(maxZ) });
+    }
+    return out;
+}
+
+function buscaPadroes(historico, { limite = 400, perms = 1000, nMin = 15, semente = 20261110 } = {}) {
+    const fe = selecionarFechadas(historico).slice(0, limite);
+    const regs = fe.map(s => ({ ...registro(s), fim: Number(s.fimOperacao) }));
+    const wins = regs.map(r => r.win), base = wins.filter(Boolean).length / wins.length;
+    const ordens = ["FECH", "ENTR", "PAR"];
+    const calc = (w) => {
+        const h = historicos(regs, w);
+        const pad = Object.fromEntries(ordens.map(o => [o, estatPadroes(h[o], base, nMin)]));
+        const per = { FECH: estatPeriodo(h.porFim.map(i => w[i])), ENTR: estatPeriodo(h.porAbr.map(i => w[i])) };
+        return { pad, per };
+    };
+    const obs = calc(wins);
+    const maxAbs = (arr) => arr.reduce((m, x) => Math.max(m, Math.abs(x.z)), 0);
+
+    // nulos por permutação: livre e dentro do dia
+    const rnd = rngSemente(semente);
+    const embaralhar = (arr) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const porDia = {}; regs.forEach((r, i) => (porDia[r.dia] = porDia[r.dia] || []).push(i));
+    const nulos = { livre: { FECH: [], ENTR: [], PAR: [], perFECH: [], perENTR: [] }, dentroDoDia: { FECH: [], ENTR: [], PAR: [], perFECH: [], perENTR: [] } };
+    for (let k = 0; k < perms; k++) {
+        for (const tipo of ["livre", "dentroDoDia"]) {
+            let w;
+            if (tipo === "livre") w = embaralhar(wins);
+            else { w = [...wins]; for (const ids of Object.values(porDia)) { const v = embaralhar(ids.map(i => wins[i])); ids.forEach((i, j) => (w[i] = v[j])); } }
+            const c = calc(w);
+            for (const o of ordens) nulos[tipo][o].push(maxAbs(c.pad[o]));
+            nulos[tipo].perFECH.push(maxAbs(c.per.FECH)); nulos[tipo].perENTR.push(maxAbs(c.per.ENTR));
+        }
+    }
+    const pFam = (z, dist) => r2((dist.filter(m => m >= Math.abs(z)).length + 1) / (dist.length + 1));
+    const top = (o) => [...obs.pad[o]].sort((a, b) => Math.abs(b.z) - Math.abs(a.z)).slice(0, 8)
+        .map(x => ({ ...x, pFamiliaLivre: pFam(x.z, nulos.livre[o]), pFamiliaDentroDoDia: pFam(x.z, nulos.dentroDoDia[o]) }));
+    const per = (o) => obs.per[o].map(x => ({ ...x, pFamiliaLivre: pFam(x.z, nulos.livre["per" + o]), pFamiliaDentroDoDia: pFam(x.z, nulos.dentroDoDia["per" + o]) }));
+
+    // efeito de TEMPO (ordem de abertura; só o que já fechou), descritivo com z contra a base
+    const porFim = [...regs].sort((a, b) => a.fim - b.fim), porAbr = [...regs].sort((a, b) => a.t - b.t);
+    const balde = (min) => min === null ? "nenhum ainda" : min < 30 ? "< 30 min" : min < 120 ? "30 min - 2 h" : min < 360 ? "2 - 6 h" : min < 1440 ? "6 - 24 h" : "> 24 h";
+    const acc = { desdeLoss: {}, desdeWin: {}, lossUltimas2h: {} };
+    const add = (g, k, win) => { (acc[g][k] = acc[g][k] || [0, 0])[0]++; if (win) acc[g][k][1]++; };
+    for (const r of porAbr) {
+        const antes = porFim.filter(o => o.fim < r.t);
+        const ultL = [...antes].reverse().find(o => !o.win), ultW = [...antes].reverse().find(o => o.win);
+        add("desdeLoss", balde(ultL ? (r.t - ultL.fim) / 60000 : null), r.win);
+        add("desdeWin", balde(ultW ? (r.t - ultW.fim) / 60000 : null), r.win);
+        const l2 = antes.filter(o => !o.win && r.t - o.fim <= 2 * 3600e3).length;
+        add("lossUltimas2h", l2 >= 3 ? "3+" : String(l2), r.win);
+    }
+    const tempo = Object.fromEntries(Object.entries(acc).map(([g, m]) => [g, Object.entries(m).map(([k, [n, w]]) => ({ faixa: k, n, winPct: r1(100 * w / n), z: r2((w - n * base) / Math.sqrt(n * base * (1 - base))) }))]));
+
+    const testados = ordens.reduce((s, o) => s + obs.pad[o].length, 0) + 14;
+    return { n: regs.length, baseWinPct: r1(100 * base), permutacoes: perms, padroesTestados: testados, nMinimo: nMin,
+        topFECH: top("FECH"), topENTR: top("ENTR"), topPAR: top("PAR"), periodoFECH: per("FECH"), periodoENTR: per("ENTR"), tempo };
+}
+
+module.exports = { analisar, sequencias, buscaPadroes, ladoDolar, registro, agrupar, TODOS_PADROES };
 
 if (require.main === module) {
     (async () => {
@@ -196,5 +309,7 @@ if (require.main === module) {
         const semChaves = (o) => JSON.stringify(o).replace(/{/g, "(").replace(/}/g, ")");
         console.log("=== SEQUENCIAS ===");
         for (const [k, v] of Object.entries(sequencias(h))) console.log(`SEQ ${k} = ${semChaves(v)}`);
+        console.log("=== BUSCA DE PADROES ===");
+        for (const [k, v] of Object.entries(buscaPadroes(h))) console.log(`PAD ${k} = ${semChaves(v)}`);
     })().catch(e => { console.error("ERRO:", e.message); process.exit(1); });
 }

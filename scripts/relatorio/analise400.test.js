@@ -60,4 +60,26 @@ assert.strictEqual(q.assimetricas.length, 0);
 assert.strictEqual(sequencias([mk(1, "WIN", "EUR/USD", "BUY", { financeiro: { regimeTPSL: "CONFIG", tpPips: 20, slPips: 30 } }), mk(2, "LOSS")]).assimetricas.length, 1);
 assert.strictEqual(q.custoPorPar[0].spreadPctDoSl, 7.2);   // 1,8 / 25
 assert.strictEqual(q.blocos50[0].winPct, 40);
+
+// ---- busca ampla de padrões
+const { buscaPadroes, TODOS_PADROES } = require("./analise400");
+function rngSemente(seed) { let x = seed >>> 0; return () => (x = (Math.imul(x, 1664525) + 1013904223) >>> 0) / 4294967296; }
+assert.strictEqual(TODOS_PADROES.length, 62);
+assert.ok(TODOS_PADROES.includes("WWLWL") && TODOS_PADROES.includes("L"));
+// sequência com padrão PLANTADO: depois de "WW" vem sempre L, e depois de "L" vem W (WWL repetido), 90 operações em 9 dias
+const plant = [];
+for (let i = 0; i < 90; i++) plant.push(mk(i, i % 3 === 2 ? "LOSS" : "WIN", "EUR/USD", "BUY", { timestamp: seg + i * 2.6 * 3600e3, inicioOperacao: seg + i * 2.6 * 3600e3, fimOperacao: seg + i * 2.6 * 3600e3 + 1800e3 }));
+const bp = buscaPadroes(plant, { perms: 200, nMin: 10 });
+assert.strictEqual(bp.n, 90);
+const ww = bp.topENTR.find(x => x.padrao === "WW") || bp.topENTR.find(x => x.padrao.endsWith("WW"));
+assert.ok(ww && ww.winPct === 0, "depois de WW vem L");
+assert.ok(bp.topENTR[0].pFamiliaLivre <= 0.01, "padrão plantado sobrevive à correção da busca");
+const p3 = bp.periodoENTR.find(x => x.aCada === 3);
+assert.ok(p3 && Math.abs(p3.z) > 4 && p3.pFamiliaLivre <= 0.01, "periodicidade a cada 3 detectada");
+// sequência sem padrão (resultados embaralhados por sorteio fixo): nada deve sobreviver
+const r0 = rngSemente(7), ale = [];
+for (let i = 0; i < 120; i++) ale.push(mk(i, r0() < 0.48 ? "WIN" : "LOSS", "EUR/USD", "BUY", { timestamp: seg + i * 2.6 * 3600e3, inicioOperacao: seg + i * 2.6 * 3600e3, fimOperacao: seg + i * 2.6 * 3600e3 + 1800e3 }));
+const ba = buscaPadroes(ale, { perms: 200, nMin: 10 });
+assert.ok(ba.topENTR.every(x => x.pFamiliaLivre > 0.05), "sem padrão real, nada sobrevive à correção");
+assert.ok(ba.tempo.desdeLoss.length >= 1 && ba.tempo.lossUltimas2h.length >= 1);
 console.log("TODOS OS TESTES DO RELATÓRIO DAS 400 PASSARAM");
