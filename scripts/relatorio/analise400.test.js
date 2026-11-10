@@ -82,4 +82,20 @@ for (let i = 0; i < 120; i++) ale.push(mk(i, r0() < 0.48 ? "WIN" : "LOSS", "EUR/
 const ba = buscaPadroes(ale, { perms: 200, nMin: 10 });
 assert.ok(ba.topENTR.every(x => x.pFamiliaLivre > 0.05), "sem padrão real, nada sobrevive à correção");
 assert.ok(ba.tempo.desdeLoss.length >= 1 && ba.tempo.lossUltimas2h.length >= 1);
+
+// ---- tabela X W W
+const { tabelaXWW } = require("./analise400");
+// 12 operações em ordem: W W W L W W L L W W W L  (sem sobreposição: fecham antes da próxima abrir)
+const padr = "WWWLWWLLWWWL", tw = [];
+for (let i = 0; i < 12; i++) tw.push(mk(i, padr[i] === "W" ? "WIN" : "LOSS", i % 2 ? "GBP/USD" : "EUR/USD", i % 3 ? "BUY" : "SELL", { timestamp: seg + i * 3 * 3600e3, inicioOperacao: seg + i * 3 * 3600e3, fimOperacao: seg + i * 3 * 3600e3 + 1800e3 }));
+const t = tabelaXWW(tw);
+assert.strictEqual(t.n, 12);
+// janelas de 3: 10; "?WW" nas posições (2,3): índices 1(WWW),4(WWL?)... contar a mão: janelas (i,i+1,i+2) com i+1,i+2 = W
+let esperado = 0, antW = 0, antL = 0; for (let i = 0; i + 2 < 12; i++) if (padr[i + 1] === "W" && padr[i + 2] === "W") { esperado++; if (padr[i] === "W") antW++; else antL++; }
+assert.strictEqual(t.abertura.janelas, 10); assert.strictEqual(t.abertura.xww, esperado);
+assert.strictEqual(t.abertura.antecede.W, antW); assert.strictEqual(t.abertura.antecede.L, antL);
+assert.strictEqual(t.abertura.triplas.reduce((s, x) => s + x.n, 0), 10);
+assert.strictEqual(t.abertura.sequencia[0], "001-012 " + padr);
+assert.strictEqual(t.fechamento.xww, t.abertura.xww, "sem sobreposição as duas ordens coincidem");
+assert.ok(t.abertura.antecede.porPar.length >= 1 && t.abertura.antecede.porDirecao.length >= 1);
 console.log("TODOS OS TESTES DO RELATÓRIO DAS 400 PASSARAM");

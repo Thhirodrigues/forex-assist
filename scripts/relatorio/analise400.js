@@ -295,7 +295,43 @@ function buscaPadroes(historico, { limite = 400, perms = 1000, nMin = 15, sement
         topFECH: top("FECH"), topENTR: top("ENTR"), topPAR: top("PAR"), periodoFECH: per("FECH"), periodoENTR: per("ENTR"), tempo };
 }
 
-module.exports = { analisar, sequencias, buscaPadroes, ladoDolar, registro, agrupar, TODOS_PADROES };
+// ---------------------------------------------------
+// TABELA "X W W" (pedido do usuário em 10/11/2026): alinhando todos os sinais em sequência, quantas vezes as posições 2 e 3 de uma janela
+// de 3 são WIN, qual resultado/par/direção ocupa a posição 1 (o sinal que ANTECEDE) e o que vem na posição 4. Descritivo.
+// Duas ordens: ABERTURA (ordem em que os sinais saem; o resultado do anterior pode ainda não ser conhecido) e FECHAMENTO (ordem do histórico).
+// ---------------------------------------------------
+function tabelaXWW(historico, { limite = 400 } = {}) {
+    const fe = selecionarFechadas(historico).slice(0, limite);
+    const regs = fe.map(s => ({ ...registro(s), fim: Number(s.fimOperacao) }));
+    const n = regs.length, p = regs.filter(r => r.win).length / n;
+    const ordens = { abertura: [...regs].sort((a, b) => a.t - b.t), fechamento: [...regs].sort((a, b) => a.fim - b.fim) };
+    const saida = {};
+    const contar = (lista, f) => { const m = {}; for (const x of lista) { const k = f(x); m[k] = (m[k] || 0) + 1; } return Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ k, n: v })); };
+    for (const [nome, seq] of Object.entries(ordens)) {
+        const janelas = [];
+        for (let i = 0; i + 2 < seq.length; i++) janelas.push({ a: seq[i], b: seq[i + 1], c: seq[i + 2], d: seq[i + 3] || null, pos: i + 1 });
+        const xww = janelas.filter(j => j.b.win && j.c.win);
+        const tri = contar(janelas, j => (j.a.win ? "W" : "L") + (j.b.win ? "W" : "L") + (j.c.win ? "W" : "L"));
+        const antes = xww.map(j => j.a);
+        const seguinte = xww.filter(j => j.d);
+        // sequência inteira em linhas de 40 (para o usuário "alinhar" e conferir a olho)
+        const str = seq.map(r => (r.win ? "W" : "L")).join("");
+        const linhas = []; for (let i = 0; i < str.length; i += 40) linhas.push(`${String(i + 1).padStart(3, "0")}-${String(Math.min(i + 40, str.length)).padStart(3, "0")} ${str.slice(i, i + 40)}`);
+        saida[nome] = {
+            janelas: janelas.length, xww: xww.length, esperadoSeFosseAcaso: r1(janelas.length * p * p),
+            antecede: { W: antes.filter(r => r.win).length, L: antes.filter(r => !r.win).length,
+                winPct: r1(100 * antes.filter(r => r.win).length / antes.length),
+                porPar: contar(antes, r => r.par).slice(0, 10), porDirecao: contar(antes, r => r.direcao), porLadoDolar: contar(antes, r => r.lado),
+                porHora: contar(antes, r => r.hora).slice(0, 6), porDiaSemana: contar(antes, r => r.dow) },
+            depois: { n: seguinte.length, W: seguinte.filter(j => j.d.win).length, winPct: r1(100 * seguinte.filter(j => j.d.win).length / seguinte.length) },
+            triplas: tri.map(t => ({ tripla: t.k, n: t.n, pct: r1(100 * t.n / janelas.length), esperadoPct: r1(100 * [...t.k].reduce((q, c) => q * (c === "W" ? p : 1 - p), 1)) })),
+            baseGeralPorPar: contar(seq, r => r.par).slice(0, 10), sequencia: linhas
+        };
+    }
+    return { n, winPct: r1(100 * p), ...saida };
+}
+
+module.exports = { analisar, sequencias, buscaPadroes, tabelaXWW, ladoDolar, registro, agrupar, TODOS_PADROES };
 
 if (require.main === module) {
     (async () => {
@@ -309,6 +345,13 @@ if (require.main === module) {
         const semChaves = (o) => JSON.stringify(o).replace(/{/g, "(").replace(/}/g, ")");
         console.log("=== SEQUENCIAS ===");
         for (const [k, v] of Object.entries(sequencias(h))) console.log(`SEQ ${k} = ${semChaves(v)}`);
+        console.log("=== TABELA XWW ===");
+        const tx = tabelaXWW(h);
+        for (const nome of ["abertura", "fechamento"]) {
+            const { sequencia, ...resto } = tx[nome];
+            console.log(`XWW ${nome} = ${semChaves(resto)}`);
+            for (const l of sequencia) console.log(`XWWSEQ ${nome} ${l}`);
+        }
         console.log("=== BUSCA DE PADROES ===");
         for (const [k, v] of Object.entries(buscaPadroes(h))) console.log(`PAD ${k} = ${semChaves(v)}`);
     })().catch(e => { console.error("ERRO:", e.message); process.exit(1); });
