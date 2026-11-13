@@ -25,22 +25,24 @@ const pad = (n) => String(n).padStart(2, "0");
 const fmt = (ms) => { const d = new Date(ms); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`; };
 const textoCandle = (c) => ({ datetime: fmt(c.ts), open: String(c.o), high: String(c.h), low: String(c.l), close: String(c.c) });
 
-// 15 min a partir dos de 5 min (mesmo OHLC que a TwelveData devolve): só baldes completos (3 candles)
-function agregar15(c5) {
+// Agrega N candles consecutivos de `baseMs` (mesmo OHLC que a TwelveData devolve): só baldes completos (N candles).
+// 15 min a partir de 5 min = agregarN(c5, 300000, 3); 3 min a partir de 1 min (base M1, pré-registro 6.45) = agregarN(c1, 60000, 3).
+function agregarN(c, baseMs, n) {
     const baldes = new Map();
-    for (const c of c5) {
-        const k = Math.floor(c.ts / (3 * CINCO)) * 3 * CINCO;
+    for (const x of c) {
+        const k = Math.floor(x.ts / (n * baseMs)) * n * baseMs;
         if (!baldes.has(k)) baldes.set(k, []);
-        baldes.get(k).push(c);
+        baldes.get(k).push(x);
     }
     const out = [];
     for (const [ts, lista] of [...baldes.entries()].sort((a, b) => a[0] - b[0])) {
-        if (lista.length !== 3) continue;
+        if (lista.length !== n) continue;
         lista.sort((a, b) => a.ts - b.ts);
-        out.push({ ts, o: lista[0].o, h: Math.max(...lista.map(x => x.h)), l: Math.min(...lista.map(x => x.l)), c: lista[2].c });
+        out.push({ ts, o: lista[0].o, h: Math.max(...lista.map(x => x.h)), l: Math.min(...lista.map(x => x.l)), c: lista[n - 1].c });
     }
     return out;
 }
+function agregar15(c5) { return agregarN(c5, CINCO, 3); }
 
 const ESTATISTICAS_VAZIAS = {
     wins: 0, loss: 0, operacoes: 0, operacoesElegiveis: 0, winStreak: 0, lossStreak: 0, historicoSuficiente: false,
@@ -58,9 +60,11 @@ const ESTATISTICAS_VAZIAS = {
  * @param {number} [p.passo=3]    avalia a cada N candles de 5 min (3 = 15 min)
  * @param {number} [p.atrasoSeg=30] segundos depois do fechamento do candle em que a análise "roda"
  */
-async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atrasoSeg = 30, log = () => {} }) {
+async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atrasoSeg = 30, baseMs = CINCO, razao = 3, janelaSimulacao = 4000, log = () => {} }) {
+    // baseMs/razao: duração do candle BASE e razão da "companhia" que o pipeline lê como "15min" (padrão 5 min e 3 = 15 min, igual ao scanner;
+    // base M1 do pré-registro 6.45: baseMs = 60000, razao = 3 -> companhia de 3 min). Os padrões reproduzem EXATAMENTE o comportamento anterior.
 
-    const c15 = agregar15(c5);
+    const c15 = agregarN(c5, baseMs, razao);
     const cooldownMs = (Number(configuracao.cooldown) || 30) * 60000;
     const analises = [];
     const aprovacoes = [];
@@ -78,7 +82,7 @@ async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atras
         if (tf === "15min") {
             // só candles de 15 min JÁ FECHADOS no instante simulado (busca binária)
             let lo = 0, hi = c15.length;
-            while (lo < hi) { const m = (lo + hi) >> 1; if (c15[m].ts + 3 * CINCO > simMs) hi = m; else lo = m + 1; }
+            while (lo < hi) { const m = (lo + hi) >> 1; if (c15[m].ts + razao * baseMs > simMs) hi = m; else lo = m + 1; }
             return s15.slice(Math.max(0, lo - janela), lo);
         }
         return s5.slice(Math.max(0, idx - janela + 1), idx + 1);
@@ -99,7 +103,7 @@ async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atras
         Date.now = () => simMs;
         console.log = () => {};
         for (idx = janela - 1; idx < c5.length; idx += passo) {
-            simMs = c5[idx].ts + CINCO + atrasoSeg * 1000;
+            simMs = c5[idx].ts + baseMs + atrasoSeg * 1000;
             if (simMs < bloqueadoAte) continue;                   // cooldown/posição aberta: o oficial nem analisa (não grava)
             capturaAnalise = null; capturaOperacao = null;
             avaliadas++;
@@ -111,7 +115,8 @@ async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atras
                 const r = simularOperacao({
                     par, direcao: capturaAnalise.direcao, tEntrada: simMs, precoEntrada: capturaAnalise.precoEntrada,
                     tpPips: Math.abs(capturaAnalise.tpPips), slPips: Math.abs(capturaAnalise.slPips), spreadPips: 0,
-                    candles: c5.slice(idx + 1, idx + 1 + 4000).map(c => ({ timestamp: c.ts, open: c.o, high: c.h, low: c.l, close: c.c }))   // janela de ~14 dias de mercado
+                    candles: c5.slice(idx + 1, idx + 1 + janelaSimulacao).map(c => ({ timestamp: c.ts, open: c.o, high: c.h, low: c.l, close: c.c })),   // padrão: 4000 candles de 5 min = ~14 dias de mercado
+                    opcoes: { duracaoVelaMs: baseMs }
                 });
                 const fechaEm = r.resultado === "ABERTA" ? Infinity : r.tFechamento;
                 bloqueadoAte = Math.max(simMs + cooldownMs, fechaEm);
@@ -125,4 +130,4 @@ async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atras
     return { analises, aprovacoes: aprovacoes.length, avaliadas };
 }
 
-module.exports = { replayPar, agregar15, ESTATISTICAS_VAZIAS };
+module.exports = { replayPar, agregar15, agregarN, ESTATISTICAS_VAZIAS };

@@ -42,6 +42,7 @@ function contra(direcao, tendencia) {
  * @param {number} [p.spreadPips=0]
  * @param {Array<{timestamp:number,open:number,high:number,low:number,close:number}>} p.candles  ordenados
  * @param {object} [p.opcoes]
+ * @param {number} [p.opcoes.duracaoVelaMs=300000]  duração de cada candle (padrão 5 min)
  * @param {number} [p.opcoes.atrasoMin=0]          entra N min depois, no open do 1º candle >= tEntrada+N
  * @param {boolean} [p.opcoes.breakEvenNaMetade]   ao andar tp/2 a favor, stop vai para o zero a zero
  * @param {number} [p.opcoes.maxMinutos]           fecha a mercado (open do candle) após N min
@@ -55,6 +56,7 @@ function simularOperacao(p) {
     const { par, direcao, tEntrada, tpPips, slPips, candles } = p;
     const s = Number(p.spreadPips) || 0;
     const o = p.opcoes || {};
+    const DUR = Number(o.duracaoVelaMs) || CINCO_MIN;   // duração de cada candle (padrão 5 min; 1 min no replay M1, 6.45)
 
     if (direcao !== "BUY" && direcao !== "SELL") return { resultado: "INVALIDA", motivo: "direcao" };
     if (!(tpPips > 0) || !(slPips > 0)) return { resultado: "INVALIDA", motivo: "tp/sl" };
@@ -118,10 +120,10 @@ function simularOperacao(p) {
 
         if (tocouStop) {
             // vale também quando toca os dois no mesmo candle (regra 1: perda/zero)
-            return pronto(beAtivo ? "ZERO" : "LOSS", beAtivo ? 0 : -slPips, c.timestamp + CINCO_MIN,
+            return pronto(beAtivo ? "ZERO" : "LOSS", beAtivo ? 0 : -slPips, c.timestamp + DUR,
                 { ambiguo: tocouAlvo });
         }
-        if (tocouAlvo) return pronto("WIN", tpPips, c.timestamp + CINCO_MIN);
+        if (tocouAlvo) return pronto("WIN", tpPips, c.timestamp + DUR);
 
         if (o.breakEvenNaMetade && !beAtivo && (dir === 1 ? favoravel(c) >= metade : favoravel(c) <= metade)) {
             beAtivo = true;   // vale a partir do próximo candle (regra 5)
@@ -129,7 +131,7 @@ function simularOperacao(p) {
 
         // 6.27 - saída parcial no fechamento do candle de tfMin (xx:00/15/30/45 para 15 min): o candle já passou por TP/SL acima
         if (o.saidaFechamento) {
-            const fimDoCandle = c.timestamp + CINCO_MIN;
+            const fimDoCandle = c.timestamp + DUR;
             if (fimDoCandle % (o.saidaFechamento.tfMin * 60000) === 0) {
                 const lucro = liquido(c.close);
                 if (lucro >= o.saidaFechamento.frac * tpPips) return pronto("PARCIAL", lucro, fimDoCandle);
@@ -137,7 +139,7 @@ function simularOperacao(p) {
         }
 
         // reanálise: o candle onde ela cai já foi checado por TP/SL (errar contra)
-        while (iRe < reanalises.length && reanalises[iRe].t < c.timestamp + CINCO_MIN) {
+        while (iRe < reanalises.length && reanalises[iRe].t < c.timestamp + DUR) {
             const r = reanalises[iRe++];
             if (contra(direcao, r.tendencia) && Number.isFinite(r.preco)) {
                 return pronto("REANALISE", liquido(r.preco), r.t);

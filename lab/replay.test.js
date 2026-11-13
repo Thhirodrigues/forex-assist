@@ -1,5 +1,5 @@
 const assert = require("assert");
-const { replayPar, agregar15 } = require("./replay");
+const { replayPar, agregar15, agregarN } = require("./replay");
 const { processarPar } = require("./nucleo");
 
 // passeio aleatório determinístico com ciclos de tendência (para o pipeline ter o que aprovar)
@@ -41,5 +41,19 @@ const CONFIG = { perfil: "conservador", cooldown: 30, lote: 0.02, tp: 5, sl: 5, 
   const cm = c.map(x => ({ timestamp: x.ts, open: x.o, high: x.h, low: x.l, close: x.c }));
   const out = processarPar({ par: "EUR/USD", analises: r.analises, abertas: [], ultimoLab: null, candles: cm, registradoEm: T0 + 2000 * 300000, agora: T0 + 5000 * 300000 });
   assert.ok(out.entradas.length > 0 && Object.keys(out.deltas).length > 0, "núcleo rotula as análises do replay");
+  // ---- base de 1 minuto (pré-registro 6.45): agregação genérica e replay com baseMs = 60000 e companhia de 3 min
+  assert.deepEqual(agregarN(c5, 300000, 3), agregar15(c5), "agregarN(5 min, 3) = agregar15");
+  const m1 = candlesSinteticos(12, T0).map((x, i) => ({ ...x, ts: T0 + i * 60000 }));
+  assert.equal(agregarN(m1, 60000, 3).length, 4, "12 velas de 1 min -> 4 de 3 min");
+  assert.equal(agregarN(m1.slice(1), 60000, 3).length, 3, "balde incompleto de 3 min é descartado");
+  const g = agregarN(m1, 60000, 3)[0];
+  assert.ok(g.ts === T0 && g.o === m1[0].o && g.c === m1[2].c && g.h === Math.max(...m1.slice(0, 3).map(x => x.h)) && g.l === Math.min(...m1.slice(0, 3).map(x => x.l)), "OHLC do balde de 3 min");
+  const c1 = candlesSinteticos(6000, T0).map((x, i) => ({ ...x, ts: T0 + i * 60000 }));
+  const r1 = await replayPar({ par: "EUR/USD", c5: c1, configuracao: CONFIG, passo: 5, baseMs: 60000, razao: 3, janelaSimulacao: 20000 });
+  assert.ok(r1.avaliadas > 200 && r1.analises.length > 200, "o pipeline real roda sobre velas de 1 minuto");
+  assert.ok(r1.analises[0].timestamp >= T0 + 499 * 60000 && r1.analises[0].timestamp < T0 + 499 * 60000 + 6 * 60000, "relógio simulado usa a duração da vela BASE (1 min)");
+  const ap1 = r1.analises.filter(a => a.aprovado).map(a => a.timestamp);
+  for (let i = 1; i < ap1.length; i++) assert.ok(ap1[i] - ap1[i - 1] >= 30 * 60000, "cooldown de 30 min respeitado também em M1");
+  console.log(`replay M1 sintético: ${r1.avaliadas} barras, ${r1.analises.length} análises, ${r1.aprovacoes} aprovadas`);
   console.log("TESTES DO REPLAY PASSARAM");
 })().catch(e => { console.error(e); process.exit(1); });
