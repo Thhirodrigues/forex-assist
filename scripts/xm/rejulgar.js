@@ -30,11 +30,13 @@ function offsetServidorSeg(serverSec) {
 }
 
 function lerCsv(texto) {
+    // aceita um CSV ou vários concatenados (um por par): linhas "offset_servidor_seg=" e de cabeçalho são puladas onde aparecerem
     const linhas = String(texto).split(/\r?\n/).filter(Boolean);
-    const m = /^offset_servidor_seg=(-?\d+)/.exec(linhas[0] || "");
+    const m = /offset_servidor_seg=(-?\d+)/.exec(linhas.find(l => l.startsWith("offset_servidor_seg=")) || "");
     const offsetExport = m ? Number(m[1]) : null;
     const barras = {};
-    for (const l of linhas.slice(2)) {
+    for (const l of linhas) {
+        if (l.startsWith("offset_servidor_seg=") || l.startsWith("simbolo,")) continue;
         const c = l.split(",");
         if (c.length < 8) continue;
         (barras[c[0]] = barras[c[0]] || []).push({ ts: Number(c[1]), o: Number(c[2]), h: Number(c[3]), l: Number(c[4]), c: Number(c[5]), sp: Number(c[6]), dig: Number(c[7]) });
@@ -158,7 +160,7 @@ if (require.main === module) {
         const snap = await db.collection("historico").get();
         const h = []; snap.forEach(d => h.push({ id: d.id, ...d.data() }));
         const fe = selecionarFechadas(h).slice(0, 400);
-        const parsed = lerCsv(fs.readFileSync(arq, "utf8"));
+        const parsed = lerCsv(process.argv.slice(2).filter(x => !x.startsWith("--") && fs.existsSync(x)).map(x => fs.readFileSync(x, "utf8")).join("\n"));
         console.log(`barras lidas: ${Object.entries(parsed.barras).map(([k, v]) => `${k} ${v.length}`).join(" | ")} | offset do servidor no export: ${parsed.offsetExport} s`);
         const modoArg = process.argv.find(a => a.startsWith("--offset="));
         const res = rejulgar(fe, parsed, { modo: modoArg ? Number(modoArg.split("=")[1]) : "regra" });

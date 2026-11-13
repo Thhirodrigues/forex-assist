@@ -45,6 +45,11 @@ j = julgar({ ...venda, tp: 7, sl: 500 }, barras); assert.strictEqual(j.estado, "
 // sem barras para o instante
 assert.strictEqual(julgar({ ...compra, t: Date.parse("2026-10-16T00:00:00Z") }, barras).estado, "SEM_DADOS");
 
+// vários arquivos concatenados (um por par, cada um com o seu cabeçalho): as linhas de cabeçalho não viram barras
+const dois = lerCsv(["offset_servidor_seg=7200", "simbolo,hora_servidor,open,high,low,close,spread_pontos,digitos", bar("EURUSD", 0, "1.1", "1.1", "1.1", "1.1"),
+    "offset_servidor_seg=7200", "simbolo,hora_servidor,open,high,low,close,spread_pontos,digitos", bar("GBPUSD", 0, "1.3", "1.3", "1.3", "1.3")].join("\n"));
+assert.deepStrictEqual(Object.keys(dois.barras).sort(), ["EURUSD", "GBPUSD"]); assert.strictEqual(dois.barras.EURUSD.length, 1);
+
 // ---- agregado: 3 sinais (compra casa, venda vira, GBP/USD sem dados)
 const doc = (id, par, dir, res) => ({ id, par, direcao: dir, timestamp: sinalMs, inicioOperacao: sinalMs, fimOperacao: sinalMs + 3600e3, precoEntrada: 1.1, status: "ENCERRADA",
     resultado: res, resultadoFinanceiro: res === "WIN" ? 5 : -5, financeiro: { regimeTPSL: "CONFIG", tpPips: 20, slPips: 20 } });
