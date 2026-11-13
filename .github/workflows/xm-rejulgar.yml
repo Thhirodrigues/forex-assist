@@ -6,10 +6,10 @@ name: XM - rejulgar os 400 sinais com o preco da XM (velas de 5 min; somente lei
 on:
   workflow_dispatch:
     inputs:
-      arquivo:
-        description: 'CSV das barras no repositorio'
+      padrao:
+        description: 'CSVs das barras no repositorio (aceita * : um arquivo por par)'
         required: true
-        default: 'DOCUMENTACAO/arquivo-xm/xm_barras_m5.csv'
+        default: 'DOCUMENTACAO/arquivo-xm/xm_barras_M5_*.csv'
 
 jobs:
   rejulgar:
@@ -24,4 +24,7 @@ jobs:
       - run: node scripts/xm/rejulgar.test.js && node scripts/xm/gestao-busca.test.js
       - name: Create Firebase Key
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
-      - run: node scripts/xm/rejulgar.js "${{ github.event.inputs.arquivo }}"
+      - name: Rejulgar
+        env:
+          PADRAO: ${{ github.event.inputs.padrao }}
+        run: node scripts/xm/rejulgar.js $PADRAO
