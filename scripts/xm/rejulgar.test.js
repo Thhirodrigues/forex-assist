@@ -64,4 +64,28 @@ assert.strictEqual(r.spreadPar[0].par, "EUR/USD"); assert.strictEqual(r.spreadPa
 assert.strictEqual(r.distanciaAppXmPipsPorOffset.regra, 0); assert.strictEqual(r.distanciaAppXmPipsPorOffset["GMT+2"], null);
 // nada por sinal vaza no resultado agregado
 assert.ok(!JSON.stringify(r).includes('"id"'));
+
+// ---- SL x3 e gestão do dia
+const { julgarVariante, gestaoDia, resumoTrades } = require("./rejulgar");
+// compra com TP 20 / SL 3 pips (nível 1,09990; tocado só na vela 3) e SL x3 = 9 pips (nível 1,09930): mesma vela 3 (mínima 1,09900)
+const dv = julgarVariante([{ ...doc("a", "EUR/USD", "BUY", "WIN"), financeiro: { regimeTPSL: "CONFIG", tpPips: 100, slPips: 3 } }], parsed, { slMult: 1 });
+assert.strictEqual(dv.length, 1); assert.strictEqual(dv[0].win, false); assert.strictEqual(dv[0].pnl, -3); assert.ok(dv[0].fim > dv[0].t);
+const dv3 = julgarVariante([{ ...doc("a", "EUR/USD", "BUY", "WIN"), financeiro: { regimeTPSL: "CONFIG", tpPips: 100, slPips: 3 } }], parsed, { slMult: 3 });
+assert.strictEqual(dv3[0].pnl, -9);
+// SL x3: com SL de 7 pips (1,09950) a operação perde na vela 3 (mínima 1,09900); com SL x3 = 21 pips (1,09810) o nível não é tocado e o TP de 100 pips também não
+const salva = (m) => julgarVariante([{ ...doc("a", "EUR/USD", "BUY", "LOSS"), financeiro: { regimeTPSL: "CONFIG", tpPips: 100, slPips: 7 } }], parsed, { slMult: m });
+assert.strictEqual(salva(1)[0].win, false); assert.strictEqual(salva(3).length, 0, "nenhum nível tocado: operação aberta, fora das decididas");
+
+// gestão do dia: 5 operações no mesmo dia (Brasília), cada uma fecha 1 h depois de abrir; 3 LOSS seguidos fecham antes da 4ª abrir
+const H = 3600e3, d0 = Date.parse("2026-10-15T12:00:00Z");
+const tr = (i, win) => ({ t: d0 + i * 2 * H, fim: d0 + i * 2 * H + H, win, pnl: win ? 25 : -25, tp: 25, sl: 25, dia: "2026-10-15" });
+const g = gestaoDia([tr(0, false), tr(1, false), tr(2, false), tr(3, true), tr(4, true)], { W: 4, L: 3 });
+assert.strictEqual(g.todos.n, 5); assert.strictEqual(g.tomados.n, 3); assert.strictEqual(g.pulados.n, 2);
+assert.strictEqual(g.tomados.pipsTotal, -75); assert.strictEqual(g.pulados.pipsTotal, 50);
+assert.strictEqual(g.todos.pipsTotal, -25);
+// quando as operações são longas (nenhuma fecha antes da seguinte abrir), a regra nunca morde
+const longas = [0, 1, 2, 3, 4].map(i => ({ t: d0 + i * H, fim: d0 + 10 * H + i * H, win: false, pnl: -25, tp: 25, sl: 25, dia: "2026-10-15" }));
+assert.strictEqual(gestaoDia(longas, { W: 4, L: 3 }).tomados.n, 5);
+assert.strictEqual(gestaoDia(longas).fracaoJaFechadaQuandoAbre.mediana, 0);
+assert.strictEqual(resumoTrades([]).n, 0);
 console.log("TODOS OS TESTES DO REJULGAMENTO XM PASSARAM");

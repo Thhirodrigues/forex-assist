@@ -77,9 +77,10 @@ function julgar(sinal, barras) {
         const x = barras[j], sp = x.sp * ponto;
         const tp = compra ? x.h >= nivelTp : x.l + sp <= nivelTp;
         const sl = compra ? x.l <= nivelSl : x.h + sp >= nivelSl;
-        if (tp && sl) return { estado: "AMBIGUO", gapPips, barras: j - i };
-        if (tp) return { estado: "WIN", gapPips, barras: j - i };
-        if (sl) return { estado: "LOSS", gapPips, barras: j - i };
+        const fimMs = x.ms + 300000;      // fim da vela em que o nível foi tocado
+        if (tp && sl) return { estado: "AMBIGUO", gapPips, barras: j - i, fimMs };
+        if (tp) return { estado: "WIN", gapPips, barras: j - i, fimMs };
+        if (sl) return { estado: "LOSS", gapPips, barras: j - i, fimMs };
     }
     return { estado: "ABERTA", gapPips };
 }
@@ -148,7 +149,54 @@ function rejulgar(sinaisDoc, parsed, { modo = "regra" } = {}) {
     };
 }
 
-module.exports = { offsetServidorSeg, lerCsv, paraUtc, indiceDaVela, julgar, rejulgar, escolherOffset, pipDe };
+// ---------------------------------------------------
+// VARIANTE DE SL (pedido do usuário em 13/11/2026: "e com SL x3?") e REGRA DE GESTÃO DO DIA ("4 WIN ou 3 LOSS encerra o dia").
+// Mesmas entradas, mesmo TP, SL multiplicado; julgamento bid/ask em velas de 5 min. Resultado por operação em pips a partir da entrada
+// da XM: WIN = +tp, LOSS = -sl x mult (o spread já está dentro do julgamento). DESCRITIVO: não é teste pré-registrado.
+// ---------------------------------------------------
+const diaBrt = (ms) => new Date(ms - 3 * 3600e3).toISOString().slice(0, 10);
+
+function julgarVariante(sinaisDoc, parsed, { slMult = 1, modo = "regra" } = {}) {
+    const barras = paraUtc(parsed, modo);
+    const out = [];
+    for (const d of sinaisDoc) {
+        const s = { par: d.par, direcao: d.direcao, t: Number(d.inicioOperacao || d.timestamp), tp: Math.abs(Number(d.financeiro.tpPips)), sl: Math.abs(Number(d.financeiro.slPips)) * slMult, precoApp: Number(d.precoEntrada) };
+        const arr = barras[mt(d.par)]; if (!arr) continue;
+        const r = julgar(s, arr);
+        if (r.estado !== "WIN" && r.estado !== "LOSS") continue;
+        out.push({ t: s.t, fim: r.fimMs, win: r.estado === "WIN", pnl: r.estado === "WIN" ? s.tp : -s.sl, tp: s.tp, sl: s.sl, dia: diaBrt(s.t), ts: Number(d.timestamp), par: d.par });
+    }
+    return out;
+}
+
+function resumoTrades(lista) {
+    const n = lista.length; if (!n) return { n: 0 };
+    const porDia = {}; for (const x of lista) porDia[x.dia] = (porDia[x.dia] || 0) + x.pnl;
+    const dias = Object.values(porDia);
+    return { n, acertoPct: r2(100 * lista.filter(x => x.win).length / n), pipsPorOp: r2(lista.reduce((a, x) => a + x.pnl, 0) / n), pipsTotal: r2(lista.reduce((a, x) => a + x.pnl, 0)),
+        dias: dias.length, diasPositivosPct: r2(100 * dias.filter(v => v > 0).length / dias.length), piorDia: r2(Math.min(...dias)), melhorDia: r2(Math.max(...dias)), operacoesPorDia: r2(n / dias.length) };
+}
+
+// regra A: ao abrir cada sinal, se no MESMO dia (Brasília) já fecharam W vitórias ou L derrotas das operações TOMADAS, não toma o sinal.
+function gestaoDia(trades, { W = 4, L = 3 } = {}) {
+    const ord = [...trades].sort((a, b) => a.t - b.t);
+    const tomados = [], pulados = [], porDia = {};
+    for (const x of ord) {
+        const doDia = (porDia[x.dia] = porDia[x.dia] || []);
+        const fechados = doDia.filter(y => y.fim <= x.t);
+        const w = fechados.filter(y => y.win).length, l = fechados.length - w;
+        if (w >= W || l >= L) { pulados.push(x); continue; }
+        doDia.push(x); tomados.push(x);
+    }
+    // quanto do dia já tinha fechado quando cada sinal abriu (mostra se a regra consegue "morder")
+    const fr = []; const dd = {};
+    for (const x of ord) { const prev = (dd[x.dia] = dd[x.dia] || []); if (prev.length) fr.push(prev.filter(y => y.fim <= x.t).length / prev.length); prev.push(x); }
+    return { regra: `${W} WIN ou ${L} LOSS`, todos: resumoTrades(ord), tomados: resumoTrades(tomados), pulados: resumoTrades(pulados),
+        fracaoJaFechadaQuandoAbre: { mediana: r2(mediana(fr)), media: r2(fr.reduce((a, v) => a + v, 0) / (fr.length || 1)) },
+        duracaoMediaHoras: r2(ord.reduce((a, x) => a + (x.fim - x.t) / 3600e3, 0) / (ord.length || 1)) };
+}
+
+module.exports = { offsetServidorSeg, lerCsv, paraUtc, indiceDaVela, julgar, rejulgar, escolherOffset, pipDe, julgarVariante, gestaoDia, resumoTrades };
 
 if (require.main === module) {
     (async () => {
@@ -167,5 +215,13 @@ if (require.main === module) {
         // GitHub mascara "{" e "}" no log (fazem parte do secret da credencial): imprime sem chaves
         const semChaves = (o) => JSON.stringify(o).replace(/{/g, "(").replace(/}/g, ")");
         for (const [k, v] of Object.entries(res)) console.log(`REJ ${k} = ${semChaves(v)}`);
+        // variantes de SL (x1 e x3) e regra de gestão do dia (descritivo)
+        const { metricas } = require("../marco/regra625");
+        for (const mult of [1, 3]) {
+            const tr = julgarVariante(fe, parsed, { slMult: mult, modo: modoArg ? Number(modoArg.split("=")[1]) : "regra" });
+            const pseudo = tr.map(x => ({ timestamp: x.ts, par: x.par, status: "ENCERRADA", resultado: x.win ? "WIN" : "LOSS", resultadoFinanceiro: 0, fimOperacao: x.fim, financeiro: { regimeTPSL: "CONFIG", tpPips: x.tp, slPips: x.sl } }));
+            console.log(`REJ slx${mult} = ${semChaves({ resumo: resumoTrades(tr), ic: metricas(pseudo, `XM, SL x${mult}`, () => 0) })}`);
+            console.log(`REJ gestao_slx${mult}_4W3L = ${semChaves(gestaoDia(tr, { W: 4, L: 3 }))}`);
+        }
     })().catch(e => { console.error("ERRO:", e.message); process.exit(1); });
 }
