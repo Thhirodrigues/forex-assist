@@ -164,7 +164,7 @@ function julgarVariante(sinaisDoc, parsed, { slMult = 1, modo = "regra" } = {}) 
         const arr = barras[mt(d.par)]; if (!arr) continue;
         const r = julgar(s, arr);
         if (r.estado !== "WIN" && r.estado !== "LOSS") continue;
-        out.push({ t: s.t, fim: r.fimMs, win: r.estado === "WIN", pnl: r.estado === "WIN" ? s.tp : -s.sl, tp: s.tp, sl: s.sl, dia: diaBrt(s.t), ts: Number(d.timestamp), par: d.par });
+        out.push({ t: s.t, fim: r.fimMs, win: r.estado === "WIN", pnl: r.estado === "WIN" ? s.tp : -s.sl, tp: s.tp, sl: s.sl, dia: diaBrt(s.t), ts: Number(d.timestamp), par: d.par, direcao: d.direcao });
     }
     return out;
 }
@@ -223,5 +223,10 @@ if (require.main === module) {
             console.log(`REJ slx${mult} = ${semChaves({ resumo: resumoTrades(tr), ic: metricas(pseudo, `XM, SL x${mult}`, () => 0) })}`);
             console.log(`REJ gestao_slx${mult}_4W3L = ${semChaves(gestaoDia(tr, { W: 4, L: 3 }))}`);
         }
+        // busca honesta de regras de gestão (grade fixa, treino x teste)
+        const { buscar } = require("./gestao-busca");
+        const modoB = modoArg ? Number(modoArg.split("=")[1]) : "regra";
+        const porMult = { 1: julgarVariante(fe, parsed, { slMult: 1, modo: modoB }), 2: julgarVariante(fe, parsed, { slMult: 2, modo: modoB }), 3: julgarVariante(fe, parsed, { slMult: 3, modo: modoB }) };
+        for (const [k, v] of Object.entries(buscar(porMult))) console.log(`BUSCA ${k} = ${semChaves(v)}`);
     })().catch(e => { console.error("ERRO:", e.message); process.exit(1); });
 }
