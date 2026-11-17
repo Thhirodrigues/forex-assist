@@ -1,0 +1,21 @@
+name: XM - semanas boas x mercado e rejulgamento depois da 400a (somente leitura)
+
+# Pedido do usuario (17/11/2026): a que se atribui a semana boa e se as outras semanas boas tem fator de mercado em comum. Le o `historico`
+# oficial (admin) e as velas M5 da XM versionadas; imprime so agregados por semana/dia. Nao altera nada.
+on:
+  workflow_dispatch:
+
+jobs:
+  semanas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/xm/semanas.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/xm/semanas.js DOCUMENTACAO/arquivo-xm/xm_barras_M5_*.csv
