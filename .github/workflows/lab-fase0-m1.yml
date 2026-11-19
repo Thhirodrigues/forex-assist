@@ -1,0 +1,21 @@
+name: Lab - Fase 0 do pre-registro 6.45 (sistema na base de 1 minuto; somente leitura)
+
+# Aprovado pelo usuario em 13/11/2026. Roda o MESMO analisarPar sobre as velas M1 da XM (04/10 a 13/11), julga no bid/ask de M1 e aplica o
+# criterio da Fase 0. Le so a configuracao real (configuracoes/geral). Nao grava nada, nao manda push, nao toca no sinal.
+on:
+  workflow_dispatch:
+
+jobs:
+  fase0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node lab/fase0-m1.test.js && node lab/replay.test.js && node scripts/xm/rejulgar.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node lab/fase0-m1.js DOCUMENTACAO/arquivo-xm/xm_barras_M1_*.csv

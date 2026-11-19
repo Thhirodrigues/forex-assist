@@ -60,7 +60,7 @@ const ESTATISTICAS_VAZIAS = {
  * @param {number} [p.passo=3]    avalia a cada N candles de 5 min (3 = 15 min)
  * @param {number} [p.atrasoSeg=30] segundos depois do fechamento do candle em que a análise "roda"
  */
-async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atrasoSeg = 30, baseMs = CINCO, razao = 3, janelaSimulacao = 4000, log = () => {} }) {
+async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atrasoSeg = 30, baseMs = CINCO, razao = 3, janelaSimulacao = 4000, guardarAnalises = true, log = () => {} }) {
     // baseMs/razao: duração do candle BASE e razão da "companhia" que o pipeline lê como "15min" (padrão 5 min e 3 = 15 min, igual ao scanner;
     // base M1 do pré-registro 6.45: baseMs = 60000, razao = 3 -> companhia de 3 min). Os padrões reproduzem EXATAMENTE o comportamento anterior.
 
@@ -68,6 +68,7 @@ async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atras
     const cooldownMs = (Number(configuracao.cooldown) || 30) * 60000;
     const analises = [];
     const aprovacoes = [];
+    const operacoes = [];   // aprovadas com o essencial para julgar fora (Fase 0 M1, 6.45)
     let bloqueadoAte = 0;
     let avaliadas = 0;
 
@@ -108,7 +109,7 @@ async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atras
             capturaAnalise = null; capturaOperacao = null;
             avaliadas++;
             try { await analisarPar(stubs); } catch (e) { /* par/barra sem dados suficientes: igual ao oficial, ignora */ continue; }
-            if (capturaAnalise) analises.push({ id: `${capturaAnalise.timestamp}_${par.replace("/", "_")}`, ...capturaAnalise });
+            if (capturaAnalise && guardarAnalises) analises.push({ id: `${capturaAnalise.timestamp}_${par.replace("/", "_")}`, ...capturaAnalise });
             if (capturaOperacao && capturaAnalise) {
                 aprovacoes.push(capturaAnalise.timestamp);
                 // posição aberta bloqueia o par até FECHAR (como o app mede, sem spread) e por >= 30 min
@@ -118,6 +119,8 @@ async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atras
                     candles: c5.slice(idx + 1, idx + 1 + janelaSimulacao).map(c => ({ timestamp: c.ts, open: c.o, high: c.h, low: c.l, close: c.c })),   // padrão: 4000 candles de 5 min = ~14 dias de mercado
                     opcoes: { duracaoVelaMs: baseMs }
                 });
+                operacoes.push({ t: simMs, timestamp: capturaAnalise.timestamp, direcao: capturaAnalise.direcao, precoEntrada: capturaAnalise.precoEntrada,
+                    tpPips: Math.abs(capturaAnalise.tpPips), slPips: Math.abs(capturaAnalise.slPips), app: r.resultado, tFechamentoApp: r.tFechamento ?? null });
                 const fechaEm = r.resultado === "ABERTA" ? Infinity : r.tFechamento;
                 bloqueadoAte = Math.max(simMs + cooldownMs, fechaEm);
             }
@@ -127,7 +130,7 @@ async function replayPar({ par, c5, configuracao, janela = 500, passo = 3, atras
         console.log = consoleLogOriginal;
     }
     log(`${par}: ${avaliadas} barras avaliadas, ${analises.length} análises registradas, ${aprovacoes.length} aprovadas`);
-    return { analises, aprovacoes: aprovacoes.length, avaliadas };
+    return { analises, aprovacoes: aprovacoes.length, avaliadas, operacoes };
 }
 
 module.exports = { replayPar, agregar15, agregarN, ESTATISTICAS_VAZIAS };
