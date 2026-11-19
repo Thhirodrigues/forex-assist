@@ -278,3 +278,7 @@ decidido agora, pra não escolher o recorte depois):
   sentido) e o usuário aprovar. Medir sempre com `modeloFechamento` e por dia/lado do dólar.
 Variância: um teto de exposição por lado do dólar (item já na fila) reduz a oscilação diária
 mas NÃO melhora o valor esperado; o problema de fundo é 44% de acerto com alvo 1:1.
+
+## Adendo 19/11/2026: limiares absolutos no marketAnalyzer (CONFERIDO no código)
+`scripts/marketAnalyzer.js:413` (inclinação das EMAs, 0,0010/0,0007...) e `:611` (ATR 0,0020/0,0012) comparam diferenças de PREÇO absolutas; em pares de JPY (~100x) esses componentes do score saturam no máximo. Correção natural: medir em pips do par ou relativo ao preço/ATR. Não implementado (pipeline congelado; e o score não separa resultados, 6.54 T4d). Detalhe em LABORATORIO 6.57.
+
