@@ -1,0 +1,20 @@
+name: XM - pre-registro 6.53, T3 par na semana, T4 indicadores, T5 efeito de semana (somente leitura)
+
+# Aprovado pelo usuario em 19/11/2026. Roda UMA vez com as velas M5 da XM ate 18/11. Nao altera nada; pipeline congelado.
+on:
+  workflow_dispatch:
+
+jobs:
+  rodada2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/xm/rodada2.test.js && node scripts/xm/regime.test.js && node scripts/xm/rejulgar.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/xm/rodada2.js DOCUMENTACAO/arquivo-xm/xm_barras_M5_*.csv

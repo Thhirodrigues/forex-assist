@@ -164,7 +164,7 @@ function julgarVariante(sinaisDoc, parsed, { slMult = 1, modo = "regra" } = {}) 
         const arr = barras[mt(d.par)]; if (!arr) continue;
         const r = julgar(s, arr);
         if (r.estado !== "WIN" && r.estado !== "LOSS") continue;
-        out.push({ t: s.t, fim: r.fimMs, win: r.estado === "WIN", pnl: r.estado === "WIN" ? s.tp : -s.sl, tp: s.tp, sl: s.sl, dia: diaBrt(s.t), ts: Number(d.timestamp), par: d.par, direcao: d.direcao });
+        out.push({ t: s.t, fim: r.fimMs, win: r.estado === "WIN", pnl: r.estado === "WIN" ? s.tp : -s.sl, tp: s.tp, sl: s.sl, dia: diaBrt(s.t), ts: Number(d.timestamp), par: d.par, direcao: d.direcao, id: d.id });
     }
     return out;
 }
