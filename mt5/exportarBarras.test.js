@@ -18,4 +18,10 @@ for (const [a, b] of [["{", "}"], ["(", ")"], ["[", "]"]]) {
     const limpo = codigo.replace(/"(?:[^"\\]|\\.)*"/g, '""');
     assert.strictEqual(limpo.split(a).length, limpo.split(b).length, `${a}${b} desbalanceado`);
 }
+// v1.20: diário/semanal no nome, lacuna conforme o período, swaps atuais (só SymbolInfo)
+assert.ok(codigo.includes('return "D1"') && codigo.includes('return "H4"') && codigo.includes('return "W1"'), "rótulos de prazo longo");
+assert.ok(codigo.includes("PeriodSeconds(Periodo) >= 86400") && codigo.includes("4 * 86400"), "lacuna do diário: só acima de 4 dias");
+for (const id of ["SYMBOL_SWAP_LONG", "SYMBOL_SWAP_SHORT", "SYMBOL_SWAP_MODE", "SYMBOL_SWAP_ROLLOVER3DAYS"]) assert.ok(codigo.includes(id), `exporta ${id}`);
+assert.ok(codigo.includes('"xm_swaps.csv"'), "arquivo de swaps");
+assert.ok(/#property version\s+"1\.20"/.test(src), "versão 1.20");
 console.log("TODOS OS TESTES ESTÁTICOS DO EXPORTADOR DE BARRAS PASSARAM");

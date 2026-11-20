@@ -37,3 +37,9 @@ Ocorrência real: o MT5 parou de enviar às ~05:06 de Brasília (08:06Z) de 06/1
 ### Causa raiz e solução (06/11/2026, confirmada pelo usuário)
 O PC do trabalho reiniciou sozinho (provável atualização do Windows) e **parou na tela de senha**; como o MT5 abre pelo logon (atalho `XM Global MT5` na pasta Startup), ficou fora do ar de ~05:06 até ~15:57 (BRT), quando o usuário entrou. Não foi queda de internet nem desligamento. Correções feitas: (1) pasta Startup limpa, só com o atalho do MT5 (havia cópias de `terminal64`, `MetaEditor64`, `metatester64` e a pasta `Tester`, que abriam o Agents Manager); (2) perfil de gráficos `Forex Assist` salvo com `XM_Exporter` (EURUSD H1) e `XM_Executor` (GBPUSD H1) e usado como padrão; (3) login automático do Windows (para a conta Microsoft foi preciso desligar antes "somente Windows Hello" em Configurações > Contas > Opções de entrada, senão o `netplwiz` não mostra a caixa); (4) WebRequest para `https://firestore.googleapis.com` conferido. Teste de reinício feito: o MT5 subiu sozinho com os dois robôs. Pendência de risco conhecida: o login automático deixa o PC acessível a quem tiver acesso físico. Sobrou o buraco de dados de 05:06 a 16:07 em 06/11 (executor não viu sinais; o app e a medição das 400 não foram afetados).
 
+## XM_ExportarBarras v1.20 (20/11/2026)
+- Rótulo no nome do arquivo também para H4, D1 e W1 (`xm_barras_D1_<PAR>.csv`).
+- Lacuna medida conforme o período: no diário só avisa acima de 4 dias (24 h entre velas, fim de semana e feriado são normais); intradiário igual à v1.10.
+- Grava `xm_swaps.csv` com o swap ATUAL de cada par (compra, venda, modo, dia do swap triplo, ponto, tamanho do contrato). Só `SymbolInfo`, nada da conta.
+- Para o pré-registro 6.58: `Periodo = PERIOD_D1`, `Desde = 2000.01.01 00:00`.
+

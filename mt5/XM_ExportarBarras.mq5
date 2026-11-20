@@ -12,10 +12,14 @@
 //| dos EUA, GMT+2 fora; virou em 01/11/2026). A análise converte por |
 //| data e confere com o preço do app; o offset do arquivo é só do    |
 //| instante da exportação.                                           |
+//| v1.20: rótulo D1/H4/W1 no nome do arquivo; lacuna medida conforme|
+//| o período (no diário, 24 h entre velas é normal: só avisa acima de|
+//| 4 dias); e grava xm_swaps.csv com o swap ATUAL de cada par (compra|
+//| e venda, modo, dia do swap triplo), para o teste de prazo longo.  |
 //| Ver DOCUMENTACAO/XM-EXECUTOR.md.                                  |
 //+------------------------------------------------------------------+
 #property copyright "Forex Assist"
-#property version   "1.10"
+#property version   "1.20"
 #property script_show_inputs
 
 input datetime        Desde      = D'2026.10.04 00:00';   // início (hora do servidor da XM)
@@ -28,18 +32,23 @@ string Rotulo()
   {
    if(Periodo == PERIOD_M1) return "M1";
    if(Periodo == PERIOD_M5) return "M5";
+   if(Periodo == PERIOD_H4) return "H4";
+   if(Periodo == PERIOD_D1) return "D1";
+   if(Periodo == PERIOD_W1) return "W1";
    return "P" + IntegerToString(PeriodSeconds(Periodo) / 60);
   }
 
-// conta lacunas suspeitas: entre 1 h e 40 h sem barras (o fim de semana tem ~47 h e é normal)
+// conta lacunas suspeitas. Intradiário: entre 1 h e 40 h sem barras (o fim de semana tem ~47 h e é normal).
+// Diário ou maior: acima de 4 dias (fim de semana + feriado é normal).
 int ContarLacunas(const MqlRates &r[], const int n, long &maiorLacunaSeg)
   {
    int suspeitas = 0;
    maiorLacunaSeg = 0;
+   bool longo = PeriodSeconds(Periodo) >= 86400;
    for(int j = 1; j < n; j++)
      {
       long g = (long)(r[j].time - r[j - 1].time);
-      if(g > 3600 && g < 40 * 3600)
+      if(longo ? (g > 4 * 86400 && PeriodSeconds(Periodo) < 7 * 86400) : (g > 3600 && g < 40 * 3600))
         {
          suspeitas++;
          if(g > maiorLacunaSeg) maiorLacunaSeg = g;
@@ -106,6 +115,26 @@ void OnStart()
       string aviso = suspeitas > 0 ? "  <<< ATENCAO: " + IntegerToString(suspeitas) + " lacuna(s) de 1-40 h (maior " + IntegerToString((int)(maiorLacuna / 3600)) + " h)" : "";
       if(suspeitas > 0) paresComAviso++;
       Print("XM_ExportarBarras: ", sym, " ", rot, " ", n, " barras, de ", TimeToString(r[0].time), " a ", TimeToString(r[n - 1].time), " -> ", arquivo, aviso);
+     }
+   // swap ATUAL de cada par (só leitura de SymbolInfo; nada da conta). O histórico de swap não existe no MT5: o teste usa este como aproximação declarada.
+   int hs = FileOpen("xm_swaps.csv", FILE_WRITE | FILE_TXT | FILE_ANSI);
+   if(hs != INVALID_HANDLE)
+     {
+      FileWriteString(hs, "simbolo,swap_compra,swap_venda,modo_swap,dia_triplo,ponto,tamanho_contrato,data_export\n");
+      for(int i = 0; i < k; i++)
+        {
+         string sym = nomes[i] + Sufixo;
+         if(!SymbolSelect(sym, true)) continue;
+         FileWriteString(hs, sym + "," + DoubleToString(SymbolInfoDouble(sym, SYMBOL_SWAP_LONG), 4) + "," +
+                         DoubleToString(SymbolInfoDouble(sym, SYMBOL_SWAP_SHORT), 4) + "," +
+                         IntegerToString(SymbolInfoInteger(sym, SYMBOL_SWAP_MODE)) + "," +
+                         IntegerToString(SymbolInfoInteger(sym, SYMBOL_SWAP_ROLLOVER3DAYS)) + "," +
+                         DoubleToString(SymbolInfoDouble(sym, SYMBOL_POINT), 8) + "," +
+                         DoubleToString(SymbolInfoDouble(sym, SYMBOL_TRADE_CONTRACT_SIZE), 0) + "," +
+                         TimeToString(TimeCurrent()) + "\n");
+        }
+      FileClose(hs);
+      Print("XM_ExportarBarras: swaps atuais gravados em xm_swaps.csv");
      }
    Print("XM_ExportarBarras: pronto, ", totalBarras, " barras (", rot, "), ", paresComAviso, " par(es) com aviso de lacuna. Arquivos em MQL5\\Files\\ (offset do servidor no export: ", offset, " s)");
   }
