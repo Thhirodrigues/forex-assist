@@ -28,4 +28,5 @@ function spreadDoPar(par, multiplicador = 1) {
     return Number(((s ? s.pips : SPREAD_PADRAO_PIPS) * multiplicador).toFixed(3));
 }
 
-module.exports = { SPREADS_PIPS, SPREAD_PADRAO_PIPS, spreadDoPar };
+// também carregado no navegador (js/decisao.js usa a mesma tabela): lá não existe `module`
+if (typeof module !== "undefined" && module.exports) module.exports = { SPREADS_PIPS, SPREAD_PADRAO_PIPS, spreadDoPar };

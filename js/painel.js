@@ -593,7 +593,22 @@ async function renderPainel() {
     const fechadas = pnFechadas(dados.ops);
     const hoje = pnResumoHoje(fechadas, dados.saldo);
 
-    sinalEl.innerHTML = pnHeroHTML(pnSinalAtivo(dados.ops));
+    const ativo = pnSinalAtivo(dados.ops);
+    sinalEl.innerHTML = pnHeroHTML(ativo) + (ativo ? '<div id="pnDecisao"></div>' : "");
+
+    // "Histórico real · você decide" (js/decisao.js): carrega à parte para não atrasar o cartão do sinal
+    if (ativo && typeof dcCarregar === "function") {
+        dcCarregar()
+            .then(fechadas => {
+                const el = document.getElementById("pnDecisao");
+                if (el) el.innerHTML = dcHTML(dcResumo(fechadas, ativo, typeof spreadDoPar === "function" ? spreadDoPar(ativo.par) : 0));
+            })
+            .catch(erro => {
+                console.error("Erro ao carregar o histórico de decisão:", erro);
+                const el = document.getElementById("pnDecisao");
+                if (el) el.innerHTML = "";
+            });
+    }
     document.getElementById("pnStats").innerHTML = pnStatsHTML(dados.saldo, hoje);
 
     const curvaEl = document.getElementById("pnCurva");
