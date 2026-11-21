@@ -17,7 +17,7 @@
 const DC_EPOCA_MS = Date.UTC(2026, 9, 4, 0, 42);
 const DC_TTL_MS = 10 * 60 * 1000;
 const DC_MIN_AMOSTRA = 20;
-let dcCache = { t: 0, fechadas: null };
+let dcCache = { t: 0, fechadas: null, todos: null };
 
 const dcHoraBrt = (ms) => new Date(Number(ms) - 3 * 3600e3).getUTCHours();
 
@@ -76,7 +76,7 @@ async function dcCarregar() {
     const snap = await db.collection("historico").where("timestamp", ">=", DC_EPOCA_MS).get();
     const docs = []; snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
     const fechadas = dcSelecionar(docs);
-    dcCache = { t: Date.now(), fechadas };
+    dcCache = { t: Date.now(), fechadas, todos: drSelecionar(docs) };
     return fechadas;
 }
 
@@ -102,5 +102,70 @@ function dcHTML(resumo) {
     </section>`;
 }
 
+// ===================================================
+// LIMITES DE RISCO (aprovados pelo usuário em 21/11/2026; números sugeridos por mim e aceitos: "vamos seguir assim").
+// IMPORTANTE: o app NÃO sabe quais operações o usuário abriu de verdade enquanto estão abertas (a caixa "Operação Real" só liga depois
+// do encerramento). Por isso as regras são calculadas sobre os SINAIS DO APP, que é o que o usuário segue ("seguir o que o app pede",
+// 6.37), e são AVISO, não trava: o app não manda nem bloqueia ordem na corretora.
+//   1. perda do dia: soma do resultado (US$) dos sinais fechados HOJE (Brasília) <= -US$ 15 (3 stops) -> fora do limite
+//   2. posições abertas ao mesmo tempo: já >= 3 abertas -> fora do limite
+//   3. mesmo lado do dólar: já >= 2 abertas apostando no mesmo lado (comprado/vendido; cruzados sem USD não contam) -> fora do limite
+//   4. horário: 17h e 18h de Brasília (rollover, spread de 7 a 16 pips) -> fora do limite
+// ===================================================
+const DR_LIMITES = { perdaDiaUsd: 15, abertas: 3, mesmoLado: 2, horasProibidasBrt: [17, 18] };
+
+const drLado = (par, direcao) => {
+    const [base, cot] = String(par).split("/");
+    const compra = /BUY|COMPRA/i.test(String(direcao));
+    if (base === "USD") return compra ? "comprado" : "vendido";
+    if (cot === "USD") return compra ? "vendido" : "comprado";
+    return "cruzado";
+};
+const drDiaBrt = (ms) => new Date(Number(ms) - 3 * 3600e3).toISOString().slice(0, 10);
+
+// sinais do app da época atual, qualquer estado, sem cooldown
+function drSelecionar(docs) {
+    return docs.filter(s => Number(s.timestamp) >= DC_EPOCA_MS && s.financeiro && s.financeiro.regimeTPSL === "CONFIG"
+        && s.status !== "COOLDOWN" && s.origem !== "cooldown");
+}
+
+// docs: sinais do app (drSelecionar); sinal: o que está sendo avaliado; t: instante da avaliação (ms)
+// aberta em t = abriu antes de t e (ainda ABERTA ou fechou depois de t); fechada hoje = fechou antes de t no mesmo dia (Brasília)
+function drAvaliar(docs, sinal, t, limites = DR_LIMITES) {
+    const outros = docs.filter(s => s.id !== sinal.id && Number(s.timestamp) < t);
+    const abertas = outros.filter(s => s.status === "ABERTA" || (s.fimOperacao && Number(s.fimOperacao) > t));
+    const fechadasHoje = outros.filter(s => s.status === "ENCERRADA" && Number(s.fimOperacao) <= t && drDiaBrt(s.fimOperacao) === drDiaBrt(t));
+    const perda = fechadasHoje.reduce((a, s) => a + (Number(s.resultadoFinanceiro) || 0), 0);
+    const lado = drLado(sinal.par, sinal.direcao);
+    const mesmoLado = lado === "cruzado" ? 0 : abertas.filter(s => drLado(s.par, s.direcao) === lado).length;
+    const hora = Number(new Date(t - 3 * 3600e3).getUTCHours());
+    const regras = [
+        { chave: "perdaDia", ok: !(perda <= -limites.perdaDiaUsd), texto: "Perda do dia",
+          detalhe: `${perda < 0 ? "−" : perda > 0 ? "+" : ""}US$ ${Math.abs(perda).toFixed(2).replace(".", ",")} nos sinais fechados hoje · limite −US$ ${limites.perdaDiaUsd}` },
+        { chave: "abertas", ok: abertas.length < limites.abertas, texto: "Posições abertas",
+          detalhe: `${abertas.length} abertas agora · limite ${limites.abertas}` },
+        { chave: "mesmoLado", ok: mesmoLado < limites.mesmoLado, texto: "Mesmo lado do dólar",
+          detalhe: lado === "cruzado" ? "par sem USD: não conta" : `${mesmoLado} abertas apostando no dólar ${lado === "comprado" ? "forte" : "fraco"} · limite ${limites.mesmoLado}` },
+        { chave: "horario", ok: !limites.horasProibidasBrt.includes(hora), texto: "Horário",
+          detalhe: limites.horasProibidasBrt.includes(hora) ? "17h–19h de Brasília: spread do rollover de 7 a 16 pips" : "fora do rollover (17h–19h)" }
+    ];
+    return { ok: regras.every(r => r.ok), regras, abertas: abertas.length };
+}
+
+function drHTML(av) {
+    const itens = av.regras.map(r => `
+        <li class="dc-linha dr-linha">
+            <div class="dc-rotulo">${r.ok ? "✓" : "⚠"} ${r.texto}</div>
+            <div class="dc-margem">${r.detalhe}</div>
+        </li>`).join("");
+    return `
+    <section class="pa-vidro dc-bloco" aria-labelledby="dr-tit">
+        <p class="pa-eyebrow" id="dr-tit">Seus limites de risco</p>
+        <p class="pn-texto" style="margin-top:6px;"><strong style="color:${av.ok ? "var(--pa-ganho)" : "var(--pa-perda)"};">${av.ok ? "Dentro dos limites" : "Fora dos limites"}</strong>${av.ok ? "" : ": melhor não entrar neste sinal"}</p>
+        <ul class="dc-lista">${itens}</ul>
+        <p class="dc-nota">Calculado sobre os sinais do app (o app não vê as suas ordens na XM). É um aviso: quem decide é você. Limites: perda do dia US$ 15, 3 abertas, 2 por lado do dólar, sem 17h–19h.</p>
+    </section>`;
+}
+
 // export para os testes no Node (no navegador não existe `module`)
-if (typeof module !== "undefined" && module.exports) module.exports = { dcSelecionar, dcWilson, dcEmpate, dcVeredito, dcResumo, dcHTML, DC_EPOCA_MS };
+if (typeof module !== "undefined" && module.exports) module.exports = { dcSelecionar, dcWilson, dcEmpate, dcVeredito, dcResumo, dcHTML, DC_EPOCA_MS, DR_LIMITES, drLado, drSelecionar, drAvaliar, drHTML };

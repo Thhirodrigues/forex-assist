@@ -1,0 +1,21 @@
+name: Simulacao dos limites de risco no historico (somente leitura)
+
+# Pedido do usuario (21/11/2026): o que os limites de risco (perda do dia 15, 3 abertas, 2 por lado do dolar, sem 17h-19h) teriam feito
+# no historico. Le o `historico` oficial (admin); nao altera nada.
+on:
+  workflow_dispatch:
+
+jobs:
+  risco:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/relatorio/risco-simulacao.test.js && node js/decisao.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/relatorio/risco-simulacao.js
