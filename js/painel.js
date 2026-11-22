@@ -594,7 +594,31 @@ async function renderPainel() {
     const hoje = pnResumoHoje(fechadas, dados.saldo);
 
     const ativo = pnSinalAtivo(dados.ops);
-    sinalEl.innerHTML = pnHeroHTML(ativo) + (ativo ? '<div id="pnDecisao"></div>' : "");
+    sinalEl.innerHTML = pnHeroHTML(ativo) + (ativo ? '<div id="pnDecisao"></div><div id="pnEntrada"></div>' : "");
+
+    // "Entrei / Não entrei": só registra a decisão do usuário (js/decisao.js); uma vez por sinal
+    const entradaEl = document.getElementById("pnEntrada");
+    if (ativo && entradaEl && typeof dcDecisaoHTML === "function") {
+        const desenharDecisao = () => { entradaEl.innerHTML = dcDecisaoHTML(ativo); };
+        desenharDecisao();
+        entradaEl.onclick = async (e) => {
+            const b = e.target.closest("[data-decisao]");
+            if (!b) return;
+            const msg = entradaEl.querySelector("[data-decisao-msg]");
+            entradaEl.querySelectorAll("button").forEach(x => { x.disabled = true; });
+            try {
+                const atualizado = await dcRegistrarDecisao(ativo.id, b.getAttribute("data-decisao") === "entrei");
+                ativo.decisaoUsuario = atualizado.decisaoUsuario;
+                pnCache = { t: 0, dados: null };       // a próxima abertura do Painel relê o sinal com a decisão
+            } catch (erro) {
+                console.error("Erro ao registrar a decisão:", erro);
+                if (msg) msg.textContent = "Não consegui registrar: " + erro.message;
+                entradaEl.querySelectorAll("button").forEach(x => { x.disabled = false; });
+                return;
+            }
+            desenharDecisao();
+        };
+    }
 
     // "Histórico real · você decide" (js/decisao.js): carrega à parte para não atrasar o cartão do sinal
     if (ativo && typeof dcCarregar === "function") {

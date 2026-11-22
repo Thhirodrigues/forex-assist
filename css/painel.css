@@ -1122,3 +1122,10 @@ line-height:1.5;
 color:var(--pa-muted);
 }
 
+body.tema-aurora .dc-botoes{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:14px;
+}
+

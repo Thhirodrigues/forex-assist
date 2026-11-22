@@ -58,3 +58,28 @@ assert.strictEqual(d.drSelecionar([op("a", "EUR/USD", "BUY", d.DC_EPOCA_MS + 1, 
 const h2 = d.drHTML(d.drAvaliar(abertas3, sinal, T)); assert.ok(h2.includes("Fora dos limites") && h2.includes("não entrar"));
 assert.ok(d.drHTML(d.drAvaliar([], sinal, T)).includes("Dentro dos limites"));
 console.log("decisao.test.js (limites de risco): OK");
+
+// ---- registro da decisão ----
+const aberto = { id: "A1", status: "ABERTA" };
+assert.ok(d.dcPodeDecidir(aberto));
+assert.ok(!d.dcPodeDecidir({ ...aberto, resultado: "WIN" }) && !d.dcPodeDecidir({ ...aberto, status: "ENCERRADA" }), "só antes do desfecho");
+assert.ok(!d.dcPodeDecidir({ ...aberto, decisaoUsuario: { entrei: true, em: 1 } }), "uma decisão por sinal");
+assert.ok(d.dcDecisaoHTML(aberto).includes('data-decisao="entrei"') && d.dcDecisaoHTML(aberto).includes('data-decisao="nao"') && d.dcDecisaoHTML(aberto).includes("não envia ordem"));
+const ja = d.dcDecisaoHTML({ ...aberto, decisaoUsuario: { entrei: false, em: Date.UTC(2026, 10, 22, 15, 5) } });
+assert.ok(ja.includes("Não entrei") && !ja.includes("<button"), "depois de decidir some o botão");
+assert.strictEqual(d.dcDecisaoHTML({ id: "X", status: "ENCERRADA", resultado: "WIN" }), "", "sinal encerrado: nada a decidir");
+// transação: grava uma vez e nunca sobrescreve (db simulado)
+const docsDb = { A1: { status: "ABERTA" }, A2: { status: "ABERTA", decisaoUsuario: { entrei: true, em: 5 } }, A3: { status: "ENCERRADA", resultado: "LOSS" } };
+global.db = { collection: () => ({ doc: (id) => ({ id }) }), runTransaction: async (fn) => fn({
+    get: async (ref) => ({ exists: !!docsDb[ref.id], data: () => docsDb[ref.id] }),
+    update: (ref, campos) => { Object.assign(docsDb[ref.id], campos); } }) };
+(async () => {
+    const r1 = await d.dcRegistrarDecisao("A1", true, 111);
+    assert.deepStrictEqual(docsDb.A1.decisaoUsuario, { entrei: true, em: 111 }); assert.strictEqual(r1.decisaoUsuario.entrei, true);
+    const r2 = await d.dcRegistrarDecisao("A1", false, 222);                      // segunda tentativa não muda
+    assert.deepStrictEqual(docsDb.A1.decisaoUsuario, { entrei: true, em: 111 }); assert.strictEqual(r2.decisaoUsuario.em, 111);
+    const r3 = await d.dcRegistrarDecisao("A2", false, 333); assert.strictEqual(r3.decisaoUsuario.entrei, true);
+    await assert.rejects(() => d.dcRegistrarDecisao("A3", true, 444), /já encerrou/);
+    await assert.rejects(() => d.dcRegistrarDecisao("ZZ", true, 1), /não encontrado/);
+    console.log("decisao.test.js (registro da decisão): OK");
+})();

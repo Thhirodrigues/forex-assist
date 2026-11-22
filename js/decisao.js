@@ -167,5 +167,53 @@ function drHTML(av) {
     </section>`;
 }
 
+// ===================================================
+// REGISTRO DA DECISÃO DO USUÁRIO ("Entrei" / "Não entrei"), 22/11/2026.
+// Só registra: não manda ordem, não muda o sinal. Serve para, depois de semanas, comparar o resultado dos sinais em que o usuário entrou
+// com o de pegar todos (se o "você decide" agrega valor). Regras que protegem a avaliação:
+//   - só para sinal ainda ABERTO (decisão antes do desfecho); a hora (`em`) fica gravada;
+//   - UMA decisão por sinal: depois de registrada não muda (nada de corrigir depois de ver o resultado).
+// Campo novo no documento do sinal: decisaoUsuario = (entrei: bool, em: ms). Mesmo padrão de `operacaoReal` (update no doc do historico).
+// ===================================================
+function dcPodeDecidir(sinal) {
+    return !!sinal && sinal.status !== "ENCERRADA" && !sinal.resultado && !sinal.decisaoUsuario;
+}
+
+function dcDecisaoHTML(sinal) {
+    const d = sinal && sinal.decisaoUsuario;
+    const hora = (ms) => new Date(Number(ms)).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false });
+    if (d) {
+        return `<section class="pa-vidro dc-bloco" aria-labelledby="dd-tit">
+            <p class="pa-eyebrow" id="dd-tit">Sua decisão</p>
+            <p class="pn-texto" style="margin-top:6px;">Você registrou: <strong>${d.entrei ? "Entrei" : "Não entrei"}</strong> às ${hora(d.em)}. Fica guardado para avaliarmos depois se escolher ajuda.</p>
+        </section>`;
+    }
+    if (!dcPodeDecidir(sinal)) return "";
+    return `<section class="pa-vidro dc-bloco" aria-labelledby="dd-tit">
+        <p class="pa-eyebrow" id="dd-tit">Sua decisão</p>
+        <p class="pn-texto" style="margin-top:6px;">Só registra o que você decidiu; não envia ordem. Vale uma vez por sinal.</p>
+        <div class="dc-botoes">
+            <button type="button" class="pa-btn start-btn" data-decisao="entrei">Entrei</button>
+            <button type="button" class="pa-btn stop-btn" data-decisao="nao">Não entrei</button>
+        </div>
+        <p class="dc-nota" data-decisao-msg></p>
+    </section>`;
+}
+
+// grava e devolve o documento atualizado; não sobrescreve decisão que já exista
+async function dcRegistrarDecisao(id, entrei, agora = Date.now()) {
+    const ref = db.collection("historico").doc(id);
+    return db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw new Error("sinal não encontrado");
+        const s = snap.data();
+        if (s.decisaoUsuario) return { ...s, id };
+        if (s.status === "ENCERRADA" || s.resultado) throw new Error("o sinal já encerrou: a decisão precisa vir antes do desfecho");
+        const decisaoUsuario = { entrei: !!entrei, em: agora };
+        tx.update(ref, { decisaoUsuario });
+        return { ...s, id, decisaoUsuario };
+    });
+}
+
 // export para os testes no Node (no navegador não existe `module`)
-if (typeof module !== "undefined" && module.exports) module.exports = { dcSelecionar, dcWilson, dcEmpate, dcVeredito, dcResumo, dcHTML, DC_EPOCA_MS, DR_LIMITES, drLado, drSelecionar, drAvaliar, drHTML };
+if (typeof module !== "undefined" && module.exports) module.exports = { dcPodeDecidir, dcDecisaoHTML, dcRegistrarDecisao, dcSelecionar, dcWilson, dcEmpate, dcVeredito, dcResumo, dcHTML, DC_EPOCA_MS, DR_LIMITES, drLado, drSelecionar, drAvaliar, drHTML };
