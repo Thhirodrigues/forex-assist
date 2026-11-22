@@ -38,7 +38,7 @@ function simular(historico) {
         abertasAoAbrirMedia: { todos: r2(abertasMedia(fe)), tomados: r2(abertasMedia(tomados)) } };
 }
 
-module.exports = { simular };
+module.exports = { simular, resumo };
 
 if (require.main === module) {
     (async () => {
