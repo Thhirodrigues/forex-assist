@@ -45,8 +45,7 @@ for (const [a, b] of [["{", "}"], ["(", ")"], ["[", "]"]]) {
 }
 // ---- v1.20: gestão de risco (modos 0 desligado / 1 só registra / 2 bloqueia) ----
 assert.ok(/#property version\s+"1\.20"/.test(src), "versão 1.20");
-assert.ok(/input int\s+ModoExposicao\s*=\s*1;/.test(codigo) && /input int\s+ModoMetaDia\s*=\s*1;/.test(codigo), "exposição e meta: SÓ REGISTRAM (o usuário decidiu rodar full time antes de bloquear)");
-assert.ok(/input int\s+ModoPerdaDia\s*=\s*2;/.test(codigo), "a PERDA do dia BLOQUEIA por padrão (decisão do usuário em 23/11: 'libera o bloqueio por perda')");
+assert.ok(/input int\s+ModoExposicao\s*=\s*1;/.test(codigo) && /input int\s+ModoMetaDia\s*=\s*1;/.test(codigo) && /input int\s+ModoPerdaDia\s*=\s*1;/.test(codigo), "exposição, perda e meta: TODOS só REGISTRAM por padrão (o usuário decidiu em 23/11: 'não quero que bloqueie ainda por perda')");
 assert.ok(/input int\s+MaxPorMoeda\s*=\s*2;/.test(codigo) && /input double PerdaDiaUsd\s*=\s*15\.0;/.test(codigo) && /input double MetaDiaUsd\s*=\s*10\.0;/.test(codigo) && /input bool\s+PausaRolloverBrt\s*=\s*true;/.test(codigo), "limites aprovados");
 const iGestao = codigo.indexOf("RegrasExposicao(sym, compra)", codigo.indexOf("string motivoExp"));
 assert.ok(iGestao > 0 && iGestao < iEnsaio && iGestao < iOrdem && codigo.indexOf("LucroDiaBrt()", codigo.indexOf("double lucroDia")) < iEnsaio && codigo.indexOf("TextoMetaDia(lucroDia)") < iEnsaio, "gestão antes do ensaio e da ordem");

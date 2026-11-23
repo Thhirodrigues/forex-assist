@@ -9,9 +9,10 @@
 //| (0 desligado, 1 SO REGISTRA no log o que bloquearia [padrao],    |
 //| 2 BLOQUEIA): (a) exposicao por MOEDA (limite de posicoes do mesmo|
 //| lado na mesma moeda, ex. 2 contra o dolar; conta o iene nos      |
-//| cruzados) e pausa 17h-19h de Brasilia; (b) PERDA do dia (padrao: |
-//| BLOQUEIA, decisao do usuario em 23/11) e (c) META do dia (padrao:|
-//| so registra), sobre o resultado FECHADO de hoje (Brasilia).      |
+//| cruzados) e pausa 17h-19h de Brasilia; (b) PERDA do dia e (c)    |
+//| META do dia, sobre o resultado FECHADO de hoje (Brasilia). TODOS |
+//| comecam em modo 1 (so registra); o usuario liga o bloqueio (2)   |
+//| quando decidir, pelo F7, sem recompilar.                         |
 //| Ver DOCUMENTACAO/XM-EXECUTOR.md                                  |
 //+------------------------------------------------------------------+
 #property copyright "Forex Assist"
@@ -30,7 +31,7 @@ input double MaxDerrapagemFracSL = 0.25;               // pula a entrada se o pr
 input int    ModoExposicao     = 1;                    // gestao de EXPOSICAO e horario: 0 = desligada, 1 = so REGISTRA no log (padrao), 2 = BLOQUEIA
 input int    MaxPorMoeda       = 2;                    // exposicao liquida maxima na mesma moeda (2 = ate 2 posicoes do mesmo lado, ex.: contra o dolar)
 input bool   PausaRolloverBrt  = true;                 // nao entra 17h-19h de Brasilia (rollover: spread de 7 a 16 pips)
-input int    ModoPerdaDia      = 2;                    // PERDA do dia: 0 = desligada, 1 = so REGISTRA no log, 2 = BLOQUEIA (padrao: bloqueia)
+input int    ModoPerdaDia      = 1;                    // PERDA do dia: 0 = desligada, 1 = so REGISTRA no log (padrao), 2 = BLOQUEIA
 input double PerdaDiaUsd       = 15.0;                 // perda do dia: resultado FECHADO de hoje (Brasilia) <= -este valor (US$)
 input int    ModoMetaDia       = 1;                    // META do dia: 0 = desligada, 1 = so REGISTRA no log (padrao), 2 = BLOQUEIA
 input double MetaDiaUsd        = 10.0;                 // meta do dia: resultado FECHADO de hoje (Brasilia) >= +este valor (US$)
