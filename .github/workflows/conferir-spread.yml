@@ -1,0 +1,19 @@
+name: Conferir o spread gravado nos sinais fechados (somente leitura)
+
+# AJUSTE-117 (23/11/2026): os sinais fechados depois da publicacao trazem spreadAplicadoPips? Le o `historico` oficial (admin).
+on:
+  workflow_dispatch:
+
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/relatorio/conferir-spread.js
