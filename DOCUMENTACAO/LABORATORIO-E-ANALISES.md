@@ -1107,3 +1107,18 @@ O botão (AJUSTE-114) grava `decisaoUsuario = (entrei, em)` no sinal ainda ABERT
 **Se reprovar:** família encerrada, sem variante (outro K, outra zona, outro stop). **Se aprovar:** ainda não vale como sinal; vira candidata a um teste adiante (forward) em modo Lab/sombra, numa coleção separada, nunca oficial e nunca executada. O Lab ao vivo foi arquivado em 6.37, então ligar isso de novo exige decisão do usuário.
 
 **Expectativa honesta (para registro):** a probabilidade a priori de aprovar é baixa. A família de sinais do app já teve 12+ avaliações pré-registradas sem vantagem antes do custo, e este desenho é de risco/retorno variável, com spread de 3 pips pesando contra. Estado: código e testes sintéticos prontos (`lab/fibo.js`, `lab/fibo.test.js`, workflow `lab-fibo.yml`, manual). Não foi executado sobre dado real; aguarda aprovação do usuário.
+
+### 6.67 Resultado do pré-registro 6.66 (Fibonacci) — REPROVADA (23/11/2026, rodada única, aprovada pelo usuário)
+
+Rodado uma vez, sem alterar parâmetro, sobre as 10 séries M5 da XM (04/10 a 19/11), `node lab/fibo.js DOCUMENTACAO/arquivo-xm/xm_barras_M5_*.csv` (commit 18175bb).
+
+- 247 sinais gerados, **246 decididos** em **37 dias** (2 ficaram abertos no fim dos dados). Alvo médio 22,6 pips, stop médio 11,3 pips (relação ~2:1; ponto de equilíbrio do acerto ~33%). **Acerto real: 26%.**
+- C1 amostra (≥150 ops, ≥20 dias): **passou**.
+- C2 líquido: média **−1,59 pips/op**, IC 97,5% [−4,07; +0,95] → **falhou** (limite inferior não passa de 0).
+- C3 contra o ALEATORIO: diferença +0,85, IC [−0,82; +2,55] → **falhou**.
+- C4 duas metades: 1ª metade **+1,43**, 2ª metade **−4,61** → **falhou** (não é estável).
+- Por par (n pequeno, só descritivo): GBPJPY +4,90 (n=25); USDJPY −4,91 (n=44); EURJPY −2,54 (n=52); EURGBP −6,63 (n=5); NZDUSD 1 sinal. Nenhum par tem amostra para sustentar uma conclusão.
+
+**Conclusão:** família Fibonacci encerrada. Sem variantes (outro K, outra zona, outro stop) e sem modo Lab ao vivo. A média negativa é compatível com o custo (~spread) sem vantagem de direção: a diferença contra o ALEATORIO é positiva (+0,85) mas estatisticamente indistinguível de zero. Isso é a 13ª avaliação pré-registrada sem vantagem.
+
+**Regra de trabalho a partir de 23/11/2026 (decisão do usuário):** só dados reais e só conta demo. Simulações com entradas hipotéticas/aleatórias sobre velas (como `centavos.py` e `pausa.py`, 6.66/6.67 e conversa de 23/11) ficam como histórico e **não** servem mais de base para decisão; novas análises usam o histórico real do app, as execuções reais da demo XM (`xm-cruzar`) e a coleta forward.

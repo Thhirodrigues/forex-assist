@@ -509,3 +509,5 @@ Itens mais antigos (09/09/2026), ainda não revisitados:
    que contaminam o que é salvo em `historico` (afeta aprendizado
    futuro) vêm antes de bugs cosméticos ou código morto sem
    consumidor.
+
+> **23/11/2026 — Fibonacci (6.66/6.67): REPROVADA** (246 ops, 37 dias, média −1,59 pips/op, IC97,5% [−4,07; +0,95]; 1ª metade +1,43 / 2ª −4,61). Família encerrada, sem variantes. **Regra do usuário desde 23/11: só dados reais e só conta demo** (nada de simulação com entrada hipotética como base de decisão).
