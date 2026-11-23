@@ -1079,3 +1079,31 @@ O botão (AJUSTE-114) grava `decisaoUsuario = (entrei, em)` no sinal ainda ABERT
 **Perda do dia (executor v1.20) — decisão REVERTIDA no mesmo dia:** a chave única `ModoParadaDia` foi separada em `ModoPerdaDia` e `ModoMetaDia`; o usuário pediu para liberar o bloqueio por perda e, minutos depois, desistiu ("não quero que bloqueie ainda por perda"). Valem a última decisão e o padrão: as DUAS só registram (modo 1). Nota de evidência (6.61/6.64): parar depois de perder não melhorou o resultado nos dados; seria proteção de capital (limita a perda FECHADA do dia; posições abertas ainda perdem).
 **Primeira conferência em PRODUÇÃO do AJUSTE-117 (23/11/2026 16:45Z, `result-checker` com o commit 1878535 + `conferir-spread.yml`):** o avaliador rodou sem erro (5 pendentes). Fechou 1 operação: EUR/GBP VENDA (aberta em 20/11 09:01Z), `SL_FINANCEIRO`, -US$ 5,00, `spreadAplicadoPips = 2,6` GRAVADO no documento (único documento da coleção, 1.142, com o campo; os 20 fechados antes da publicação não o têm, como esperado). Efeito visível da regra nova: a operação tinha andado -17 pips contra e o stop sem spread (~19,2 pips) não teria disparado; com o spread de 2,6 o SL passou a valer em ~16,6 pips e a operação foi fechada como LOSS (horário de fim gravado = vela da reabertura de domingo, 22/11 22:20Z). Consequência declarada: operações que já estavam abertas na publicação e entre SL-spread e SL pips contra passam a fechar como LOSS (é o que a XM faria). Corrigi duas vezes o meu filtro de conferência (hora do fim e depois campo); o código estava certo. Pendente: conferir de novo depois de ~100 fechados com spread (o bloco "Histórico real" muda de época nessa contagem).
 
+
+### 6.66 Pré-registro: família de sinal "FIBO" (Fibonacci) no Lab — escrito em 23/11/2026, NÃO RODADO
+
+**Pedido do usuário:** testar se um sinal baseado no gráfico de Fibonacci funciona; "se o gráfico de Fibonacci for favorável, o app dispara o sinal, mas no modo Lab". Também: "só sabemos agora que já passou; talvez não tivéssemos entrado naquela perda, ou deixado o stop 3 vezes maior".
+
+**Resposta ao argumento do "20 ganhos : 10 perdidos" (simulação `centavos.py`, 10 pares M1 reais).** O 20:10 é a taxa de acerto. Com alvo +1 pip e sem stop, 97,6–98,7% das operações fecham no lucro, mas o p99 do tempo aberto chega a 5.574–11.532 min, e a perda flutuante máxima a 308–344 pips. Com stop de 10/30/100 pips o acerto sobe para 65–99,9% e o resultado esperado fica em −3,37…−1,17 pips por operação (≈ −spread). Com stop de 300 pips deu +0,62 (EURUSD, USDJPY) e −0,54 (GBPUSD): isso é uma perda única numa amostra de ~800, não uma vantagem. Alargar o stop só aumenta a taxa de acerto e o tamanho da perda; o valor esperado não muda (teorema da parada opcional). Já "talvez não tivéssemos entrado" só vale se for um filtro escrito ANTES e testado para frente: no retrospecto qualquer perda parece evitável, e qualquer ganho também. É exatamente para isso que existe o pré-registro.
+
+**Hipótese (única):** entrar a favor da perna anterior quando o preço devolve 50–61,8% dela e uma vela volta a fechar na direção da perna tem resultado líquido de spread positivo.
+
+**Regra (toda causal e fixa; implementada em `lab/fibo.js`, parâmetros em `PARAMS`):**
+- Pivôs: máxima/mínima que é a maior/menor das 12 velas de cada lado (K=12; só é conhecida K velas depois). Zigzag alternado.
+- Perna = pivô anterior → último pivô, só se tamanho ≥ 4×ATR(14) e idade ≤ 96 velas (8 h).
+- Gatilho: fechamento da vela i devolveu entre 50% e 61,8% da perna; a vela fecha na direção da perna; o nível 78,6% ainda não foi tocado. Um sinal por perna.
+- Stop = nível 78,6%. Alvo = o extremo da perna. Risco mínimo = 3×spread da vela.
+- Entrada na abertura da vela seguinte (compra no ask = bid+spread; venda no bid). Saída: compra no bid, venda no ask. Vela que toca alvo e stop = LOSS.
+- Dados: as 10 séries M5 da XM em `DOCUMENTACAO/arquivo-xm/` (04/10 a 19/11), todos os sinais, sem escolher par nem horário.
+
+**Controle ALEATORIO:** mesma entrada e mesmas distâncias de alvo e stop, direção oposta; esperança exata = média entre o resultado real e o da direção oposta.
+
+**Critérios (função `julgarFibo`; aprova só com os quatro):**
+- C1: ≥ 150 operações decididas em ≥ 20 dias distintos.
+- C2: IC 97,5% (bootstrap em blocos de dia, 10.000, semente fixa) do resultado médio por operação em pips, líquido, com limite inferior > 0.
+- C3: IC 97,5% da diferença real − ALEATORIO com limite inferior > 0.
+- C4: média positiva nas duas metades cronológicas.
+
+**Se reprovar:** família encerrada, sem variante (outro K, outra zona, outro stop). **Se aprovar:** ainda não vale como sinal; vira candidata a um teste adiante (forward) em modo Lab/sombra, numa coleção separada, nunca oficial e nunca executada. O Lab ao vivo foi arquivado em 6.37, então ligar isso de novo exige decisão do usuário.
+
+**Expectativa honesta (para registro):** a probabilidade a priori de aprovar é baixa. A família de sinais do app já teve 12+ avaliações pré-registradas sem vantagem antes do custo, e este desenho é de risco/retorno variável, com spread de 3 pips pesando contra. Estado: código e testes sintéticos prontos (`lab/fibo.js`, `lab/fibo.test.js`, workflow `lab-fibo.yml`, manual). Não foi executado sobre dado real; aguarda aprovação do usuário.

@@ -1,0 +1,18 @@
+name: Lab - Familia de sinal FIBO (pre-registro 6.66; somente leitura)
+
+# SO RODAR depois da aprovacao explicita do usuario ao pre-registro 6.66 (criterios fixos em lab/fibo.js, funcao julgarFibo).
+# Le apenas os CSVs M5 do arquivo da XM; nao grava nada, nao manda push, nao toca no sinal oficial.
+on:
+  workflow_dispatch:
+
+jobs:
+  fibo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node lab/fibo.test.js
+      - run: node lab/fibo.js DOCUMENTACAO/arquivo-xm/xm_barras_M5_*.csv
