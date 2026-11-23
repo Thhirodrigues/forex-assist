@@ -43,4 +43,28 @@ for (const [a, b] of [["{", "}"], ["(", ")"], ["[", "]"]]) {
     const limpo = codigo.replace(/"(?:[^"\\]|\\.)*"/g, '""').replace(/'(?:[^'\\]|\\.)*'/g, "''");
     assert.strictEqual(limpo.split(a).length, limpo.split(b).length, `${a}${b} desbalanceado`);
 }
+// ---- v1.20: gestão de risco (modos 0 desligado / 1 só registra / 2 bloqueia) ----
+assert.ok(/#property version\s+"1\.20"/.test(src), "versão 1.20");
+assert.ok(/input int\s+ModoExposicao\s*=\s*1;/.test(codigo) && /input int\s+ModoParadaDia\s*=\s*1;/.test(codigo), "padrão: SÓ REGISTRA (o usuário decidiu rodar full time antes de bloquear)");
+assert.ok(/input int\s+MaxPorMoeda\s*=\s*2;/.test(codigo) && /input double PerdaDiaUsd\s*=\s*15\.0;/.test(codigo) && /input double MetaDiaUsd\s*=\s*10\.0;/.test(codigo) && /input bool\s+PausaRolloverBrt\s*=\s*true;/.test(codigo), "limites aprovados");
+const iGestao = codigo.indexOf("RegrasExposicao(sym, compra)", codigo.indexOf("string motivoExp"));
+assert.ok(iGestao > 0 && iGestao < iEnsaio && iGestao < iOrdem && codigo.indexOf("RegrasDia()", codigo.indexOf("string motivoDia")) < iEnsaio, "gestão antes do ensaio e da ordem");
+assert.ok(/ModoExposicao\s*>=\s*2/.test(codigo) && /ModoParadaDia\s*>=\s*2/.test(codigo), "só bloqueia no modo 2");
+assert.ok(codigo.includes("BLOQUEARIA (") && codigo.includes("PARARIA O DIA ("), "modo 1 registra o que faria");
+for (const f of ["HistorySelect(", "HistoryDealGetTicket(", "DEAL_ENTRY_OUT", "DEAL_MAGIC", "PositionGetTicket("]) assert.ok(codigo.includes(f), `usa ${f}`);
+assert.ok(/ModoExposicao\s*<\s*0\s*\|\|\s*ModoExposicao\s*>\s*2/.test(codigo) && /MaxPorMoeda\s*<\s*1\s*\|\|\s*MaxPorMoeda\s*>\s*12/.test(codigo), "limites validados no OnInit");
+// especificação espelhada em JS (o EA não roda aqui): exposição líquida por moeda, o mesmo algoritmo de ExpMoeda/RegrasExposicao
+const exp = (m, sym, compra) => sym.length < 6 ? 0 : m === sym.slice(0, 3) ? (compra ? 1 : -1) : m === sym.slice(3, 6) ? (compra ? -1 : 1) : 0;
+const viola = (posicoes, sym, compra, lim = 2) => {
+    const atual = (m) => posicoes.reduce((a, [s, c]) => a + exp(m, s, c), 0);
+    const b = sym.slice(0, 3), q = sym.slice(3, 6);
+    return Math.abs(atual(b) + (compra ? 1 : -1)) > lim ? b : Math.abs(atual(q) + (compra ? -1 : 1)) > lim ? q : null;
+};
+// o caso de 23/11/2026: EUR/USD e GBP/USD comprados (dólar fraco) + USD/CHF vendido (dólar fraco) = 3 contra o dólar
+assert.strictEqual(viola([["EURUSD", true], ["GBPUSD", true]], "USDCHF", false), "USD", "terceira aposta contra o dólar é barrada");
+assert.strictEqual(viola([["EURUSD", true], ["GBPUSD", true]], "USDCHF", true), null, "USD/CHF comprado compensa, passa");
+// o iene nos cruzados: EUR/JPY e GBP/JPY comprados + USD/JPY comprado = 3 contra o iene
+assert.strictEqual(viola([["EURJPY", true], ["GBPJPY", true]], "USDJPY", true), "JPY");
+assert.strictEqual(viola([["EURJPY", true], ["GBPJPY", true]], "EURUSD", true), null);
+assert.strictEqual(viola([["GOLD", true], ["GOLD", true], ["GOLD", true]], "EURUSD", true), null, "ativos que não são par de moedas não contam");
 console.log("TODOS OS TESTES ESTÁTICOS DO EXECUTOR PASSARAM");

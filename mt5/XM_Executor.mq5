@@ -5,10 +5,16 @@
 //| sinal. SO DEMO. Comeca em MODO ENSAIO (SoLog=true): so escreve no|
 //| log o que FARIA, sem enviar ordens.                              |
 //| Nao fecha nem altera posicoes (TP/SL fecham). Nao envia dados.   |
+//| v1.20 (23/11/2026): GESTAO de risco, cada grupo com 3 modos      |
+//| (0 desligado, 1 SO REGISTRA no log o que bloquearia [padrao],    |
+//| 2 BLOQUEIA): (a) exposicao por MOEDA (limite de posicoes do mesmo|
+//| lado na mesma moeda, ex. 2 contra o dolar; conta o iene nos      |
+//| cruzados) e pausa 17h-19h de Brasilia; (b) parada do dia: perda  |
+//| ou meta do resultado FECHADO de hoje (Brasilia). So le historico.|
 //| Ver DOCUMENTACAO/XM-EXECUTOR.md                                  |
 //+------------------------------------------------------------------+
 #property copyright "Forex Assist"
-#property version   "1.10"
+#property version   "1.20"
 #property description "Executor de sinais do app na conta DEMO (comeca em modo ensaio)"
 
 #include <Trade\Trade.mqh>
@@ -20,6 +26,12 @@ input bool   SoLog             = true;                 // true = ENSAIO: so regi
 input double LoteFixo          = 0.02;                 // lote de cada operacao
 input int    MaxPosicoes       = 3;                    // maximo de posicoes abertas ao mesmo tempo (todas)
 input double MaxDerrapagemFracSL = 0.25;               // pula a entrada se o preco ja andou CONTRA mais que esta fracao do SL (0,10 a 1,00)
+input int    ModoExposicao     = 1;                    // gestao de EXPOSICAO e horario: 0 = desligada, 1 = so REGISTRA no log (padrao), 2 = BLOQUEIA
+input int    MaxPorMoeda       = 2;                    // exposicao liquida maxima na mesma moeda (2 = ate 2 posicoes do mesmo lado, ex.: contra o dolar)
+input bool   PausaRolloverBrt  = true;                 // nao entra 17h-19h de Brasilia (rollover: spread de 7 a 16 pips)
+input int    ModoParadaDia     = 1;                    // parada do DIA: 0 = desligada, 1 = so REGISTRA no log (padrao), 2 = BLOQUEIA
+input double PerdaDiaUsd       = 15.0;                 // para o dia se o resultado FECHADO de hoje (Brasilia) <= -este valor (US$)
+input double MetaDiaUsd        = 10.0;                 // para o dia se o resultado FECHADO de hoje (Brasilia) >= +este valor (US$)
 input int    MaxIdadeSinalSeg  = 600;                  // ignora sinal mais velho que isto (10 min)
 input int    DesvioPontos      = 30;                   // desvio maximo de preco aceito
 input long   NumeroMagico      = 20261104;             // identifica as ordens deste EA
@@ -87,6 +99,95 @@ bool TemPosicaoNoSimbolo(const string sym)
       if(PositionGetString(POSITION_SYMBOL) == sym) return true;   // qualquer posicao (inclusive manual): uma por par
      }
    return false;
+  }
+
+//--- gestao de risco (v1.20): so LE posicoes e historico ----------
+int HoraBrt()
+  {
+   MqlDateTime d;
+   TimeToStruct(TimeGMT() - 3 * 3600, d);
+   return d.hour;
+  }
+
+// +1 se a posicao e COMPRADA na moeda, -1 se VENDIDA, 0 se o par nao tem a moeda (par de 6 letras: BASE+COTADA)
+int ExpMoeda(const string moeda, const string sym, const bool compra)
+  {
+   if(StringLen(sym) < 6) return 0;
+   string base = StringSubstr(sym, 0, 3);
+   string cota = StringSubstr(sym, 3, 3);
+   if(moeda == base) return compra ? 1 : -1;
+   if(moeda == cota) return compra ? -1 : 1;
+   return 0;
+  }
+
+int ExposicaoAtual(const string moeda)
+  {
+   int soma = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+     {
+      ulong tk = PositionGetTicket(i);
+      if(tk == 0) continue;
+      string s = PositionGetString(POSITION_SYMBOL);
+      bool c = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY);
+      soma += ExpMoeda(moeda, s, c);
+     }
+   return soma;
+  }
+
+// "" se estiver dentro dos limites; senao o motivo (primeira regra violada)
+string RegrasExposicao(const string sym, const bool compra)
+  {
+   string motivo = "";
+   if(StringLen(sym) >= 6)
+     {
+      string base = StringSubstr(sym, 0, 3);
+      string cota = StringSubstr(sym, 3, 3);
+      int nb = ExposicaoAtual(base) + (compra ? 1 : -1);
+      int nq = ExposicaoAtual(cota) + (compra ? -1 : 1);
+      int ab = (nb < 0) ? -nb : nb;
+      int aq = (nq < 0) ? -nq : nq;
+      if(ab > MaxPorMoeda)
+         motivo = base + (nb > 0 ? " comprada" : " vendida") + " em " + IntegerToString(ab) + " posicoes (limite " + IntegerToString(MaxPorMoeda) + ")";
+      else if(aq > MaxPorMoeda)
+         motivo = cota + (nq > 0 ? " comprada" : " vendida") + " em " + IntegerToString(aq) + " posicoes (limite " + IntegerToString(MaxPorMoeda) + ")";
+     }
+   if(motivo == "" && PausaRolloverBrt)
+     {
+      int h = HoraBrt();
+      if(h == 17 || h == 18) motivo = "17h-19h de Brasilia (rollover, spread alto)";
+     }
+   return motivo;
+  }
+
+// resultado FECHADO de hoje (dia de Brasilia) das ordens deste EA: lucro + swap + comissao das saidas
+double LucroDiaBrt()
+  {
+   MqlDateTime d;
+   TimeToStruct(TimeGMT() - 3 * 3600, d);
+   d.hour = 0; d.min = 0; d.sec = 0;
+   datetime meiaNoiteBrt = StructToTime(d);                                   // meia-noite de Brasilia escrita como se fosse GMT
+   long desloc = (long)TimeTradeServer() - (long)TimeGMT();                   // hora do servidor - GMT
+   datetime inicio = (datetime)((long)meiaNoiteBrt + 3 * 3600 + desloc);      // inicio do dia de Brasilia na hora do servidor
+   if(!HistorySelect(inicio, TimeCurrent() + 86400)) return 0.0;
+   double soma = 0.0;
+   int n = HistoryDealsTotal();
+   for(int i = 0; i < n; i++)
+     {
+      ulong tk = HistoryDealGetTicket(i);
+      if(tk == 0) continue;
+      if(HistoryDealGetInteger(tk, DEAL_MAGIC) != NumeroMagico) continue;
+      if((ENUM_DEAL_ENTRY)HistoryDealGetInteger(tk, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+      soma += HistoryDealGetDouble(tk, DEAL_PROFIT) + HistoryDealGetDouble(tk, DEAL_SWAP) + HistoryDealGetDouble(tk, DEAL_COMMISSION);
+     }
+   return soma;
+  }
+
+string RegrasDia()
+  {
+   double lucro = LucroDiaBrt();
+   if(lucro <= -PerdaDiaUsd) return "perda do dia US$ " + DoubleToString(lucro, 2) + " (limite -" + DoubleToString(PerdaDiaUsd, 2) + ")";
+   if(lucro >= MetaDiaUsd) return "meta do dia US$ " + DoubleToString(lucro, 2) + " batida (+" + DoubleToString(MetaDiaUsd, 2) + ")";
+   return "";
   }
 
 //--- um sinal da fila: ID|SIMBOLO|B/S|t|preco|tp_pips|sl_pips|lote ----
@@ -173,6 +274,29 @@ void Processar(const string item)
       GlobalVariableSet(chave, 1);
       return;
      }
+   // gestao de risco (v1.20): modo 0 desligado, 1 so registra o que bloquearia (o sinal segue), 2 bloqueia (descarta o sinal)
+   string motivoExp = (ModoExposicao > 0) ? RegrasExposicao(sym, compra) : "";
+   if(motivoExp != "")
+     {
+      if(ModoExposicao >= 2)
+        {
+         Print("XM_Executor: PULADO (gestao: ", motivoExp, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
+         GlobalVariableSet(chave, 1);
+         return;
+        }
+      Print("XM_Executor [GESTAO-LOG]: BLOQUEARIA (", motivoExp, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
+     }
+   string motivoDia = (ModoParadaDia > 0) ? RegrasDia() : "";
+   if(motivoDia != "")
+     {
+      if(ModoParadaDia >= 2)
+        {
+         Print("XM_Executor: PULADO (parada do dia: ", motivoDia, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
+         GlobalVariableSet(chave, 1);
+         return;
+        }
+      Print("XM_Executor [GESTAO-LOG]: PARARIA O DIA (", motivoDia, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
+     }
    string resumo = (compra ? "COMPRA " : "VENDA ") + sym + " lote " + DoubleToString(LoteFixo, 2) +
                    " preco " + DoubleToString(preco, digitos) + " TP " + DoubleToString(tp, digitos) +
                    " SL " + DoubleToString(sl, digitos) + " | atraso " + IntegerToString((int)idade) + " s" +
@@ -232,10 +356,23 @@ int OnInit()
       Print("XM_Executor: MaxDerrapagemFracSL fora do limite (0,10 a 1,00); encerrando.");
       return INIT_PARAMETERS_INCORRECT;
      }
+   if(ModoExposicao < 0 || ModoExposicao > 2 || ModoParadaDia < 0 || ModoParadaDia > 2)
+     {
+      Print("XM_Executor: ModoExposicao e ModoParadaDia devem ser 0, 1 ou 2; encerrando.");
+      return INIT_PARAMETERS_INCORRECT;
+     }
+   if(MaxPorMoeda < 1 || MaxPorMoeda > 12 || PerdaDiaUsd <= 0.0 || MetaDiaUsd <= 0.0)
+     {
+      Print("XM_Executor: MaxPorMoeda (1 a 12), PerdaDiaUsd e MetaDiaUsd (> 0) fora do limite; encerrando.");
+      return INIT_PARAMETERS_INCORRECT;
+     }
    EventSetTimer(MathMax(5, IntervaloSeg));
    Print("XM_Executor iniciado em modo ", (SoLog ? "ENSAIO (nao envia ordens)" : "REAL NA DEMO (envia ordens)"),
          ". Lote ", DoubleToString(LoteFixo, 2), ", maximo ", MaxPosicoes, " posicoes, sinal valido por ", MaxIdadeSinalSeg, " s, derrapagem maxima ",
          DoubleToString(MaxDerrapagemFracSL * 100.0, 0), "% do SL.");
+   Print("XM_Executor v1.20 gestao: exposicao modo ", ModoExposicao, " (max ", MaxPorMoeda, " por moeda, pausa 17h-19h ", (PausaRolloverBrt ? "sim" : "nao"),
+         "), parada do dia modo ", ModoParadaDia, " (perda -", DoubleToString(PerdaDiaUsd, 2), ", meta +", DoubleToString(MetaDiaUsd, 2),
+         "). Modos: 0 desligado, 1 so registra, 2 bloqueia.");
    return INIT_SUCCEEDED;
   }
 
