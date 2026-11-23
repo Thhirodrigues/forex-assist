@@ -23,7 +23,8 @@ function metricas(lista, rot, spread = spreadDoPar) {
     const regs = lista.map(s => {
         const tp = Math.abs(Number(s.financeiro.tpPips)), sl = Math.abs(Number(s.financeiro.slPips));
         const bruto = s.resultado === "WIN" ? tp : -sl;
-        return { dia: dia(s.timestamp), bruto, liq: bruto - spread(s.par), win: s.resultado === "WIN", usd: Number(s.resultadoFinanceiro) || 0 };
+        return { dia: dia(s.timestamp), bruto, liq: bruto - (Number(s.spreadAplicadoPips) > 0 ? 0 : spread(s.par)),   // AJUSTE-117: sinal julgado com spread não desconta de novo
+         win: s.resultado === "WIN", usd: Number(s.resultadoFinanceiro) || 0 };
     });
     const n = regs.length, media = (k) => regs.reduce((a, r) => a + r[k], 0) / n;
     const dias = [...new Set(regs.map(r => r.dia))];

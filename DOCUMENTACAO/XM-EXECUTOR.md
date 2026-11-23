@@ -71,3 +71,6 @@ No modo 1 as linhas aparecem no log como `XM_Executor [GESTAO-LOG]: BLOQUEARIA (
 **Como instalar:** abrir o `XM_Executor.mq5` no MetaEditor, colar o código novo (raw do GitHub), F7 (0 erros). Depois conferir na aba Especialistas a linha `XM_Executor v1.20 gestao: exposicao modo 1 (...)`. Se não aparecer (o MT5 não recarregou), remover e anexar o executor de novo ao GBPUSD,H1 com o token e `SoLog = false`.
 **Sem compilador aqui:** o código passou nos testes estáticos (`mt5/executor.test.js`, que incluem a especificação espelhada em JS do cálculo por moeda); a primeira compilação real é a do usuário.
 
+### Ajuste de 23/11/2026 (v1.20): perda do dia BLOQUEIA por padrão; meta do dia só registra
+A chave `ModoParadaDia` foi separada em `ModoPerdaDia` (padrão **2 = bloqueia**) e `ModoMetaDia` (padrão 1 = só registra), por decisão do usuário ("libera o bloqueio por perda"). Com a perda do dia (resultado fechado de hoje em Brasília <= -US$ 15) o executor descarta os sinais novos até a meia-noite de Brasília; as posições já abertas seguem até o TP/SL. Mudar depois pelo F7: `ModoPerdaDia` / `ModoMetaDia` (0 desligada, 1 só registra, 2 bloqueia). Só vale depois da compilação do v1.20.
+

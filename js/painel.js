@@ -625,7 +625,7 @@ async function renderPainel() {
         dcCarregar()
             .then(fechadas => {
                 const el = document.getElementById("pnDecisao");
-                if (el) el.innerHTML = dcHTML(dcResumo(fechadas, ativo, typeof spreadDoPar === "function" ? spreadDoPar(ativo.par) : 0))
+                if (el) el.innerHTML = dcHTML(dcResumo(fechadas, ativo, dcCache.modo === "v2" ? 0 : (typeof spreadDoPar === "function" ? spreadDoPar(ativo.par) : 0), dcCache.modo))
                     + (dcCache.todos ? drHTML(drAvaliar(dcCache.todos, ativo, Date.now())) : "");
             })
             .catch(erro => {

@@ -9,8 +9,9 @@
 //| (0 desligado, 1 SO REGISTRA no log o que bloquearia [padrao],    |
 //| 2 BLOQUEIA): (a) exposicao por MOEDA (limite de posicoes do mesmo|
 //| lado na mesma moeda, ex. 2 contra o dolar; conta o iene nos      |
-//| cruzados) e pausa 17h-19h de Brasilia; (b) parada do dia: perda  |
-//| ou meta do resultado FECHADO de hoje (Brasilia). So le historico.|
+//| cruzados) e pausa 17h-19h de Brasilia; (b) PERDA do dia (padrao: |
+//| BLOQUEIA, decisao do usuario em 23/11) e (c) META do dia (padrao:|
+//| so registra), sobre o resultado FECHADO de hoje (Brasilia).      |
 //| Ver DOCUMENTACAO/XM-EXECUTOR.md                                  |
 //+------------------------------------------------------------------+
 #property copyright "Forex Assist"
@@ -29,9 +30,10 @@ input double MaxDerrapagemFracSL = 0.25;               // pula a entrada se o pr
 input int    ModoExposicao     = 1;                    // gestao de EXPOSICAO e horario: 0 = desligada, 1 = so REGISTRA no log (padrao), 2 = BLOQUEIA
 input int    MaxPorMoeda       = 2;                    // exposicao liquida maxima na mesma moeda (2 = ate 2 posicoes do mesmo lado, ex.: contra o dolar)
 input bool   PausaRolloverBrt  = true;                 // nao entra 17h-19h de Brasilia (rollover: spread de 7 a 16 pips)
-input int    ModoParadaDia     = 1;                    // parada do DIA: 0 = desligada, 1 = so REGISTRA no log (padrao), 2 = BLOQUEIA
-input double PerdaDiaUsd       = 15.0;                 // para o dia se o resultado FECHADO de hoje (Brasilia) <= -este valor (US$)
-input double MetaDiaUsd        = 10.0;                 // para o dia se o resultado FECHADO de hoje (Brasilia) >= +este valor (US$)
+input int    ModoPerdaDia      = 2;                    // PERDA do dia: 0 = desligada, 1 = so REGISTRA no log, 2 = BLOQUEIA (padrao: bloqueia)
+input double PerdaDiaUsd       = 15.0;                 // perda do dia: resultado FECHADO de hoje (Brasilia) <= -este valor (US$)
+input int    ModoMetaDia       = 1;                    // META do dia: 0 = desligada, 1 = so REGISTRA no log (padrao), 2 = BLOQUEIA
+input double MetaDiaUsd        = 10.0;                 // meta do dia: resultado FECHADO de hoje (Brasilia) >= +este valor (US$)
 input int    MaxIdadeSinalSeg  = 600;                  // ignora sinal mais velho que isto (10 min)
 input int    DesvioPontos      = 30;                   // desvio maximo de preco aceito
 input long   NumeroMagico      = 20261104;             // identifica as ordens deste EA
@@ -182,10 +184,14 @@ double LucroDiaBrt()
    return soma;
   }
 
-string RegrasDia()
+string TextoPerdaDia(const double lucro)
   {
-   double lucro = LucroDiaBrt();
    if(lucro <= -PerdaDiaUsd) return "perda do dia US$ " + DoubleToString(lucro, 2) + " (limite -" + DoubleToString(PerdaDiaUsd, 2) + ")";
+   return "";
+  }
+
+string TextoMetaDia(const double lucro)
+  {
    if(lucro >= MetaDiaUsd) return "meta do dia US$ " + DoubleToString(lucro, 2) + " batida (+" + DoubleToString(MetaDiaUsd, 2) + ")";
    return "";
   }
@@ -286,16 +292,28 @@ void Processar(const string item)
         }
       Print("XM_Executor [GESTAO-LOG]: BLOQUEARIA (", motivoExp, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
      }
-   string motivoDia = (ModoParadaDia > 0) ? RegrasDia() : "";
-   if(motivoDia != "")
+   double lucroDia = (ModoPerdaDia > 0 || ModoMetaDia > 0) ? LucroDiaBrt() : 0.0;
+   string motivoPerda = (ModoPerdaDia > 0) ? TextoPerdaDia(lucroDia) : "";
+   if(motivoPerda != "")
      {
-      if(ModoParadaDia >= 2)
+      if(ModoPerdaDia >= 2)
         {
-         Print("XM_Executor: PULADO (parada do dia: ", motivoDia, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
+         Print("XM_Executor: PULADO (parada do dia: ", motivoPerda, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
          GlobalVariableSet(chave, 1);
          return;
         }
-      Print("XM_Executor [GESTAO-LOG]: PARARIA O DIA (", motivoDia, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
+      Print("XM_Executor [GESTAO-LOG]: PARARIA O DIA (", motivoPerda, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
+     }
+   string motivoMeta = (ModoMetaDia > 0) ? TextoMetaDia(lucroDia) : "";
+   if(motivoMeta != "")
+     {
+      if(ModoMetaDia >= 2)
+        {
+         Print("XM_Executor: PULADO (parada do dia: ", motivoMeta, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
+         GlobalVariableSet(chave, 1);
+         return;
+        }
+      Print("XM_Executor [GESTAO-LOG]: PARARIA O DIA (", motivoMeta, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
      }
    string resumo = (compra ? "COMPRA " : "VENDA ") + sym + " lote " + DoubleToString(LoteFixo, 2) +
                    " preco " + DoubleToString(preco, digitos) + " TP " + DoubleToString(tp, digitos) +
@@ -356,9 +374,9 @@ int OnInit()
       Print("XM_Executor: MaxDerrapagemFracSL fora do limite (0,10 a 1,00); encerrando.");
       return INIT_PARAMETERS_INCORRECT;
      }
-   if(ModoExposicao < 0 || ModoExposicao > 2 || ModoParadaDia < 0 || ModoParadaDia > 2)
+   if(ModoExposicao < 0 || ModoExposicao > 2 || ModoPerdaDia < 0 || ModoPerdaDia > 2 || ModoMetaDia < 0 || ModoMetaDia > 2)
      {
-      Print("XM_Executor: ModoExposicao e ModoParadaDia devem ser 0, 1 ou 2; encerrando.");
+      Print("XM_Executor: ModoExposicao, ModoPerdaDia e ModoMetaDia devem ser 0, 1 ou 2; encerrando.");
       return INIT_PARAMETERS_INCORRECT;
      }
    if(MaxPorMoeda < 1 || MaxPorMoeda > 12 || PerdaDiaUsd <= 0.0 || MetaDiaUsd <= 0.0)
@@ -371,7 +389,7 @@ int OnInit()
          ". Lote ", DoubleToString(LoteFixo, 2), ", maximo ", MaxPosicoes, " posicoes, sinal valido por ", MaxIdadeSinalSeg, " s, derrapagem maxima ",
          DoubleToString(MaxDerrapagemFracSL * 100.0, 0), "% do SL.");
    Print("XM_Executor v1.20 gestao: exposicao modo ", ModoExposicao, " (max ", MaxPorMoeda, " por moeda, pausa 17h-19h ", (PausaRolloverBrt ? "sim" : "nao"),
-         "), parada do dia modo ", ModoParadaDia, " (perda -", DoubleToString(PerdaDiaUsd, 2), ", meta +", DoubleToString(MetaDiaUsd, 2),
+         "), perda do dia modo ", ModoPerdaDia, " (-", DoubleToString(PerdaDiaUsd, 2), "), meta do dia modo ", ModoMetaDia, " (+", DoubleToString(MetaDiaUsd, 2),
          "). Modos: 0 desligado, 1 so registra, 2 bloqueia.");
    return INIT_SUCCEEDED;
   }

@@ -30,7 +30,8 @@ function registro(s) {
     const tp = Math.abs(Number(s.financeiro.tpPips)), sl = Math.abs(Number(s.financeiro.slPips));
     const win = s.resultado === "WIN";
     const bruto = win ? tp : -sl;
-    const spread = spreadDoPar(s.par);
+    // AJUSTE-117: sinais fechados a partir de 23/11/2026 já foram JULGADOS com spread (campo spreadAplicadoPips): não descontar de novo
+    const spread = Number(s.spreadAplicadoPips) > 0 ? 0 : spreadDoPar(s.par);
     const ind = s.indicadores || {};
     return {
         id: s.id, par: s.par, direcao: s.direcao, win, tp, sl, bruto, liq: bruto - spread, spread,

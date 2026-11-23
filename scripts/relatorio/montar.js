@@ -27,7 +27,7 @@ function resumoSimples(lista) {
         const tp = Math.abs(Number(s.financeiro.tpPips)), sl = Math.abs(Number(s.financeiro.slPips));
         const w = s.resultado === "WIN";
         win += w ? 1 : 0;
-        liq += (w ? tp : -sl) - spreadDoPar(s.par);
+        liq += (w ? tp : -sl) - (Number(s.spreadAplicadoPips) > 0 ? 0 : spreadDoPar(s.par));   // AJUSTE-117: já julgado com spread, não desconta de novo
         usd += Number(s.resultadoFinanceiro) || 0;
     }
     return { n, win, loss: n - win, acertoPct: 100 * win / n, liqPips: liq / n, usd };

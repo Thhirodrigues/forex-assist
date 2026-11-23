@@ -17,7 +17,8 @@
 const DC_EPOCA_MS = Date.UTC(2026, 9, 4, 0, 42);
 const DC_TTL_MS = 10 * 60 * 1000;
 const DC_MIN_AMOSTRA = 20;
-let dcCache = { t: 0, fechadas: null, todos: null };
+const DC_MIN_V2 = 100;       // sinais já julgados com spread (AJUSTE-117) necessários para o bloco passar a usá-los
+let dcCache = { t: 0, fechadas: null, todos: null, modo: "legado" };
 
 const dcHoraBrt = (ms) => new Date(Number(ms) - 3 * 3600e3).getUTCHours();
 
@@ -56,13 +57,13 @@ function dcLinha(rotulo, lista, empate) {
 }
 
 // fechadas: já selecionadas; sinal: o ativo (par, timestamp, financeiro.tpPips/slPips)
-function dcResumo(fechadas, sinal, spreadPips) {
+function dcResumo(fechadas, sinal, spreadPips, modo = "legado") {
     const tp = sinal.financeiro ? sinal.financeiro.tpPips : null, sl = sinal.financeiro ? sinal.financeiro.slPips : null;
     const empate = dcEmpate(tp, sl, spreadPips);
     const h = dcHoraBrt(sinal.timestamp), horas = [(h + 23) % 24, h, (h + 1) % 24];
     const fmtH = (x) => String(x).padStart(2, "0") + "h";
     return {
-        empate,
+        empate, modo,
         linhas: [
             dcLinha(`${sinal.par}`, fechadas.filter(s => s.par === sinal.par), empate),
             dcLinha(`Das ${fmtH(horas[0])} às ${fmtH((h + 2) % 24)} (todos os pares)`, fechadas.filter(s => horas.includes(dcHoraBrt(s.timestamp))), empate),
@@ -76,8 +77,13 @@ async function dcCarregar() {
     const snap = await db.collection("historico").where("timestamp", ">=", DC_EPOCA_MS).get();
     const docs = []; snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
     const fechadas = dcSelecionar(docs);
-    dcCache = { t: Date.now(), fechadas, todos: drSelecionar(docs) };
-    return fechadas;
+    // AJUSTE-117: sinais fechados desde 23/11/2026 foram julgados COM spread (campo spreadAplicadoPips), como na XM; os anteriores, sem.
+    // Não se misturam: o bloco usa a época nova quando há pelo menos DC_MIN_V2 deles; até lá, só a antiga.
+    const comSpread = (s) => Number(s.spreadAplicadoPips) > 0;
+    const v2 = fechadas.filter(comSpread), legado = fechadas.filter(s => !comSpread(s));
+    const usaV2 = v2.length >= DC_MIN_V2;
+    dcCache = { t: Date.now(), fechadas: usaV2 ? v2 : legado, todos: drSelecionar(docs), modo: usaV2 ? "v2" : "legado" };
+    return dcCache.fechadas;
 }
 
 const dcPct = (x) => x === null || !Number.isFinite(x) ? "—" : Math.round(x) + "%";
@@ -98,7 +104,9 @@ function dcHTML(resumo) {
         <p class="pa-eyebrow" id="dc-tit">Histórico real · você decide</p>
         <p class="pn-texto" style="margin-top:6px;">Para este sinal empatar, sinais assim precisam acertar <strong class="pa-num">${dcPct1(resumo.empate)}</strong> (já com o spread). O que aconteceu antes:</p>
         <ul class="dc-lista">${linhas}</ul>
-        <p class="dc-nota">Medido pelo app desde 04/10/2026. Com o preço real da XM (bid/ask), o acerto foi de 4 a 6 pontos menor. É histórico, não previsão.</p>
+        <p class="dc-nota">${resumo.modo === "v2"
+            ? "Medido pelo app desde 23/11/2026, já com o spread da XM (o app passou a julgar como a conta real). É histórico, não previsão."
+            : "Medido pelo app desde 04/10/2026, sem spread. Com o preço real da XM (bid/ask), o acerto foi de 4 a 6 pontos menor. É histórico, não previsão."}</p>
     </section>`;
 }
 

@@ -5,6 +5,7 @@ const { calcularValorPip, parEhCruzado, simboloCotacaoCruzada } = require("../sc
 const { enviarPushEncerramento, enviarPushAvisoParcial } = require("../scripts/pushNotifier");
 const { avaliarAviso, registroDoAviso } = require("../scripts/avisoParcial");
 const { mercadoForexAberto, mercadoForexAbertoParaConsulta } = require("../scripts/horarioMercado");
+const { spreadAppDoPar } = require("../scripts/spreadApp");   // AJUSTE-117: spread aplicado ao julgar TP/SL (0 se desligado)
 
 console.log("KEY 1:", !!process.env.API_KEY_1);
 console.log("KEY 2:", !!process.env.API_KEY_2);
@@ -270,12 +271,25 @@ function calcularResultadoOperacao({
     sinal,
     candles,
     configuracao,
-    cotacaoCruzada
+    cotacaoCruzada,
+    spreadPips = 0
 
 }) {
 
     const limites = limitesDoSinal(sinal);
     const lote = sinal.lote ?? 0.01;
+
+    // AJUSTE-117 (23/11/2026): spread do app (scripts/spreadApp.js). O preço do app é médio; na XM a compra entra no ask e sai no bid
+    // (venda ao contrário), então o TP só vale depois de andar TP + spread e o SL dispara depois de andar SL - spread (mesma regra do
+    // simulador do Laboratório). O valor GRAVADO segue sendo o do alvo (+TP / -SL), como na XM. spreadPips = 0 reproduz o comportamento
+    // anterior EXATAMENTE. O custo em US$ usa o valor do pip da própria operação.
+    const spreadApp = Number.isFinite(Number(spreadPips)) && Number(spreadPips) > 0 ? Number(spreadPips) : 0;
+    const custoSpreadUSD = spreadApp > 0
+        ? Math.min(
+            calcularLucroUSD(spreadApp, lote, sinal.par, sinal.precoEntrada, cotacaoCruzada),
+            0.4 * Math.abs(limites.SL_USD)        // trava de segurança: o spread nunca come mais de 40% do SL
+        )
+        : 0;
 
     // AJUSTE-066 (03/10/2026): os extremos recomeçam da ENTRADA a cada checagem,
     // em vez de partir do valor salvo na checagem anterior. buscarCandlesDesde()
@@ -361,8 +375,8 @@ function calcularResultadoOperacao({
             cotacaoCruzada
         );
 
-        const tpFinanceiroAtingido = lucroNoExtremoFavoravel >= limites.TP_USD;
-        const slFinanceiroAtingido = lucroNoExtremoAdverso <= limites.SL_USD;
+        const tpFinanceiroAtingido = lucroNoExtremoFavoravel >= limites.TP_USD + custoSpreadUSD;
+        const slFinanceiroAtingido = lucroNoExtremoAdverso <= limites.SL_USD + custoSpreadUSD;
 
         // MUD-03: regra de desempate - com candles OHLC não dá pra
         // saber se o preço tocou primeiro a máxima ou a mínima dentro
@@ -380,10 +394,10 @@ function calcularResultadoOperacao({
         } else if (slFinanceiroAtingido) {
             motivoEncerramento = "SL_FINANCEIRO";
             precoExtremoEncerramento = precoAdverso;
-        } else if (maxPipsFavor >= limites.TP_PIPS) {
+        } else if (maxPipsFavor >= limites.TP_PIPS + spreadApp) {
             motivoEncerramento = "TP_PIPS";
             precoExtremoEncerramento = precoFavoravel;
-        } else if (maxPipsContra <= limites.SL_PIPS) {
+        } else if (maxPipsContra <= limites.SL_PIPS + spreadApp) {
             motivoEncerramento = "SL_PIPS";
             precoExtremoEncerramento = precoAdverso;
         }
@@ -501,7 +515,8 @@ saldoAntes,
 saldoDepois,
 agora,
 tempoOperacao,
-operacaoFinalizada
+operacaoFinalizada,
+spreadAplicadoPips: spreadApp
 
     };
 
@@ -639,14 +654,16 @@ const {
     agora,
     tempoOperacao,
     motivoEncerramento,
-    operacaoFinalizada
+    operacaoFinalizada,
+    spreadAplicadoPips
 
 } = calcularResultadoOperacao({
 
     sinal,
     candles,
     configuracao: configuracaoSnap.data(),
-    cotacaoCruzada
+    cotacaoCruzada,
+    spreadPips: spreadAppDoPar(sinal.par)
 
 });
 
@@ -696,6 +713,9 @@ const {
             motivoEncerramento,
 
             precoFechamento: precoAtual,
+
+            // AJUSTE-117: spread (pips) com que este fechamento foi julgado; quem mede resultado não deve descontá-lo de novo
+            spreadAplicadoPips,
 
             fimOperacao: agora,
 

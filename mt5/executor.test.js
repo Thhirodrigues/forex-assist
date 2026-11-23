@@ -45,13 +45,16 @@ for (const [a, b] of [["{", "}"], ["(", ")"], ["[", "]"]]) {
 }
 // ---- v1.20: gestão de risco (modos 0 desligado / 1 só registra / 2 bloqueia) ----
 assert.ok(/#property version\s+"1\.20"/.test(src), "versão 1.20");
-assert.ok(/input int\s+ModoExposicao\s*=\s*1;/.test(codigo) && /input int\s+ModoParadaDia\s*=\s*1;/.test(codigo), "padrão: SÓ REGISTRA (o usuário decidiu rodar full time antes de bloquear)");
+assert.ok(/input int\s+ModoExposicao\s*=\s*1;/.test(codigo) && /input int\s+ModoMetaDia\s*=\s*1;/.test(codigo), "exposição e meta: SÓ REGISTRAM (o usuário decidiu rodar full time antes de bloquear)");
+assert.ok(/input int\s+ModoPerdaDia\s*=\s*2;/.test(codigo), "a PERDA do dia BLOQUEIA por padrão (decisão do usuário em 23/11: 'libera o bloqueio por perda')");
 assert.ok(/input int\s+MaxPorMoeda\s*=\s*2;/.test(codigo) && /input double PerdaDiaUsd\s*=\s*15\.0;/.test(codigo) && /input double MetaDiaUsd\s*=\s*10\.0;/.test(codigo) && /input bool\s+PausaRolloverBrt\s*=\s*true;/.test(codigo), "limites aprovados");
 const iGestao = codigo.indexOf("RegrasExposicao(sym, compra)", codigo.indexOf("string motivoExp"));
-assert.ok(iGestao > 0 && iGestao < iEnsaio && iGestao < iOrdem && codigo.indexOf("RegrasDia()", codigo.indexOf("string motivoDia")) < iEnsaio, "gestão antes do ensaio e da ordem");
-assert.ok(/ModoExposicao\s*>=\s*2/.test(codigo) && /ModoParadaDia\s*>=\s*2/.test(codigo), "só bloqueia no modo 2");
+assert.ok(iGestao > 0 && iGestao < iEnsaio && iGestao < iOrdem && codigo.indexOf("LucroDiaBrt()", codigo.indexOf("double lucroDia")) < iEnsaio && codigo.indexOf("TextoMetaDia(lucroDia)") < iEnsaio, "gestão antes do ensaio e da ordem");
+assert.ok(/ModoExposicao\s*>=\s*2/.test(codigo) && /ModoPerdaDia\s*>=\s*2/.test(codigo) && /ModoMetaDia\s*>=\s*2/.test(codigo), "só bloqueia no modo 2");
+assert.ok(!codigo.includes("ModoParadaDia"), "a chave única antiga saiu");
 assert.ok(codigo.includes("BLOQUEARIA (") && codigo.includes("PARARIA O DIA ("), "modo 1 registra o que faria");
 for (const f of ["HistorySelect(", "HistoryDealGetTicket(", "DEAL_ENTRY_OUT", "DEAL_MAGIC", "PositionGetTicket("]) assert.ok(codigo.includes(f), `usa ${f}`);
+assert.ok(/ModoPerdaDia\s*<\s*0\s*\|\|\s*ModoPerdaDia\s*>\s*2/.test(codigo) && /ModoMetaDia\s*<\s*0\s*\|\|\s*ModoMetaDia\s*>\s*2/.test(codigo), "modos da perda e da meta validados");
 assert.ok(/ModoExposicao\s*<\s*0\s*\|\|\s*ModoExposicao\s*>\s*2/.test(codigo) && /MaxPorMoeda\s*<\s*1\s*\|\|\s*MaxPorMoeda\s*>\s*12/.test(codigo), "limites validados no OnInit");
 // especificação espelhada em JS (o EA não roda aqui): exposição líquida por moeda, o mesmo algoritmo de ExpMoeda/RegrasExposicao
 const exp = (m, sym, compra) => sym.length < 6 ? 0 : m === sym.slice(0, 3) ? (compra ? 1 : -1) : m === sym.slice(3, 6) ? (compra ? -1 : 1) : 0;
