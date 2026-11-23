@@ -34,7 +34,7 @@ const op = (id, par, dir, ab, fim, usd, status) => ({ id, par, direcao: dir, tim
 const sinal = { id: "S", par: "EUR/USD", direcao: "SELL", timestamp: T };          // EUR/USD venda = dólar forte (comprado)
 assert.strictEqual(d.drLado("EUR/USD", "SELL"), "comprado"); assert.strictEqual(d.drLado("USD/JPY", "SELL"), "vendido"); assert.strictEqual(d.drLado("EUR/GBP", "BUY"), "cruzado");
 // tudo livre
-let av = d.drAvaliar([], sinal, T); assert.ok(av.ok && av.regras.length === 4);
+let av = d.drAvaliar([], sinal, T); assert.ok(av.ok && av.regras.length === 5);
 // 3 abertas -> fora; o próprio sinal não conta; sinal futuro não conta
 const abertas3 = [op("a", "GBP/USD", "BUY", T - 5 * H, null, null), op("b", "USD/JPY", "SELL", T - 4 * H, null, null), op("c", "AUD/USD", "BUY", T - 2 * H, null, null), op("S", "EUR/USD", "SELL", T, null, null), op("f", "NZD/USD", "BUY", T + H, null, null)];
 av = d.drAvaliar(abertas3, sinal, T); assert.strictEqual(av.abertas, 3); assert.ok(!av.regras.find(r => r.chave === "abertas").ok);
@@ -82,4 +82,20 @@ global.db = { collection: () => ({ doc: (id) => ({ id }) }), runTransaction: asy
     await assert.rejects(() => d.dcRegistrarDecisao("A3", true, 444), /já encerrou/);
     await assert.rejects(() => d.dcRegistrarDecisao("ZZ", true, 1), /não encontrado/);
     console.log("decisao.test.js (registro da decisão): OK");
+})();
+
+// ---- meta do dia (+US$ 10) ----
+(() => {
+    const T = Date.UTC(2026, 10, 20, 15), H = 3600e3;
+    const op = (id, ab, fim, usd) => ({ id, par: "GBP/USD", direcao: "BUY", timestamp: ab, fimOperacao: fim, resultadoFinanceiro: usd, status: "ENCERRADA", financeiro: { regimeTPSL: "CONFIG" } });
+    const s = { id: "S", par: "EUR/USD", direcao: "SELL", timestamp: T };
+    let av = d.drAvaliar([op("a", T - 8 * H, T - 4 * H, 5), op("b", T - 8 * H, T - 3 * H, 5)], s, T);
+    assert.ok(!av.regras.find(r => r.chave === "ganhoDia").ok && !av.ok, "+US$ 10 fechado hoje: meta batida");
+    assert.ok(av.regras.find(r => r.chave === "ganhoDia").detalhe.includes("melhor parar"));
+    av = d.drAvaliar([op("a", T - 8 * H, T - 4 * H, 5), op("b", T - 8 * H, T - 3 * H, -5), op("c", T - 8 * H, T - 2 * H, 5)], s, T);
+    assert.ok(av.regras.find(r => r.chave === "ganhoDia").ok, "+US$ 5 líquido: ainda não");
+    av = d.drAvaliar([op("a", T - 40 * H, T - 30 * H, 15)], s, T); assert.ok(av.regras.find(r => r.chave === "ganhoDia").ok, "ganho de ontem não conta");
+    av = d.drAvaliar([op("a", T - 8 * H, T - 4 * H, 15)], s, T, { ...d.DR_LIMITES, ganhoDiaUsd: null });
+    assert.ok(!av.regras.find(r => r.chave === "ganhoDia") && av.regras.length === 4 && av.ok, "ganhoDiaUsd null desliga a regra");
+    console.log("decisao.test.js (meta do dia): OK");
 })();

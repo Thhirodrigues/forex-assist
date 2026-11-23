@@ -8,7 +8,8 @@
 // ===================================================
 const { selecionarFechadas } = require("../marco/regra625");
 const { registro } = require("./analise400");
-const { drAvaliar, drSelecionar } = require("../../js/decisao");
+const { drAvaliar, drSelecionar, DR_LIMITES } = require("../../js/decisao");
+const LIMITES_4 = { ...DR_LIMITES, ganhoDiaUsd: null };   // a simulação do 6.60 é das 4 regras aprovadas em 21/11; a meta do dia tem simulação própria (6.61)
 
 const r1 = (x) => Math.round(x * 10) / 10, r2 = (x) => Math.round(x * 100) / 100;
 const media = (a) => a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;
@@ -25,7 +26,7 @@ function simular(historico) {
     const fe = drSelecionar(selecionarFechadas(historico)).sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
     const tomados = [], bloqueados = [], motivos = { perdaDia: 0, abertas: 0, mesmoLado: 0, horario: 0 }, soUm = { perdaDia: 0, abertas: 0, mesmoLado: 0, horario: 0 };
     for (const s of fe) {
-        const av = drAvaliar(tomados, s, Number(s.timestamp));
+        const av = drAvaliar(tomados, s, Number(s.timestamp), LIMITES_4);
         if (av.ok) { tomados.push(s); continue; }
         bloqueados.push(s);
         const falhas = av.regras.filter(r => !r.ok).map(r => r.chave);

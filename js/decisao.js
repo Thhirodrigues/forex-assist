@@ -111,8 +111,10 @@ function dcHTML(resumo) {
 //   2. posições abertas ao mesmo tempo: já >= 3 abertas -> fora do limite
 //   3. mesmo lado do dólar: já >= 2 abertas apostando no mesmo lado (comprado/vendido; cruzados sem USD não contam) -> fora do limite
 //   4. horário: 17h e 18h de Brasília (rollover, spread de 7 a 16 pips) -> fora do limite
+//   5. meta do dia (22-23/11/2026, regra A do 6.61): soma dos sinais fechados hoje >= +US$ 10 (2 ganhos líquidos) -> melhor parar por hoje.
+//      `ganhoDiaUsd: null` desliga a regra (a simulação do 6.60 foi feita com 4 regras e continua reproduzível)
 // ===================================================
-const DR_LIMITES = { perdaDiaUsd: 15, abertas: 3, mesmoLado: 2, horasProibidasBrt: [17, 18] };
+const DR_LIMITES = { perdaDiaUsd: 15, ganhoDiaUsd: 10, abertas: 3, mesmoLado: 2, horasProibidasBrt: [17, 18] };
 
 const drLado = (par, direcao) => {
     const [base, cot] = String(par).split("/");
@@ -142,6 +144,8 @@ function drAvaliar(docs, sinal, t, limites = DR_LIMITES) {
     const regras = [
         { chave: "perdaDia", ok: !(perda <= -limites.perdaDiaUsd), texto: "Perda do dia",
           detalhe: `${perda < 0 ? "−" : perda > 0 ? "+" : ""}US$ ${Math.abs(perda).toFixed(2).replace(".", ",")} nos sinais fechados hoje · limite −US$ ${limites.perdaDiaUsd}` },
+        ...(limites.ganhoDiaUsd == null ? [] : [{ chave: "ganhoDia", ok: !(perda >= limites.ganhoDiaUsd), texto: "Meta do dia",
+          detalhe: `${perda < 0 ? "−" : perda > 0 ? "+" : ""}US$ ${Math.abs(perda).toFixed(2).replace(".", ",")} nos sinais fechados hoje · meta +US$ ${limites.ganhoDiaUsd}${perda >= limites.ganhoDiaUsd ? ": meta batida, melhor parar por hoje" : ""}` }]),
         { chave: "abertas", ok: abertas.length < limites.abertas, texto: "Posições abertas",
           detalhe: `${abertas.length} abertas agora · limite ${limites.abertas}` },
         { chave: "mesmoLado", ok: mesmoLado < limites.mesmoLado, texto: "Mesmo lado do dólar",
@@ -163,7 +167,7 @@ function drHTML(av) {
         <p class="pa-eyebrow" id="dr-tit">Seus limites de risco</p>
         <p class="pn-texto" style="margin-top:6px;"><strong style="color:${av.ok ? "var(--pa-ganho)" : "var(--pa-perda)"};">${av.ok ? "Dentro dos limites" : "Fora dos limites"}</strong>${av.ok ? "" : ": melhor não entrar neste sinal"}</p>
         <ul class="dc-lista">${itens}</ul>
-        <p class="dc-nota">Calculado sobre os sinais do app (o app não vê as suas ordens na XM). É um aviso: quem decide é você. Limites: perda do dia US$ 15, 3 abertas, 2 por lado do dólar, sem 17h–19h.</p>
+        <p class="dc-nota">Calculado sobre os sinais do app (o app não vê as suas ordens na XM). É um aviso: quem decide é você. Limites: perda do dia US$ 15, meta do dia +US$ 10, 3 abertas, 2 por lado do dólar, sem 17h–19h.</p>
     </section>`;
 }
 
