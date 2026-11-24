@@ -43,3 +43,12 @@ O PC do trabalho reiniciou sozinho (provável atualização do Windows) e **paro
 - Grava `xm_swaps.csv` com o swap ATUAL de cada par (compra, venda, modo, dia do swap triplo, ponto, tamanho do contrato). Só `SymbolInfo`, nada da conta.
 - Para o pré-registro 6.58: `Periodo = PERIOD_D1`, `Desde = 2000.01.01 00:00`.
 
+
+## Matérias-primas M1 (24/11/2026)
+
+Exportação de `GOLD`, `SILVER` e `OILCash` (CFDs à vista, sem vencimento; escolhidos no lugar dos futuros `OIL-JAN27`/`BRENT-JAN27`, que vencem e quebram a série) pelo script `XM_ExportarBarras` (M1, desde 04/10/2026), em `DOCUMENTACAO/arquivo-xm/xm_barras_M1_<símbolo>.csv`; swaps desses três juntados em `xm_swaps.csv`.
+
+- Período: 05/10/2026 01:00 a 24/11/2026 ~02:41 (hora do servidor). GOLD e SILVER 49.739 barras, OILCash 49.572. Timestamps únicos; lacunas = pausas diárias e fins de semana (maiores ~49 h).
+- Spread real (mediana / p90 / máximo): GOLD 0,49 / 0,54 / 2,39 USD (ponto 0,01, 2 dígitos); SILVER 0,067 / 0,070 / 0,12 USD (3 dígitos); OILCash 0,05 / 0,05 / 0,15 USD (2 dígitos).
+- **`BRENTCash` NÃO veio** no pacote: ficou pendente (não foi incluído no exportador ou o símbolo não foi achado; o log do MT5 diz qual).
+- Atenção para qualquer análise: pip e valor por ponto são diferentes do forex (as funções `pipDe`/PnL em pips assumem forex). Antes de rodar algo sobre esses ativos, adaptar para USD por contrato (`tamanho_contrato` do swaps) e usar o spread real por vela.
