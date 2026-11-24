@@ -1239,3 +1239,22 @@ Origem: segundo relatório da outra conversa do usuário (só leitura da interfa
 **Executor:** só tem poucas operações reais desde 23/11 (ver 6.63); não entra até haver ≥ 30 fechadas (nesse caso rodar o mesmo teste sobre `xm_conta`). Hoje serve só o `historico` do app.
 
 Código: `scripts/relatorio/pausa-sinais.js` (+teste), workflow `pausa-sinais.yml`.
+
+### 6.74 Resultado do pré-registro 6.73 (pausa depois de perda e sequências de dias): SEM EVIDÊNCIA (24/11/2026, rodada única, `pausa-sinais.yml`, run 45316022313, commit 7d7ca03; 572 fechadas, 44 dias)
+
+**Regra A (pausa de N sinais depois de um LOSS do app; só aviso, nada bloqueia):**
+| N | em pausa | pips líq./op: tomados | em pausa | diferença (tomados − em pausa), IC 97,5% | acerto: tomados / em pausa | veredito |
+|---|---|---|---|---|---|---|
+| 2 | 293 (51%) | −1,02 | −1,49 | +0,47 [−5,25; +5,95] | 52,0% / 50,5% | SEM EVIDÊNCIA |
+| 3 | 381 (67%) | −1,38 | −1,20 | −0,18 [−6,76; +6,13] | 51,8% / 50,9% | SEM EVIDÊNCIA |
+
+Em US$ do app a diferença também é nula (0,20 contra 0,06 e 0,18 contra 0,10 por operação). **Poder baixo:** o IC tem meia-largura de ~5–6 pips, então este teste nem enxergaria um efeito de 3 pips. "Sem evidência" aqui não prova que a pausa não funciona; diz que não há nada a ver e que não dá para verificar um efeito pequeno com ~570 sinais. O mecanismo também não existe (parada opcional; ver 6.60/6.61).
+
+**Nível do sinal (leitura utilizável: só o que já fechou na abertura):** depois de WIN, o próximo vence 50,8% (n=335); depois de LOSS, 51,5% (n=233). Sem memória, igual ao achado das 400 primeiras (6.4x, 47,4% x 48,2%).
+
+**Sequências de dias (dia de Brasília do fechamento; 43 dias):**
+- Em US$ do app: 17 dias de ganho, 21 de perda (e 5 sem fechamento positivo ou negativo). **Maior sequência de ganho: 7 dias; de perda: 5 dias.** Tamanhos das sequências de ganho: 1 dia (6×), 2 dias (2×), 7 dias (1×). De perda: 1 dia (1×), 2 (4×), 3 (1×), 4 (1×), 5 (1×). 17 corridas (alternâncias: 16) contra 19,8 esperadas ao acaso, z = −0,93: **sem evidência de agrupamento**. Depois de dia de ganho, o próximo é de ganho em 50% (n=16); depois de dia de perda, em 38,1% (n=21), diferença dentro do ruído (erro-padrão ~11 pontos).
+- Em pips líquidos de spread: 17 ganhos, 26 perdas; maior sequência de ganho 3, de perda 8 dias; 19 corridas contra 21,6 esperadas, z = −0,83; depois de ganho 43,8% (n=16), depois de perda 34,6% (n=26).
+- Os 7 dias seguidos de ganho em US$ podem ser a semana de 09/11 (única de tendência limpa do dólar, 6.49/6.50); as datas não foram conferidas aqui.
+
+**Leitura:** não há memória de um dia para o outro nem de um sinal para o seguinte que a pausa possa aproveitar; os dias de ganho e de perda se alternam como em um sorteio. Em pips líquidos, o mês fica negativo (26 dias de perda contra 17 de ganho), o que é o custo aparecendo. **Decisão:** a pausa NÃO vira aviso novo no app (não há evidência e acrescentaria ruído). Os limites de 6.60 (3 abertas, 2 por lado, perda do dia US$ 15, horário) continuam como avisos. Executor: ainda poucas operações (ver 6.63); o mesmo teste só roda sobre `xm_conta` com ≥ 30 fechadas.

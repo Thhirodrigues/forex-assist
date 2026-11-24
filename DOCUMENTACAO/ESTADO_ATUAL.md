@@ -511,3 +511,5 @@ Itens mais antigos (09/09/2026), ainda não revisitados:
    consumidor.
 
 > **23/11/2026 — Fibonacci (6.66/6.67): REPROVADA** (246 ops, 37 dias, média −1,59 pips/op, IC97,5% [−4,07; +0,95]; 1ª metade +1,43 / 2ª −4,61). Família encerrada, sem variantes. **Regra do usuário desde 23/11: só dados reais e só conta demo** (nada de simulação com entrada hipotética como base de decisão).
+
+> **24/11/2026 — Pausa depois de perda (6.73/6.74): SEM EVIDÊNCIA** (N=2 e N=3 sobre 572 fechadas: diferença +0,47 e −0,18 pips, ICs de ±5–6 pips; depois de WIN 50,8% x depois de LOSS 51,5%; dias: sem agrupamento, z −0,93). Não vira aviso novo. Também registrados: ganho intermediário (6.69: encerrar no limiar não melhora a média), pré-registro de matérias-primas Fase A (6.70, só dados após 25/11) e copytrade da XM (6.71/6.72).
