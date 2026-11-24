@@ -18,7 +18,7 @@ const fe3 = [sig(0, 5, false), sig(1, 2, true), sig(6, 7, true)];
 assert.deepStrictEqual(p.estadoPausa(fe3, 2).map(s => s.pausa), [false, false, true]);
 // corridas e dias
 const c = p.corridas([1, 1, 1, -1, -1, 1, -1, 1, 1]);
-assert.strictEqual(c.dias, 9); assert.strictEqual(c.maiorSequenciaGanho, 3); assert.strictEqual(c.maiorSequenciaPerda, 2); assert.strictEqual(c.corridas, 6); assert.strictEqual(c.alternancias, 5);
+assert.strictEqual(c.dias, 9); assert.strictEqual(c.maiorSequenciaGanho, 3); assert.strictEqual(c.maiorSequenciaPerda, 2); assert.strictEqual(c.corridas, 5); assert.strictEqual(c.alternancias, 4);   // [1,1,1] [-1,-1] [1] [-1] [1,1]
 assert.deepStrictEqual(c.tamanhosGanho, { 3: 1, 1: 1, 2: 1 });
 assert.strictEqual(c.proximoGanhaDepoisDePerda.n, 3);
 const d = p.dias([sig(0, 1, true), sig(1, 2, true), sig(30, 31, false), sig(55, 56, true)]);
