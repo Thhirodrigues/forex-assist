@@ -359,3 +359,7 @@ pendente com erro de consulta por mais de N ciclos; (c) contar créditos por
 dia/minuto (scanner + checker + execuções manuais) e ver se o plano gratuito
 comporta; (d) plano pago. Relacionado ao item 8 (atraso sinal -> entrada): o
 atraso de 4 min 49 s do usuário no EUR/JPY e este de 3 h são fontes diferentes.
+
+
+## Auditor de copytrade (ideia de 24/11/2026, só backlog)
+Recalcular, a partir dos trades de uma estratégia de copytrade, fator de lucro, ganho médio ÷ perda média, pior perda ÷ fundos próprios, pernas de hedge (P&L 0,00), rajadas (≥5 ordens no mesmo minuto) e tempo dos perdedores, em vez de confiar no "Retorno 1 mês" e no "grau de risco" da XM (ver LABORATORIO-E-ANALISES.md 6.71). Não iniciado; depende de decisão do usuário e de ler os termos de uso da XM antes de qualquer coleta automática.

@@ -1190,3 +1190,19 @@ Bonferroni para dois ativos (nível 97,5%). Reprovou: ativo encerrado, sem varia
 **Expectativa honesta:** probabilidade baixa de aprovar (14 famílias do projeto sem vantagem líquida de custo; a continuação de ER é a família de momentum que já falhou em D1). Se reprovar nas duas, nada vai ao executor. Se aprovar uma, o passo seguinte é execução real na demo com o lote mínimo, decisão do usuário.
 
 Estado: código e testes sintéticos prontos (`lab/materias.js`, `lab/materias.test.js`, workflow manual `lab-materias.yml`). Nenhum resultado olhado. Mínimo para a primeira leitura: ~4 semanas de dados novos (20 dias de mercado), ou seja, a partir de ~22/12/2026.
+
+### 6.71 Copytrade da XM: o que os 7 primeiros do ranking operam (coleta manual de 23/11/2026, resumo ANONIMIZADO)
+
+Origem: relatório feito pela outra conversa do usuário (navegador logado, só leitura) com 723 trades fechados dos 7 primeiros de "Melhores desempenhos" (30 dias). **Não registrado aqui:** nomes, handles e IDs das estratégias e os trades crus (repositório público; conteúdo de sessão logada de terceiros). Tratado como dado de terceiros a validar, não como prova.
+
+- **Nenhum dos 7 opera Forex.** Ativos: ouro (GOLD, em 5 das 7), JP225 (Nikkei) e US100 (Nasdaq). Nenhum opera OILCash.
+- **Ouro:** 37% dos trades e 77% do lucro líquido da amostra, mas 50% do lucro total vem de UMA estratégia (A) e 14% de UM trade (+US$ 771), concentrados numa tarde (23/11, ouro em alta). Isso é uma semana de tendência, não um método comprovado.
+- **Perfil de risco:** hedge/"trava" (81 trades fechados com P&L US$ 0,00, perna oposta fechada no mesmo preço), preço médio, perdedores segurados por até 77 h, rajadas de dezenas de ordens no mesmo minuto (uma estratégia fatiou ~2 apostas em 345 trades; 97% de acerto), alavancagem 1:500 e contas de ~US$ 1.000. Declínio máximo e "grau de risco" da XM não capturam isso (parece medir só posições fechadas). É o perfil de cauda negativa já descrito em 6.66, aqui com perda adiada, não evitada.
+- **"Retorno 1 mês" do ranking não bate com os trades:** duas estratégias do mesmo gestor mostram +3.792% e +3.058% com trades visíveis no prejuízo (−US$ 19,77 e −US$ 6,20); nas outras o retorno anunciado é de 5 a 20 vezes lucro ÷ fundos próprios. Hipótese não verificada: retorno calculado sobre capital inicial minúsculo e variável.
+- **Escala útil para a Fase A (6.70):** no ouro, ganho médio de ~US$ 2,7 a 3,8 por onça e duração mediana de 47–51 min (uma fecha em 2 min). A grade de ouro (US$ 2/3/5 por onça, até 480 min) fica dentro disso; não alterada.
+- **Especificação deduzida dos trades, conferida com o `xm_swaps.csv`:** ouro 100 onças por lote, USD. JP225 cotado em JPY (¥1 por ponto por lote) e GER40 em EUR exigem conversão de moeda (mesmo problema do BUG-027 do `marketAnalyzer`); US100/US500/US30 US$ 1 por ponto; BTCUSD 1 BTC por lote. Lotes não são comparáveis entre ativos: risco medido em USD.
+- **Pendência para checar:** o relatório diz que só uma estratégia paga swap, mas uma segurou ouro por 77 h; pela nossa tabela o swap de compra do ouro é ~−US$ 0,70 por onça por noite. Pedir à outra conversa o swap por trade dessas posições.
+- **Limites da coleta:** só os 200 trades mais recentes por estratégia (duas ficaram parciais), só posições fechadas (a perda flutuante não aparece), horários no fuso do navegador, ranking que muda minuto a minuto.
+- **Acesso:** a XM não tem API pública para isso; coletar de forma automática seria raspagem de interface e possivelmente contra os termos. Tratar como coleta manual pontual; qualquer automação só depois de ler os termos.
+
+**Decisões (24/11/2026):** Fase A (6.70) mantida sem mudança; exportar também `US100Cash` na coleta semanal só para guardar dados (sem pré-registro nem teste ainda; JP225 e GER40 ficam para depois da conversão de moeda testada); nenhuma das 7 estratégias é copiada; um "auditor de copytrade" que recalcula métricas a partir dos trades entra no backlog.
