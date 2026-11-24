@@ -1258,3 +1258,25 @@ Em US$ do app a diferença também é nula (0,20 contra 0,06 e 0,18 contra 0,10 
 - Os 7 dias seguidos de ganho em US$ podem ser a semana de 09/11 (única de tendência limpa do dólar, 6.49/6.50); as datas não foram conferidas aqui.
 
 **Leitura:** não há memória de um dia para o outro nem de um sinal para o seguinte que a pausa possa aproveitar; os dias de ganho e de perda se alternam como em um sorteio. Em pips líquidos, o mês fica negativo (26 dias de perda contra 17 de ganho), o que é o custo aparecendo. **Decisão:** a pausa NÃO vira aviso novo no app (não há evidência e acrescentaria ruído). Os limites de 6.60 (3 abertas, 2 por lado, perda do dia US$ 15, horário) continuam como avisos. Executor: ainda poucas operações (ver 6.63); o mesmo teste só roda sobre `xm_conta` com ≥ 30 fechadas.
+
+### 6.75 O dia 24/11 do app contra o da XM, sinal a sinal (24/11/2026; `hoje-app-xm.yml` run 45512052454 + leitura do MT5/XM feita pela outra conversa do usuário; arquivo do dia em `DOCUMENTACAO/xm-executor-dias/2026-11-24.json`)
+
+**Pedido do usuário:** "preciso que o app e a XM trabalhem iguais" (os dois tiveram lucro hoje, mas os totais diferem).
+
+**Totais do dia (dia de Brasília, 20h):**
+- **App:** 18 sinais; 12 fechados (8 WIN, 4 LOSS, **+US$ 20**) e 6 ainda abertos (flutuante ≈ +US$ 2,07).
+- **XM (executor):** 7 entradas, 4 fechadas (3 TP, 1 SL, **+US$ 10,13**, swap e comissão 0,00) e 3 abertas (flutuante ≈ +US$ 5,98). Saldo US$ 980,36.
+
+**Por que diferem (cruzamento por ID do sinal; os 18 sinais do app aparecem no log do executor, nenhum se perdeu):**
+1. **O executor tomou 7 dos 18.** 10 foram PULADOS pelo limite de 3 posições e 1 porque já existia posição em EURGBP. Dos 10 do limite, 7 já fecharam no app: 5 WIN, 2 LOSS, **+US$ 15**. Isso é por desenho: o app conta todos; o executor, só quem coube em 3 vagas.
+2. **EUR/GBP venda (04:05, aberta no app e na XM):** o app a fechou como **LOSS às 11:35 (−US$ 5)**, mas na XM ela **continua aberta há mais de 16 h**, a ~0,3 pip do preço de entrada (SL 19,2 pips não tocado, flutuante +0,08). Nas 4 outras operações fechadas dos dois lados o resultado coincide (AUD/USD LOSS−SL, GBP/JPY WIN−TP, GBP/JPY WIN−TP, USD/CAD WIN−TP). **Sozinha, a EUR/GBP explica a diferença de US$ 5,13 entre o que o app contou nas 5 operações tomadas (+US$ 5) e o que a XM contou (+US$ 10,13 fechado, +0,08 flutuante).** As 3 abertas do app que o executor também tem (GBP/JPY e USD/CAD) estão coerentes (app +2,93 e +4,04; XM +2,14 e +3,83).
+3. **A posição velha travou vagas:** a EUR/GBP, aberta na XM mas "fechada" no app, ocupou uma das 3 vagas o dia inteiro e é um dos motivos dos 10 pulos por limite (a admissão do executor depende do estado da XM, não do app).
+4. **Horário de fechamento:** na GBP/JPY das 06:35 a XM fechou no TP às 10:06 (BRT) e o app só às 11:20, 74 min depois, mesmo resultado; na AUD/USD o app fechou 09:50 e a XM 10:05. Fonte de preço diferente (TwelveData x XM).
+5. **Derrapagem de preço de entrada nas compras de GBP/JPY: 5,3 e 4,9 pips a favor** (XM entrou abaixo do preço do app), ~13% do TP de 39,8 pips; deu TP nos dois casos, mas é fonte de divergência futura. **Convenção:** no log do executor, `derrapagem` positiva = PIOR que o preço do sinal (`XM_Executor.mq5:274`), negativa = a favor; o campo `derrapagemPips` do `cruzar.js` é valor absoluto (sem sinal).
+
+**O silêncio da tarde NÃO foi a fila:** a outra conversa levantou a hipótese de falha da fila (HTTP 1003: 6 hoje, 4 à tarde) porque nenhum sinal chegou ao executor depois das 12:21. O histórico do app mostra que **o app não gerou nenhum sinal depois de 12:20**: o scanner rodou a cada 5 min, sem erro, das 15:45 às 20:40 (60 de 60 execuções com sucesso; trecho anterior não conferido). No log de 17:00: 4 pares em "Cooldown / Operação recente" (cada um com sinal ainda aberto, EUR/USD, GBP/USD, USD/CAD, USD/CHF) e 6 fora da janela operacional (USD/JPY, AUD/USD, NZD/USD, EUR/JPY, GBP/JPY, EUR/GBP); 0 sinais, 0 erros. O app tem, na prática, no máximo 1 sinal aberto por par. Os HTTP 1003 não custaram nenhum sinal hoje (todos os 18 estão no log).
+
+**Para que o app e a XM trabalhem iguais (opções, decisão do usuário):**
+- A (sem compilar, F7 no executor): subir `MaxPosicoes` de 3 para o máximo aceito (12), para a XM tomar praticamente todos os sinais (a regra de 1 posição por símbolo continua). Reduz a diferença (1).
+- B (precisa de dados da XM): exportar M5 dos 10 pares desde 19/11 e rejulgar com o preço da XM os sinais de 23 e 24/11, para medir quantos sinais o app e a XM julgam diferente e por quê (caso EUR/GBP e o atraso de 74 min na GBP/JPY).
+- C (decisão grande, só se B mostrar divergência frequente): o app passar a julgar WIN/LOSS com as barras da própria XM (o exportador MT5 enviaria as barras), eliminando a diferença de fonte de preço. Exige mudar o EA e o `js/checker.js`.
