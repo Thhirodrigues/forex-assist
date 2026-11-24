@@ -1122,3 +1122,24 @@ Rodado uma vez, sem alterar parâmetro, sobre as 10 séries M5 da XM (04/10 a 19
 **Conclusão:** família Fibonacci encerrada. Sem variantes (outro K, outra zona, outro stop) e sem modo Lab ao vivo. A média negativa é compatível com o custo (~spread) sem vantagem de direção: a diferença contra o ALEATORIO é positiva (+0,85) mas estatisticamente indistinguível de zero. Isso é a 13ª avaliação pré-registrada sem vantagem.
 
 **Regra de trabalho a partir de 23/11/2026 (decisão do usuário):** só dados reais e só conta demo. Simulações com entradas hipotéticas/aleatórias sobre velas (como `centavos.py` e `pausa.py`, 6.66/6.67 e conversa de 23/11) ficam como histórico e **não** servem mais de base para decisão; novas análises usam o histórico real do app, as execuções reais da demo XM (`xm-cruzar`) e a coleta forward.
+
+### 6.68 Custo real de operar ouro, prata e petróleo na XM (24/11/2026) — descritivo, sem teste de sinal
+
+Pedido do usuário (opção B): descrever o custo antes de qualquer teste. Base: M1 reais da demo XM (05/10 a 24/11, ~50 dias) + swaps do MT5; EURUSD/GBPUSD como termômetro. Script `scripts/xm/custo-ativos.js` (+teste), lote 0,02 (o do executor na demo). Brent não entrou (decisão do usuário; OILCash cobre o petróleo).
+
+| ativo | spread (mediana) | custo por operação (lote 0,02) | spread ÷ mediana 15 min | spread ÷ mediana do dia | swap/noite compra / venda | dia mexe (mediana / p95 / máx) |
+|---|---|---|---|---|---|---|
+| GOLD | US$ 0,49 | US$ 0,98 | 7,5% | 0,75% | −1,39 / +0,30 | US$ 131 / 296 / 337 |
+| SILVER | US$ 0,067 | **US$ 6,70** | 41% | 3,65% | −1,28 / +0,27 | US$ 184 / 350 / 398 |
+| OILCash | US$ 0,05 | US$ 0,10 | 17% | 1,6% | 0 (modo 3, valor 0) | US$ 6 / 13 / 20 |
+| EURUSD | 1,9 pips | US$ 0,38 | 40% | 3,4% | −0,16 / +0,03 | US$ 11 / 20 / 21 |
+| GBPUSD | 2,2 pips | US$ 0,44 | 40% | 3,7% | −0,07 / −0,08 | US$ 12 / 24 / 29 |
+
+Leituras (descritivas):
+- **Custo relativo ao quanto o preço anda:** ouro ~5× mais barato que o forex (7,5% do movimento de 15 min contra ~40%); petróleo ~2,4× mais barato; prata igual ao forex. Barato por volatilidade não é barato por dólar nem por risco.
+- **Risco em dólares no mesmo lote é de outra ordem:** no lote 0,02, um dia comum do ouro mexe US$ 131 (13% de uma conta de US$ 970), e o p95 chega a US$ 296; o EURUSD mexe US$ 11. Para igualar o risco diário do EURUSD o lote do ouro seria ~0,0017 e o da prata ~0,0012, abaixo de qualquer lote mínimo usual (conferir na especificação do símbolo; se o mínimo for 0,01, o ouro já carrega ~6× o risco do EURUSD a 0,02).
+- **Prata no lote 0,02: só o spread (US$ 6,70) já passa de US$ 5**, que é o TP/SL do app (mover US$ 5 = 0,05 de preço = 134% do spread). Inviável com a regra de US$ 5; no ouro o spread é 20% da distância de US$ 5.
+- **Swap pesa mais que o spread no ouro e na prata ao segurar posição comprada:** −US$ 1,39 por noite no ouro (> o spread de US$ 0,98) e triplo na quarta (−US$ 4,17).
+- **Horário:** spreads praticamente planos ao longo do dia; no rollover (17–19h BRT) o petróleo dobra (2,0×), o ouro sobe ~10% (0,52–0,54 contra 0,49), a prata ~4%.
+
+Limites: ~50 dias de uma conta demo, spread é a mediana por hora (picos extremos aparecem só no máximo: ouro até US$ 2,39), o lote mínimo e o swap do petróleo (modo 3, valor 0) não foram conferidos na especificação do símbolo. Nada aqui é teste de vantagem; só diz quanto custa e quanto arrisca cada ativo.
