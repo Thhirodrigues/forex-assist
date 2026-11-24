@@ -1,0 +1,18 @@
+name: Lab - Materias-primas Fase A (pre-registro 6.69; somente leitura)
+
+# SO COM DADOS DEPOIS DE 25/11/2026 (o script ignora o que vem antes; criterio C1 exige >= 300 operacoes em >= 20 dias, entao rodar cedo so mostra C1 = false).
+# Le apenas os CSVs M1 do arquivo da XM (GOLD e OILCash) no repositorio. Nao grava nada, nao toca no sinal oficial nem no forex.
+on:
+  workflow_dispatch:
+
+jobs:
+  materias:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node lab/materias.test.js
+      - run: node lab/materias.js DOCUMENTACAO/arquivo-xm

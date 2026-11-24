@@ -1143,3 +1143,50 @@ Leituras (descritivas):
 - **Horário:** spreads praticamente planos ao longo do dia; no rollover (17–19h BRT) o petróleo dobra (2,0×), o ouro sobe ~10% (0,52–0,54 contra 0,49), a prata ~4%.
 
 Limites: ~50 dias de uma conta demo, spread é a mediana por hora (picos extremos aparecem só no máximo: ouro até US$ 2,39), o lote mínimo e o swap do petróleo (modo 3, valor 0) não foram conferidos na especificação do símbolo. Nada aqui é teste de vantagem; só diz quanto custa e quanto arrisca cada ativo.
+
+### 6.69 Ganho intermediário no forex (dados reais): quantos sinais viraram LOSS depois (24/11/2026)
+
+Pergunta do usuário: "quando o sistema informou um ganho intermediário, quantos sinais deram loss depois?". Script `scripts/xm/ganho-parcial.js` (workflow `xm-ganho-parcial.yml`, rodada de 24/11 01:33Z, 571 sinais fechados pela regra 6.25, 40 dias).
+
+**Parte 1: o que de fato aconteceu (campo `avisoParcial` gravado pelo checker, aviso aos 60% do TP).**
+- 305 sinais tiveram aviso; 266 terminaram WIN e **39 terminaram LOSS (12,8%)**. Sem aviso: 266 sinais, 239 LOSS (89,9%, mecânico: sinal que perde quase nunca passa dos 60%).
+- Se tivesse encerrado em todo aviso: US$ 1.033,87 contra US$ 1.134,99 do que valeu, **−US$ 101** (a favor de esperar, na medida do app, sem spread; o spread é pago nos dois casos).
+
+**Parte 2: outros limiares, mesmos sinais, preço real da XM (bid/ask; vela que também toca o SL não conta como "chegou").** 501 decididos (62 sem vela M5, 8 abertos). Grade fixa, nada escolhido depois. Média normal: −2,56 pips/op.
+
+| limiar (% do TP) | chegaram | terminaram LOSS depois | média com "encerrar no limiar" | diferença (IC 95%, blocos de dia) |
+|---|---|---|---|---|
+| 30% | 68,5% | 33,8% | −3,11 | −0,55 [−2,99; +1,87] |
+| 50% | 59,5% | 23,8% | −2,93 | −0,37 [−2,21; +1,45] |
+| 60% | 54,9% | 17,5% | −3,39 | −0,83 [−2,25; +0,59] |
+| 80% | 49,7% | 8,8% | −2,92 | −0,36 [−1,45; +0,82] |
+
+Leitura: quanto mais cedo o limiar, mais sinais ainda terminam em perda (34% aos 30%, 9% aos 80%), mas encerrar no limiar **não** melhorou a média em nenhum deles (as quatro diferenças são negativas, nenhuma distinguível de zero). Consistente com a teoria: encerrar mais cedo troca ganhos grandes por ganhos pequenos e não cria vantagem. Descritivo; a conta não considera o spread de saída extra (o spread já está na entrada no julgamento bid/ask).
+
+### 6.70 Pré-registro: matérias-primas (GOLD e OILCash), Fase A — escrito em 24/11/2026, SÓ DADOS FUTUROS
+
+**Pedido do usuário:** modelo diferente do forex, alvos pequenos em dólares, o app avalia a entrada, avisa progresso até o alvo e oferece esticar o alvo se a reanálise for favorável; "quem decide é você".
+
+**Princípios (regra do usuário de 23/11: só dados reais, só demo):**
+- A evidência vem **só de dados posteriores a 25/11/2026 00:00Z** (o script `--desde` recusa o que vem antes). Os 50 dias de M1 já arquivados (05/10 a 24/11) **não** entram: não foram olhados para sinal nenhum, e este pré-registro foi escrito antes de qualquer resultado.
+- Nenhuma ordem é enviada nesta fase. Mede-se o que o preço real (bid/ask por vela M1) teria feito com uma posição virtual em cada candidato, em paralelo com todos os alvos e as três políticas, o que ordens reais não permitem na mesma conta.
+- A coleta é a exportação M1 que o usuário já faz (`XM_ExportarBarras`, símbolos `GOLD,OILCash`, M1), de preferência semanal, sempre com `Desde = 2026.11.24 00:00`. O `XM_Exporter` ao vivo não transmite barras.
+
+**Regras fixas (`lab/materias.js`, constantes `PARAMS` e `ATIVOS`):**
+- Avaliador de entrada a cada :00/:30, no fechamento da vela M1: janela de 60 velas contíguas, `ER = |net| / caminho >= 0,30`, `|net| >= 4 × spread`, spread da vela ≤ 1,5 × a mediana das 1.440 velas anteriores, fora de 17h–18h BRT; direção = continuação do `net`; no máximo 1 candidato por ativo a cada 30 min; entrada na abertura da vela seguinte (compra no ask, venda no bid).
+- Grade: alvo T por ativo (GOLD US$ 2/3/5 por onça; OILCash US$ 0,25/0,50/1,00 por barril), stop = k×T com k em 1 e 2, tempo máximo 480 velas (fecha a mercado), vela que toca alvo e stop = stop, swap cobrado se atravessa a meia-noite do servidor (triplo de quarta para quinta). Piso de alvo do ouro: com spread de US$ 0,49 por onça, alvos abaixo de ~US$ 2 são dominados pelo spread (por isso os centavos pedidos não entram no ouro).
+- Políticas: P1 alvo fixo; P2 encerra ao chegar em 80% de T; P3 ao chegar em 80% de T, se o mesmo avaliador ainda aponta a favor no fechamento daquela vela, o alvo vira 2T (stop igual), senão encerra em 80%.
+- Controle ALEATORIO: mesma entrada e mesma geometria, direção oposta; esperança exata = média entre real e oposta.
+
+**Critérios (célula primária por ativo: P1, k=1, T = US$ 3 no ouro e US$ 0,50 no petróleo; aprova só com os quatro):**
+- C1: ≥ 300 operações em ≥ 20 dias distintos.
+- C2: IC 97,5% (bootstrap em dias, 10.000, semente fixa) do resultado líquido médio por operação, limite inferior > 0.
+- C3: IC 97,5% de real − ALEATORIO com limite inferior > 0.
+- C4: média positiva nas duas metades cronológicas.
+Bonferroni para dois ativos (nível 97,5%). Reprovou: ativo encerrado, sem variantes.
+
+**Descritivo (sem aprovação, só responde às perguntas do usuário):** grade completa, e P2/P3 contra P1 com IC da diferença. A hipótese nula é que encerrar ou esticar não muda a esperança por operação (parada opcional; já confirmado em 6.69 no forex). Como são ~12 células por ativo, nenhuma conclusão sai dessa tabela sem confirmação em amostra nova.
+
+**Expectativa honesta:** probabilidade baixa de aprovar (14 famílias do projeto sem vantagem líquida de custo; a continuação de ER é a família de momentum que já falhou em D1). Se reprovar nas duas, nada vai ao executor. Se aprovar uma, o passo seguinte é execução real na demo com o lote mínimo, decisão do usuário.
+
+Estado: código e testes sintéticos prontos (`lab/materias.js`, `lab/materias.test.js`, workflow manual `lab-materias.yml`). Nenhum resultado olhado. Mínimo para a primeira leitura: ~4 semanas de dados novos (20 dias de mercado), ou seja, a partir de ~22/12/2026.
