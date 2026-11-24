@@ -1,0 +1,20 @@
+name: Pausa depois de perda e sequencias de dias (pre-registro 6.73; somente leitura)
+
+# Pedido do usuario (24/11/2026). Le o `historico` oficial (admin). So aviso: nada bloqueia, nada grava.
+on:
+  workflow_dispatch:
+
+jobs:
+  pausa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/relatorio/pausa-sinais.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/relatorio/pausa-sinais.js

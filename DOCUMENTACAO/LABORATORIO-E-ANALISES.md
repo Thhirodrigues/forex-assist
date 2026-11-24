@@ -1220,3 +1220,22 @@ Origem: segundo relatório da outra conversa do usuário (só leitura da interfa
 - **Para qualquer métrica nossa (app, executor, auditor):** incluir P&L flutuante e a razão ganho médio ÷ perda média, não só taxa de acerto; swap parametrizado por conta e instrumento (pode comer 20% a 70% do lucro de quem segura dias); histórico = período com operações; classificar pelos trades e não pelo rótulo.
 
 **Leitura do projeto (24/11/2026):** as duas coletas (7 do topo geral + Forex e risco declarado) não mostram vantagem replicável em lugar nenhum; o que domina é adiamento de perda (martingale, grade, preço médio, trava, segurar perdedor), que sustenta acerto alto até a perda grande chegar. Isso reforça a Fase A (6.70, posição única, perda sempre realizada, sem trava) como o jeito certo de testar, e não muda nenhum parâmetro dela. Auditor de copytrade segue no backlog.
+
+### 6.73 Pré-registro: pausa depois de uma perda (N = 2 e 3) e sequências de dias — escrito em 24/11/2026, ANTES de rodar
+
+**Pedido do usuário:** testar "esperar 2 ou 3 sinais depois de uma perda" nos sinais reais (app e executor), **só como aviso, nada bloqueia**; e medir quantos dias seguidos de ganho existem, quanto a perda dura depois do primeiro loss e quantas vezes se intercalam.
+
+**O que já existia e o que é novo:** em 6.4x (400 primeiras, `analise400.js#sequencias`) a leitura UTILIZÁVEL já mostrou que depois de WIN e depois de LOSS a chance do próximo ser WIN é a mesma (47,4% x 48,2%): as rachas na ordem de fechamento eram posições simultâneas na mesma aposta do dólar. Em 6.61 (caminho do dia) não houve "memória" dentro do dia. Novo aqui: (1) a regra de pausa de N sinais comparada com o que ela teria pulado, (2) sequências DIA a DIA (não existia), (3) tudo sobre as fechadas de hoje (571 em 24/11), não só as 400 antigas.
+
+**Regra A (única, fixa):** na ordem de ABERTURA dos sinais fechados (regra 6.25), quando um sinal do app fecha em LOSS, os próximos N sinais que ABREM depois desse fechamento ficam "em pausa" (o aviso diria "espere"); nova perda reinicia em N (não acumula). Só vale o que já estava fechado na abertura do sinal. Medida: pips líquidos por operação (`registro().liq`; os sinais já julgados com spread não descontam de novo).
+- Comparação: média dos TOMADOS − média dos EM PAUSA, IC 97,5% (Bonferroni para N=2 e N=3) por bootstrap em blocos de dia de abertura (10.000, semente fixa).
+- **Critério ("pausa útil", só candidata):** ≥ 100 sinais em pausa, ≥ 20 dias e limite inferior do IC > 0. Qualquer outra coisa = SEM EVIDÊNCIA. Mesmo "útil" continua só aviso; a confirmação exigiria amostra nova (sinais fechados depois de 24/11).
+- Expectativa a priori: ~nenhuma diferença (parada opcional: regra de parar não muda a esperança por operação; e a leitura utilizável já não mostrou memória em 6.4x).
+
+**Descritivos (sem veredito, poucos dias):**
+- B (dias): resultado do dia (dia de Brasília do fechamento) em US$ do app e em pips líquidos; corridas de dias de ganho e de perda, tamanho da maior sequência, alternâncias e teste de corridas (Wald-Wolfowitz); chance do próximo dia ser de ganho depois de ganho e depois de perda.
+- C (sinal): P(WIN | último resultado conhecido na abertura).
+
+**Executor:** só tem poucas operações reais desde 23/11 (ver 6.63); não entra até haver ≥ 30 fechadas (nesse caso rodar o mesmo teste sobre `xm_conta`). Hoje serve só o `historico` do app.
+
+Código: `scripts/relatorio/pausa-sinais.js` (+teste), workflow `pausa-sinais.yml`.
