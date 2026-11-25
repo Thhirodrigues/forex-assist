@@ -29,7 +29,7 @@ input string TokenIngest       = "";                   // o MESMO token do expor
 input bool   SoLog             = true;                 // true = ENSAIO: so registra no log, NAO envia ordens
 input double LoteFixo          = 0.02;                 // lote de cada operacao (sinais de forex)
 input double LoteMaxMaterias   = 0.30;                 // teto do lote dos sinais de materias-primas/indice (tipo M; o lote vem calculado no sinal pelo risco)
-input int    MaxPosicoes       = 3;                    // maximo de posicoes abertas ao mesmo tempo (todas)
+input int    MaxPosicoes       = 12;                   // maximo de posicoes abertas ao mesmo tempo (todas); 12 desde 24/11/2026 (paridade app x XM, 6.75)
 input double MaxDerrapagemFracSL = 0.25;               // pula a entrada se o preco ja andou CONTRA mais que esta fracao do SL (0,10 a 1,00)
 input int    ModoExposicao     = 1;                    // gestao de EXPOSICAO e horario: 0 = desligada, 1 = so REGISTRA no log (padrao), 2 = BLOQUEIA
 input int    MaxPorMoeda       = 2;                    // exposicao liquida maxima na mesma moeda (2 = ate 2 posicoes do mesmo lado, ex.: contra o dolar)

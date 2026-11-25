@@ -28,7 +28,7 @@ const iGuarda = codigo.indexOf("derrapagem > MaxDerrapagemFracSL * slPips");
 assert.ok(iGuarda > 0 && iGuarda < iEnsaio && iGuarda < iOrdem, "guarda de derrapagem antes do ensaio e da ordem");
 assert.ok(/input double MaxDerrapagemFracSL\s*=\s*0\.25;/.test(codigo), "guarda de derrapagem padrão 25% do SL");
 assert.ok(/MaxDerrapagemFracSL\s*<\s*0\.10\s*\|\|\s*MaxDerrapagemFracSL\s*>\s*1\.0/.test(codigo), "limites do guarda validados");
-assert.ok(/input int\s+MaxPosicoes\s*=\s*3;/.test(codigo), "MaxPosicoes padrão 3");
+assert.ok(/input int\s+MaxPosicoes\s*=\s*12;/.test(codigo), "MaxPosicoes padrão 12 (decisão de 24/11/2026: paridade app x XM)");
 assert.ok(codigo.includes('" pips | spread "'), "spread registrado no log");
 // uma por par, limite de posições, idade máxima, tentativas limitadas
 assert.ok(semTextos.includes("TemPosicaoNoSimbolo(") && semTextos.includes("PositionsTotal() >= MaxPosicoes") && semTextos.includes("idade > MaxIdadeSinalSeg") && /n >= 3/.test(semTextos));
