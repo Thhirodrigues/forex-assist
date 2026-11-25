@@ -11,7 +11,7 @@ executor do forex) continua como está, com o pipeline de sinais **congelado** (
 
 ## 2. Combinado de trabalho com o usuário (preferências e regras)
 - Português. Postura de **mentor crítico e engenheiro sênior**: apontar pontos cegos, não validar por validar, dar fonte quando relevante, recomendar em vez de listar opções.
-- **Só dados reais e só conta demo** (decisão de 23/11/2026). Simulações com entrada hipotética/aleatória não servem mais de base de decisão.
+- **Só dados reais e só conta demo** (decisão de 23/11/2026). **A conta XM do usuário pode receber dinheiro real e um dia ele pode querer testá-la, mas até ele AVISAR de forma explícita, a conta real é proibida: nenhuma leitura de ordens, nenhum login, nenhuma operação.** Esse dia será uma decisão nova (e exigirá mudança de código: o exportador e o executor recusam conta real de propósito). Simulações com entrada hipotética/aleatória não servem mais de base de decisão.
 - **Nada bloqueia** por enquanto (limites de risco só registram/avisam), até o usuário decidir ligar os bloqueios.
 - **Disciplina de evidência:** hipótese e critérios escritos ANTES, rodar UMA vez, reprovou = encerra sem variantes. IC por blocos de dia, Bonferroni, controle ALEATORIO. 14 famílias de sinal avaliadas, nenhuma com vantagem líquida de custo (ver `LABORATORIO-E-ANALISES.md` 6.44 a 6.76). Expectativa honesta: baixa para o módulo novo.
 - **Antes de auditoria ou execução não pedida no meio de conversa: avisar a intenção** e dar espaço (regra do `CLAUDE.md`).
