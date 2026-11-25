@@ -49,7 +49,7 @@ executor do forex) continua como está, com o pipeline de sinais **congelado** (
 
 ## 6b. Acesso à XM e a outras páginas pelo navegador (decisão de 25/11/2026)
 - O usuário quer que a sessão acesse **a página da XM e qualquer outra página online** por navegador, **sem passar por outra conversa**. Há dois mecanismos reais: (1) o **navegador embutido do app Claude para desktop** (ferramentas `mcp__Claude_Browser__*` quando a sessão roda dentro do app; `mcp__remote-devices__Claude_Browser__*` quando é sessão de nuvem ligada ao computador), com perfil próprio e login persistente; (2) a **extensão Claude in Chrome** (`mcp__claude-in-chrome__*`), que age no Chrome real do usuário com TODOS os logins dele. **Preferir o navegador embutido** (só a XM logada, perfil separado). Carregar as ferramentas de uma vez com ToolSearch pelo prefixo do nome.
-- **Regras para a XM na web:** só leitura. **Nunca** depositar, retirar, transferir, alterar dados da conta, senha ou configurações, nem abrir ou fechar ordem pelo site. O login é do usuário (a sessão nunca pede nem recebe senha); se a página pedir login ou verificação, pedir ao usuário que faça no navegador. A área de membro da XM lista as contas do usuário: operar **somente** a demo 336967265; se aparecer conta real, não tocar e avisar.
+- **Regras para a XM na web:** só leitura. **Nunca** depositar, retirar, transferir, alterar dados da conta, senha ou configurações, nem abrir ou fechar ordem pelo site. O login é do usuário (a sessão nunca pede nem recebe senha); se a página pedir login ou verificação, pedir ao usuário que faça no navegador. A área de membro da XM lista as contas do usuário: operar **somente** a conta demo (o número da conta fica com o usuário e não vai para o repositório, que é público); se aparecer conta real, não tocar e avisar.
 - Não raspar nem automatizar páginas de terceiros logadas (copytrade de outros gestores): os termos da XM provavelmente não permitem; só leitura manual pontual e sem scripts na página.
 - Se as ferramentas do navegador não responderem (app fechado/offline), dizer isso em vez de insistir.
 
@@ -79,3 +79,21 @@ executor do forex) continua como está, com o pipeline de sinais **congelado** (
 
 ## 11. Texto para abrir a sessão nova (colar como primeira mensagem)
 > Esta sessão continua o projeto Forex Assist (repositório Thhirodrigues/forex-assist, branch de trabalho `claude/repo-description-hnctr1`, sempre fast-forward em `main`). Leia primeiro `CLAUDE.md` e `DOCUMENTACAO/HANDOFF-SESSAO-XM-DIRETA.md`, depois confira o código real. Meu objetivo: centralizar aqui o módulo de matérias-primas/índice (ouro, petróleo, Nasdaq) e a ponte com a minha conta demo da XM (MT5 neste computador), sem passar por outra conversa. Regras: só dados reais e só conta demo; nada bloqueia; pré-registro antes de qualquer teste; me avise antes de auditorias que eu não pedi; nunca peça nem mostre chaves e tokens. Use o navegador embutido do app (já logado na XM; só leitura, nunca mover dinheiro, nunca pedir minha senha) para ler o que precisar da XM e de outras páginas. Comece pelo roteiro da seção 10 do handoff e me diga o que viu antes de agir na conta.
+
+## 12. Ambiente e coordenação entre sessões (25/11/2026, fim do dia)
+- O usuário usa o **app Claude para desktop no Windows** e já tem uma **sessão local** numa pasta `Forex` dentro de Downloads, com navegador embutido (XM logada), extensão do Chrome e MT5 no mesmo computador. A sessão de **nuvem** (a que escreveu este documento) **não alcança** esse computador: o Remote Control listou o computador e a pasta, mas devolveu `not_available` mesmo depois de atualizar o app. Por isso a sessão nova é **local**.
+- Divisão de trabalho recomendada: **sessão local = olhos e mãos no PC** (MT5, compilar EAs, logs, posições, XM na web, exportações); **sessão de nuvem = repositório, testes, GitHub Actions, leitura do banco por workflow**. Podem coexistir.
+- **Para não perder código:** só **uma** sessão publica em `main` por vez. A sessão local trabalha na **sua própria branch** (`claude/sessao-local-xm`), faz `git fetch origin main` antes de qualquer `push`, integra `main` (merge, sem force-push) e só então publica. A sessão de nuvem usa a branch `claude/repo-description-hnctr1` e faz o mesmo `fetch` antes de cada fast-forward em `main`. **Nunca** `git push --force`.
+- A sessão local só consegue publicar no GitHub se o usuário entrar na conta GitHub nesse PC (janela do Git ou `gh auth login`, interativo). **Chaves e tokens nunca vão para o chat.** Sem isso, ela entrega arquivos e logs e a sessão de nuvem cuida dos commits.
+- O usuário é leigo em terminal: explicar cada passo em linguagem simples, um de cada vez, e dizer o que esperar na tela.
+
+## 13. Pendências imediatas (25/11/2026, noite)
+1. **Compilar e recarregar no MT5** o exportador v1.10 e o executor v1.30 (ver seção 5). Sem isso o módulo novo não gera nenhum sinal.
+2. Depois de recarregar: conferir no log do MT5 `XM_Executor v1.30 gestao...` e `modo REAL NA DEMO`; e no scanner, `MATERIAS ciclo = ...` com `estado iniciado (sem backfill)` nos 3 ativos.
+3. A posição **EUR/GBP venda** aberta na XM desde 24/11 04:06 BRT **deve ficar aberta** (o app a deu como LOSS; ver 6.76): observar como termina.
+4. O executor está com `MaxPosicoes = 12` e `SoLog = false`; conferir que nenhuma recompilação os resetou.
+5. Repetir a conferência app × XM (`xm-concordancia.yml`, `hoje-app-xm.yml`) quando houver ~100 sinais com spread; esperar alguns dias com a admissão igual (12 posições).
+6. **01/12**: conferência rápida do módulo novo (dados íntegros? quantas entradas?). **~22/12**: veredito.
+7. **~30/11**: expira a chave Anthropic (só o sinal por IA usa).
+8. Ler do MT5 lote mínimo, passo e valor por ponto de GOLD, OILCash e US100Cash, e o swap do OILCash.
+9. O `dia-caminho.yml` foi disparado em 24/11 e o resultado não foi lido (não era a pergunta do momento).
