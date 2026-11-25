@@ -20,6 +20,9 @@
 // spreadMed = mediana do spread; T = max(0,5 x R15, 8 x spreadMed), stop S = T (k = 1), arredondados à casa decimal do preço. Lote = o maior
 // múltiplo do passo com risco (lote x US$ por unidade x S) <= US$ 5, piso no lote mínimo; sem sinal se o lote mínimo já passar de US$ 7,50 de risco.
 // O resultado do veredito é medido em R (resultado / S): +1 = alvo, -1 = stop. A grade fixa de 6.69/6.70 continua só como descritivo.
+// EMENDA 6.78-B (25/11/2026, pedido do usuário: alvos pequenos em dólar): o risco-alvo do lote cai de US$ 5 para US$ 1. A DISTÂNCIA no preço (T, S)
+// NÃO muda (alvo curto no preço deixaria o spread comer o resultado); muda só o lote. O teto de US$ 7,50 fica: ouro e US100 seguem no lote mínimo
+// (risco acima de US$ 1). Como o veredito é em R e o teto não mudou, o conjunto de sinais e o veredito da célula primária ficam idênticos.
 // ===================================================
 const mediana = (a) => { const s = [...a].sort((x, y) => x - y), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const PARAMS = { JANELA: 60, ER_MIN: 0.30, NET_MIN_SPREADS: 4, SPREAD_MAX_X_MEDIANA: 1.5, HIST_SPREAD: 1440, ROLLOVER_BRT: [17, 18], MAX_VELAS: 480, FRACAO: 0.8, K_STOP: [1, 2] };
@@ -27,7 +30,7 @@ const PARAMS = { JANELA: 60, ER_MIN: 0.30, NET_MIN_SPREADS: 4, SPREAD_MAX_X_MEDI
 // MÚLTIPLOS DO SPREAD MEDIANO das primeiras 1.440 velas do arquivo (custo, não resultado; o arquivo cresce no fim, então esse trecho nunca muda).
 const ATIVOS = { GOLD: { alvos: [2, 3, 5], primario: 3 }, OILCash: { alvos: [0.25, 0.5, 1], primario: 0.5 }, US100Cash: { multSpread: [8, 15, 30], primarioMult: 15 } };
 
-const ADAPT = { FRAC_R15: 0.5, MULT_SPREAD: 8, RISCO_USD: 5, RISCO_MAX_USD: 7.5, JANELA_R15_MS: 900000, MIN_VELAS_JANELA: 10 };
+const ADAPT = { FRAC_R15: 0.5, MULT_SPREAD: 8, RISCO_USD: 1, RISCO_MAX_USD: 7.5, JANELA_R15_MS: 900000, MIN_VELAS_JANELA: 10 };
 // US$ por unidade de preço por lote cheio (ouro 100 onças; petróleo 100 barris; US100 US$ 1 por ponto); lote mínimo e passo conforme a XM padrão.
 // A CONFERIR com a especificação real do MT5 (o exportador passa a enviá-la); o scanner ao vivo usa os valores reais quando existirem.
 const ESPEC = { GOLD: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.001, swapModo: "PONTOS", swapPadrao: { compra: -69.5, venda: 15.07, triplo: 3 } }, OILCash: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.01, swapModo: "USD_LOTE", swapPadrao: { compra: 0, venda: 0, triplo: 5 } }, US100Cash: { usdPorUnidadeLote: 1, minLote: 0.10, passo: 0.10, swapModo: "USD_LOTE", swapPadrao: { compra: -4.48, venda: 0.65, triplo: 5 } } };      // US100Cash: min/passo 0,10 lidos do MT5 real em 25/11/2026; GOLD: passo real < 0,005 (usa-se 0,01, conservador)
@@ -91,7 +94,7 @@ function dimensionar(b, i) {
     return { T, S: T, r15, spMed };
 }
 
-// lote pelo risco (US$ 5): maior múltiplo do passo com risco <= US$ 5, piso no mínimo; null se o mínimo já passa de US$ 7,50
+// lote pelo risco (US$ 1, emenda 6.78-B): maior múltiplo do passo com risco <= US$ 1, piso no mínimo; null se o mínimo já passa de US$ 7,50
 function lotePorRisco(S, ativo, espec = ESPEC[ativo]) {
     // lotes ficam em múltiplos de 0,01 no mínimo (o passo real do GOLD é 0,001, mas o lote circula com 2 casas na fila e no executor): sem arredondar para CIMA
     const passo = Math.max(espec.passo, 0.01);

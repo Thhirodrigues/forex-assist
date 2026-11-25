@@ -34,6 +34,10 @@ console.log("TODOS OS TESTES DA FILA DO EXECUTOR PASSARAM");
     assert.strictEqual(itens.length, 2);
     const f = itens.find(i => i.includes("EURUSD")).split("|"), m = itens.find(i => i.includes("GOLD")).split("|");
     assert.strictEqual(f.length, 8); assert.strictEqual(m.length, 9); assert.strictEqual(m[8], "M"); assert.strictEqual(m[1], "GOLD"); assert.strictEqual(m[7], "0.01"); assert.strictEqual(m[5], "390");
+    // nome EXATO do MT5 (com minúsculas): "OILCash" virava "OILCASH" e o executor não achava o símbolo (log real de 25/11/2026)
+    const oil = { ...mat, id: `${ini}_OILCash`, par: "OILCash" }, nq = { ...mat, id: `${ini}_US100Cash`, par: "US100Cash" };
+    const t2 = fila.montarFila([oil, nq], agora).split(";").slice(2).map(i => i.split("|")[1]);
+    assert.deepStrictEqual(t2.sort(), ["OILCash", "US100Cash"]);
     console.log("fila: item de materia-prima OK");
 }
 

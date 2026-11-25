@@ -11,7 +11,7 @@
 const IDADE_MAX_MIN = 30;   // só entram na fila sinais emitidos há até 30 min (o EA ainda aplica o seu próprio limite)
 
 const num = (x, casas = 5) => (Number.isFinite(Number(x)) ? String(Number(Number(x).toFixed(casas))) : null);
-const simbolo = (par) => String(par || "").replace("/", "").toUpperCase();
+const simbolo = (par) => String(par || "").replace("/", "").toUpperCase();   // só forex ("EUR/JPY" -> "EURJPY"); matéria-prima vai com o nome EXATO do MT5 ("OILCash", "US100Cash")
 
 function montarFila(sinais, agoraMs, { marcoMs = 0, idadeMaxMin = IDADE_MAX_MIN } = {}) {
     const itens = [];
@@ -21,7 +21,7 @@ function montarFila(sinais, agoraMs, { marcoMs = 0, idadeMaxMin = IDADE_MAX_MIN 
         if (!Number.isFinite(ini) || ini < marcoMs || agoraMs - ini > idadeMaxMin * 60000 || ini > agoraMs + 60000) continue;
         if (s.direcao !== "BUY" && s.direcao !== "SELL") continue;
         const f = s.financeiro || {};
-        const campos = [s.id, simbolo(s.par), s.direcao === "BUY" ? "B" : "S", String(Math.floor(ini / 1000)), num(s.precoEntrada), num(f.tpPips, 1), num(f.slPips, 1), num(s.lote, 2)];
+        const campos = [s.id, s.tipo === "MATERIAS" ? String(s.par || "") : simbolo(s.par), s.direcao === "BUY" ? "B" : "S", String(Math.floor(ini / 1000)), num(s.precoEntrada), num(f.tpPips, 1), num(f.slPips, 1), num(s.lote, 2)];
         if (s.tipo === "MATERIAS") campos.push("M");
         if (campos.some(c => c === null || c === "" || /[|;"\\]/.test(c))) continue;   // sinal incompleto ou com caractere que quebraria o formato: fora
         itens.push({ t: ini, texto: campos.join("|") });
