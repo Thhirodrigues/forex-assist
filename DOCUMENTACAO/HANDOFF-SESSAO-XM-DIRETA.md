@@ -97,3 +97,11 @@ executor do forex) continua como está, com o pipeline de sinais **congelado** (
 7. **~30/11**: expira a chave Anthropic (só o sinal por IA usa).
 8. Ler do MT5 lote mínimo, passo e valor por ponto de GOLD, OILCash e US100Cash, e o swap do OILCash.
 9. O `dia-caminho.yml` foi disparado em 24/11 e o resultado não foi lido (não era a pergunta do momento).
+
+## 14. Registro de 25/11/2026 (madrugada): primeira compilação real no MT5
+- A **sessão local** (no PC do usuário) compilou os dois EAs no MetaEditor: **0 erros e 0 avisos** (exportador v1.10 e executor v1.30). Cópia das versões antigas em `MQL5\backup_EAs_20261124` no PC do usuário.
+- **Armadilha nova:** compilar **por linha de comando** gerou os arquivos mas o MT5 **não recarregou** os EAs (o executor continuou na v1.20). Recompilar pelo **botão Compilar do MetaEditor** fez o MT5 recarregar na hora. Sempre conferir no log a linha de início, e não só o resultado da compilação.
+- Log real do MT5 (aba Experts, hora do PC): `XM_Executor iniciado em modo REAL NA DEMO ... maximo 12 posicoes` e `XM_Executor v1.30 gestao: ...` às 00:05:55; `XM_Exporter iniciado` às 00:06:27 e `historico inicial enviado (120 dias)` às 00:07:41. O exportador novo está no gráfico EURUSD H1, o executor no GBPUSD H1; `SoLog = false`, `MaxPosicoes = 12` mantidos.
+- **Confirmado pelo scanner de produção (ciclo 03:10Z, run 45538077376):** `OILCash: estado iniciado (sem backfill)` e `US100Cash: estado iniciado (sem backfill)`, ou seja, **as velas dessas duas chegaram ao banco e o motor ao vivo as leu**. `GOLD: sem velas suficientes` neste ciclo (a investigar: provável primeiro envio com poucas velas enquanto o MT5 carregava o histórico; conferir nos ciclos seguintes).
+- Antes dessa recarga o executor v1.20 já estava operando a demo (entradas em USDJPY, AUDUSD e NZDUSD em 24/11 à noite).
+- Ainda **não visto rodando:** primeiro sinal real do módulo novo (cartão no app, linha `ENTROU` com lote de sinal tipo M, posição na XM) e o push TESTE.
