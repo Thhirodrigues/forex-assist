@@ -7,7 +7,7 @@
 //| Uso: so em conta DEMO. Ver DOCUMENTACAO/XM-EXPORTADOR.md         |
 //+------------------------------------------------------------------+
 #property copyright "Forex Assist"
-#property version   "1.00"
+#property version   "1.10"
 #property description "Exporta historico e posicoes (somente leitura) para o banco do Forex Assist"
 
 input string FirebaseProjeto   = "forex-assist-lab";   // projeto Firebase (laboratorio)
@@ -17,9 +17,13 @@ input int    IntervaloEstadoSeg = 60;                  // a cada quantos segundo
 input int    IntervaloHistSeg   = 300;                 // a cada quantos segundos reenvia os ultimos dias de historico
 input int    DiasHistoricoInicial = 120;               // dias de historico enviados na partida
 input int    DiasHistoricoRecente = 3;                 // dias reenviados a cada ciclo
+input string SimbolosBarras     = "GOLD,OILCash,US100Cash"; // simbolos cujas velas M1 vao para o motor ao vivo de materias-primas ("" desliga)
+input int    BarrasPorEnvio     = 1500;                 // velas M1 fechadas por envio (o motor usa 1.440 de contexto)
+input int    IntervaloBarrasSeg = 60;                   // a cada quantos segundos reenvia as velas
 
 datetime g_ultimoHist = 0;
 bool     g_backfillFeito = false;
+datetime g_ultimoBarras = 0;
 string   g_metodo = "PATCH";       // cai para POST+override se o PATCH falhar
 int      g_falhasSeguidas = 0;
 datetime g_ultimoAviso = 0;
@@ -62,10 +66,10 @@ void Aviso(const string msg)
   }
 
 //--- envio --------------------------------------------------------
-bool Enviar(const string docId, const string jsonPayload)
+bool EnviarDoc(const string colecao, const string docId, const string jsonPayload)
   {
    string url = "https://firestore.googleapis.com/v1/projects/" + FirebaseProjeto +
-                "/databases/(default)/documents/xm_conta/" + docId +
+                "/databases/(default)/documents/" + colecao + "/" + docId +
                 "?key=" + FirebaseApiKey +
                 "&updateMask.fieldPaths=t&updateMask.fieldPaths=json&updateMask.fieldPaths=em";
    string corpo = "{\"fields\":{\"t\":{\"stringValue\":\"" + Esc(TokenIngest) + "\"},"
@@ -111,6 +115,47 @@ bool Enviar(const string docId, const string jsonPayload)
       return false;
      }
    return false;
+  }
+
+bool Enviar(const string docId, const string jsonPayload)
+  {
+   return EnviarDoc("xm_conta", docId, jsonPayload);
+  }
+
+//--- velas M1 de materias-primas/indice para o motor ao vivo do app (v1.10) ---------------
+// Formato (ver scripts/materias/barras.js): v1;SIMBOLO;digitos;lote_min;passo;contrato;offset_seg;swap_compra;swap_venda;dia_triplo|ts,o,h,l,c,spread;...
+// So velas FECHADAS (a vela em formacao, posicao 0, fica de fora). `ts` = hora do servidor em segundos.
+bool EnviarBarras(const string sym)
+  {
+   if(!SymbolSelect(sym, true)) { Aviso("simbolo de barras nao encontrado: " + sym); return false; }
+   MqlRates r[];
+   int n = CopyRates(sym, PERIOD_M1, 1, BarrasPorEnvio, r);
+   if(n < 100) { Aviso("poucas velas M1 de " + sym + " (" + IntegerToString(n) + ")"); return false; }
+   long off = (long)MathRound(((double)TimeTradeServer() - (double)TimeGMT()) / 1800.0) * 1800;
+   int dig = (int)SymbolInfoInteger(sym, SYMBOL_DIGITS);
+   string t = "v1;" + sym + ";" + IntegerToString(dig) + ";" + DoubleToString(SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN), 2) + ";" +
+              DoubleToString(SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP), 2) + ";" + DoubleToString(SymbolInfoDouble(sym, SYMBOL_TRADE_CONTRACT_SIZE), 2) + ";" +
+              IntegerToString(off) + ";" + DoubleToString(SymbolInfoDouble(sym, SYMBOL_SWAP_LONG), 4) + ";" + DoubleToString(SymbolInfoDouble(sym, SYMBOL_SWAP_SHORT), 4) + ";" +
+              IntegerToString((int)SymbolInfoInteger(sym, SYMBOL_SWAP_ROLLOVER3DAYS)) + "|";
+   for(int i = 0; i < n; i++)
+     {
+      if(i > 0) StringAdd(t, ";");
+      StringAdd(t, IntegerToString((long)r[i].time) + "," + DoubleToString(r[i].open, dig) + "," + DoubleToString(r[i].high, dig) + "," +
+                   DoubleToString(r[i].low, dig) + "," + DoubleToString(r[i].close, dig) + "," + IntegerToString(r[i].spread));
+     }
+   return EnviarDoc("xm_barras", sym, t);
+  }
+
+void EnviarTodasBarras()
+  {
+   string lista[];
+   int k = StringSplit(SimbolosBarras, ',', lista);
+   for(int i = 0; i < k; i++)
+     {
+      string s = lista[i]; StringTrimLeft(s); StringTrimRight(s);
+      if(s == "") continue;
+      EnviarBarras(s);
+     }
   }
 
 //--- estado: conta + posicoes abertas -----------------------------
@@ -240,6 +285,11 @@ void OnTimer()
   {
    bool ok = EnviarEstado();
    if(!ok) return;
+   if(StringLen(SimbolosBarras) > 0 && TimeLocal() - g_ultimoBarras >= MathMax(30, IntervaloBarrasSeg))
+     {
+      g_ultimoBarras = TimeLocal();
+      EnviarTodasBarras();
+     }
    if(!g_backfillFeito)
      {
       EnviarHistorico(DiasHistoricoInicial);

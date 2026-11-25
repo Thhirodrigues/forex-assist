@@ -5,7 +5,7 @@
 // (`xm_exec/fila_<token>`), que o EA lê sem credencial: o id do documento contém o token secreto (regra do LAB: só `get`, nunca `list`).
 // SOMENTE LEITURA do oficial; escreve só no LAB. Não toca no scanner nem no sinal.
 // Formato de texto (sem aspas nem barras, para o EA analisar sem biblioteca de JSON):
-//   v1;<gmt_seg>;ID|SIMBOLO|B/S|t_seg|preco|tp_pips|sl_pips|lote;ID|...
+//   v1;<gmt_seg>;ID|SIMBOLO|B/S|t_seg|preco|tp_pips|sl_pips|lote[|M];ID|...   (M = sinal de materia-prima/indice de `historico_materias`: o EA usa o lote do sinal)
 // ===================================================
 
 const IDADE_MAX_MIN = 30;   // só entram na fila sinais emitidos há até 30 min (o EA ainda aplica o seu próprio limite)
@@ -22,6 +22,7 @@ function montarFila(sinais, agoraMs, { marcoMs = 0, idadeMaxMin = IDADE_MAX_MIN 
         if (s.direcao !== "BUY" && s.direcao !== "SELL") continue;
         const f = s.financeiro || {};
         const campos = [s.id, simbolo(s.par), s.direcao === "BUY" ? "B" : "S", String(Math.floor(ini / 1000)), num(s.precoEntrada), num(f.tpPips, 1), num(f.slPips, 1), num(s.lote, 2)];
+        if (s.tipo === "MATERIAS") campos.push("M");
         if (campos.some(c => c === null || c === "" || /[|;"\\]/.test(c))) continue;   // sinal incompleto ou com caractere que quebraria o formato: fora
         itens.push({ t: ini, texto: campos.join("|") });
     }
@@ -45,6 +46,9 @@ if (require.main === module) {
         const agora = Date.now();
         const snap = await oficial.collection("historico").where("status", "==", "ABERTA").get();
         const sinais = []; snap.forEach(d => sinais.push({ id: d.id, ...d.data() }));
+        // materias-primas e indice: coleção SEPARADA (pré-registro 6.78); entram na mesma fila com o marcador M. Falha aqui não derruba a fila do forex.
+        try { const sm = await oficial.collection("historico_materias").where("status", "==", "ABERTA").get(); sm.forEach(d => sinais.push({ id: d.id, ...d.data(), tipo: "MATERIAS" })); }
+        catch (e) { console.log(`Aviso: sinais de materias-primas não lidos (${e.message})`); }
         const texto = montarFila(sinais, agora, { marcoMs: Date.parse(MARCO_TESTE_UTC) });
         await lab.collection("xm_exec").doc(docIdDaFila(token)).set({ json: texto, em: new Date(agora).toISOString() });
         const n = texto.split(";").slice(2).filter(Boolean).length;

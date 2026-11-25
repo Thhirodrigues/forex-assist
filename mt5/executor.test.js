@@ -44,7 +44,7 @@ for (const [a, b] of [["{", "}"], ["(", ")"], ["[", "]"]]) {
     assert.strictEqual(limpo.split(a).length, limpo.split(b).length, `${a}${b} desbalanceado`);
 }
 // ---- v1.20: gestão de risco (modos 0 desligado / 1 só registra / 2 bloqueia) ----
-assert.ok(/#property version\s+"1\.20"/.test(src), "versão 1.20");
+assert.ok(/#property version\s+"1\.30"/.test(src), "versão 1.30");
 assert.ok(/input int\s+ModoExposicao\s*=\s*1;/.test(codigo) && /input int\s+ModoMetaDia\s*=\s*1;/.test(codigo) && /input int\s+ModoPerdaDia\s*=\s*1;/.test(codigo), "exposição, perda e meta: TODOS só REGISTRAM por padrão (o usuário decidiu em 23/11: 'não quero que bloqueie ainda por perda')");
 assert.ok(/input int\s+MaxPorMoeda\s*=\s*2;/.test(codigo) && /input double PerdaDiaUsd\s*=\s*15\.0;/.test(codigo) && /input double MetaDiaUsd\s*=\s*10\.0;/.test(codigo) && /input bool\s+PausaRolloverBrt\s*=\s*true;/.test(codigo), "limites aprovados");
 const iGestao = codigo.indexOf("RegrasExposicao(sym, compra)", codigo.indexOf("string motivoExp"));
@@ -69,4 +69,20 @@ assert.strictEqual(viola([["EURUSD", true], ["GBPUSD", true]], "USDCHF", true), 
 assert.strictEqual(viola([["EURJPY", true], ["GBPJPY", true]], "USDJPY", true), "JPY");
 assert.strictEqual(viola([["EURJPY", true], ["GBPJPY", true]], "EURUSD", true), null);
 assert.strictEqual(viola([["GOLD", true], ["GOLD", true], ["GOLD", true]], "EURUSD", true), null, "ativos que não são par de moedas não contam");
+
+// ---- v1.30: sinais de materias-primas/indice (item da fila com 9o campo "M") ----
+assert.ok(/nCampos != 8 && nCampos != 9/.test(src), "aceita item de 8 (forex) ou 9 (materia) campos");
+assert.ok(/bool materia = \(nCampos == 9 && c\[8\] == "M"\);/.test(src), "marcador M no 9o campo");
+assert.ok(/double lote = LoteFixo;/.test(src) && /lote = Num\(c\[7\]\);/.test(src), "materia usa o lote do sinal; forex continua com LoteFixo");
+assert.ok(/SYMBOL_VOLUME_STEP/.test(src) && /MathFloor\(lote \/ passo/.test(src), "lote ajustado ao passo do simbolo");
+assert.ok(/lote > LoteMaxMaterias\) lote = LoteMaxMaterias/.test(src), "teto de lote para materias");
+assert.ok(/input double LoteMaxMaterias\s*=\s*0\.30;/.test(src), "teto padrao 0,30");
+assert.ok(/LoteMaxMaterias < 0\.01 \|\| LoteMaxMaterias > 1\.0/.test(src), "validacao do teto no OnInit");
+assert.ok(/PositionOpen\(sym, compra \? ORDER_TYPE_BUY : ORDER_TYPE_SELL, lote, preco, sl, tp/.test(src), "a ordem usa a variavel lote");
+assert.ok(!/PositionOpen\([^;]*LoteFixo/.test(src), "nenhuma ordem usa mais LoteFixo direto");
+// espelho em JS do ajuste de lote: passo 0,01, teto 0,30, minimo do simbolo
+const ajustaLote = (sinal, passo, vmin, vmax, teto) => { let l = Math.floor(sinal / passo + 1e-9) * passo; l = Math.round(l * 100) / 100; if (l > teto) l = teto; if (vmax > 0 && l > vmax) l = vmax; return l < vmin || l <= 0 ? null : l; };
+assert.strictEqual(ajustaLote(0.0128, 0.01, 0.01, 100, 0.3), 0.01); assert.strictEqual(ajustaLote(0.22, 0.01, 0.01, 100, 0.3), 0.22);
+assert.strictEqual(ajustaLote(0.5, 0.01, 0.01, 100, 0.3), 0.3, "teto"); assert.strictEqual(ajustaLote(0.004, 0.01, 0.01, 100, 0.3), null, "abaixo do minimo: nao opera");
+
 console.log("TODOS OS TESTES ESTÁTICOS DO EXECUTOR PASSARAM");

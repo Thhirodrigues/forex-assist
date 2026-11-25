@@ -21,7 +21,8 @@ const semTextos = codigo.replace(/"(?:[^"\\]|\\.)*"/g, '""');   // o nome do par
 assert.ok(!/(Print|Aviso)\([^;]*TokenIngest/.test(semTextos));
 // chaves/parênteses balanceados (sanidade mínima, sem compilador)
 for (const [a, b] of [["{", "}"], ["(", ")"], ["[", "]"]]) {
-    const limpo = codigo.replace(/"(?:[^"\\]|\\.)*"/g, '""').replace(/'(?:[^'\\]|\\.)*'/g, "''");
+    // caracteres literais ANTES das strings: o `'"'` da função Esc desalinharia o pareamento de aspas do resto do arquivo
+    const limpo = codigo.replace(/'(?:[^'\\]|\\.)*'/g, "''").replace(/"(?:[^"\\]|\\.)*"/g, '""');
     assert.strictEqual(limpo.split(a).length, limpo.split(b).length, `${a}${b} desbalanceado`);
 }
 console.log("TODOS OS TESTES ESTÁTICOS DO EXPORTADOR PASSARAM");

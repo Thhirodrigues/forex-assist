@@ -22,3 +22,18 @@ assert.deepStrictEqual(ids, ["A", "B"], "do mais antigo para o mais novo; id com
 assert.strictEqual(montarFila([], AGORA), `v1;${AGORA / 1000};`);
 assert.strictEqual(docIdDaFila("tok_123"), "fila_tok_123");
 console.log("TODOS OS TESTES DA FILA DO EXECUTOR PASSARAM");
+
+// sinal de materia-prima: 9o campo M, lote do sinal, tp/sl em "pips" do executor; sinal de forex continua com 8 campos
+{
+    const fila = require("./fila");
+    const agora = Date.UTC(2026, 10, 25, 15, 0), ini = agora - 120000;
+    const mat = { id: `${ini}_GOLD`, par: "GOLD", direcao: "BUY", status: "ABERTA", tipo: "MATERIAS", inicioOperacao: ini, precoEntrada: 3640.55, lote: 0.01, financeiro: { tpPips: 390, slPips: 390 } };
+    const fx = { id: `${ini}_EUR_USD`, par: "EUR/USD", direcao: "SELL", status: "ABERTA", inicioOperacao: ini, precoEntrada: 1.1, lote: 0.04, financeiro: { tpPips: 25, slPips: 25 } };
+    const t = fila.montarFila([fx, mat], agora);
+    const itens = t.split(";").slice(2);
+    assert.strictEqual(itens.length, 2);
+    const f = itens.find(i => i.includes("EURUSD")).split("|"), m = itens.find(i => i.includes("GOLD")).split("|");
+    assert.strictEqual(f.length, 8); assert.strictEqual(m.length, 9); assert.strictEqual(m[8], "M"); assert.strictEqual(m[1], "GOLD"); assert.strictEqual(m[7], "0.01"); assert.strictEqual(m[5], "390");
+    console.log("fila: item de materia-prima OK");
+}
+

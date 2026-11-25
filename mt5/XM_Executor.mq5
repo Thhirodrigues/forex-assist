@@ -5,6 +5,8 @@
 //| sinal. SO DEMO. Comeca em MODO ENSAIO (SoLog=true): so escreve no|
 //| log o que FARIA, sem enviar ordens.                              |
 //| Nao fecha nem altera posicoes (TP/SL fecham). Nao envia dados.   |
+//| v1.30 (25/11/2026): item da fila com 9o campo "M" = materia-prima|
+//|   ou indice; usa o LOTE DO SINAL (risco), com teto LoteMaxMaterias|
 //| v1.20 (23/11/2026): GESTAO de risco, cada grupo com 3 modos      |
 //| (0 desligado, 1 SO REGISTRA no log o que bloquearia [padrao],    |
 //| 2 BLOQUEIA): (a) exposicao por MOEDA (limite de posicoes do mesmo|
@@ -16,7 +18,7 @@
 //| Ver DOCUMENTACAO/XM-EXECUTOR.md                                  |
 //+------------------------------------------------------------------+
 #property copyright "Forex Assist"
-#property version   "1.20"
+#property version   "1.30"
 #property description "Executor de sinais do app na conta DEMO (comeca em modo ensaio)"
 
 #include <Trade\Trade.mqh>
@@ -25,7 +27,8 @@ input string FirebaseProjeto   = "forex-assist-lab";   // projeto Firebase (labo
 input string FirebaseApiKey    = "AIzaSyCShYzOaXiQTLfmArT5h8t7IeUTGEacUFc";      // chave web (publica por desenho)
 input string TokenIngest       = "";                   // o MESMO token do exportador (secret XM_INGEST_TOKEN)
 input bool   SoLog             = true;                 // true = ENSAIO: so registra no log, NAO envia ordens
-input double LoteFixo          = 0.02;                 // lote de cada operacao
+input double LoteFixo          = 0.02;                 // lote de cada operacao (sinais de forex)
+input double LoteMaxMaterias   = 0.30;                 // teto do lote dos sinais de materias-primas/indice (tipo M; o lote vem calculado no sinal pelo risco)
 input int    MaxPosicoes       = 3;                    // maximo de posicoes abertas ao mesmo tempo (todas)
 input double MaxDerrapagemFracSL = 0.25;               // pula a entrada se o preco ja andou CONTRA mais que esta fracao do SL (0,10 a 1,00)
 input int    ModoExposicao     = 1;                    // gestao de EXPOSICAO e horario: 0 = desligada, 1 = so REGISTRA no log (padrao), 2 = BLOQUEIA
@@ -197,11 +200,13 @@ string TextoMetaDia(const double lucro)
    return "";
   }
 
-//--- um sinal da fila: ID|SIMBOLO|B/S|t|preco|tp_pips|sl_pips|lote ----
+//--- um sinal da fila: ID|SIMBOLO|B/S|t|preco|tp_pips|sl_pips|lote[|M] ----   (M = materia-prima/indice: usa o lote do sinal)
 void Processar(const string item)
   {
    string c[];
-   if(StringSplit(item, '|', c) != 8) { Aviso("item da fila fora do formato: " + item); return; }
+   int nCampos = StringSplit(item, '|', c);
+   if(nCampos != 8 && nCampos != 9) { Aviso("item da fila fora do formato: " + item); return; }
+   bool materia = (nCampos == 9 && c[8] == "M");
    string id = c[0];
    string sym = c[1] + SufixoSimbolo;
    bool compra = (c[2] == "B");
@@ -264,9 +269,21 @@ void Processar(const string item)
       return;
      }
    double vmin = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN);
-   if(LoteFixo < vmin)
+   double lote = LoteFixo;
+   if(materia)
      {
-      Print("XM_Executor: lote ", DoubleToString(LoteFixo, 2), " menor que o minimo do simbolo ", sym);
+      // lote do sinal (calculado pelo app para o risco-alvo), ajustado ao passo do simbolo e limitado pelo teto
+      double passo = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP);
+      double vmax  = SymbolInfoDouble(sym, SYMBOL_VOLUME_MAX);
+      lote = Num(c[7]);
+      if(passo > 0) lote = MathFloor(lote / passo + 1e-9) * passo;
+      lote = NormalizeDouble(lote, 2);
+      if(lote > LoteMaxMaterias) lote = LoteMaxMaterias;
+      if(vmax > 0 && lote > vmax) lote = vmax;
+     }
+   if(lote < vmin || lote <= 0.0)
+     {
+      Print("XM_Executor: lote ", DoubleToString(lote, 2), " menor que o minimo do simbolo ", sym, " (", DoubleToString(vmin, 2), ")");
       GlobalVariableSet(chave, 1);
       return;
      }
@@ -316,7 +333,7 @@ void Processar(const string item)
         }
       Print("XM_Executor [GESTAO-LOG]: PARARIA O DIA (", motivoMeta, "): ", (compra ? "COMPRA " : "VENDA "), sym, " | sinal ", id);
      }
-   string resumo = (compra ? "COMPRA " : "VENDA ") + sym + " lote " + DoubleToString(LoteFixo, 2) +
+   string resumo = (compra ? "COMPRA " : "VENDA ") + sym + " lote " + DoubleToString(lote, 2) +
                    " preco " + DoubleToString(preco, digitos) + " TP " + DoubleToString(tp, digitos) +
                    " SL " + DoubleToString(sl, digitos) + " | atraso " + IntegerToString((int)idade) + " s" +
                    " | derrapagem " + DoubleToString(derrapagem, 1) + " pips | spread " + DoubleToString(spread, 1) + " pips | sinal " + id;
@@ -337,7 +354,7 @@ void Processar(const string item)
    trade.SetExpertMagicNumber(NumeroMagico);
    trade.SetDeviationInPoints(DesvioPontos);
    trade.SetTypeFillingBySymbol(sym);
-   bool ok = trade.PositionOpen(sym, compra ? ORDER_TYPE_BUY : ORDER_TYPE_SELL, LoteFixo, preco, sl, tp, "XMEX " + id);
+   bool ok = trade.PositionOpen(sym, compra ? ORDER_TYPE_BUY : ORDER_TYPE_SELL, lote, preco, sl, tp, "XMEX " + id);
    if(ok && (trade.ResultRetcode() == TRADE_RETCODE_DONE || trade.ResultRetcode() == TRADE_RETCODE_PLACED))
      {
       Print("XM_Executor: ENTROU ", resumo);
@@ -359,6 +376,11 @@ int OnInit()
      {
       Print("XM_Executor: so funciona em conta DEMO; encerrando.");
       return INIT_FAILED;
+     }
+   if(LoteMaxMaterias < 0.01 || LoteMaxMaterias > 1.0)
+     {
+      Print("XM_Executor: LoteMaxMaterias fora do limite de seguranca (0,01 a 1,00); encerrando.");
+      return INIT_PARAMETERS_INCORRECT;
      }
    if(LoteFixo <= 0.0 || LoteFixo > 0.05)
      {
@@ -389,7 +411,7 @@ int OnInit()
    Print("XM_Executor iniciado em modo ", (SoLog ? "ENSAIO (nao envia ordens)" : "REAL NA DEMO (envia ordens)"),
          ". Lote ", DoubleToString(LoteFixo, 2), ", maximo ", MaxPosicoes, " posicoes, sinal valido por ", MaxIdadeSinalSeg, " s, derrapagem maxima ",
          DoubleToString(MaxDerrapagemFracSL * 100.0, 0), "% do SL.");
-   Print("XM_Executor v1.20 gestao: exposicao modo ", ModoExposicao, " (max ", MaxPorMoeda, " por moeda, pausa 17h-19h ", (PausaRolloverBrt ? "sim" : "nao"),
+   Print("XM_Executor v1.30 gestao: exposicao modo ", ModoExposicao, " (max ", MaxPorMoeda, " por moeda, pausa 17h-19h ", (PausaRolloverBrt ? "sim" : "nao"),
          "), perda do dia modo ", ModoPerdaDia, " (-", DoubleToString(PerdaDiaUsd, 2), "), meta do dia modo ", ModoMetaDia, " (+", DoubleToString(MetaDiaUsd, 2),
          "). Modos: 0 desligado, 1 so registra, 2 bloqueia.");
    return INIT_SUCCEEDED;

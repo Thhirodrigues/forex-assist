@@ -25,6 +25,15 @@ service cloud.firestore {
         && request.resource.data.em is string;
       allow read, delete: if false;
     }
+    // Velas M1 de materias-primas/indice (mt5/XM_Exporter.mq5 v1.1): so ESCREVE, com o mesmo token. Leitura so com credencial de administrador (motor ao vivo).
+    match /xm_barras/{doc} {
+      allow create, update: if request.resource.data.t == '__XM_TOKEN__'
+        && request.resource.data.keys().hasOnly(['t', 'json', 'em'])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 900000
+        && request.resource.data.em is string;
+      allow read, delete: if false;
+    }
     //XM_FIM
     // Fila de sinais para o executor da demo XM (mt5/XM_Executor.mq5): o EA LÊ um único documento cujo id contém o token secreto
     // (`get` sim, `list` nunca: sem saber o id não há como enumerar). Escrita só por administrador (workflow xm-fila).
