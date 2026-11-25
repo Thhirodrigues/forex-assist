@@ -133,8 +133,8 @@ bool EnviarBarras(const string sym)
    if(n < 100) { Aviso("poucas velas M1 de " + sym + " (" + IntegerToString(n) + ")"); return false; }
    long off = (long)MathRound(((double)TimeTradeServer() - (double)TimeGMT()) / 1800.0) * 1800;
    int dig = (int)SymbolInfoInteger(sym, SYMBOL_DIGITS);
-   string t = "v1;" + sym + ";" + IntegerToString(dig) + ";" + DoubleToString(SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN), 2) + ";" +
-              DoubleToString(SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP), 2) + ";" + DoubleToString(SymbolInfoDouble(sym, SYMBOL_TRADE_CONTRACT_SIZE), 2) + ";" +
+   string t = "v1;" + sym + ";" + IntegerToString(dig) + ";" + DoubleToString(SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN), 4) + ";" +
+              DoubleToString(SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP), 4) + ";" + DoubleToString(SymbolInfoDouble(sym, SYMBOL_TRADE_CONTRACT_SIZE), 2) + ";" +
               IntegerToString(off) + ";" + DoubleToString(SymbolInfoDouble(sym, SYMBOL_SWAP_LONG), 4) + ";" + DoubleToString(SymbolInfoDouble(sym, SYMBOL_SWAP_SHORT), 4) + ";" +
               IntegerToString((int)SymbolInfoInteger(sym, SYMBOL_SWAP_ROLLOVER3DAYS)) + "|";
    for(int i = 0; i < n; i++)

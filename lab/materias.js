@@ -30,7 +30,7 @@ const ATIVOS = { GOLD: { alvos: [2, 3, 5], primario: 3 }, OILCash: { alvos: [0.2
 const ADAPT = { FRAC_R15: 0.5, MULT_SPREAD: 8, RISCO_USD: 5, RISCO_MAX_USD: 7.5, JANELA_R15_MS: 900000, MIN_VELAS_JANELA: 10 };
 // US$ por unidade de preço por lote cheio (ouro 100 onças; petróleo 100 barris; US100 US$ 1 por ponto); lote mínimo e passo conforme a XM padrão.
 // A CONFERIR com a especificação real do MT5 (o exportador passa a enviá-la); o scanner ao vivo usa os valores reais quando existirem.
-const ESPEC = { GOLD: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.01 }, OILCash: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.01 }, US100Cash: { usdPorUnidadeLote: 1, minLote: 0.01, passo: 0.01 } };
+const ESPEC = { GOLD: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.001 }, OILCash: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.01 }, US100Cash: { usdPorUnidadeLote: 1, minLote: 0.10, passo: 0.10 } };      // US100Cash: min/passo 0,10 lidos do MT5 real em 25/11/2026; GOLD: passo real < 0,005 (usa-se 0,01, conservador)
 const spreadPreco = (b) => b.sp / Math.pow(10, b.dig);
 const arred = (x) => Math.round(x * 10) / 10;
 
@@ -93,7 +93,9 @@ function dimensionar(b, i) {
 
 // lote pelo risco (US$ 5): maior múltiplo do passo com risco <= US$ 5, piso no mínimo; null se o mínimo já passa de US$ 7,50
 function lotePorRisco(S, ativo, espec = ESPEC[ativo]) {
-    const bruto = Math.floor(ADAPT.RISCO_USD / (S * espec.usdPorUnidadeLote) / espec.passo + 1e-9) * espec.passo;
+    // lotes ficam em múltiplos de 0,01 no mínimo (o passo real do GOLD é 0,001, mas o lote circula com 2 casas na fila e no executor): sem arredondar para CIMA
+    const passo = Math.max(espec.passo, 0.01);
+    const bruto = Math.floor(ADAPT.RISCO_USD / (S * espec.usdPorUnidadeLote) / passo + 1e-9) * passo;
     let lote = Math.round(bruto * 100) / 100;
     if (lote < espec.minLote) lote = espec.minLote;
     const risco = lote * espec.usdPorUnidadeLote * S;

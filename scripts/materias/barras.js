@@ -11,7 +11,10 @@ function parseBarras(texto, { agoraMs = Date.now() } = {}) {
     if (h[0] !== "v1" || h.length < 10) return null;
     const [, simbolo, dig, volMin, passo, contrato, offset, swC, swV, triplo] = h;
     const meta = { simbolo, dig: Number(dig), volMin: Number(volMin), passo: Number(passo), contrato: Number(contrato), offsetSeg: Number(offset), swapCompra: Number(swC), swapVenda: Number(swV), triplo: Number(triplo) };
-    if (![meta.dig, meta.volMin, meta.passo, meta.contrato, meta.offsetSeg].every(Number.isFinite) || meta.contrato <= 0 || meta.passo <= 0) return null;
+    if (![meta.dig, meta.volMin, meta.passo, meta.contrato, meta.offsetSeg].every(Number.isFinite) || meta.contrato <= 0 || meta.volMin <= 0) return null;
+    // O MT5 do exportador v1.10 escrevia o passo com 2 casas: o do GOLD (menor que 0,005) virava "0.00" e a leitura descartava tudo (25/11/2026).
+    // Passo <= 0 cai para o lote mínimo (conservador: múltiplos do mínimo são sempre lotes válidos).
+    if (!(meta.passo > 0)) meta.passo = meta.volMin;
     const barras = [];
     for (const par of t.slice(corte + 1).split(";")) {
         if (!par) continue;

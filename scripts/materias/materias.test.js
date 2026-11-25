@@ -67,7 +67,16 @@ assert.strictEqual(motor.julgarSinal({ ...s0, timestamp: s0.timestamp + 7 }, b, 
     // MT5 parado: velas velhas não geram sinal novo
     const antes = mem.docs.size; r = await executar({ lerBarras: async a => a === "GOLD" ? montarTexto(meta, serie(1500, 300)) : "", bd, avisar, agora: T0 + 2000 * MIN + 3 * 3600e3, log: () => {} });
     assert.strictEqual(mem.docs.size, antes); assert.ok(r.velhas.some(v => v.ativo === "GOLD"));
-    console.log("materias (barras, motor, ciclo): OK");
+    // leitor tolerante: passo "0.00" (GOLD no exportador v1.10) não derruba a leitura; cai para o lote mínimo
+{
+    const b2 = serie(1500, 10), txt = montarTexto({ ...meta, passo: 0 }, b2);
+    assert.ok(txt.startsWith("v1;GOLD;2;0.01;0;100"), txt.slice(0, 30));
+    const txt0 = txt.replace(/^v1;GOLD;2;0\.01;0;/, "v1;GOLD;2;0.01;0.00;");
+    const p2 = parseBarras(txt0, { agoraMs: agoraDe(b2) });
+    assert.ok(p2, "leitura deve aceitar passo 0.00"); assert.strictEqual(p2.meta.passo, 0.01); assert.strictEqual(p2.barras.length, 1510);
+    assert.strictEqual(parseBarras(txt0.replace("0.01;0.00;", "0.00;0.00;"), { agoraMs: agoraDe(b2) }), null, "lote mínimo zero continua inválido");
+}
+console.log("materias (barras, motor, ciclo): OK");
 })().catch(e => { console.error(e); process.exit(1); });
 
 // diagnóstico: resume sem imprimir preços

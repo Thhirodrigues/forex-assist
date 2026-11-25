@@ -74,8 +74,12 @@ assert.ok(Object.keys(m.ATIVOS).length === 3);
     const g = m.lotePorRisco(3.9, "GOLD"); assert.deepStrictEqual([g.lote, g.riscoUsd], [0.01, 3.9]);       // 5/(3,9x100) = 0,0128 -> 0,01
     assert.strictEqual(m.lotePorRisco(7.6, "GOLD"), null);                                                // mínimo já passa de US$ 7,50
     const o = m.lotePorRisco(0.5, "OILCash"); assert.deepStrictEqual([o.lote, o.riscoUsd], [0.1, 5]);        // 5/(0,5x100) = 0,10 lote
-    const u = m.lotePorRisco(22.5, "US100Cash"); assert.deepStrictEqual([u.lote, u.riscoUsd], [0.22, 4.95]); // 5/22,5 = 0,222 -> 0,22
+    const u = m.lotePorRisco(22.5, "US100Cash"); assert.deepStrictEqual([u.lote, u.riscoUsd], [0.2, 4.5]);   // 5/22,5 = 0,222 -> passo REAL do US100 é 0,10 -> 0,20
     assert.ok(m.lotePorRisco(0.05, "OILCash").riscoUsd <= 5, "stop pequeno: lote grande, risco continua <= US$ 5");
+    // ouro com passo real 0,001: nunca arredonda para cima (S = 3,2 -> 0,0156 -> 0,01, e não 0,02)
+    const g2 = m.lotePorRisco(3.2, "GOLD"); assert.deepStrictEqual([g2.lote, g2.riscoUsd], [0.01, 3.2]);
+    // US100 com lote mínimo 0,10: alvo pequeno ainda cabe; alvo enorme (risco no mínimo > US$ 7,50) não gera sinal
+    assert.ok(m.lotePorRisco(5, "US100Cash").lote === 1 && m.lotePorRisco(80, "US100Cash") === null);
 }
 // o braço adaptativo carrega T, S, lote e R; o resultado em R é +1 no alvo e -1 no stop (stop = alvo, k = 1)
 {
