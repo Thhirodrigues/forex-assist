@@ -14,6 +14,12 @@
 // POLÍTICAS: P1 alvo fixo | P2 encerra ao chegar em 80% de T | P3 ao chegar em 80% de T, se a mesma regra do avaliador ainda aponta a favor
 //   no fechamento daquela vela, o alvo passa a 2 x T (stop igual); senão encerra em 80% de T.
 // CONTROLE ALEATORIO: mesma entrada e mesma geometria, direção oposta; esperança exata = média entre real e oposta.
+//
+// EMENDA 6.78 (25/11/2026, antes de qualquer dado de avaliação): a célula PRIMÁRIA passa a ser a ADAPTATIVA (a pedido do usuário: alvo, stop e lote
+// dependem do mercado). No fechamento da vela i, sobre as 1.440 velas até i: R15 = mediana da amplitude (máx-mín) das janelas de 15 min;
+// spreadMed = mediana do spread; T = max(0,5 x R15, 8 x spreadMed), stop S = T (k = 1), arredondados à casa decimal do preço. Lote = o maior
+// múltiplo do passo com risco (lote x US$ por unidade x S) <= US$ 5, piso no lote mínimo; sem sinal se o lote mínimo já passar de US$ 7,50 de risco.
+// O resultado do veredito é medido em R (resultado / S): +1 = alvo, -1 = stop. A grade fixa de 6.69/6.70 continua só como descritivo.
 // ===================================================
 const mediana = (a) => { const s = [...a].sort((x, y) => x - y), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const PARAMS = { JANELA: 60, ER_MIN: 0.30, NET_MIN_SPREADS: 4, SPREAD_MAX_X_MEDIANA: 1.5, HIST_SPREAD: 1440, ROLLOVER_BRT: [17, 18], MAX_VELAS: 480, FRACAO: 0.8, K_STOP: [1, 2] };
@@ -21,6 +27,10 @@ const PARAMS = { JANELA: 60, ER_MIN: 0.30, NET_MIN_SPREADS: 4, SPREAD_MAX_X_MEDI
 // MÚLTIPLOS DO SPREAD MEDIANO das primeiras 1.440 velas do arquivo (custo, não resultado; o arquivo cresce no fim, então esse trecho nunca muda).
 const ATIVOS = { GOLD: { alvos: [2, 3, 5], primario: 3 }, OILCash: { alvos: [0.25, 0.5, 1], primario: 0.5 }, US100Cash: { multSpread: [8, 15, 30], primarioMult: 15 } };
 
+const ADAPT = { FRAC_R15: 0.5, MULT_SPREAD: 8, RISCO_USD: 5, RISCO_MAX_USD: 7.5, JANELA_R15_MS: 900000, MIN_VELAS_JANELA: 10 };
+// US$ por unidade de preço por lote cheio (ouro 100 onças; petróleo 100 barris; US100 US$ 1 por ponto); lote mínimo e passo conforme a XM padrão.
+// A CONFERIR com a especificação real do MT5 (o exportador passa a enviá-la); o scanner ao vivo usa os valores reais quando existirem.
+const ESPEC = { GOLD: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.01 }, OILCash: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.01 }, US100Cash: { usdPorUnidadeLote: 1, minLote: 0.01, passo: 0.01 } };
 const spreadPreco = (b) => b.sp / Math.pow(10, b.dig);
 const arred = (x) => Math.round(x * 10) / 10;
 
@@ -43,19 +53,52 @@ function sinalEm(b, i) {
     return net > 0 ? 1 : -1;
 }
 
+// decisão de entrada no fechamento da vela i (usa só velas <= i): { i, compra } ou null. É A MESMA função do avaliador offline e do app ao vivo.
+function candidatoEm(b, i, ultimoMs = -Infinity) {
+    if (i < PARAMS.HIST_SPREAD) return null;
+    if (Math.floor(b[i].ms / 60000) % 30 !== 29) return null;                      // fecha em :00 / :30
+    if (b[i].ms - ultimoMs < 30 * 60000) return null;
+    if (PARAMS.ROLLOVER_BRT.includes(horaBrt(b[i].ms))) return null;
+    const lado = sinalEm(b, i); if (!lado) return null;
+    const hist = []; for (let q = i - PARAMS.HIST_SPREAD; q < i; q++) hist.push(spreadPreco(b[q]));
+    if (spreadPreco(b[i]) > PARAMS.SPREAD_MAX_X_MEDIANA * mediana(hist)) return null;
+    return { i, compra: lado > 0 };
+}
+
 function candidatos(b) {
     const out = []; let ultimoMs = -Infinity;
     for (let i = PARAMS.HIST_SPREAD; i < b.length - 1; i++) {
-        if (Math.floor(b[i].ms / 60000) % 30 !== 29) continue;                       // fecha em :00 / :30
-        if (b[i].ms - ultimoMs < 30 * 60000) continue;
-        if (PARAMS.ROLLOVER_BRT.includes(horaBrt(b[i].ms))) continue;
-        const lado = sinalEm(b, i); if (!lado) continue;
-        const hist = []; for (let q = i - PARAMS.HIST_SPREAD; q < i; q++) hist.push(spreadPreco(b[q]));
-        if (spreadPreco(b[i]) > PARAMS.SPREAD_MAX_X_MEDIANA * mediana(hist)) continue;
+        const c = candidatoEm(b, i, ultimoMs); if (!c) continue;
         if (b[i + 1].ms - b[i].ms !== 60000) continue;                                 // a próxima vela tem de existir sem lacuna
-        out.push({ i, j: i + 1, compra: lado > 0, ms: b[i + 1].ms }); ultimoMs = b[i].ms;
+        out.push({ i, j: i + 1, compra: c.compra, ms: b[i + 1].ms }); ultimoMs = b[i].ms;
     }
     return out;
+}
+
+// alvo e stop (preço) pela volatilidade das últimas 1.440 velas até i; null se faltarem dados
+function dimensionar(b, i) {
+    if (i < PARAMS.HIST_SPREAD - 1) return null;
+    const sps = [], janelas = new Map();
+    for (let q = i - PARAMS.HIST_SPREAD + 1; q <= i; q++) {
+        sps.push(spreadPreco(b[q]));
+        const k = Math.floor(b[q].ms / ADAPT.JANELA_R15_MS), g = janelas.get(k) || { h: -Infinity, l: Infinity, n: 0 };
+        if (b[q].h > g.h) g.h = b[q].h; if (b[q].l < g.l) g.l = b[q].l; g.n++; janelas.set(k, g);
+    }
+    const amp = [...janelas.values()].filter(g => g.n >= ADAPT.MIN_VELAS_JANELA).map(g => g.h - g.l);
+    if (amp.length < 20) return null;
+    const r15 = mediana(amp), spMed = mediana(sps), dig = b[i].dig;
+    const T = Number(Math.max(ADAPT.FRAC_R15 * r15, ADAPT.MULT_SPREAD * spMed).toFixed(dig));
+    return { T, S: T, r15, spMed };
+}
+
+// lote pelo risco (US$ 5): maior múltiplo do passo com risco <= US$ 5, piso no mínimo; null se o mínimo já passa de US$ 7,50
+function lotePorRisco(S, ativo, espec = ESPEC[ativo]) {
+    const bruto = Math.floor(ADAPT.RISCO_USD / (S * espec.usdPorUnidadeLote) / espec.passo + 1e-9) * espec.passo;
+    let lote = Math.round(bruto * 100) / 100;
+    if (lote < espec.minLote) lote = espec.minLote;
+    const risco = lote * espec.usdPorUnidadeLote * S;
+    if (risco > ADAPT.RISCO_MAX_USD + 1e-9) return null;
+    return { lote, riscoUsd: Math.round(risco * 100) / 100 };
 }
 
 // swap em USD por unidade se a posição atravessa a meia-noite do servidor (triplo na quarta: dia_triplo=3)
@@ -96,30 +139,43 @@ function julgar(b, j, compra, T, k, politica, sw) {
 
 // todas as operações da grade para um ativo (cada candidato x T x k x política), com o lado oposto para o ALEATORIO
 function operacoes(b, sw, ativo) {
-    const cand = candidatos(b), out = [], { alvos, primario } = alvosDoAtivo(ativo, b);
+    const cand = candidatos(b), out = [], { alvos } = alvosDoAtivo(ativo, b);
     for (const c of cand) for (const T of alvos) for (const k of PARAMS.K_STOP) for (const pol of ["P1", "P2", "P3"]) {
         const real = julgar(b, c.j, c.compra, T, k, pol, sw), oposta = julgar(b, c.j, !c.compra, T, k, pol, sw);
         if (real.motivo === "ABERTA" || oposta.motivo === "ABERTA") continue;
-        out.push({ ativo, ms: c.ms, dia: new Date(c.ms).toISOString().slice(0, 10), T, prim: T === primario, k, pol, real: real.pnl, oposta: oposta.pnl, compra: c.compra, motivo: real.motivo });
+        out.push({ ativo, ms: c.ms, dia: new Date(c.ms).toISOString().slice(0, 10), T, prim: false, adapt: false, k, pol, real: real.pnl, oposta: oposta.pnl, compra: c.compra, motivo: real.motivo });
+    }
+    // braço ADAPTATIVO (primário): alvo e stop pela volatilidade, k = 1, lote pelo risco; resultado também em R
+    const espec = ESPEC[ativo];
+    for (const c of cand) {
+        const d = dimensionar(b, c.i); if (!d) continue;
+        const lp = lotePorRisco(d.S, ativo); if (!lp) continue;
+        for (const pol of ["P1", "P2", "P3"]) {
+            const real = julgar(b, c.j, c.compra, d.T, 1, pol, sw), oposta = julgar(b, c.j, !c.compra, d.T, 1, pol, sw);
+            if (real.motivo === "ABERTA" || oposta.motivo === "ABERTA") continue;
+            out.push({ ativo, ms: c.ms, dia: new Date(c.ms).toISOString().slice(0, 10), T: d.T, S: d.S, adapt: true, prim: pol === "P1", k: 1, pol, real: real.pnl, oposta: oposta.pnl,
+                r: real.pnl / d.S, rOposta: oposta.pnl / d.S, lote: lp.lote, riscoUsd: lp.riscoUsd, usd: real.pnl * lp.lote * espec.usdPorUnidadeLote, compra: c.compra, motivo: real.motivo });
+        }
     }
     return out;
 }
 
-// ---------------- VEREDITO (critérios do pré-registro 6.69, fixos antes de rodar) ----------------
-// célula primária por ativo: P1, k = 1, T = ATIVOS[ativo].primario. C1: >= 300 operações em >= 20 dias; C2: IC 97,5% (blocos de dia) do resultado
-// líquido médio com limite inferior > 0; C3: IC 97,5% de (real - ALEATORIO) com limite inferior > 0; C4: média positiva nas duas metades.
+// ---------------- VEREDITO (critérios do pré-registro 6.69/6.78, fixos antes de rodar) ----------------
+// célula primária por ativo: braço ADAPTATIVO, política P1 (k = 1), resultado em R (alvo = +1, stop = -1, custo do spread já dentro).
+// C1: >= 300 operações em >= 20 dias; C2: IC (blocos de dia, nível Bonferroni 3 ativos) do R médio com limite inferior > 0; C3: IC de (R real - ALEATORIO)
+// com limite inferior > 0; C4: R médio positivo nas duas metades cronológicas.
 function julgarPrimaria(ops, ativo, icDias, nivel = 1 - 0.05 / Object.keys(ATIVOS).length) {   // Bonferroni para 3 ativos: 98,33%
-    const sel = ops.filter(o => o.ativo === ativo && o.pol === "P1" && o.k === 1 && o.prim);
-    const liquido = icDias(sel, o => o.real, { nivel });
-    const difAle = icDias(sel, o => o.real - (o.real + o.oposta) / 2, { nivel });
+    const sel = ops.filter(o => o.ativo === ativo && o.adapt && o.pol === "P1");
+    const liquido = icDias(sel, o => o.r, { nivel });
+    const difAle = icDias(sel, o => o.r - (o.r + o.rOposta) / 2, { nivel });
     const ms = sel.map(o => o.ms).sort((a, b) => a - b), meio = ms[Math.floor(ms.length / 2)];
-    const m = (a) => a.length ? a.reduce((x, o) => x + o.real, 0) / a.length : null;
+    const m = (a) => a.length ? a.reduce((x, o) => x + o.r, 0) / a.length : null;
     const m1 = m(sel.filter(o => o.ms < meio)), m2 = m(sel.filter(o => o.ms >= meio));
     const c1 = sel.length >= 300 && liquido.dias >= 20, c2 = liquido.ic[0] !== null && liquido.ic[0] > 0, c3 = difAle.ic[0] !== null && difAle.ic[0] > 0, c4 = m1 !== null && m2 !== null && m1 > 0 && m2 > 0;
     return { ativo, n: sel.length, liquido, difAle, metade1: m1 === null ? null : Math.round(m1 * 1000) / 1000, metade2: m2 === null ? null : Math.round(m2 * 1000) / 1000, c1, c2, c3, c4, veredito: c1 && c2 && c3 && c4 ? "APROVADA" : "REPROVADA" };
 }
 
-module.exports = { PARAMS, ATIVOS, alvosDoAtivo, sinalEm, candidatos, julgar, operacoes, julgarPrimaria, swapUsd, spreadPreco, horaBrt };
+module.exports = { PARAMS, ADAPT, ESPEC, ATIVOS, alvosDoAtivo, sinalEm, candidatoEm, candidatos, dimensionar, lotePorRisco, julgar, operacoes, julgarPrimaria, swapUsd, spreadPreco, horaBrt };
 
 if (require.main === module) {
     const fs = require("fs");
@@ -139,8 +195,13 @@ if (require.main === module) {
         const recorte = barras.slice(iniIdx), ops = operacoes(recorte, sw[ativo], ativo).filter(o => o.ms >= DESDE);
         todas.push(...ops);
         const ate = barras[barras.length - 1].ms;
-        console.log(`${ativo}: dados até ${new Date(ate).toISOString()}, alvos ${JSON.stringify(alvosDoAtivo(ativo, recorte).alvos)} (primário ${alvosDoAtivo(ativo, recorte).primario}), ${ops.filter(o => o.pol === "P1" && o.k === 1 && o.prim).length} operações na célula primária`);
+        console.log(`${ativo}: dados até ${new Date(ate).toISOString()}, alvos ${JSON.stringify(alvosDoAtivo(ativo, recorte).alvos)} (primário ${alvosDoAtivo(ativo, recorte).primario}), ${ops.filter(o => o.adapt && o.pol === "P1").length} operações na célula primária (adaptativa)`);
         console.log(`MATERIAS ${ativo} veredito = ${sc(julgarPrimaria(todas, ativo, icDias))}`);
+        // braço adaptativo, descritivo por política (R médio; diferença P2/P3 contra P1 pareada por instante)
+        const ad = ops.filter(o => o.adapt), p1 = ad.filter(o => o.pol === "P1"), porMs1 = new Map(p1.map(o => [o.ms, o]));
+        const lin = { n: p1.length, P1_R: icDias(p1, o => o.r).media, usdMedioPorOp: icDias(p1, o => o.usd).media, loteMediano: mediana(p1.map(o => o.lote)) };
+        for (const pol of ["P2", "P3"]) { const p = ad.filter(o => o.pol === pol && porMs1.has(o.ms)); lin[`${pol}_R`] = icDias(p, o => o.r).media; lin[`dif_${pol}`] = icDias(p.map(o => ({ ...o, v: o.r - porMs1.get(o.ms).r })), o => o.v).ic; }
+        console.log(`MATERIAS ${ativo} adaptativo = ${sc(lin)}`);
         // descritivo (sem aprovação): grade completa; a diferença P2/P3 contra P1 responde "encerrar/esticar muda a esperança?"
         for (const T of alvosDoAtivo(ativo, recorte).alvos) for (const k of PARAMS.K_STOP) {
             const base = ops.filter(o => o.T === T && o.k === k && o.pol === "P1");

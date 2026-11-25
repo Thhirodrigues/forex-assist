@@ -42,7 +42,7 @@ assert.ok(Math.abs(tueWed - (-69.5 * 0.01)) < 1e-9, "uma noite " + tueWed);
 assert.ok(Math.abs(m.swapUsd([sb(Date.UTC(2026, 10, 25, 10)), sb(Date.UTC(2026, 10, 25, 12))], 0, 1, true, sw)) < 1e-12, "sem meia-noite: sem swap");
 // veredito
 const { icDias } = require("./fase0-m1");
-const mk = (n, real, oposta) => Array.from({ length: n }, (_, k) => ({ ativo: "GOLD", pol: "P1", k: 1, T: 3, prim: true, ms: Date.UTC(2026, 10, 25 + (k % 30)) + k, dia: "d" + (k % 30), real: real + (k % 2 ? 0.1 : -0.1), oposta }));
+const mk = (n, real, oposta) => Array.from({ length: n }, (_, k) => ({ ativo: "GOLD", pol: "P1", k: 1, T: 3, adapt: true, r: real + (k % 2 ? 0.1 : -0.1), rOposta: oposta, ms: Date.UTC(2026, 10, 25 + (k % 30)) + k, dia: "d" + (k % 30), real: real + (k % 2 ? 0.1 : -0.1), oposta }));
 assert.strictEqual(m.julgarPrimaria(mk(400, 1, -1), "GOLD", icDias).veredito, "APROVADA");
 assert.strictEqual(m.julgarPrimaria(mk(400, -1, 1), "GOLD", icDias).veredito, "REPROVADA");
 assert.ok(!m.julgarPrimaria(mk(100, 1, -1), "GOLD", icDias).c1, "menos de 300 reprova");
@@ -51,7 +51,35 @@ const idx = Array.from({ length: 2000 }, (_, i) => ({ ms: T0 + i * MIN, o: 20000
 const al = m.alvosDoAtivo("US100Cash", idx);
 assert.deepStrictEqual(al.alvos, [12, 22.5, 45]); assert.strictEqual(al.primario, 22.5);          // só as primeiras 1.440 velas contam (spread 1,5)
 assert.deepStrictEqual(m.alvosDoAtivo("GOLD", idx).alvos, [2, 3, 5]);
-assert.ok(m.operacoes(idx, null, "US100Cash").every(o => o.prim === (o.T === 22.5)));
+assert.ok(m.operacoes(idx, null, "US100Cash").every(o => !o.prim || o.adapt), "só o braço adaptativo é primário");
 // o nível do veredito é Bonferroni para 3 ativos
 assert.ok(Object.keys(m.ATIVOS).length === 3);
+// ---- EMENDA 6.78: decisão única, dimensionamento por mercado e lote por risco ----
+// candidatos() é exatamente o laço de candidatoEm() (paridade offline x ao vivo)
+{
+    const longa = serie(400); const viaLaco = []; let ult = -Infinity;
+    for (let i = m.PARAMS.HIST_SPREAD; i < longa.length - 1; i++) { const c = m.candidatoEm(longa, i, ult); if (!c || longa[i + 1].ms - longa[i].ms !== 60000) continue; viaLaco.push({ i, j: i + 1, compra: c.compra, ms: longa[i + 1].ms }); ult = longa[i].ms; }
+    assert.deepStrictEqual(m.candidatos(longa), viaLaco); assert.ok(viaLaco.length >= 1);
+}
+// dimensionamento: mercado calmo (amplitude de 15 min pequena) -> T = 8 x spread; mercado agitado -> T = 0,5 x amplitude de 15 min
+{
+    const calmo = Array.from({ length: 1500 }, (_, i) => ({ ms: T0 + i * MIN, o: 1000, h: 1000.05, l: 999.95, c: 1000, sp: 20, dig: 2 }));     // amplitude 0,10 ; spread 0,20
+    const d1 = m.dimensionar(calmo, 1499); assert.ok(d1 && Math.abs(d1.T - 1.6) < 1e-9 && d1.S === d1.T, JSON.stringify(d1));                    // 8 x 0,20
+    const agitado = Array.from({ length: 1500 }, (_, i) => ({ ms: T0 + i * MIN, o: 1000, h: 1000 + 2, l: 1000 - 2, c: 1000, sp: 20, dig: 2 }));    // amplitude 4,00
+    const d2 = m.dimensionar(agitado, 1499); assert.ok(Math.abs(d2.T - 2.0) < 1e-9, JSON.stringify(d2));                                          // 0,5 x 4,00
+    assert.strictEqual(m.dimensionar(calmo, 100), null, "sem histórico suficiente não dimensiona");
+}
+// lote pelo risco de US$ 5
+{
+    const g = m.lotePorRisco(3.9, "GOLD"); assert.deepStrictEqual([g.lote, g.riscoUsd], [0.01, 3.9]);       // 5/(3,9x100) = 0,0128 -> 0,01
+    assert.strictEqual(m.lotePorRisco(7.6, "GOLD"), null);                                                // mínimo já passa de US$ 7,50
+    const o = m.lotePorRisco(0.5, "OILCash"); assert.deepStrictEqual([o.lote, o.riscoUsd], [0.1, 5]);        // 5/(0,5x100) = 0,10 lote
+    const u = m.lotePorRisco(22.5, "US100Cash"); assert.deepStrictEqual([u.lote, u.riscoUsd], [0.22, 4.95]); // 5/22,5 = 0,222 -> 0,22
+    assert.ok(m.lotePorRisco(0.05, "OILCash").riscoUsd <= 5, "stop pequeno: lote grande, risco continua <= US$ 5");
+}
+// o braço adaptativo carrega T, S, lote e R; o resultado em R é +1 no alvo e -1 no stop (stop = alvo, k = 1)
+{
+    const longa = serie(400), ops = m.operacoes(longa, null, "GOLD").filter(o => o.adapt && o.pol === "P1");
+    for (const o of ops) { assert.ok(o.lote > 0 && o.riscoUsd <= 7.5 && Math.abs(o.r - o.real / o.S) < 1e-9); if (o.motivo === "ALVO") assert.ok(Math.abs(o.r - 1) < 1e-9); if (o.motivo === "STOP") assert.ok(Math.abs(o.r + 1) < 1e-9); }
+}
 console.log("materias.test.js: OK");
