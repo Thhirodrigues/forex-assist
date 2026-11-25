@@ -1,0 +1,21 @@
+name: Materias-primas - diagnostico das velas no banco (somente leitura)
+
+# 25/11/2026: o scanner leu OILCash e US100Cash, mas GOLD ficou em "sem velas suficientes". Imprime, por simbolo, se o documento existe, quando foi
+# gravado, o cabecalho tecnico, quantas velas vieram e quantas sobrevivem a leitura. Nao imprime precos nem segredos; nao grava nada.
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/materias/materias.test.js
+      - name: Create Firebase Key (LAB)
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+      - run: node scripts/materias/diagnostico.js

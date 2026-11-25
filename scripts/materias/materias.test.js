@@ -69,3 +69,15 @@ assert.strictEqual(motor.julgarSinal({ ...s0, timestamp: s0.timestamp + 7 }, b, 
     assert.strictEqual(mem.docs.size, antes); assert.ok(r.velhas.some(v => v.ativo === "GOLD"));
     console.log("materias (barras, motor, ciclo): OK");
 })().catch(e => { console.error(e); process.exit(1); });
+
+// diagnóstico: resume sem imprimir preços
+{
+    const { resumir } = require("./diagnostico");
+    const b = serie(1500, 10), txt = montarTexto(meta, b), agora = agoraDe(b);
+    const r = resumir("GOLD", { json: txt, em: "2026-11-25T03:00:00Z" }, agora);
+    assert.strictEqual(r.existe, true); assert.strictEqual(r.velasNoTexto, 1510); assert.strictEqual(r.velasLidas, 1510); assert.strictEqual(r.leituraOk, true); assert.strictEqual(r.idadeUltimaMin, 1);
+    assert.ok(r.cabecalho.startsWith("v1;GOLD;2;0.01;0.01;100"));
+    assert.deepStrictEqual(resumir("GOLD", null), { simbolo: "GOLD", existe: false });
+    assert.strictEqual(resumir("X", { json: "lixo" }, agora).leituraOk, false);
+    console.log("diagnostico: OK");
+}
