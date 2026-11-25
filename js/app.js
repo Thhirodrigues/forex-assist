@@ -6,7 +6,8 @@ const TITULOS_ABA = {
     resultados: "Resultados",
     config: "Config",
     manual: "Manual",
-    laboratorio: "Laboratório"
+    laboratorio: "Laboratório",
+    materias: "Matérias-primas"
 };
 
 // Linha de apoio sob o título nas telas secundárias (padrão do projeto:
@@ -17,7 +18,8 @@ const SUBTITULOS_ABA = {
     resultados: "Desempenho da conta",
     config: "Preferências do assistente",
     manual: "Real Money Intelligence",
-    laboratorio: "Testes em paralelo, fora do sinal oficial"
+    laboratorio: "Testes em paralelo, fora do sinal oficial",
+    materias: "Ouro, petróleo e Nasdaq · teste na conta demo"
 };
 
 const app = {
@@ -103,6 +105,11 @@ localStorage.getItem("ultimaAba")
                 content = laboratorioView();
                 break;
 
+            // 25/11/2026 (pré-registro 6.78): sinais de matérias-primas e índice (só leitura). Ver js/materias.js.
+            case "materias":
+                content = materiasView();
+                break;
+
             case "config":
                 content = configView();
                 break;
@@ -136,6 +143,7 @@ ${[
     ["resultados","Resultados", "M5 20V11M12 20V4M19 20v-6"],
     ["config",    "Config",     "M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4"],
     ["manual",    "Manual",     "M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h10"],
+    ["materias",  "Mat.",       "M12 3l3 6 6 .9-4.4 4.2 1.1 6-5.7-3-5.7 3 1.1-6L3 9.9 9 9z"],
     ["laboratorio", "Lab",      "M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3M8 15h8"]
 ].map(([id, rotulo, icone]) => `
             <button class="nav-btn ${this.currentTab===id?"nav-active":""}" data-tab="${id}" aria-label="${rotulo}"${this.currentTab===id?' aria-current="page"':""}>
@@ -198,6 +206,18 @@ ${[
 
         if (typeof carregarResultados === "function") {
             carregarResultados();
+        }
+
+    }, 100);
+
+        }
+
+        if (this.currentTab === "materias") {
+
+    setTimeout(() => {
+
+        if (typeof carregarMaterias === "function") {
+            carregarMaterias();
         }
 
     }, 100);

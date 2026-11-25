@@ -1129,3 +1129,25 @@ gap:10px;
 margin-top:14px;
 }
 
+
+/* ===== Matérias-primas e índice (js/materias.js; pré-registro 6.78) ===== */
+.mt-cartao{padding:14px 16px;margin:0 0 12px;border-radius:18px;}
+.mt-aviso{border-left:3px solid var(--pa-espera);}
+.mt-aviso p{margin:6px 0 0;font-size:13px;line-height:1.45;color:var(--pa-muted);}
+.mt-topo{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.mt-ativo{font-size:16px;}
+.mt-sub{margin:3px 0 10px;font-size:12px;color:var(--pa-muted);}
+.mt-chip{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.03em;}
+.mt-compra{background:var(--pa-ganho-suave);color:var(--pa-ganho);}
+.mt-venda{background:var(--pa-perda-suave);color:var(--pa-perda);}
+.mt-selo{font-size:11px;font-weight:700;letter-spacing:.05em;padding:3px 9px;border-radius:999px;border:1px solid var(--pa-borda);}
+.mt-grade{display:grid;gap:5px;}
+.mt-linha{display:flex;justify-content:space-between;gap:10px;font-size:13px;}
+.mt-linha span{color:var(--pa-muted);}
+.mt-ganho{color:var(--pa-ganho);}
+.mt-perda{color:var(--pa-perda);}
+.mt-aberta{border-left:3px solid var(--pa-primary);}
+.mt-cartao.mt-ganho{border-left:3px solid var(--pa-ganho);}
+.mt-cartao.mt-perda{border-left:3px solid var(--pa-perda);}
+.mt-pols{margin-top:9px;padding-top:8px;border-top:1px solid var(--pa-fio);font-size:12px;display:flex;flex-wrap:wrap;gap:4px 12px;}
+.mt-ajuda{color:var(--pa-muted);}
