@@ -15,12 +15,23 @@
 //   no fechamento daquela vela, o alvo passa a 2 x T (stop igual); senão encerra em 80% de T.
 // CONTROLE ALEATORIO: mesma entrada e mesma geometria, direção oposta; esperança exata = média entre real e oposta.
 // ===================================================
+const mediana = (a) => { const s = [...a].sort((x, y) => x - y), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const PARAMS = { JANELA: 60, ER_MIN: 0.30, NET_MIN_SPREADS: 4, SPREAD_MAX_X_MEDIANA: 1.5, HIST_SPREAD: 1440, ROLLOVER_BRT: [17, 18], MAX_VELAS: 480, FRACAO: 0.8, K_STOP: [1, 2] };
-const ATIVOS = { GOLD: { alvos: [2, 3, 5], primario: 3 }, OILCash: { alvos: [0.25, 0.5, 1], primario: 0.5 } };
+// GOLD e OILCash: alvos fixos em USD por unidade (onça / barril). US100Cash (emenda 25/11/2026, antes de qualquer dado de avaliação, ver 6.77): alvos em
+// MÚLTIPLOS DO SPREAD MEDIANO das primeiras 1.440 velas do arquivo (custo, não resultado; o arquivo cresce no fim, então esse trecho nunca muda).
+const ATIVOS = { GOLD: { alvos: [2, 3, 5], primario: 3 }, OILCash: { alvos: [0.25, 0.5, 1], primario: 0.5 }, US100Cash: { multSpread: [8, 15, 30], primarioMult: 15 } };
 
 const spreadPreco = (b) => b.sp / Math.pow(10, b.dig);
+const arred = (x) => Math.round(x * 10) / 10;
+
+// alvos (preço) e alvo primário de um ativo; para o índice, derivados do spread mediano das primeiras 1.440 velas
+function alvosDoAtivo(ativo, b) {
+    const a = ATIVOS[ativo];
+    if (a.alvos) return { alvos: a.alvos, primario: a.primario };
+    const med = mediana(b.slice(0, PARAMS.HIST_SPREAD).map(spreadPreco));
+    return { alvos: a.multSpread.map(m => arred(m * med)), primario: arred(a.primarioMult * med) };
+}
 const horaBrt = (ms) => (new Date(ms).getUTCHours() + 21) % 24;
-const mediana = (a) => { const s = [...a].sort((x, y) => x - y), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
 // direção favorável (+1 compra, -1 venda, 0 nenhuma) no fechamento da vela i; usa só velas <= i
 function sinalEm(b, i) {
@@ -85,11 +96,11 @@ function julgar(b, j, compra, T, k, politica, sw) {
 
 // todas as operações da grade para um ativo (cada candidato x T x k x política), com o lado oposto para o ALEATORIO
 function operacoes(b, sw, ativo) {
-    const cand = candidatos(b), out = [];
-    for (const c of cand) for (const T of ATIVOS[ativo].alvos) for (const k of PARAMS.K_STOP) for (const pol of ["P1", "P2", "P3"]) {
+    const cand = candidatos(b), out = [], { alvos, primario } = alvosDoAtivo(ativo, b);
+    for (const c of cand) for (const T of alvos) for (const k of PARAMS.K_STOP) for (const pol of ["P1", "P2", "P3"]) {
         const real = julgar(b, c.j, c.compra, T, k, pol, sw), oposta = julgar(b, c.j, !c.compra, T, k, pol, sw);
         if (real.motivo === "ABERTA" || oposta.motivo === "ABERTA") continue;
-        out.push({ ativo, ms: c.ms, dia: new Date(c.ms).toISOString().slice(0, 10), T, k, pol, real: real.pnl, oposta: oposta.pnl, compra: c.compra, motivo: real.motivo });
+        out.push({ ativo, ms: c.ms, dia: new Date(c.ms).toISOString().slice(0, 10), T, prim: T === primario, k, pol, real: real.pnl, oposta: oposta.pnl, compra: c.compra, motivo: real.motivo });
     }
     return out;
 }
@@ -97,8 +108,8 @@ function operacoes(b, sw, ativo) {
 // ---------------- VEREDITO (critérios do pré-registro 6.69, fixos antes de rodar) ----------------
 // célula primária por ativo: P1, k = 1, T = ATIVOS[ativo].primario. C1: >= 300 operações em >= 20 dias; C2: IC 97,5% (blocos de dia) do resultado
 // líquido médio com limite inferior > 0; C3: IC 97,5% de (real - ALEATORIO) com limite inferior > 0; C4: média positiva nas duas metades.
-function julgarPrimaria(ops, ativo, icDias, nivel = 0.975) {
-    const sel = ops.filter(o => o.ativo === ativo && o.pol === "P1" && o.k === 1 && o.T === ATIVOS[ativo].primario);
+function julgarPrimaria(ops, ativo, icDias, nivel = 1 - 0.05 / Object.keys(ATIVOS).length) {   // Bonferroni para 3 ativos: 98,33%
+    const sel = ops.filter(o => o.ativo === ativo && o.pol === "P1" && o.k === 1 && o.prim);
     const liquido = icDias(sel, o => o.real, { nivel });
     const difAle = icDias(sel, o => o.real - (o.real + o.oposta) / 2, { nivel });
     const ms = sel.map(o => o.ms).sort((a, b) => a - b), meio = ms[Math.floor(ms.length / 2)];
@@ -108,7 +119,7 @@ function julgarPrimaria(ops, ativo, icDias, nivel = 0.975) {
     return { ativo, n: sel.length, liquido, difAle, metade1: m1 === null ? null : Math.round(m1 * 1000) / 1000, metade2: m2 === null ? null : Math.round(m2 * 1000) / 1000, c1, c2, c3, c4, veredito: c1 && c2 && c3 && c4 ? "APROVADA" : "REPROVADA" };
 }
 
-module.exports = { PARAMS, ATIVOS, sinalEm, candidatos, julgar, operacoes, julgarPrimaria, swapUsd, spreadPreco, horaBrt };
+module.exports = { PARAMS, ATIVOS, alvosDoAtivo, sinalEm, candidatos, julgar, operacoes, julgarPrimaria, swapUsd, spreadPreco, horaBrt };
 
 if (require.main === module) {
     const fs = require("fs");
@@ -128,10 +139,10 @@ if (require.main === module) {
         const recorte = barras.slice(iniIdx), ops = operacoes(recorte, sw[ativo], ativo).filter(o => o.ms >= DESDE);
         todas.push(...ops);
         const ate = barras[barras.length - 1].ms;
-        console.log(`${ativo}: dados até ${new Date(ate).toISOString()}, ${ops.filter(o => o.pol === "P1" && o.k === 1 && o.T === ATIVOS[ativo].primario).length} operações na célula primária`);
+        console.log(`${ativo}: dados até ${new Date(ate).toISOString()}, alvos ${JSON.stringify(alvosDoAtivo(ativo, recorte).alvos)} (primário ${alvosDoAtivo(ativo, recorte).primario}), ${ops.filter(o => o.pol === "P1" && o.k === 1 && o.prim).length} operações na célula primária`);
         console.log(`MATERIAS ${ativo} veredito = ${sc(julgarPrimaria(todas, ativo, icDias))}`);
         // descritivo (sem aprovação): grade completa; a diferença P2/P3 contra P1 responde "encerrar/esticar muda a esperança?"
-        for (const T of ATIVOS[ativo].alvos) for (const k of PARAMS.K_STOP) {
+        for (const T of alvosDoAtivo(ativo, recorte).alvos) for (const k of PARAMS.K_STOP) {
             const base = ops.filter(o => o.T === T && o.k === k && o.pol === "P1");
             const linha = { T, k, n: base.length, P1: icDias(base, o => o.real).media };
             const porMs = new Map(base.map(o => [o.ms, o]));                       // alinhar por instante (uma política pode ter operação a menos)

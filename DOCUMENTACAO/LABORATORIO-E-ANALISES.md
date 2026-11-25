@@ -1302,3 +1302,29 @@ Total 68 de 70 (97,1%). As 2 divergências são da época sem spread e são amba
 5. **GBP/JPY de 11:25 BRT:** app aberta, modelo WIN às 14:30, XM real aberta: limite de resolução da vela M5 (entrada real 1,6 pip melhor que a abertura da vela).
 
 **Leitura:** o app e o preço da XM já concordam em ~97% dos resultados, 100% depois do spread no app (17/17, amostra pequena). O que sobra é ruído de fronteira: as distâncias de TP/SL são de 20 a 40 pips e as duas fontes de preço diferem em 0,3 a 5 pips (GBP/JPY: a XM entrou ~5 pips abaixo do preço do app nas compras de hoje); quando o preço fica a menos de 1 pip do nível, uma fonte cruza e a outra não. Para eliminar o ruído de vez, o app teria de julgar com as barras da própria XM (opção C da 6.75), o que exige mudar o EA e o checker. **Recomendação:** não fazer isso ainda; esperar ~100 sinais com spread, MaxPosicoes = 12 (admissão igual) e repetir esta mesma conferência, porque 97–100% é um nível em que o custo de mudar o app pesa mais que o ganho.
+
+### 6.77 Emenda ao pré-registro 6.70 e combinado de funcionamento das matérias-primas e do índice (25/11/2026; ANTES de qualquer dado de avaliação)
+
+**Decisão do usuário (25/11):** por enquanto só **ouro (GOLD), petróleo (OILCash) e índice Nasdaq (US100Cash)**; Brent fora; "vai funcionar diferente do forex".
+
+**Emenda (código `lab/materias.js`, testes passando; nenhum dado posterior a 25/11 00:00Z existe ainda, então nada foi olhado):**
+- US100Cash entra como 3º ativo. Alvos em **múltiplos do spread mediano das primeiras 1.440 velas do arquivo** (8×, 15× e 30×; primário 15×). É custo, não resultado, e como o arquivo só cresce no fim esse trecho nunca muda. Unidade: pontos do índice (1 ponto = US$ 1 por lote cheio, deduzido dos trades de copytrade, a conferir no `tamanho_contrato` do `xm_swaps.csv` da primeira exportação).
+- **Bonferroni para 3 ativos:** nível do IC passa de 97,5% para **98,33%** (1 − 0,05/3).
+- Todo o resto de 6.70 (avaliador de entrada, grade de alvos de GOLD e OILCash, k de stop, políticas P1/P2/P3, controle ALEATORIO, critérios C1 a C4, dados só a partir de 25/11 00:00Z) permanece igual.
+
+**O que está combinado e como difere do forex:**
+| | Forex (app atual) | Matérias-primas e índice (este módulo) |
+|---|---|---|
+| Fonte de preço | TwelveData (preço do app) | Velas M1 reais da própria XM (bid/ask por vela), exportadas do MT5 |
+| Quem gera a entrada | pipeline do app (scanner → score → decisão) | avaliador fixo e causal (continuação de tendência, ER ≥ 0,30 em 60 velas, a cada :00/:30) |
+| Unidade | pips | dólares por onça / barril; pontos no índice |
+| Alvo | TP/SL em pips por par (US$ 5) | grade: GOLD US$ 2/3/5, OIL US$ 0,25/0,50/1,00, US100 8/15/30 × spread; stop = 1× ou 2× o alvo; limite de 8 h |
+| Gestão | alvo e stop fixos; avisos | 3 políticas medidas em paralelo: alvo fixo, sair a 80% do alvo, ou esticar para 2× se a reanálise ainda for favorável |
+| Posição | várias por moeda (limites em avisos) | uma por vez, perda sempre realizada, sem trava nem preço médio |
+| Dinheiro | demo (executor) | **nenhuma ordem na Fase A**: posições virtuais com preço real |
+| Evidência | regra 6.25 (400 fechadas, 30 dias) | ≥ 300 operações em ≥ 20 dias de mercado, só dados após 25/11 |
+| Avaliação | histórico oficial do Firestore | `lab/materias.js` (workflow manual `lab-materias.yml`), fora do histórico oficial |
+
+**Logística:** (1) o usuário exporta M1 com `XM_ExportarBarras` (`GOLD,OILCash,US100Cash`, `Desde 2026.11.24 00:00`, M1) pelo menos 1 vez por semana e manda o pacote; (2) o Code junta ao arquivo e confere a integridade; (3) a primeira conferência rápida é em ~01/12 (dados chegaram íntegros, quantas entradas o avaliador gerou); (4) o veredito sai com os critérios cumpridos, por volta de **22/12**; (5) só se um ativo passar entra a Fase B (avisos de progresso até o alvo e "quer esticar?") e depois uma Fase C com execução real na demo, em lote mínimo e regras próprias (decisão do usuário, não é o executor do forex). Reprovou, o ativo é encerrado sem variantes.
+
+**Ainda NÃO definido (a decidir antes da Fase B):** lote mínimo e valor por ponto de cada símbolo (conferir na especificação do MT5); como os avisos chegam ao usuário (app ou outro canal); se o módulo ganhará uma aba própria no app; regras de horário do índice (a sessão do US100Cash é mais curta que a do ouro; as lacunas de dados já impedem entrada fora do pregão).

@@ -42,8 +42,16 @@ assert.ok(Math.abs(tueWed - (-69.5 * 0.01)) < 1e-9, "uma noite " + tueWed);
 assert.ok(Math.abs(m.swapUsd([sb(Date.UTC(2026, 10, 25, 10)), sb(Date.UTC(2026, 10, 25, 12))], 0, 1, true, sw)) < 1e-12, "sem meia-noite: sem swap");
 // veredito
 const { icDias } = require("./fase0-m1");
-const mk = (n, real, oposta) => Array.from({ length: n }, (_, k) => ({ ativo: "GOLD", pol: "P1", k: 1, T: 3, ms: Date.UTC(2026, 10, 25 + (k % 30)) + k, dia: "d" + (k % 30), real: real + (k % 2 ? 0.1 : -0.1), oposta }));
+const mk = (n, real, oposta) => Array.from({ length: n }, (_, k) => ({ ativo: "GOLD", pol: "P1", k: 1, T: 3, prim: true, ms: Date.UTC(2026, 10, 25 + (k % 30)) + k, dia: "d" + (k % 30), real: real + (k % 2 ? 0.1 : -0.1), oposta }));
 assert.strictEqual(m.julgarPrimaria(mk(400, 1, -1), "GOLD", icDias).veredito, "APROVADA");
 assert.strictEqual(m.julgarPrimaria(mk(400, -1, 1), "GOLD", icDias).veredito, "REPROVADA");
 assert.ok(!m.julgarPrimaria(mk(100, 1, -1), "GOLD", icDias).c1, "menos de 300 reprova");
+// US100Cash: alvos = múltiplos do spread mediano das primeiras 1.440 velas (índice em pontos: spread 1,5 pontos -> 12 / 22,5(arred. 22,5) / 45)
+const idx = Array.from({ length: 2000 }, (_, i) => ({ ms: T0 + i * MIN, o: 20000, h: 20001, l: 19999, c: 20000, sp: i < 1440 ? 150 : 900, dig: 2 }));
+const al = m.alvosDoAtivo("US100Cash", idx);
+assert.deepStrictEqual(al.alvos, [12, 22.5, 45]); assert.strictEqual(al.primario, 22.5);          // só as primeiras 1.440 velas contam (spread 1,5)
+assert.deepStrictEqual(m.alvosDoAtivo("GOLD", idx).alvos, [2, 3, 5]);
+assert.ok(m.operacoes(idx, null, "US100Cash").every(o => o.prim === (o.T === 22.5)));
+// o nível do veredito é Bonferroni para 3 ativos
+assert.ok(Object.keys(m.ATIVOS).length === 3);
 console.log("materias.test.js: OK");
