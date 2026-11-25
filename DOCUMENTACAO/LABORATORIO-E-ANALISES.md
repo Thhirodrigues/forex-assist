@@ -1280,3 +1280,25 @@ Em US$ do app a diferença também é nula (0,20 contra 0,06 e 0,18 contra 0,10 
 - A (sem compilar, F7 no executor): subir `MaxPosicoes` de 3 para o máximo aceito (12), para a XM tomar praticamente todos os sinais (a regra de 1 posição por símbolo continua). Reduz a diferença (1).
 - B (precisa de dados da XM): exportar M5 dos 10 pares desde 19/11 e rejulgar com o preço da XM os sinais de 23 e 24/11, para medir quantos sinais o app e a XM julgam diferente e por quê (caso EUR/GBP e o atraso de 74 min na GBP/JPY).
 - C (decisão grande, só se B mostrar divergência frequente): o app passar a julgar WIN/LOSS com as barras da própria XM (o exportador MT5 enviaria as barras), eliminando a diferença de fonte de preço. Exige mudar o EA e o `js/checker.js`.
+
+### 6.76 O app julga como a XM? Rejulgamento com M5 reais da XM (25/11/2026; `xm-concordancia.yml` run 45516186239, commit 9240496; 78 sinais de 19/11 a 24/11; DESCRITIVO)
+
+**Método:** cada sinal do `historico` rejulgado com as velas M5 reais da XM (bid/ask, `rejulgar.julgar`, entrada na abertura da vela do sinal) e comparado com o resultado que o app registrou. M5 dos 10 pares de 19/11 a 25/11 juntado ao arquivo (nova barra vence na sobreposição; 53 de 54 barras idênticas). Duas épocas: antes do spread no app (julgado sem spread, até 23/11 16:45Z) e depois (`spreadAplicadoPips`).
+
+**Concordância de resultado (quando os dois decidiram):**
+| época | sinais | decididos nos dois | concordam | app WIN / XM LOSS | app LOSS / XM WIN | horário: mediana da diferença | dentro de 15 min |
+|---|---|---|---|---|---|---|---|
+| sem spread no app | 60 | 53 | **51 (96,2%)** | 2 | 0 | 5 min | 71,7% |
+| com spread no app | 18 | 17 | **17 (100%)** | 0 | 0 | 5 min | 88,2% |
+Total 68 de 70 (97,1%). As 2 divergências são da época sem spread e são ambas "app WIN, XM LOSS" (o sentido que o spread explica).
+
+**Validação contra o que a XM de fato fez (7 entradas do executor em 24/11, `xm_real` no arquivo do dia):** o modelo por vela bate com a XM real em 6 de 7 (AUD/USD LOSS, GBP/JPY WIN, GBP/JPY WIN, USD/CAD WIN, EUR/GBP aberta, USD/CAD aberta); a 7ª (GBP/JPY das 11:25) o modelo dá WIN às 14:30 e a XM real ainda estava aberta às 20:32. O horário do modelo pode ficar horas fora do da XM (GBP/JPY das 06:35: XM real 10:06, modelo 11:25) porque a vela M5 não tem o instante nem o preço exato do preenchimento (1 a 2 pips de diferença na entrada movem o nível do TP). O caso conhecido de 23/11 (USD/CHF, app WIN 08:35Z, XM stop às 13:52Z) é reproduzido pelo modelo (LOSS às 13:55Z).
+
+**As divergências, uma por uma:**
+1. **USD/CHF venda de 23/11 (04:10 BRT):** app WIN, preço da XM LOSS às 10:55 BRT; a XM real tomou stop às 10:52. É o efeito do spread (época anterior à correção); com o spread no app deixou de ocorrer.
+2. **USD/CAD compra de 19/11 (16:10 BRT):** o app só a fechou em 23/11 12:05 (WIN, 3,8 dias depois); pelo preço da XM o stop já tinha sido tocado em 20/11 10:25. Época sem spread; a janela de velas do checker NÃO explica (ele reconstrói todas as velas desde a abertura, até 5.000). Provável diferença de fonte de preço (TwelveData x XM) numa vela de fronteira; não confirmado.
+3. **EUR/GBP venda de 24/11 (04:05 BRT):** app LOSS às 11:35, XM aberta há 16 h (o modelo com as velas da XM também a deixa aberta). O maior preço de venda (ask) da XM antes das 11:40 foi 0,83785, a 16,5 pips da entrada; o SL é 19,2 pips. Medido sobre o bid, a adversidade máxima foi ~16,3 pips e o stop da XM exige ~16,8 (SL menos o spread real de 2,4); o app, com o spread médio da tabela (2,6), exige ~16,6. **Foi um quase-acerto de 0,3 pip**: a fonte de preço do app passou da fronteira, a XM não. O mecanismo é pequeno, o efeito em R$ foi de US$ 5 e travou 1 das 3 vagas do executor.
+4. **EUR/GBP compra de 24/11 (11:41 BRT, o executor pulou):** o app a mantém ABERTA; pelo preço da XM o SL foi tocado às 19:00 BRT (instante do rollover do servidor, quando o spread abre). A conferir se a XM de fato daria o stop aí.
+5. **GBP/JPY de 11:25 BRT:** app aberta, modelo WIN às 14:30, XM real aberta: limite de resolução da vela M5 (entrada real 1,6 pip melhor que a abertura da vela).
+
+**Leitura:** o app e o preço da XM já concordam em ~97% dos resultados, 100% depois do spread no app (17/17, amostra pequena). O que sobra é ruído de fronteira: as distâncias de TP/SL são de 20 a 40 pips e as duas fontes de preço diferem em 0,3 a 5 pips (GBP/JPY: a XM entrou ~5 pips abaixo do preço do app nas compras de hoje); quando o preço fica a menos de 1 pip do nível, uma fonte cruza e a outra não. Para eliminar o ruído de vez, o app teria de julgar com as barras da própria XM (opção C da 6.75), o que exige mudar o EA e o checker. **Recomendação:** não fazer isso ainda; esperar ~100 sinais com spread, MaxPosicoes = 12 (admissão igual) e repetir esta mesma conferência, porque 97–100% é um nível em que o custo de mudar o app pesa mais que o ganho.
