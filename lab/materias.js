@@ -30,7 +30,7 @@ const ATIVOS = { GOLD: { alvos: [2, 3, 5], primario: 3 }, OILCash: { alvos: [0.2
 const ADAPT = { FRAC_R15: 0.5, MULT_SPREAD: 8, RISCO_USD: 5, RISCO_MAX_USD: 7.5, JANELA_R15_MS: 900000, MIN_VELAS_JANELA: 10 };
 // US$ por unidade de preço por lote cheio (ouro 100 onças; petróleo 100 barris; US100 US$ 1 por ponto); lote mínimo e passo conforme a XM padrão.
 // A CONFERIR com a especificação real do MT5 (o exportador passa a enviá-la); o scanner ao vivo usa os valores reais quando existirem.
-const ESPEC = { GOLD: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.001 }, OILCash: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.01 }, US100Cash: { usdPorUnidadeLote: 1, minLote: 0.10, passo: 0.10 } };      // US100Cash: min/passo 0,10 lidos do MT5 real em 25/11/2026; GOLD: passo real < 0,005 (usa-se 0,01, conservador)
+const ESPEC = { GOLD: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.001, swapModo: "PONTOS", swapPadrao: { compra: -69.5, venda: 15.07, triplo: 3 } }, OILCash: { usdPorUnidadeLote: 100, minLote: 0.01, passo: 0.01, swapModo: "USD_LOTE", swapPadrao: { compra: 0, venda: 0, triplo: 5 } }, US100Cash: { usdPorUnidadeLote: 1, minLote: 0.10, passo: 0.10, swapModo: "USD_LOTE", swapPadrao: { compra: -4.48, venda: 0.65, triplo: 5 } } };      // US100Cash: min/passo 0,10 lidos do MT5 real em 25/11/2026; GOLD: passo real < 0,005 (usa-se 0,01, conservador)
 const spreadPreco = (b) => b.sp / Math.pow(10, b.dig);
 const arred = (x) => Math.round(x * 10) / 10;
 
@@ -103,7 +103,9 @@ function lotePorRisco(S, ativo, espec = ESPEC[ativo]) {
     return { lote, riscoUsd: Math.round(risco * 100) / 100 };
 }
 
-// swap em USD por unidade se a posição atravessa a meia-noite do servidor (triplo na quarta: dia_triplo=3)
+// swap em USD por UNIDADE (1 onça / 1 barril / 1 ponto de US$ 1) se a posição atravessa a meia-noite do servidor (triplo no dia `sw.triplo`).
+// Dois modos: PONTOS (GOLD: swap em pontos do símbolo, x ponto) e USD_LOTE (OILCash e US100Cash: swap em US$ por LOTE por noite, dividido pelo
+// tamanho do contrato para ficar por unidade). Lido do MT5 real em 25/11/2026; assumir pontos para o US100 subestimava o custo.
 function swapUsd(b, j, k, compra, sw) {
     if (!sw) return 0;
     const ponto = 1 / Math.pow(10, b[j].dig), dia = (ms) => Math.floor((ms / 1000 + (sw.offsetSeg || 7200)) / 86400);
@@ -113,7 +115,9 @@ function swapUsd(b, j, k, compra, sw) {
         if (dowAnterior === 6 || dowAnterior === 0) continue;                      // sábado/domingo: sem mercado
         n += dowAnterior === (sw.triplo ?? 3) ? 3 : 1;
     }
-    return n * (compra ? sw.compra : sw.venda) * ponto;
+    const noite = compra ? sw.compra : sw.venda;
+    const porUnidade = sw.modo === "USD_LOTE" ? noite / (sw.contrato || 1) : noite * ponto;
+    return n * porUnidade;
 }
 
 // julga uma operação: política "P1" | "P2" | "P3"; devolve { pnl, fimIdx, motivo }
@@ -188,6 +192,7 @@ if (require.main === module) {
     const dir = args.find(a => !a.startsWith("--")) || "DOCUMENTACAO/arquivo-xm";
     const sc = (o) => JSON.stringify(o).replace(/{/g, "(").replace(/}/g, ")");
     const sw = {}; for (const l of fs.readFileSync(`${dir}/xm_swaps.csv`, "utf8").split(/\r?\n/).slice(1).filter(Boolean)) { const c = l.split(","); sw[c[0]] = { compra: Number(c[1]), venda: Number(c[2]), triplo: Number(c[4]), offsetSeg: 7200 }; }
+    for (const [a, e] of Object.entries(ESPEC)) sw[a] = { ...(e.swapPadrao || {}), ...(sw[a] || {}), offsetSeg: 7200, modo: e.swapModo, contrato: e.usdPorUnidadeLote };   // CSV manda quando existe; senão o padrão lido do MT5
     const todas = [];
     for (const ativo of Object.keys(ATIVOS)) {
         const arq = `${dir}/xm_barras_M1_${ativo}.csv`; if (!fs.existsSync(arq)) { console.log(`${ativo}: sem arquivo`); continue; }

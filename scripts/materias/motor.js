@@ -47,7 +47,7 @@ function julgarSinal(doc, barras, meta) {
     const j = barras.findIndex(x => x.ms === doc.timestamp);
     if (j < 0) return { estado: "SEM_BARRA" };
     const T = doc.financeiro.tpPreco, compra = doc.direcao === "BUY", usd = doc.lote * (especDe(meta, doc.par).usdPorUnidadeLote);
-    const sw = meta ? { compra: meta.swapCompra, venda: meta.swapVenda, triplo: meta.triplo, offsetSeg: meta.offsetSeg } : null;
+    const sw = meta ? { compra: meta.swapCompra, venda: meta.swapVenda, triplo: meta.triplo, offsetSeg: meta.offsetSeg, modo: (mat.ESPEC[doc.par] || {}).swapModo, contrato: meta.contrato } : null;
     const pol = {};
     for (const p of ["P1", "P2", "P3"]) {
         const r = mat.julgar(barras, j, compra, T, 1, p, sw);

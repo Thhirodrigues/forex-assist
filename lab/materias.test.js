@@ -86,4 +86,21 @@ assert.ok(Object.keys(m.ATIVOS).length === 3);
     const longa = serie(400), ops = m.operacoes(longa, null, "GOLD").filter(o => o.adapt && o.pol === "P1");
     for (const o of ops) { assert.ok(o.lote > 0 && o.riscoUsd <= 7.5 && Math.abs(o.r - o.real / o.S) < 1e-9); if (o.motivo === "ALVO") assert.ok(Math.abs(o.r - 1) < 1e-9); if (o.motivo === "STOP") assert.ok(Math.abs(o.r + 1) < 1e-9); }
 }
+// swap em USD por lote (US100Cash, OILCash): noite / contrato, não pontos x ponto
+{
+    const dig = 2, sb = (ms) => ({ ms, o: 0, h: 0, l: 0, c: 0, sp: 10, dig });
+    const lote = { compra: -4.48, venda: 0.65, triplo: 5, offsetSeg: 7200, modo: "USD_LOTE", contrato: 1 };
+    // terça 24/11 21:00Z -> quarta 23:00Z cruza 1 meia-noite do servidor (noite de terça, x1)
+    const ter = [sb(Date.UTC(2026, 10, 24, 21)), sb(Date.UTC(2026, 10, 24, 23))];
+    assert.ok(Math.abs(m.swapUsd(ter, 0, 1, true, lote) - (-4.48)) < 1e-9, "compra: -4,48 por unidade (contrato 1)");
+    assert.ok(Math.abs(m.swapUsd(ter, 0, 1, false, lote) - 0.65) < 1e-9);
+    // quinta -> sexta (dia anterior = quinta, não é o triplo do US100) e sexta -> sábado (dia anterior = sexta = triplo x3)
+    const sex = [sb(Date.UTC(2026, 10, 26, 21)), sb(Date.UTC(2026, 10, 26, 23))];       // quinta 26/11 -> noite da quinta
+    assert.ok(Math.abs(m.swapUsd(sex, 0, 1, true, lote) - (-4.48)) < 1e-9);
+    const ouro = { compra: -69.5, venda: 15.07, triplo: 3, offsetSeg: 7200 };             // modo padrão = pontos (GOLD): -69,5 x 0,01 por unidade
+    assert.ok(Math.abs(m.swapUsd(ter, 0, 1, true, ouro) - (-0.695)) < 1e-9);
+    const ptsComContrato = { ...lote, modo: "PONTOS" };                                      // se fosse pontos, o US100 daria só -0,0448: a diferença que corrigimos
+    assert.ok(Math.abs(m.swapUsd(ter, 0, 1, true, ptsComContrato) - (-0.0448)) < 1e-9);
+    assert.strictEqual(m.ESPEC.US100Cash.swapModo, "USD_LOTE"); assert.strictEqual(m.ESPEC.GOLD.swapModo, "PONTOS");
+}
 console.log("materias.test.js: OK");
