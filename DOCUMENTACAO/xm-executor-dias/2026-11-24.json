@@ -1,7 +1,69 @@
 {
   "dia_brt": "2026-11-24",
   "fonte": "log do MT5 (aba Especialistas) e histórico da XM, lidos pela outra conversa do usuário em 24/11/2026 20h BRT",
-  "entrou": ["1795491332078_AUD_USD", "1795503669578_GBP_JPY", "1795503943034_EUR_GBP", "1795512944784_GBP_JPY", "1795526436314_USD_CAD", "1795530347343_GBP_JPY", "1795533641479_USD_CAD"],
-  "pulado_limite_3": ["1795504545908_USD_CHF", "1795505729663_EUR_USD", "1795510532522_GBP_USD", "1795517447929_USD_CHF", "1795522235263_EUR_USD", "1795522531849_GBP_USD", "1795522840455_USD_CHF", "1795531239212_GBP_USD", "1795531551285_USD_CHF", "1795531832145_EUR_USD"],
-  "pulado_ja_existe_posicao": ["1795531264337_EUR_GBP"]
+  "entrou": [
+    "1795491332078_AUD_USD",
+    "1795503669578_GBP_JPY",
+    "1795503943034_EUR_GBP",
+    "1795512944784_GBP_JPY",
+    "1795526436314_USD_CAD",
+    "1795530347343_GBP_JPY",
+    "1795533641479_USD_CAD"
+  ],
+  "pulado_limite_3": [
+    "1795504545908_USD_CHF",
+    "1795505729663_EUR_USD",
+    "1795510532522_GBP_USD",
+    "1795517447929_USD_CHF",
+    "1795522235263_EUR_USD",
+    "1795522531849_GBP_USD",
+    "1795522840455_USD_CHF",
+    "1795531239212_GBP_USD",
+    "1795531551285_USD_CHF",
+    "1795531832145_EUR_USD"
+  ],
+  "pulado_ja_existe_posicao": [
+    "1795531264337_EUR_GBP"
+  ],
+  "xm_real": {
+    "1795491332078_AUD_USD": {
+      "estado": "LOSS",
+      "fechouBrt": "10:05",
+      "motivo": "SL",
+      "usd": -5.0
+    },
+    "1795503669578_GBP_JPY": {
+      "estado": "WIN",
+      "fechouBrt": "06:29",
+      "motivo": "TP",
+      "usd": 5.0
+    },
+    "1795503943034_EUR_GBP": {
+      "estado": "ABERTA",
+      "fechouBrt": null,
+      "motivo": "aberta às 20:32 BRT, flutuante +0,08"
+    },
+    "1795512944784_GBP_JPY": {
+      "estado": "WIN",
+      "fechouBrt": "10:06",
+      "motivo": "TP",
+      "usd": 5.02
+    },
+    "1795526436314_USD_CAD": {
+      "estado": "WIN",
+      "fechouBrt": "12:00",
+      "motivo": "TP",
+      "usd": 5.11
+    },
+    "1795530347343_GBP_JPY": {
+      "estado": "ABERTA",
+      "fechouBrt": null,
+      "motivo": "aberta às 20:32 BRT, flutuante +2,14"
+    },
+    "1795533641479_USD_CAD": {
+      "estado": "ABERTA",
+      "fechouBrt": null,
+      "motivo": "aberta às 20:32 BRT, flutuante +3,83"
+    }
+  }
 }

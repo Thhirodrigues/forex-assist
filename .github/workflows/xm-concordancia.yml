@@ -1,0 +1,25 @@
+name: XM - o app julga como a XM? (rejulga os sinais com as velas M5 da XM; somente leitura)
+
+# Pedido do usuario (24/11/2026): "o app e a XM trabalhem iguais". Le o `historico` oficial (admin) e as velas M5 da XM no repositorio.
+on:
+  workflow_dispatch:
+    inputs:
+      desde:
+        description: 'Sinais a partir de (UTC, ISO)'
+        required: true
+        default: '2026-11-19T03:00:00Z'
+
+jobs:
+  concordancia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node scripts/xm/concordancia.test.js
+      - name: Create Firebase Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccount.json
+      - run: node scripts/xm/concordancia.js DOCUMENTACAO/arquivo-xm/xm_barras_M5_*.csv --desde=${{ github.event.inputs.desde }} --dia=2026-11-24
