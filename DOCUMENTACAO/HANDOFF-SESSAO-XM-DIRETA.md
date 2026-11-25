@@ -47,6 +47,12 @@ executor do forex) continua como está, com o pipeline de sinais **congelado** (
 - **Não substitui:** os pré-registros, o veredito offline, nem a regra de "não declarar que funciona sem ver o dado".
 - Segurança: conexão direta dá a esta sessão **execução de comandos no computador**. Usar só em máquina que o usuário pode dedicar a isso (ver seção 9), com pasta de trabalho limitada, e **somente conta demo** (o exportador e o executor já recusam conta real).
 
+## 6b. Acesso à XM e a outras páginas pelo navegador (decisão de 25/11/2026)
+- O usuário quer que a sessão acesse **a página da XM e qualquer outra página online** por navegador, **sem passar por outra conversa**. Há dois mecanismos reais: (1) o **navegador embutido do app Claude para desktop** (ferramentas `mcp__Claude_Browser__*` quando a sessão roda dentro do app; `mcp__remote-devices__Claude_Browser__*` quando é sessão de nuvem ligada ao computador), com perfil próprio e login persistente; (2) a **extensão Claude in Chrome** (`mcp__claude-in-chrome__*`), que age no Chrome real do usuário com TODOS os logins dele. **Preferir o navegador embutido** (só a XM logada, perfil separado). Carregar as ferramentas de uma vez com ToolSearch pelo prefixo do nome.
+- **Regras para a XM na web:** só leitura. **Nunca** depositar, retirar, transferir, alterar dados da conta, senha ou configurações, nem abrir ou fechar ordem pelo site. O login é do usuário (a sessão nunca pede nem recebe senha); se a página pedir login ou verificação, pedir ao usuário que faça no navegador. A área de membro da XM lista as contas do usuário: operar **somente** a demo 336967265; se aparecer conta real, não tocar e avisar.
+- Não raspar nem automatizar páginas de terceiros logadas (copytrade de outros gestores): os termos da XM provavelmente não permitem; só leitura manual pontual e sem scripts na página.
+- Se as ferramentas do navegador não responderem (app fechado/offline), dizer isso em vez de insistir.
+
 ## 7. Segredos (só os NOMES; valores nunca vão para chat, repositório ou log)
 `XM_INGEST_TOKEN` (também embutido nas regras do LAB; rotacionar exige atualizar o secret e republicar `lab-regras.yml`), `FIREBASE_SERVICE_ACCOUNT` (oficial), `FIREBASE_SERVICE_ACCOUNT_LAB`, `TELEGRAM_BOT_TOKEN`, `TWELVEDATA_KEY_1..4`, `ANTHROPIC_API_KEY` (**expira por volta de 30/11/2026**; só o sinal por IA usa). O repositório é **público**: nada de trades de terceiros, nomes de estratégias de copytrade nem handles (a pesquisa de copytrade está só como resumo anonimizado em 6.71 e 6.72).
 
@@ -58,7 +64,7 @@ executor do forex) continua como está, com o pipeline de sinais **congelado** (
 - Marcos de avaliação do forex: 400 fechados E ≥ 30 dias (6.37/6.38) com histórico real da XM.
 
 ## 9. Decisões em aberto que o usuário precisa tomar
-1. **Onde roda a sessão direta:** o PC de trabalho é fraco como base (reinicia sozinho, parou na senha, só acessível à noite, e é de trabalho: política da empresa e arquivos pessoais). Recomendação do Code: **um Windows VPS (ou PC pessoal sempre ligado) com o MT5 demo e o executor**, que também resolve o MT5 cair com o PC. Decisão do usuário.
+1. **Onde roda a sessão direta:** o usuário esclareceu em 25/11 que o computador é **pessoal** (só fica no trabalho) e **pode ser dedicado** a isso. Fica decidido: sessão local no app desktop nesse PC. Melhoria opcional, não urgente: um Windows VPS para o MT5 e o executor não caírem quando o PC reinicia ou fica na tela de senha.
 2. Quando ligar bloqueios de gestão no executor (`ModoExposicao`, `ModoPerdaDia`, `ModoMetaDia` = 2).
 3. Lote mínimo e swap do petróleo (conferir no MT5) antes de qualquer interpretação em dólares.
 4. Se a exportação semanal de M1 continua manual ou passa para script.
@@ -72,4 +78,4 @@ executor do forex) continua como está, com o pipeline de sinais **congelado** (
 6. Só então pensar em substituir a exportação manual.
 
 ## 11. Texto para abrir a sessão nova (colar como primeira mensagem)
-> Esta sessão continua o projeto Forex Assist (repositório Thhirodrigues/forex-assist, branch de trabalho `claude/repo-description-hnctr1`, sempre fast-forward em `main`). Leia primeiro `CLAUDE.md` e `DOCUMENTACAO/HANDOFF-SESSAO-XM-DIRETA.md`, depois confira o código real. Meu objetivo: centralizar aqui o módulo de matérias-primas/índice (ouro, petróleo, Nasdaq) e a ponte com a minha conta demo da XM (MT5 neste computador), sem passar por outra conversa. Regras: só dados reais e só conta demo; nada bloqueia; pré-registro antes de qualquer teste; me avise antes de auditorias que eu não pedi; nunca peça nem mostre chaves e tokens. Comece pelo roteiro da seção 10 do handoff e me diga o que viu antes de agir na conta.
+> Esta sessão continua o projeto Forex Assist (repositório Thhirodrigues/forex-assist, branch de trabalho `claude/repo-description-hnctr1`, sempre fast-forward em `main`). Leia primeiro `CLAUDE.md` e `DOCUMENTACAO/HANDOFF-SESSAO-XM-DIRETA.md`, depois confira o código real. Meu objetivo: centralizar aqui o módulo de matérias-primas/índice (ouro, petróleo, Nasdaq) e a ponte com a minha conta demo da XM (MT5 neste computador), sem passar por outra conversa. Regras: só dados reais e só conta demo; nada bloqueia; pré-registro antes de qualquer teste; me avise antes de auditorias que eu não pedi; nunca peça nem mostre chaves e tokens. Use o navegador embutido do app (já logado na XM; só leitura, nunca mover dinheiro, nunca pedir minha senha) para ler o que precisar da XM e de outras páginas. Comece pelo roteiro da seção 10 do handoff e me diga o que viu antes de agir na conta.
