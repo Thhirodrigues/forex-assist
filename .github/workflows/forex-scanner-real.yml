@@ -51,3 +51,16 @@ jobs:
           API_KEY_4: ${{ secrets.TWELVEDATA_KEY_4 }}
           IA_MODELO: claude-haiku-5-5
         run: node scripts/ia/agendado.js
+
+      # MATÉRIAS-PRIMAS E ÍNDICE AO VIVO (pré-registro 6.78, 25/11/2026): GOLD, OILCash e US100Cash. Lê as velas M1 que o MT5 manda ao projeto LAB,
+      # decide a entrada (mesmo avaliador do Lab), grava em `historico_materias` (coleção SEPARADA do `historico` do forex), julga os abertos e avisa por push.
+      # Isolado como o passo da IA: continue-on-error, nunca derruba o scanner; sem velas novas (MT5 parado) não decide nada.
+      - name: Matérias-primas ao vivo
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LAB }}' > serviceAccountLab.json
+          node scripts/materias/materias.test.js && node scripts/materias/rodar.js
