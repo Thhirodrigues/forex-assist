@@ -84,6 +84,11 @@ histórico alimenta o aprendizado futuro do sistema. Por isso:
 
 - Arquivo do Laboratório ao vivo (31/10/2026; `placar/*` e `replay/*` em JSON): `DOCUMENTACAO/arquivo-lab/2026-10-31/`; decisões e pré-registros de 31/10 (conta XM nova, sinal por IA): `LABORATORIO-E-ANALISES.md` seções 6.37 e 6.38.
 
+- **Módulo de matérias-primas/índice (ouro, petróleo, Nasdaq), ponte com a conta demo da XM e passagem de bastão para a sessão com acesso direto ao MT5:**
+  `DOCUMENTACAO/HANDOFF-SESSAO-XM-DIRETA.md` (ler inteiro antes de agir); pré-registros em `LABORATORIO-E-ANALISES.md` 6.69, 6.70, 6.77 e 6.78;
+  código em `lab/materias.js`, `scripts/materias/`, `js/materias.js`, `mt5/XM_Exporter.mq5` (v1.10) e `mt5/XM_Executor.mq5` (v1.30). O código MQL5 desse módulo
+  **ainda não foi compilado nem visto rodando**; não afirmar que funciona sem log real.
+
 - Caderno de trabalho sobre dias bons x ruins, a ideia da aba "Laboratório"
   (placar de filtros pré-registrados), hipóteses H1-H6 e pontas soltas:
   `DOCUMENTACAO/LABORATORIO-E-ANALISES.md`. É caderno de discussão, não decisão;
